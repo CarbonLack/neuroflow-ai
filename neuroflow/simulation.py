@@ -119,7 +119,7 @@ def generate_demo_recording(
     for unit_id, spike_times in ground_truth.items():
         template = templates[unit_id]
         for spike_time in spike_times:
-            center = int(round(spike_time * sampling_rate))
+            center = round(spike_time * sampling_rate)
             start = center - half
             stop = start + waveform_samples
             if start >= 0 and stop <= sample_count:
@@ -156,8 +156,10 @@ def generate_demo_recording(
         "ground_truth_unit_count": len(ground_truth),
         "known_issues": [
             f"Channel {noisy_channel} contains elevated broadband noise",
-            f"Channels 0-{min(3, channel_count - 1)} contain a brief artifact "
-            f"near {artifact_time:.1f} seconds",
+            (
+                f"Channels 0-{min(3, channel_count - 1)} contain a brief artifact "
+                f"near {artifact_time:.1f} seconds"
+            ),
             "A weak 50 Hz common signal is present",
         ],
     }
@@ -165,12 +167,19 @@ def generate_demo_recording(
 
     state = ProjectState(
         root=project_root,
+        name="NeuroFlow simulated extracellular recording",
+        source_type="simulated",
+        source_path=recording_path,
         recording_path=recording_path,
         sampling_rate=sampling_rate,
         channel_count=channel_count,
         duration_seconds=duration_seconds,
+        dtype="int16",
+        scale_uv_per_bit=scale_uv_per_bit,
+        electrode_type="Neuropixels-like linear probe",
         events=events,
         ground_truth=ground_truth,
+        metadata=metadata,
     )
     state.log("已生成可复现的模拟多通道原始记录")
     state.log(f"原始文件：{recording_path.name}，{channel_count}通道，{duration_seconds:.1f}秒")
@@ -197,12 +206,19 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
     }
     state = ProjectState(
         root=project_root,
+        name=metadata.get("dataset_name", project_root.name),
+        source_type="simulated",
+        source_path=recording_path,
         recording_path=recording_path,
         sampling_rate=float(metadata["sampling_rate_hz"]),
         channel_count=int(metadata["channel_count"]),
         duration_seconds=float(metadata["duration_seconds"]),
+        dtype=metadata.get("dtype", "int16"),
+        scale_uv_per_bit=float(metadata.get("scale_uv_per_bit", 1.0)),
+        electrode_type=metadata.get("electrode_family", "generic"),
         events=events,
         ground_truth=ground_truth,
+        metadata=metadata,
     )
     state.log("已载入本地演示项目")
     return state

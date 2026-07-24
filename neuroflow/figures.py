@@ -7,7 +7,6 @@ from matplotlib.figure import Figure
 from .analysis import load_recording
 from .models import ProjectState
 
-
 INK = "#17221f"
 MUTED = "#66716d"
 GREEN = "#1f7a63"
@@ -44,6 +43,19 @@ def _base_figure(rows: int = 1, columns: int = 1, height: float = 5.4) -> tuple[
 
 def raw_overview_figure(state: ProjectState) -> Figure:
     fig, axes = _base_figure(2, 1, 6.2)
+    if not state.ready:
+        unit_ids = sorted(state.sorted_spikes)
+        counts = [len(state.sorted_spikes[unit]) for unit in unit_ids]
+        axes[0, 0].bar(np.arange(len(unit_ids)), counts, color=GREEN, width=0.75)
+        axes[0, 0].set_title("已导入的 Unit 与 spike 数", loc="left", fontsize=11, color=INK)
+        axes[0, 0].set_xlabel("Unit", color=MUTED)
+        axes[0, 0].set_ylabel("Spike 数", color=MUTED)
+        event_times = [float(event["time_seconds"]) for event in state.events]
+        axes[1, 0].eventplot(event_times, colors=CORAL, lineoffsets=1, linelengths=0.6)
+        axes[1, 0].set_title("可用事件时间轴", loc="left", fontsize=11, color=INK)
+        axes[1, 0].set_xlabel("记录时间 (s)", color=MUTED)
+        axes[1, 0].set_yticks([])
+        return fig
     raw = load_recording(state)
     start = int(2.0 * state.sampling_rate)
     count = int(0.06 * state.sampling_rate)
@@ -61,6 +73,56 @@ def raw_overview_figure(state: ProjectState) -> Figure:
     axes[1, 0].set_title("模拟数据中的已知神经元放电数（仅用于验证）", loc="left", fontsize=11, color=INK)
     axes[1, 0].set_xlabel("Ground-truth unit", color=MUTED)
     axes[1, 0].set_ylabel("Spike 数", color=MUTED)
+    return fig
+
+
+def behavior_figure(state: ProjectState) -> Figure:
+    fig, axes = _base_figure(1, 2, 4.8)
+    trials = state.trials
+    if trials and any("contrastLeft" in trial or "contrastRight" in trial for trial in trials):
+        signed_contrast = []
+        choices = []
+        reaction_times = []
+        for trial in trials:
+            left = trial.get("contrastLeft", np.nan)
+            right = trial.get("contrastRight", np.nan)
+            left = float(left) if left is not None else np.nan
+            right = float(right) if right is not None else np.nan
+            contrast = -left if np.isfinite(left) else right if np.isfinite(right) else np.nan
+            signed_contrast.append(contrast)
+            choices.append(float(trial.get("choice", np.nan)))
+            stim = float(trial.get("stimOn_times", np.nan))
+            move = float(trial.get("firstMovement_times", np.nan))
+            reaction_times.append(move - stim)
+        signed = np.asarray(signed_contrast)
+        choices_arr = np.asarray(choices)
+        reaction = np.asarray(reaction_times)
+        levels = np.unique(signed[np.isfinite(signed)])
+        choice_fraction = [
+            np.nanmean(choices_arr[signed == level] > 0) for level in levels
+        ]
+        axes[0, 0].plot(levels * 100, choice_fraction, "o-", color=GREEN, linewidth=1.8)
+        axes[0, 0].axvline(0, color=INK, linewidth=0.8)
+        axes[0, 0].set_title("IBL 风格 psychometric curve", loc="left", fontsize=11, color=INK)
+        axes[0, 0].set_xlabel("Signed contrast (%)", color=MUTED)
+        axes[0, 0].set_ylabel("P(choice > 0)", color=MUTED)
+        reaction_by_level = [
+            np.nanmedian(reaction[signed == level]) for level in levels
+        ]
+        axes[0, 1].plot(levels * 100, reaction_by_level, "o-", color=CORAL, linewidth=1.8)
+        axes[0, 1].set_title("反应时与刺激强度", loc="left", fontsize=11, color=INK)
+        axes[0, 1].set_xlabel("Signed contrast (%)", color=MUTED)
+        axes[0, 1].set_ylabel("Median reaction time (s)", color=MUTED)
+    else:
+        conditions = [str(event.get("condition", "all")) for event in state.events]
+        names, counts = np.unique(conditions, return_counts=True)
+        axes[0, 0].bar(names, counts, color=[GREEN, CORAL, GOLD][: len(names)])
+        axes[0, 0].set_title("Trial 条件分布", loc="left", fontsize=11, color=INK)
+        event_times = np.asarray([float(event["time_seconds"]) for event in state.events])
+        axes[0, 1].plot(np.arange(len(event_times)), event_times, "o-", color=GREEN)
+        axes[0, 1].set_title("事件时间与顺序", loc="left", fontsize=11, color=INK)
+        axes[0, 1].set_xlabel("Trial", color=MUTED)
+        axes[0, 1].set_ylabel("记录时间 (s)", color=MUTED)
     return fig
 
 
@@ -167,8 +229,9 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     raster.set_ylabel("Trial", color=MUTED)
 
     psth = axes[0, 1]
-    psth.plot(centers, unit["condition_a"], color=GREEN, linewidth=1.8, label="条件A")
-    psth.plot(centers, unit["condition_b"], color=CORAL, linewidth=1.8, label="条件B")
+    labels = analysis.get("condition_labels", ["条件A", "条件B"])
+    psth.plot(centers, unit["condition_a"], color=GREEN, linewidth=1.8, label=labels[0])
+    psth.plot(centers, unit["condition_b"], color=CORAL, linewidth=1.8, label=labels[1])
     psth.axvline(0, color=INK, linewidth=1)
     psth.legend(frameon=False, fontsize=8)
     psth.set_title("条件PSTH", loc="left", fontsize=11, color=INK)
@@ -208,4 +271,103 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     )
     summary.set_xlabel("Unit", color=MUTED)
     summary.set_ylabel("放电率变化 (Hz)", color=MUTED)
+    return fig
+
+
+def statistics_figure(state: ProjectState) -> Figure:
+    fig, axes = _base_figure(1, 2, 4.8)
+    rows = state.statistics.get("rows", [])
+    if not rows:
+        axes[0, 0].text(0.5, 0.5, "尚未运行统计套件", ha="center", va="center")
+        return fig
+    effects = np.asarray([row["effect_hz"] for row in rows])
+    lows = np.asarray([row["ci95_low_hz"] for row in rows])
+    highs = np.asarray([row["ci95_high_hz"] for row in rows])
+    significant = np.asarray([row["significant_fdr"] for row in rows])
+    colors = np.where(significant, GREEN, "#b8c2be")
+    x = np.arange(len(rows))
+    axes[0, 0].errorbar(
+        x,
+        effects,
+        yerr=np.vstack([effects - lows, highs - effects]),
+        fmt="none",
+        ecolor="#89958f",
+        capsize=2,
+        linewidth=0.8,
+    )
+    axes[0, 0].scatter(x, effects, c=colors, s=35)
+    axes[0, 0].axhline(0, color=INK, linewidth=0.8)
+    axes[0, 0].set_title("效应量与 bootstrap 95% CI", loc="left", fontsize=11, color=INK)
+    axes[0, 0].set_xlabel("Unit", color=MUTED)
+    axes[0, 0].set_ylabel("刺激后变化 (Hz)", color=MUTED)
+    p = np.asarray([max(row["permutation_p"], 1e-12) for row in rows])
+    q = np.asarray([max(row["fdr_q"], 1e-12) for row in rows])
+    axes[0, 1].scatter(-np.log10(p), -np.log10(q), c=colors, s=35)
+    axes[0, 1].axhline(-np.log10(0.05), color=CORAL, linestyle="--")
+    axes[0, 1].set_title("置换检验与 FDR 校正", loc="left", fontsize=11, color=INK)
+    axes[0, 1].set_xlabel("-log10(raw p)", color=MUTED)
+    axes[0, 1].set_ylabel("-log10(FDR q)", color=MUTED)
+    return fig
+
+
+def decoding_figure(state: ProjectState) -> Figure:
+    fig, axes = _base_figure(2, 2, 6.5)
+    result = state.decoding
+    if not result:
+        axes[0, 0].text(0.5, 0.5, "尚未运行解码", ha="center", va="center")
+        return fig
+    matrix = np.asarray(result["confusion_matrix"])
+    image = axes[0, 0].imshow(matrix, cmap="Greens")
+    for row in range(matrix.shape[0]):
+        for column in range(matrix.shape[1]):
+            axes[0, 0].text(column, row, matrix[row, column], ha="center", va="center")
+    axes[0, 0].set_xticks(range(len(result["classes"])), result["classes"])
+    axes[0, 0].set_yticks(range(len(result["classes"])), result["classes"])
+    axes[0, 0].set_title("交叉验证混淆矩阵", loc="left", fontsize=11, color=INK)
+    fig.colorbar(image, ax=axes[0, 0], shrink=0.65)
+    null = np.asarray(result["null_scores"])
+    axes[0, 1].hist(null, bins=22, color="#bac7c1", edgecolor="white")
+    axes[0, 1].axvline(result["balanced_accuracy"], color=CORAL, linewidth=2)
+    axes[0, 1].set_title(
+        f"置换检验 p={result['permutation_p']:.4f}", loc="left", fontsize=11, color=INK
+    )
+    axes[0, 1].set_xlabel("Balanced accuracy", color=MUTED)
+    centers = np.asarray(result["bin_centers"])
+    scores = np.asarray(result["time_resolved_accuracy"])
+    axes[1, 0].plot(centers, scores, color=GREEN, linewidth=1.8)
+    axes[1, 0].axhline(0.5, color=MUTED, linestyle="--", linewidth=1)
+    axes[1, 0].axvline(0, color=CORAL, linewidth=1)
+    axes[1, 0].set_ylim(0.25, 1.02)
+    axes[1, 0].set_title("IBL 风格时间分辨解码", loc="left", fontsize=11, color=INK)
+    axes[1, 0].set_xlabel("相对事件时间 (s)", color=MUTED)
+    axes[1, 0].set_ylabel("Balanced accuracy", color=MUTED)
+    trajectories = np.asarray(result["population_trajectories"])
+    colors = [GREEN, CORAL]
+    for index, label in enumerate(result["classes"]):
+        axes[1, 1].plot(
+            trajectories[index, :, 0],
+            trajectories[index, :, 1]
+            if trajectories.shape[2] > 1
+            else np.zeros(trajectories.shape[1]),
+            color=colors[index],
+            label=label,
+            linewidth=1.8,
+        )
+        axes[1, 1].scatter(
+            trajectories[index, 0, 0],
+            trajectories[index, 0, 1] if trajectories.shape[2] > 1 else 0,
+            color=colors[index],
+            marker="o",
+            s=28,
+        )
+    axes[1, 1].legend(frameon=False)
+    peak_distance = float(np.max(result["trajectory_distance"]))
+    axes[1, 1].set_title(
+        f"群体 PCA 轨迹 · 最大距离 {peak_distance:.2f}",
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[1, 1].set_xlabel("PC1", color=MUTED)
+    axes[1, 1].set_ylabel("PC2", color=MUTED)
     return fig

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import inspect
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import numpy as np
 
@@ -30,16 +30,109 @@ def kilosort_environment() -> dict:
             result["device_name"] = torch.cuda.get_device_name(0)
             props = torch.cuda.get_device_properties(0)
             result["gpu_memory_gb"] = props.total_memory / 1024**3
-    except Exception:
-        pass
+    except (ImportError, RuntimeError):
+        result["torch_error"] = "PyTorch/CUDA unavailable"
     try:
         import kilosort
 
         result["kilosort_available"] = True
         result["kilosort_version"] = getattr(kilosort, "__version__", "unknown")
-    except Exception:
-        pass
+    except ImportError:
+        result["kilosort_error"] = "Kilosort4 unavailable"
     return result
+
+
+def sorter_catalog() -> list[dict]:
+    """Return executable capability, not a marketing-only sorter list."""
+    installed: set[str] = set()
+    try:
+        import spikeinterface.sorters as ss
+
+        installed = set(ss.installed_sorters())
+    except (ImportError, RuntimeError):
+        installed = set()
+    ks_env = kilosort_environment()
+    definitions = [
+        {
+            "key": "kilosort4",
+            "name": "Kilosort4",
+            "hardware": "NVIDIA GPU recommended",
+            "best_for": "高密度 silicon probe / Neuropixels",
+            "installed": bool(ks_env["kilosort_available"]),
+            "backend": "native NeuroFlow adapter",
+        },
+        {
+            "key": "mountainsort5",
+            "name": "MountainSort5",
+            "hardware": "CPU",
+            "best_for": "tetrode 与中等通道记录",
+            "installed": "mountainsort5" in installed,
+            "backend": "SpikeInterface",
+        },
+        {
+            "key": "spykingcircus2",
+            "name": "SpyKING CIRCUS 2",
+            "hardware": "CPU / GPU depending on setup",
+            "best_for": "通用多通道记录",
+            "installed": "spykingcircus2" in installed,
+            "backend": "SpikeInterface",
+        },
+        {
+            "key": "tridesclous2",
+            "name": "Tridesclous 2",
+            "hardware": "CPU",
+            "best_for": "低至中等通道记录",
+            "installed": "tridesclous2" in installed,
+            "backend": "SpikeInterface",
+        },
+    ]
+    return definitions
+
+
+def run_sorter(
+    state: ProjectState,
+    sorter_name: str,
+    results_dir: Path,
+    progress: Callable[[str], None] | None = None,
+) -> dict[int, np.ndarray]:
+    if sorter_name == "kilosort4":
+        return run_kilosort4(state, results_dir, progress)
+    available = {item["key"]: item for item in sorter_catalog()}
+    item = available.get(sorter_name)
+    if item is None:
+        raise ValueError(f"未知 sorter：{sorter_name}")
+    if not item["installed"]:
+        raise RuntimeError(
+            f"{item['name']} 适配器已经注册，但依赖尚未安装；"
+            "NeuroFlow 不会把未验证的 sorter 标记为可运行。"
+        )
+    if not state.ready:
+        raise RuntimeError("该 sorter 需要原始电压记录")
+    import spikeinterface as si
+    import spikeinterface.sorters as ss
+
+    recording = si.read_binary(
+        file_paths=[state.recording_path],
+        sampling_frequency=state.sampling_rate,
+        num_channels=state.channel_count,
+        dtype=state.dtype,
+    )
+    if progress:
+        progress(f"{item['name']} 通过 SpikeInterface 开始运行")
+    sorting = ss.run_sorter(
+        sorter_name,
+        recording,
+        folder=results_dir,
+        remove_existing_folder=True,
+        verbose=True,
+    )
+    sorted_spikes = {
+        int(unit): sorting.get_unit_spike_train(unit).astype(float) / state.sampling_rate
+        for unit in sorting.unit_ids
+    }
+    state.sorted_spikes = sorted_spikes
+    state.log(f"{item['name']} 完成：{len(sorted_spikes)} 个 unit")
+    return sorted_spikes
 
 
 def _probe(channel_count: int) -> dict[str, np.ndarray | int]:
@@ -95,7 +188,7 @@ def run_kilosort4(
     }
     signature = inspect.signature(run_kilosort)
     kwargs = {key: value for key, value in kwargs.items() if key in signature.parameters}
-    returned = run_kilosort(**kwargs)
+    run_kilosort(**kwargs)
 
     spike_times_path = results_dir / "spike_times.npy"
     spike_clusters_path = results_dir / "spike_clusters.npy"

@@ -1,13 +1,27 @@
 from __future__ import annotations
 
 import json
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 from scipy import signal, stats
 
 from .models import ProjectState
+
+
+def _json_ready(value):
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    return value
 
 
 def load_recording(state: ProjectState, mode: str = "r") -> np.memmap:
@@ -16,7 +30,7 @@ def load_recording(state: ProjectState, mode: str = "r") -> np.memmap:
     sample_count = int(state.duration_seconds * state.sampling_rate)
     return np.memmap(
         state.recording_path,
-        dtype=np.int16,
+        dtype=np.dtype(state.dtype),
         mode=mode,
         shape=(sample_count, state.channel_count),
     )
@@ -93,17 +107,18 @@ def preprocessing_preview(
 
 
 def compute_unit_metrics(state: ProjectState) -> list[dict]:
-    raw = load_recording(state)
+    raw = load_recording(state) if state.ready else None
     metrics: list[dict] = []
     for unit_id, spikes in sorted(state.sorted_spikes.items()):
         firing_rate = len(spikes) / max(state.duration_seconds, 1e-9)
         intervals = np.diff(spikes)
         isi_violations = float(np.mean(intervals < 0.0015)) if intervals.size else 0.0
         sample_indices = (spikes * state.sampling_rate).astype(int)
-        sample_indices = sample_indices[
-            (sample_indices >= 25) & (sample_indices < raw.shape[0] - 25)
-        ]
-        if sample_indices.size:
+        if raw is not None:
+            sample_indices = sample_indices[
+                (sample_indices >= 25) & (sample_indices < raw.shape[0] - 25)
+            ]
+        if raw is not None and sample_indices.size:
             selected = sample_indices[: min(300, sample_indices.size)]
             snippets = np.stack(
                 [np.asarray(raw[index - 20 : index + 21], dtype=np.float32) for index in selected]
@@ -116,12 +131,16 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
         else:
             peak_channel = -1
             peak_to_peak = 0.0
-            snr = 0.0
-        label = "候选单神经元" if isi_violations < 0.02 and snr >= 4.0 else "需要复核"
+            snr = float("nan") if raw is None else 0.0
+        label = (
+            "候选单神经元"
+            if isi_violations < 0.02 and (not np.isfinite(snr) or snr >= 4.0)
+            else "需要复核"
+        )
         metrics.append(
             {
                 "unit_id": int(unit_id),
-                "spike_count": int(len(spikes)),
+                "spike_count": len(spikes),
                 "firing_rate_hz": float(firing_rate),
                 "isi_violation_rate": isi_violations,
                 "peak_channel": peak_channel,
@@ -180,6 +199,9 @@ def event_aligned_analysis(
     conditions = np.asarray([str(event["condition"]) for event in state.events])
     bins = np.arange(window[0], window[1] + bin_size, bin_size)
     centers = (bins[:-1] + bins[1:]) / 2
+    condition_labels = np.unique(conditions).tolist()
+    if len(condition_labels) < 2:
+        condition_labels = [condition_labels[0] if condition_labels else "all", "other"]
 
     unit_results = {}
     response_matrix = []
@@ -209,8 +231,8 @@ def event_aligned_analysis(
             "aligned_spikes": aligned,
             "rates": rates,
             "mean_rate": mean_rate,
-            "condition_a": rates[conditions == "A"].mean(axis=0),
-            "condition_b": rates[conditions == "B"].mean(axis=0),
+            "condition_a": rates[conditions == condition_labels[0]].mean(axis=0),
+            "condition_b": rates[conditions == condition_labels[1]].mean(axis=0),
             "p_value": float(p_value),
             "statistic": float(statistic),
             "effect_hz": float(response_rates.mean() - baseline_rates.mean()),
@@ -232,6 +254,7 @@ def event_aligned_analysis(
         "bin_size": bin_size,
         "bin_centers": centers,
         "conditions": conditions,
+        "condition_labels": condition_labels[:2],
         "units": unit_results,
         "population_z": np.asarray(response_matrix),
         "responsive_units": int(np.sum(adjusted < 0.05)),
@@ -258,13 +281,15 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
             "kilosort4",
             "unit_qc",
             "event_alignment",
+            "behavior",
             "statistics",
+            "decoding",
             "figure_export",
         ],
         "parameters": {
             "bandpass_hz": [300, 6000],
             "reference": "common_median",
-            "sorter": "Kilosort4",
+            "sorter": state.metadata.get("sorter", "Kilosort4"),
             "event_window_seconds": list(state.analysis.get("window", (-0.5, 1.0))),
             "bin_size_seconds": state.analysis.get("bin_size", 0.025),
         },
@@ -273,27 +298,115 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         json.dumps(workflow, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     provenance = {
-        "data_type": "simulated extracellular multichannel recording",
-        "ground_truth_available": True,
+        "data_type": state.source_type,
+        "source_path": str(state.source_path) if state.source_path else None,
+        "electrode_type": state.electrode_type,
+        "ground_truth_available": bool(state.ground_truth),
         "raw_file": state.recording_path.name if state.recording_path else None,
         "qc": state.qc,
         "unit_metrics": state.unit_metrics,
+        "statistics": _json_ready(state.statistics),
+        "decoding": {
+            key: _json_ready(value)
+            for key, value in state.decoding.items()
+            if key
+            not in {
+                "null_scores",
+                "predictions",
+                "labels",
+                "probabilities",
+                "pca",
+                "population_trajectories",
+            }
+        },
+        "workflow_status": state.workflow_status,
+        "software_versions": {},
         "run_log": state.run_log,
     }
+    for package in (
+        "numpy",
+        "scipy",
+        "pandas",
+        "matplotlib",
+        "scikit-learn",
+        "spikeinterface",
+        "kilosort",
+        "PySide6",
+        "ONE-api",
+    ):
+        try:
+            provenance["software_versions"][package] = version(package)
+        except PackageNotFoundError:
+            provenance["software_versions"][package] = "not installed"
     (output_dir / "provenance.json").write_text(
         json.dumps(provenance, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    sorting_sentence = (
+        "Spike sorting was performed with Kilosort4. "
+        if state.source_type in {"simulated", "binary", "read_intan", "read_openephys", "read_spikeglx"}
+        else "Previously processed spike-sorting results were imported with source provenance. "
     )
     methods = (
         "# Methods draft\n\n"
         f"A {state.channel_count}-channel extracellular recording was sampled at "
         f"{state.sampling_rate:.0f} Hz for {state.duration_seconds:.1f} s. "
         "Raw signals were inspected for channel noise, saturation, and line-frequency "
-        "contamination. Spike sorting was performed with Kilosort4. Candidate units "
+        f"contamination. {sorting_sentence}Candidate units "
         "were reviewed using firing rate, refractory-period violations, waveform "
         "amplitude, and signal-to-noise ratio. Spikes were aligned to experimental "
         "events in a -0.5 to 1.0 s window and summarized using 25 ms bins. Baseline "
-        "and post-event firing rates were compared with paired Wilcoxon tests and "
-        "Benjamini-Hochberg correction across units.\n"
+        "and post-event firing rates were compared using paired tests, sign-flip "
+        "permutation, bootstrap confidence intervals, and Benjamini-Hochberg "
+        "correction across units. Trial labels were decoded with a preprocessing "
+        "pipeline fit inside stratified cross-validation, and evaluated against a "
+        "label-permutation null distribution.\n"
     )
     (output_dir / "methods.md").write_text(methods, encoding="utf-8")
+
+    import pandas as pd
+
+    tables_dir = output_dir / "tables"
+    tables_dir.mkdir(exist_ok=True)
+    if state.unit_metrics:
+        pd.DataFrame(state.unit_metrics).to_csv(
+            tables_dir / "unit_metrics.csv", index=False
+        )
+    if state.statistics.get("rows"):
+        pd.DataFrame(state.statistics["rows"]).to_csv(
+            tables_dir / "statistics.csv", index=False
+        )
+    if state.trials:
+        pd.DataFrame(state.trials).to_csv(tables_dir / "trials.csv", index=False)
+
+    from .figures import (
+        behavior_figure,
+        decoding_figure,
+        event_analysis_figure,
+        qc_figure,
+        statistics_figure,
+        unit_metrics_figure,
+    )
+
+    figure_builders = []
+    if state.qc:
+        figure_builders.append(("raw_qc", lambda: qc_figure(state)))
+    if state.unit_metrics:
+        figure_builders.append(("unit_qc", lambda: unit_metrics_figure(state)))
+    if state.events or state.trials:
+        figure_builders.append(("behavior", lambda: behavior_figure(state)))
+    if state.analysis:
+        figure_builders.append(
+            ("raster_psth_population", lambda: event_analysis_figure(state))
+        )
+    if state.statistics:
+        figure_builders.append(("statistics", lambda: statistics_figure(state)))
+    if state.decoding:
+        figure_builders.append(("decoding", lambda: decoding_figure(state)))
+    figures_dir = output_dir / "figures"
+    figures_dir.mkdir(exist_ok=True)
+    for name, builder in figure_builders:
+        figure = builder()
+        figure.savefig(figures_dir / f"{name}.png", dpi=220, bbox_inches="tight")
+        figure.savefig(figures_dir / f"{name}.svg", bbox_inches="tight")
+        figure.clear()
     return output_dir

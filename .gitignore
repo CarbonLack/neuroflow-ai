@@ -10,8 +10,11 @@ __pycache__/
 
 # Generated NeuroFlow projects and results
 demo_project/
+projects/
+ibl_cache/
 results/
 exports/
+ui_*.png
 *.bin
 *.dat
 *.npy
@@ -21,7 +24,6 @@ exports/
 # Build artifacts
 build/
 dist/
-*.spec
 
 # Credentials and local configuration
 .env
