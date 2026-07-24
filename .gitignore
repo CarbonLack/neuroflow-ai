@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Virtual environments
+.venv/
+.venv*/
+
+# Generated NeuroFlow projects and results
+demo_project/
+results/
+exports/
+*.bin
+*.dat
+*.npy
+*.npz
+*.nwb
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# Credentials and local configuration
+.env
+*.key
+secrets.json
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
