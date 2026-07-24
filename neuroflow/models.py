@@ -38,6 +38,7 @@ class ProjectState:
     analysis: dict[str, Any] = field(default_factory=dict)
     statistics: dict[str, Any] = field(default_factory=dict)
     decoding: dict[str, Any] = field(default_factory=dict)
+    regression: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
     workflow_status: dict[str, str] = field(default_factory=dict)
     run_log: list[str] = field(default_factory=list)

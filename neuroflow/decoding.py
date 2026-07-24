@@ -2,19 +2,46 @@ from __future__ import annotations
 
 import numpy as np
 from sklearn.base import clone
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import balanced_accuracy_score, confusion_matrix, roc_auc_score
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from sklearn.inspection import permutation_importance
+from sklearn.linear_model import ElasticNet, LogisticRegression, Ridge
+from sklearn.metrics import (
+    adjusted_rand_score,
+    balanced_accuracy_score,
+    confusion_matrix,
+    f1_score,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
+    silhouette_score,
+)
+from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import (
+    KFold,
     StratifiedKFold,
     cross_val_predict,
     cross_val_score,
     permutation_test_score,
 )
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
+from sklearn.svm import SVC, SVR
 
 from .models import ProjectState
 
@@ -31,13 +58,133 @@ MODELS = {
             ("model", SVC(kernel="linear", probability=True, class_weight="balanced")),
         ]
     ),
+    "RBF SVM": Pipeline(
+        [
+            ("scale", StandardScaler()),
+            ("model", SVC(kernel="rbf", probability=True, class_weight="balanced")),
+        ]
+    ),
     "Random forest": RandomForestClassifier(
         n_estimators=300,
         class_weight="balanced",
         random_state=20260725,
         min_samples_leaf=2,
     ),
+    "Extra trees": ExtraTreesClassifier(
+        n_estimators=300,
+        class_weight="balanced",
+        random_state=20260725,
+        min_samples_leaf=2,
+    ),
+    "Gradient boosting": GradientBoostingClassifier(
+        n_estimators=150,
+        learning_rate=0.05,
+        max_depth=2,
+        random_state=20260725,
+    ),
+    "k-nearest neighbors": Pipeline(
+        [
+            ("scale", StandardScaler()),
+            ("model", KNeighborsClassifier(n_neighbors=5, weights="distance")),
+        ]
+    ),
+    "Linear discriminant analysis": Pipeline(
+        [
+            ("scale", StandardScaler()),
+            ("model", LinearDiscriminantAnalysis(shrinkage="auto", solver="lsqr")),
+        ]
+    ),
+    "Gaussian naive Bayes": Pipeline(
+        [("scale", StandardScaler()), ("model", GaussianNB())]
+    ),
+    "Multilayer perceptron": Pipeline(
+        [
+            ("scale", StandardScaler()),
+            (
+                "model",
+                MLPClassifier(
+                    hidden_layer_sizes=(32, 16),
+                    max_iter=800,
+                    early_stopping=False,
+                    random_state=20260725,
+                ),
+            ),
+        ]
+    ),
 }
+
+MODEL_DESCRIPTIONS = {
+    "Logistic regression": "Interpretable linear baseline with L2 regularization.",
+    "Linear SVM": "Linear maximum-margin classifier for high-dimensional features.",
+    "RBF SVM": "Nonlinear kernel classifier; sensitive to scaling and sample size.",
+    "Random forest": "Bagged decision trees with nonlinear interactions and importance.",
+    "Extra trees": "Highly randomized tree ensemble; fast nonlinear comparison.",
+    "Gradient boosting": "Sequentially boosted trees for structured nonlinear effects.",
+    "k-nearest neighbors": "Local distance-based classifier; useful as a simple nonlinear baseline.",
+    "Linear discriminant analysis": "Linear class separation with shrinkage covariance.",
+    "Gaussian naive Bayes": "Fast probabilistic baseline with conditional-independence assumptions.",
+    "Multilayer perceptron": "Small neural network; needs more trials and careful validation.",
+    "XGBoost": "Regularized gradient-boosted trees with feature subsampling.",
+}
+
+REGRESSION_MODELS = {
+    "Ridge regression": Pipeline(
+        [("scale", StandardScaler()), ("model", Ridge(alpha=1.0))]
+    ),
+    "Elastic net": Pipeline(
+        [
+            ("scale", StandardScaler()),
+            (
+                "model",
+                ElasticNet(
+                    alpha=0.05,
+                    l1_ratio=0.3,
+                    max_iter=5000,
+                    random_state=20260725,
+                ),
+            ),
+        ]
+    ),
+    "Support vector regression": Pipeline(
+        [("scale", StandardScaler()), ("model", SVR(kernel="rbf", C=1.0))]
+    ),
+    "Random forest regression": RandomForestRegressor(
+        n_estimators=300,
+        min_samples_leaf=2,
+        random_state=20260725,
+        n_jobs=1,
+    ),
+    "Gradient boosting regression": GradientBoostingRegressor(
+        n_estimators=150,
+        learning_rate=0.05,
+        max_depth=2,
+        random_state=20260725,
+    ),
+}
+
+REGRESSION_DESCRIPTIONS = {
+    "Ridge regression": "Regularized linear prediction of a continuous trial variable.",
+    "Elastic net": "Sparse linear model combining L1 and L2 penalties.",
+    "Support vector regression": "Nonlinear RBF-kernel regression.",
+    "Random forest regression": "Bagged nonlinear trees for continuous targets.",
+    "Gradient boosting regression": "Boosted trees optimized for continuous targets.",
+}
+
+try:
+    from xgboost import XGBClassifier
+
+    MODELS["XGBoost"] = XGBClassifier(
+        n_estimators=180,
+        max_depth=3,
+        learning_rate=0.05,
+        subsample=0.85,
+        colsample_bytree=0.85,
+        eval_metric="logloss",
+        n_jobs=1,
+        random_state=20260725,
+    )
+except ImportError:
+    pass
 
 
 def trial_feature_matrix(
@@ -134,36 +281,69 @@ def run_decoding_suite(
         raise ValueError("每个条件至少需要两个 trial")
     cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=20260725)
     model = clone(MODELS[model_name])
-    predictions = cross_val_predict(model, x, labels, cv=cv, method="predict")
+    label_lookup = {label: index for index, label in enumerate(classes)}
+    model_labels = np.asarray([label_lookup[label] for label in labels])
+    predictions_model = cross_val_predict(
+        model, x, model_labels, cv=cv, method="predict"
+    )
     probabilities = cross_val_predict(
-        model, x, labels, cv=cv, method="predict_proba"
+        model, x, model_labels, cv=cv, method="predict_proba"
     )[:, 1]
+    predictions = classes[np.asarray(predictions_model, dtype=int)]
     binary = (labels == classes[1]).astype(int)
     score = balanced_accuracy_score(labels, predictions)
     auc = roc_auc_score(binary, probabilities)
     permutation_score, null_scores, p_value = permutation_test_score(
         model,
         x,
-        labels,
+        model_labels,
         scoring="balanced_accuracy",
         cv=cv,
         n_permutations=n_permutations,
         random_state=20260725,
         n_jobs=1,
     )
-    fitted = clone(model).fit(x, labels)
-    if model_name == "Random forest":
+    fitted = clone(model).fit(x, model_labels)
+    if hasattr(fitted, "feature_importances_"):
         importance = fitted.feature_importances_
-    else:
+    elif hasattr(fitted, "named_steps") and hasattr(
+        fitted.named_steps["model"], "coef_"
+    ):
         importance = np.abs(fitted.named_steps["model"].coef_[0])
+    else:
+        importance = permutation_importance(
+            fitted,
+            x,
+            model_labels,
+            scoring="balanced_accuracy",
+            n_repeats=8,
+            random_state=20260725,
+            n_jobs=1,
+        ).importances_mean
     pca_components = min(3, x.shape[0], x.shape[1])
     trajectory = PCA(n_components=pca_components).fit_transform(
         StandardScaler().fit_transform(x)
     )
-    time_scores = _time_resolved_decoding(state, labels, valid_mask, model, cv)
+    time_scores = _time_resolved_decoding(
+        state, model_labels, valid_mask, model, cv
+    )
     population_trajectories, trajectory_distance = _population_trajectory(
         state, labels, valid_mask, classes
     )
+    fpr, tpr, thresholds = roc_curve(binary, probabilities)
+    scaled = StandardScaler().fit_transform(x)
+    kmeans_labels = KMeans(
+        n_clusters=2, n_init=20, random_state=20260725
+    ).fit_predict(scaled)
+    gmm_labels = GaussianMixture(
+        n_components=2, covariance_type="full", random_state=20260725
+    ).fit_predict(scaled)
+    cluster_results = {
+        "kmeans_silhouette": float(silhouette_score(scaled, kmeans_labels)),
+        "kmeans_adjusted_rand": float(adjusted_rand_score(binary, kmeans_labels)),
+        "gmm_silhouette": float(silhouette_score(scaled, gmm_labels)),
+        "gmm_adjusted_rand": float(adjusted_rand_score(binary, gmm_labels)),
+    }
     result = {
         "model": model_name,
         "classes": classes.tolist(),
@@ -172,6 +352,20 @@ def run_decoding_suite(
         "cv_folds": folds,
         "balanced_accuracy": float(score),
         "roc_auc": float(auc),
+        "precision": float(
+            precision_score(labels, predictions, pos_label=classes[1], zero_division=0)
+        ),
+        "recall": float(
+            recall_score(labels, predictions, pos_label=classes[1], zero_division=0)
+        ),
+        "f1": float(
+            f1_score(labels, predictions, pos_label=classes[1], zero_division=0)
+        ),
+        "roc_curve": {
+            "fpr": fpr,
+            "tpr": tpr,
+            "thresholds": thresholds,
+        },
         "permutation_score": float(permutation_score),
         "permutation_p": float(p_value),
         "null_scores": null_scores,
@@ -186,6 +380,13 @@ def run_decoding_suite(
         "time_resolved_accuracy": time_scores,
         "population_trajectories": population_trajectories,
         "trajectory_distance": trajectory_distance,
+        "cluster_results": cluster_results,
+        "available_models": list(MODELS),
+        "available_unsupervised_methods": [
+            "PCA",
+            "K-means",
+            "Gaussian mixture model",
+        ],
         "leakage_checks": [
             "标准化仅在交叉验证训练折内拟合",
             "特征为 trial 级窗口放电率",
@@ -196,5 +397,92 @@ def run_decoding_suite(
     state.log(
         f"{model_name} 解码完成：balanced accuracy={score:.3f}，"
         f"permutation p={p_value:.4f}"
+    )
+    return result
+
+
+def _reaction_time_target(state: ProjectState) -> np.ndarray:
+    records = state.trials if len(state.trials) == len(state.events) else state.events
+    values = []
+    for record in records:
+        if record.get("reaction_time") is not None:
+            values.append(float(record["reaction_time"]))
+            continue
+        movement = record.get("firstMovement_times")
+        stimulus = record.get("stimOn_times", record.get("time_seconds"))
+        try:
+            values.append(float(movement) - float(stimulus))
+        except (TypeError, ValueError):
+            values.append(np.nan)
+    return np.asarray(values, dtype=float)
+
+
+def run_regression_suite(
+    state: ProjectState,
+    model_name: str = "Ridge regression",
+    n_splits: int = 5,
+) -> dict:
+    x, labels, unit_ids = trial_feature_matrix(state)
+    all_labels = np.asarray(state.analysis["conditions"]).astype(str)
+    valid_conditions = np.isin(all_labels, np.unique(labels))
+    target_all = _reaction_time_target(state)
+    if len(target_all) != len(all_labels):
+        raise ValueError(
+            "Continuous regression requires one reaction-time value per analyzed trial"
+        )
+    target = target_all[valid_conditions]
+    finite = np.isfinite(target)
+    x = x[finite]
+    target = target[finite]
+    if len(target) < 6:
+        raise ValueError(
+            "At least six trials with finite reaction time are required for regression"
+        )
+    folds = min(n_splits, len(target))
+    model = clone(REGRESSION_MODELS[model_name])
+    cv = KFold(n_splits=folds, shuffle=True, random_state=20260725)
+    predictions = cross_val_predict(model, x, target, cv=cv, method="predict")
+    fitted = clone(model).fit(x, target)
+    if hasattr(fitted, "feature_importances_"):
+        importance = fitted.feature_importances_
+    elif hasattr(fitted, "named_steps") and hasattr(
+        fitted.named_steps["model"], "coef_"
+    ):
+        importance = np.abs(np.asarray(fitted.named_steps["model"].coef_)).reshape(-1)
+    else:
+        importance = permutation_importance(
+            fitted,
+            x,
+            target,
+            scoring="r2",
+            n_repeats=8,
+            random_state=20260725,
+            n_jobs=1,
+        ).importances_mean
+    result = {
+        "model": model_name,
+        "target": "reaction_time_seconds",
+        "n_trials": len(target),
+        "n_features": int(x.shape[1]),
+        "cv_folds": folds,
+        "r2": float(r2_score(target, predictions)),
+        "mae_seconds": float(mean_absolute_error(target, predictions)),
+        "rmse_seconds": float(np.sqrt(mean_squared_error(target, predictions))),
+        "observed": target,
+        "predicted": predictions,
+        "residuals": target - predictions,
+        "feature_importance": np.asarray(importance),
+        "unit_ids": unit_ids,
+        "available_models": list(REGRESSION_MODELS),
+        "leakage_checks": [
+            "Scaler and estimator are fitted independently inside each fold",
+            "The continuous target is never used during feature construction",
+            "For multi-session data, replace KFold with grouped splitting",
+        ],
+    }
+    state.regression = result
+    state.log(
+        f"{model_name} completed: R2={result['r2']:.3f}, "
+        f"MAE={result['mae_seconds']:.3f} s"
     )
     return result

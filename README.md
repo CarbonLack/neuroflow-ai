@@ -1,4 +1,4 @@
-# NeuroFlow v0.2
+# NeuroFlow v0.3
 
 NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 它不重新实现成熟 sorter，而是把数据导入、质量控制、Kilosort4、Unit 质控、
@@ -10,14 +10,23 @@ NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电�
 
 1. 原始信号 RMS、坏通道、饱和与 50 Hz 检查；
 2. 300–6000 Hz 与 common median reference 预览；
-3. Kilosort4 spike sorting（检测到 CUDA 时使用 GPU）；
+3. Kilosort4、SpyKING CIRCUS 2、Tridesclous2、Simple 或 Lupin 实际 sorting；
 4. 与模拟 ground truth 的 spike 匹配和 F1 验证；
 5. Unit 放电率、ISI violation、波形、SNR；
 6. 事件对齐、Raster、PSTH 和群体热图；
-7. 配对 t、Wilcoxon、置换检验、bootstrap CI、效应量、FDR/Bonferroni；
-8. Logistic regression、linear SVM、random forest、交叉验证和置换零分布；
+7. 参数/非参数检验、置换、bootstrap、效应量、条件比较、混合模型与多重校正；
+8. 11 种分类器、5 种连续变量回归、交叉验证、置换、ROC/F1、特征重要性、K-means 与 GMM；
 9. IBL 风格时间分辨解码、心理测量曲线、反应时和群体 PCA 轨迹；
 10. 项目、参数、Methods、统计表与 provenance 导出。
+
+## 交互与语言
+
+- 图中数据元素可点击，显示图层、横纵坐标含义和精确值；
+- 双击任意坐标轴可修改标题、轴标签、范围与网格；
+- 内置缩放、平移、复位和图片保存工具栏；
+- 可切换突出数据点、阶梯线、灰度和高对比呈现；
+- 系统级中文/English 切换，语言选择写入项目；
+- 11 个工作流节点各自拥有“为什么做、输入、输出、必须检查、方法来源”教程。
 
 ## 数据入口
 
@@ -33,9 +42,15 @@ NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电�
 
 ## Sorter
 
-- **Kilosort4**：原生 NeuroFlow 适配器，当前完整 Demo 的默认 sorter；
-- **MountainSort5、SpyKING CIRCUS 2、Tridesclous 2**：通过 SpikeInterface
-  注册，只有依赖实际安装后才显示为“可运行”。
+- **Kilosort4**：原生 NeuroFlow 适配器，完整 Demo 的默认 sorter；
+- **SpyKING CIRCUS 2、Tridesclous2、Simple、Lupin**：SpikeInterface 原生
+  sorter，当前发行环境已完成实际运行验证；
+- **MountainSort5**：适配器和安装清单已集成。其 `isosplit6` 在
+  Windows/Python 3.12 下需要 Microsoft C++ Build Tools，未满足时会明确显示
+  “不可用”，不会误报或阻止程序启动。
+
+NeuroFlow 只逐项探测上述白名单 sorter，不再调用会枚举 HDSort、MATLAB 等所有
+后端的全局检测，因此无关后端的编码或编译错误不会导致主程序启动崩溃。
 
 ## 启动
 
@@ -78,7 +93,8 @@ python -m pytest -q
 ```
 
 测试覆盖模拟原始记录、质控、通用二进制、Kilosort 输出、IBL ALF、项目恢复、
-统计套件与机器学习解码。Kilosort GPU 的完整运行属于单独的集成验证。
+多统计视图、双语帮助、sorter 容错检测与机器学习解码。Kilosort4 GPU 和四个
+SpikeInterface 原生 sorter 的完整运行属于单独的集成验证。
 
 ## 数据与仓库原则
 

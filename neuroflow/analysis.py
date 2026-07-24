@@ -278,18 +278,19 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         "steps": [
             "raw_qc",
             "preprocessing_preview",
-            "kilosort4",
+            "spike_sorting",
             "unit_qc",
             "event_alignment",
             "behavior",
             "statistics",
             "decoding",
+            "regression",
             "figure_export",
         ],
         "parameters": {
             "bandpass_hz": [300, 6000],
             "reference": "common_median",
-            "sorter": state.metadata.get("sorter", "Kilosort4"),
+            "sorter": state.metadata.get("sorting", {}).get("sorter", "imported"),
             "event_window_seconds": list(state.analysis.get("window", (-0.5, 1.0))),
             "bin_size_seconds": state.analysis.get("bin_size", 0.025),
         },
@@ -319,6 +320,11 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
                 "population_trajectories",
             }
         },
+        "regression": {
+            key: _json_ready(value)
+            for key, value in state.regression.items()
+            if key not in {"observed", "predicted", "residuals"}
+        },
         "workflow_status": state.workflow_status,
         "software_versions": {},
         "run_log": state.run_log,
@@ -333,6 +339,8 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         "kilosort",
         "PySide6",
         "ONE-api",
+        "statsmodels",
+        "xgboost",
     ):
         try:
             provenance["software_versions"][package] = version(package)
@@ -341,9 +349,10 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
     (output_dir / "provenance.json").write_text(
         json.dumps(provenance, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    sorter_name = state.metadata.get("sorting", {}).get("sorter")
     sorting_sentence = (
-        "Spike sorting was performed with Kilosort4. "
-        if state.source_type in {"simulated", "binary", "read_intan", "read_openephys", "read_spikeglx"}
+        f"Spike sorting was performed with {sorter_name}. "
+        if sorter_name
         else "Previously processed spike-sorting results were imported with source provenance. "
     )
     methods = (
@@ -377,12 +386,21 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         )
     if state.trials:
         pd.DataFrame(state.trials).to_csv(tables_dir / "trials.csv", index=False)
+    if state.regression:
+        pd.DataFrame(
+            {
+                "observed": state.regression["observed"],
+                "predicted": state.regression["predicted"],
+                "residual": state.regression["residuals"],
+            }
+        ).to_csv(tables_dir / "regression_predictions.csv", index=False)
 
     from .figures import (
         behavior_figure,
         decoding_figure,
         event_analysis_figure,
         qc_figure,
+        regression_figure,
         statistics_figure,
         unit_metrics_figure,
     )
@@ -402,6 +420,8 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         figure_builders.append(("statistics", lambda: statistics_figure(state)))
     if state.decoding:
         figure_builders.append(("decoding", lambda: decoding_figure(state)))
+    if state.regression:
+        figure_builders.append(("regression", lambda: regression_figure(state)))
     figures_dir = output_dir / "figures"
     figures_dir.mkdir(exist_ok=True)
     for name, builder in figure_builders:

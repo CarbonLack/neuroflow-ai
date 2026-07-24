@@ -15,6 +15,11 @@ GOLD = "#c9972b"
 GRID = "#dfe5e2"
 PAPER = "#ffffff"
 
+
+def _text(state: ProjectState, chinese: str, english: str) -> str:
+    return english if state.metadata.get("language") == "en_US" else chinese
+
+
 def _configure_fonts() -> None:
     rcParams["font.sans-serif"] = [
         "Microsoft YaHei",
@@ -118,11 +123,35 @@ def behavior_figure(state: ProjectState) -> Figure:
         names, counts = np.unique(conditions, return_counts=True)
         axes[0, 0].bar(names, counts, color=[GREEN, CORAL, GOLD][: len(names)])
         axes[0, 0].set_title("Trial 条件分布", loc="left", fontsize=11, color=INK)
-        event_times = np.asarray([float(event["time_seconds"]) for event in state.events])
-        axes[0, 1].plot(np.arange(len(event_times)), event_times, "o-", color=GREEN)
-        axes[0, 1].set_title("事件时间与顺序", loc="left", fontsize=11, color=INK)
+        reaction_times = np.asarray(
+            [float(event.get("reaction_time", np.nan)) for event in state.events]
+        )
+        if np.isfinite(reaction_times).any():
+            for color, condition in zip((GREEN, CORAL, GOLD), names):
+                mask = np.asarray(conditions) == condition
+                axes[0, 1].scatter(
+                    np.flatnonzero(mask),
+                    reaction_times[mask],
+                    color=color,
+                    label=condition,
+                )
+            axes[0, 1].legend(frameon=False, fontsize=8)
+            axes[0, 1].set_title("Trial 反应时", loc="left", fontsize=11, color=INK)
+            axes[0, 1].set_ylabel("Reaction time (s)", color=MUTED)
+        else:
+            event_times = np.asarray(
+                [float(event["time_seconds"]) for event in state.events]
+            )
+            axes[0, 1].plot(
+                np.arange(len(event_times)),
+                event_times,
+                "o-",
+                color=GREEN,
+                label="Event time",
+            )
+            axes[0, 1].set_title("事件时间与顺序", loc="left", fontsize=11, color=INK)
+            axes[0, 1].set_ylabel("记录时间 (s)", color=MUTED)
         axes[0, 1].set_xlabel("Trial", color=MUTED)
-        axes[0, 1].set_ylabel("记录时间 (s)", color=MUTED)
     return fig
 
 
@@ -167,6 +196,7 @@ def preprocessing_figure(preview: dict[str, np.ndarray]) -> Figure:
 
 def sorting_figure(matches: list[dict], state: ProjectState) -> Figure:
     fig, axes = _base_figure(1, 2, 4.8)
+    sorter_name = state.metadata.get("sorting", {}).get("sorter", "Sorter")
     unit_ids = [item["sorted_unit"] for item in matches]
     f1 = [item["f1"] for item in matches]
     colors = [GREEN if score >= 0.7 else GOLD if score >= 0.4 else CORAL for score in f1]
@@ -174,15 +204,20 @@ def sorting_figure(matches: list[dict], state: ProjectState) -> Figure:
     axes[0, 0].set_ylim(0, 1.05)
     axes[0, 0].set_xticks(np.arange(len(unit_ids)))
     axes[0, 0].set_xticklabels(unit_ids, rotation=60)
-    axes[0, 0].set_title("Kilosort结果与ground truth最佳F1", loc="left", fontsize=11, color=INK)
-    axes[0, 0].set_xlabel("Kilosort Unit", color=MUTED)
+    axes[0, 0].set_title(
+        f"{sorter_name} vs ground truth · best F1",
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 0].set_xlabel(f"{sorter_name} Unit", color=MUTED)
     axes[0, 0].set_ylabel("F1", color=MUTED)
 
     truth_counts = [len(spikes) for spikes in state.ground_truth.values()]
     sorted_counts = [len(spikes) for spikes in state.sorted_spikes.values()]
     axes[0, 1].boxplot(
         [truth_counts, sorted_counts],
-        tick_labels=["Ground truth", "Kilosort4"],
+        tick_labels=["Ground truth", sorter_name],
         patch_artist=True,
         boxprops={"facecolor": "#dcece6", "edgecolor": GREEN},
         medianprops={"color": CORAL, "linewidth": 1.8},
@@ -274,11 +309,109 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     return fig
 
 
-def statistics_figure(state: ProjectState) -> Figure:
+def statistics_figure(state: ProjectState, view: str = "effects") -> Figure:
     fig, axes = _base_figure(1, 2, 4.8)
     rows = state.statistics.get("rows", [])
     if not rows:
-        axes[0, 0].text(0.5, 0.5, "尚未运行统计套件", ha="center", va="center")
+        axes[0, 0].text(
+            0.5,
+            0.5,
+            _text(state, "尚未运行统计套件", "Statistical suite has not run"),
+            ha="center",
+            va="center",
+        )
+        return fig
+    if view == "conditions":
+        welch = np.asarray([row["condition_welch_p"] for row in rows], dtype=float)
+        mannwhitney = np.asarray(
+            [row["condition_mannwhitney_p"] for row in rows], dtype=float
+        )
+        hedges = np.asarray([row["condition_hedges_g"] for row in rows], dtype=float)
+        valid = np.isfinite(welch) & np.isfinite(mannwhitney)
+        axes[0, 0].scatter(
+            -np.log10(np.maximum(welch[valid], 1e-12)),
+            -np.log10(np.maximum(mannwhitney[valid], 1e-12)),
+            c=GREEN,
+            s=38,
+            label="Unit condition tests",
+        )
+        threshold = -np.log10(0.05)
+        axes[0, 0].axvline(threshold, color=CORAL, linestyle="--")
+        axes[0, 0].axhline(threshold, color=CORAL, linestyle="--")
+        axes[0, 0].set_title(
+            _text(state, "Welch t 与 Mann–Whitney U", "Welch t vs Mann–Whitney U"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("-log10(Welch p)", color=MUTED)
+        axes[0, 0].set_ylabel("-log10(Mann–Whitney p)", color=MUTED)
+        valid_effect = np.isfinite(hedges)
+        axes[0, 1].bar(
+            np.arange(np.count_nonzero(valid_effect)),
+            hedges[valid_effect],
+            color=np.where(hedges[valid_effect] >= 0, GREEN, CORAL),
+            label="Hedges g",
+        )
+        axes[0, 1].axhline(0, color=INK, linewidth=0.8)
+        axes[0, 1].set_title(
+            _text(state, "条件差异 Hedges g", "Condition effect: Hedges g"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel("Unit", color=MUTED)
+        axes[0, 1].set_ylabel("Hedges g", color=MUTED)
+        return fig
+    if view == "diagnostics":
+        shapiro = np.asarray([row["shapiro_p"] for row in rows], dtype=float)
+        spearman = np.asarray([row["spearman_trial_r"] for row in rows], dtype=float)
+        axes[0, 0].scatter(
+            spearman,
+            shapiro,
+            c=np.where(shapiro < 0.05, CORAL, GREEN),
+            s=38,
+            label="Unit diagnostic",
+        )
+        axes[0, 0].axhline(0.05, color=CORAL, linestyle="--")
+        axes[0, 0].set_title(
+            _text(
+                state,
+                "正态性与 trial 顺序相关",
+                "Normality and trial-order correlation",
+            ),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("Spearman r", color=MUTED)
+        axes[0, 0].set_ylabel("Shapiro–Wilk p", color=MUTED)
+        mixed = state.statistics.get("mixed_effects", {})
+        axes[0, 1].axis("off")
+        if mixed.get("available"):
+            mixed_text = (
+                f"Mixed-effects model\n\n"
+                f"{mixed['formula']}\n\n"
+                f"coefficient = {mixed['coefficient']:.4g}\n"
+                f"p = {mixed['p_value']:.4g}\n"
+                f"observations = {mixed['n_observations']}\n"
+                f"units/groups = {mixed['groups']}\n"
+                f"converged = {mixed['converged']}"
+            )
+        else:
+            mixed_text = (
+                "混合效应模型不可用\n\n" if state.metadata.get("language") != "en_US"
+                else "Mixed-effects model unavailable\n\n"
+            ) + mixed.get("error", "Two usable conditions are required.")
+        axes[0, 1].text(
+            0.03,
+            0.95,
+            mixed_text,
+            ha="left",
+            va="top",
+            color=INK,
+            fontsize=9,
+        )
         return fig
     effects = np.asarray([row["effect_hz"] for row in rows])
     lows = np.asarray([row["ci95_low_hz"] for row in rows])
@@ -295,14 +428,22 @@ def statistics_figure(state: ProjectState) -> Figure:
         capsize=2,
         linewidth=0.8,
     )
-    axes[0, 0].scatter(x, effects, c=colors, s=35)
+    axes[0, 0].scatter(
+        x, effects, c=colors, s=35, label="Effect and bootstrap CI"
+    )
     axes[0, 0].axhline(0, color=INK, linewidth=0.8)
     axes[0, 0].set_title("效应量与 bootstrap 95% CI", loc="left", fontsize=11, color=INK)
     axes[0, 0].set_xlabel("Unit", color=MUTED)
     axes[0, 0].set_ylabel("刺激后变化 (Hz)", color=MUTED)
     p = np.asarray([max(row["permutation_p"], 1e-12) for row in rows])
     q = np.asarray([max(row["fdr_q"], 1e-12) for row in rows])
-    axes[0, 1].scatter(-np.log10(p), -np.log10(q), c=colors, s=35)
+    axes[0, 1].scatter(
+        -np.log10(p),
+        -np.log10(q),
+        c=colors,
+        s=35,
+        label="Raw p and FDR q",
+    )
     axes[0, 1].axhline(-np.log10(0.05), color=CORAL, linestyle="--")
     axes[0, 1].set_title("置换检验与 FDR 校正", loc="left", fontsize=11, color=INK)
     axes[0, 1].set_xlabel("-log10(raw p)", color=MUTED)
@@ -311,10 +452,16 @@ def statistics_figure(state: ProjectState) -> Figure:
 
 
 def decoding_figure(state: ProjectState) -> Figure:
-    fig, axes = _base_figure(2, 2, 6.5)
+    fig, axes = _base_figure(2, 3, 6.8)
     result = state.decoding
     if not result:
-        axes[0, 0].text(0.5, 0.5, "尚未运行解码", ha="center", va="center")
+        axes[0, 0].text(
+            0.5,
+            0.5,
+            _text(state, "尚未运行解码", "Decoding has not run"),
+            ha="center",
+            va="center",
+        )
         return fig
     matrix = np.asarray(result["confusion_matrix"])
     image = axes[0, 0].imshow(matrix, cmap="Greens")
@@ -332,9 +479,33 @@ def decoding_figure(state: ProjectState) -> Figure:
         f"置换检验 p={result['permutation_p']:.4f}", loc="left", fontsize=11, color=INK
     )
     axes[0, 1].set_xlabel("Balanced accuracy", color=MUTED)
+    roc = result["roc_curve"]
+    axes[0, 2].plot(
+        roc["fpr"],
+        roc["tpr"],
+        color=GREEN,
+        linewidth=1.8,
+        label=f"ROC AUC={result['roc_auc']:.3f}",
+    )
+    axes[0, 2].plot([0, 1], [0, 1], linestyle="--", color=MUTED)
+    axes[0, 2].legend(frameon=False, fontsize=8)
+    axes[0, 2].set_title(
+        f"ROC · F1={result['f1']:.3f}",
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 2].set_xlabel("False positive rate", color=MUTED)
+    axes[0, 2].set_ylabel("True positive rate", color=MUTED)
     centers = np.asarray(result["bin_centers"])
     scores = np.asarray(result["time_resolved_accuracy"])
-    axes[1, 0].plot(centers, scores, color=GREEN, linewidth=1.8)
+    axes[1, 0].plot(
+        centers,
+        scores,
+        color=GREEN,
+        linewidth=1.8,
+        label="Time-resolved balanced accuracy",
+    )
     axes[1, 0].axhline(0.5, color=MUTED, linestyle="--", linewidth=1)
     axes[1, 0].axvline(0, color=CORAL, linewidth=1)
     axes[1, 0].set_ylim(0.25, 1.02)
@@ -370,4 +541,102 @@ def decoding_figure(state: ProjectState) -> Figure:
     )
     axes[1, 1].set_xlabel("PC1", color=MUTED)
     axes[1, 1].set_ylabel("PC2", color=MUTED)
+    importance = np.asarray(result["feature_importance"])
+    order = np.argsort(importance)[::-1][: min(15, len(importance))]
+    axes[1, 2].bar(
+        np.arange(len(order)),
+        importance[order],
+        color=GOLD,
+        label="Feature importance",
+    )
+    axes[1, 2].set_xticks(
+        np.arange(len(order)),
+        [str(result["unit_ids"][index]) for index in order],
+        rotation=60,
+    )
+    cluster = result["cluster_results"]
+    axes[1, 2].set_title(
+        "Feature importance\n"
+        f"K-means ARI={cluster['kmeans_adjusted_rand']:.2f} · "
+        f"GMM ARI={cluster['gmm_adjusted_rand']:.2f}",
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[1, 2].set_xlabel("Unit", color=MUTED)
+    axes[1, 2].set_ylabel("Importance", color=MUTED)
+    return fig
+
+
+def regression_figure(state: ProjectState) -> Figure:
+    fig, axes = _base_figure(1, 3, 4.8)
+    result = state.regression
+    if not result:
+        axes[0, 0].text(
+            0.5,
+            0.5,
+            _text(state, "尚未运行回归", "Regression has not run"),
+            ha="center",
+            va="center",
+        )
+        return fig
+    observed = np.asarray(result["observed"])
+    predicted = np.asarray(result["predicted"])
+    residuals = np.asarray(result["residuals"])
+    lower = float(min(observed.min(), predicted.min()))
+    upper = float(max(observed.max(), predicted.max()))
+    axes[0, 0].scatter(
+        observed,
+        predicted,
+        color=GREEN,
+        s=38,
+        label="Observed vs predicted",
+    )
+    axes[0, 0].plot([lower, upper], [lower, upper], "--", color=MUTED)
+    axes[0, 0].set_title(
+        f"{result['model']} · CV R²={result['r2']:.3f}",
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 0].set_xlabel("Observed reaction time (s)", color=MUTED)
+    axes[0, 0].set_ylabel("Predicted reaction time (s)", color=MUTED)
+    axes[0, 1].scatter(
+        predicted,
+        residuals,
+        color=CORAL,
+        s=38,
+        label="Regression residual",
+    )
+    axes[0, 1].axhline(0, color=INK, linewidth=0.8)
+    axes[0, 1].set_title(
+        f"Residuals · MAE={result['mae_seconds']:.3f}s · "
+        f"RMSE={result['rmse_seconds']:.3f}s",
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 1].set_xlabel("Predicted reaction time (s)", color=MUTED)
+    axes[0, 1].set_ylabel("Residual (s)", color=MUTED)
+    importance = np.asarray(result["feature_importance"])
+    order = np.argsort(importance)[::-1][: min(15, len(importance))]
+    axes[0, 2].bar(
+        np.arange(len(order)),
+        importance[order],
+        color=GOLD,
+        label="Regression feature importance",
+    )
+    axes[0, 2].set_xticks(
+        np.arange(len(order)),
+        [str(result["unit_ids"][index]) for index in order],
+        rotation=60,
+    )
+    axes[0, 2].set_title(
+        _text(state, "连续变量特征重要性", "Continuous-target feature importance"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 2].set_xlabel("Unit", color=MUTED)
+    axes[0, 2].set_ylabel("Importance", color=MUTED)
     return fig

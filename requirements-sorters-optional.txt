@@ -1,0 +1,3 @@
+# Optional external sorter. On Windows/Python 3.12, isosplit6 currently builds
+# from source and requires Microsoft Visual C++ Build Tools 14 or newer.
+mountainsort5==0.5.9

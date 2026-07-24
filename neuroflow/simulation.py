@@ -62,6 +62,13 @@ def generate_demo_recording(
                 "trial": index + 1,
                 "time_seconds": float(event_time),
                 "condition": "A" if index % 2 == 0 else "B",
+                "reaction_time": float(
+                    np.clip(
+                        rng.normal(0.42 if index % 2 == 0 else 0.58, 0.07),
+                        0.15,
+                        1.2,
+                    )
+                ),
             }
         )
 
@@ -136,7 +143,10 @@ def generate_demo_recording(
     raw.astype(np.int16).tofile(recording_path)
 
     with events_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["trial", "time_seconds", "condition"])
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["trial", "time_seconds", "condition", "reaction_time"],
+        )
         writer.writeheader()
         writer.writerows(events)
 
@@ -200,6 +210,8 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
     for event in events:
         event["trial"] = int(event["trial"])
         event["time_seconds"] = float(event["time_seconds"])
+        if "reaction_time" in event:
+            event["reaction_time"] = float(event["reaction_time"])
     truth_archive = np.load(truth_path)
     ground_truth = {
         int(key.split("_")[-1]): truth_archive[key] for key in truth_archive.files

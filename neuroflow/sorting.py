@@ -1,13 +1,73 @@
 from __future__ import annotations
 
+import importlib.metadata
 import inspect
 import json
 from collections.abc import Callable
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 
 from .models import ProjectState
+
+SORTER_DEFINITIONS = (
+    {
+        "key": "kilosort4",
+        "name": "Kilosort4",
+        "hardware": "NVIDIA GPU recommended",
+        "best_for": "High-density silicon probes / Neuropixels",
+        "backend": "Native NeuroFlow adapter",
+        "package": "kilosort",
+    },
+    {
+        "key": "mountainsort5",
+        "name": "MountainSort5",
+        "hardware": "CPU",
+        "best_for": "Tetrodes and low-to-medium channel-count recordings",
+        "backend": "SpikeInterface",
+        "package": "mountainsort5",
+    },
+    {
+        "key": "spykingcircus2",
+        "name": "SpyKING CIRCUS 2",
+        "hardware": "CPU; GPU is optional",
+        "best_for": "General multichannel extracellular recordings",
+        "backend": "SpikeInterface internal sorter",
+        "package": "spikeinterface",
+    },
+    {
+        "key": "tridesclous2",
+        "name": "Tridesclous 2",
+        "hardware": "CPU",
+        "best_for": "Low-to-medium channel-count recordings",
+        "backend": "SpikeInterface internal sorter",
+        "package": "spikeinterface",
+    },
+    {
+        "key": "simple",
+        "name": "SpikeInterface Simple",
+        "hardware": "CPU",
+        "best_for": "Fast teaching, preview, and pipeline checks",
+        "backend": "SpikeInterface internal sorter",
+        "package": "spikeinterface",
+    },
+    {
+        "key": "lupin",
+        "name": "Lupin",
+        "hardware": "CPU",
+        "best_for": "SpikeInterface-native experimental comparison",
+        "backend": "SpikeInterface internal sorter",
+        "package": "spikeinterface",
+    },
+)
+
+
+def _package_version(package: str) -> str | None:
+    try:
+        return importlib.metadata.version(package)
+    except importlib.metadata.PackageNotFoundError:
+        return None
 
 
 def kilosort_environment() -> dict:
@@ -30,63 +90,87 @@ def kilosort_environment() -> dict:
             result["device_name"] = torch.cuda.get_device_name(0)
             props = torch.cuda.get_device_properties(0)
             result["gpu_memory_gb"] = props.total_memory / 1024**3
-    except (ImportError, RuntimeError):
-        result["torch_error"] = "PyTorch/CUDA unavailable"
+    except Exception as exc:  # noqa: BLE001 - environment probes must never crash the UI
+        result["torch_error"] = f"{type(exc).__name__}: {exc}"
     try:
         import kilosort
 
         result["kilosort_available"] = True
         result["kilosort_version"] = getattr(kilosort, "__version__", "unknown")
-    except ImportError:
-        result["kilosort_error"] = "Kilosort4 unavailable"
+    except Exception as exc:  # noqa: BLE001 - optional backend
+        result["kilosort_error"] = f"{type(exc).__name__}: {exc}"
     return result
 
 
-def sorter_catalog() -> list[dict]:
-    """Return executable capability, not a marketing-only sorter list."""
-    installed: set[str] = set()
+def _spikeinterface_sorter_status(sorter_name: str) -> tuple[bool, str | None]:
+    """Probe one allow-listed sorter without enumerating unrelated backends.
+
+    SpikeInterface ``installed_sorters()`` checks every registered external sorter.
+    On Windows, one of those checks can emit a non-UTF-8 subprocess stream.  A
+    failure in HDSort or a MATLAB wrapper must not prevent NeuroFlow from opening.
+    """
     try:
         import spikeinterface.sorters as ss
 
-        installed = set(ss.installed_sorters())
-    except (ImportError, RuntimeError):
-        installed = set()
+        sorter_class = ss.sorter_dict.get(sorter_name)
+        if sorter_class is None:
+            return False, "Sorter is not registered by this SpikeInterface version"
+        return bool(sorter_class.is_installed()), None
+    except Exception as exc:  # noqa: BLE001 - isolate every optional backend probe
+        return False, f"{type(exc).__name__}: {exc}"
+
+
+@lru_cache(maxsize=1)
+def sorter_catalog() -> list[dict]:
+    """Return the status of NeuroFlow's explicitly supported sorters."""
     ks_env = kilosort_environment()
-    definitions = [
-        {
-            "key": "kilosort4",
-            "name": "Kilosort4",
-            "hardware": "NVIDIA GPU recommended",
-            "best_for": "高密度 silicon probe / Neuropixels",
-            "installed": bool(ks_env["kilosort_available"]),
-            "backend": "native NeuroFlow adapter",
-        },
-        {
-            "key": "mountainsort5",
-            "name": "MountainSort5",
-            "hardware": "CPU",
-            "best_for": "tetrode 与中等通道记录",
-            "installed": "mountainsort5" in installed,
-            "backend": "SpikeInterface",
-        },
-        {
-            "key": "spykingcircus2",
-            "name": "SpyKING CIRCUS 2",
-            "hardware": "CPU / GPU depending on setup",
-            "best_for": "通用多通道记录",
-            "installed": "spykingcircus2" in installed,
-            "backend": "SpikeInterface",
-        },
-        {
-            "key": "tridesclous2",
-            "name": "Tridesclous 2",
-            "hardware": "CPU",
-            "best_for": "低至中等通道记录",
-            "installed": "tridesclous2" in installed,
-            "backend": "SpikeInterface",
-        },
-    ]
-    return definitions
+    catalog = []
+    for definition in SORTER_DEFINITIONS:
+        item = dict(definition)
+        if item["key"] == "kilosort4":
+            installed = bool(ks_env["kilosort_available"])
+            error = ks_env.get("kilosort_error")
+            version = ks_env.get("kilosort_version")
+        else:
+            installed, error = _spikeinterface_sorter_status(item["key"])
+            version = _package_version(item["package"])
+        item.update(
+            {
+                "installed": installed,
+                "version": version or "not installed",
+                "error": error,
+            }
+        )
+        catalog.append(item)
+    return catalog
+
+
+def refresh_sorter_catalog() -> list[dict]:
+    sorter_catalog.cache_clear()
+    return sorter_catalog()
+
+
+def _channel_locations(channel_count: int) -> np.ndarray:
+    rows = np.arange(channel_count)
+    return np.column_stack(((rows % 2) * 20.0, (rows // 2) * 20.0))
+
+
+def _attach_probe(recording):
+    locations = _channel_locations(recording.get_num_channels())
+    try:
+        from probeinterface import Probe
+
+        probe = Probe(ndim=2, si_units="um")
+        probe.set_contacts(
+            positions=locations,
+            shapes="circle",
+            shape_params={"radius": 6},
+        )
+        probe.set_device_channel_indices(np.arange(recording.get_num_channels()))
+        return recording.set_probe(probe, in_place=False)
+    except Exception:  # noqa: BLE001 - location fallback supports older versions
+        recording.set_channel_locations(locations)
+        return recording
 
 
 def run_sorter(
@@ -97,17 +181,19 @@ def run_sorter(
 ) -> dict[int, np.ndarray]:
     if sorter_name == "kilosort4":
         return run_kilosort4(state, results_dir, progress)
-    available = {item["key"]: item for item in sorter_catalog()}
+    available = {item["key"]: item for item in refresh_sorter_catalog()}
     item = available.get(sorter_name)
     if item is None:
-        raise ValueError(f"未知 sorter：{sorter_name}")
+        raise ValueError(f"Unknown sorter: {sorter_name}")
     if not item["installed"]:
+        detail = f" ({item['error']})" if item.get("error") else ""
         raise RuntimeError(
-            f"{item['name']} 适配器已经注册，但依赖尚未安装；"
-            "NeuroFlow 不会把未验证的 sorter 标记为可运行。"
+            f"{item['name']} is integrated but is not available in this environment"
+            f"{detail}. Open the sorter manager to inspect installation status."
         )
     if not state.ready:
-        raise RuntimeError("该 sorter 需要原始电压记录")
+        raise RuntimeError("This sorter requires a raw voltage recording")
+
     import spikeinterface as si
     import spikeinterface.sorters as ss
 
@@ -116,31 +202,41 @@ def run_sorter(
         sampling_frequency=state.sampling_rate,
         num_channels=state.channel_count,
         dtype=state.dtype,
+        gain_to_uV=state.scale_uv_per_bit,
     )
+    recording = _attach_probe(recording)
     if progress:
-        progress(f"{item['name']} 通过 SpikeInterface 开始运行")
+        progress(f"{item['name']} is running through SpikeInterface")
     sorting = ss.run_sorter(
-        sorter_name,
-        recording,
+        sorter_name=sorter_name,
+        recording=recording,
         folder=results_dir,
         remove_existing_folder=True,
         verbose=True,
     )
     sorted_spikes = {
-        int(unit): sorting.get_unit_spike_train(unit).astype(float) / state.sampling_rate
+        int(unit): sorting.get_unit_spike_train(unit).astype(float)
+        / state.sampling_rate
         for unit in sorting.unit_ids
     }
     state.sorted_spikes = sorted_spikes
-    state.log(f"{item['name']} 完成：{len(sorted_spikes)} 个 unit")
+    state.metadata["sorting"] = {
+        "sorter": item["name"],
+        "sorter_key": sorter_name,
+        "version": item["version"],
+        "backend": item["backend"],
+        "result_directory": str(results_dir),
+    }
+    state.log(f"{item['name']} completed: {len(sorted_spikes)} units")
     return sorted_spikes
 
 
 def _probe(channel_count: int) -> dict[str, np.ndarray | int]:
-    rows = np.arange(channel_count)
+    locations = _channel_locations(channel_count)
     return {
         "chanMap": np.arange(channel_count, dtype=np.int32),
-        "xc": ((rows % 2) * 20).astype(np.float32),
-        "yc": ((rows // 2) * 20).astype(np.float32),
+        "xc": locations[:, 0].astype(np.float32),
+        "yc": locations[:, 1].astype(np.float32),
         "kcoords": np.zeros(channel_count, dtype=np.float32),
         "n_chan": channel_count,
     }
@@ -152,10 +248,10 @@ def run_kilosort4(
     progress: Callable[[str], None] | None = None,
 ) -> dict[int, np.ndarray]:
     if not state.ready:
-        raise RuntimeError("尚未准备原始记录")
+        raise RuntimeError("Raw recording is not available")
     env = kilosort_environment()
     if not env["kilosort_available"]:
-        raise RuntimeError("当前分析环境尚未安装Kilosort4")
+        raise RuntimeError("Kilosort4 is not installed in this analysis environment")
 
     import torch
     from kilosort import run_kilosort
@@ -163,7 +259,7 @@ def run_kilosort4(
     results_dir.mkdir(parents=True, exist_ok=True)
     if progress:
         progress(
-            f"Kilosort4 {env['kilosort_version']}，设备：{env['device_name']}，开始sorting"
+            f"Kilosort4 {env['kilosort_version']} on {env['device_name']} is running"
         )
 
     settings = {
@@ -180,7 +276,7 @@ def run_kilosort4(
         "probe": _probe(state.channel_count),
         "filename": state.recording_path,
         "results_dir": results_dir,
-        "data_dtype": "int16",
+        "data_dtype": state.dtype,
         "do_CAR": True,
         "invert_sign": False,
         "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
@@ -195,7 +291,9 @@ def run_kilosort4(
     if not spike_times_path.exists():
         candidates = list(results_dir.rglob("spike_times.npy"))
         if not candidates:
-            raise RuntimeError("Kilosort运行结束，但未找到spike_times.npy")
+            raise RuntimeError(
+                "Kilosort finished, but spike_times.npy was not generated"
+            )
         spike_times_path = candidates[0]
         spike_clusters_path = spike_times_path.with_name("spike_clusters.npy")
     sample_indices = np.load(spike_times_path).reshape(-1)
@@ -206,9 +304,17 @@ def run_kilosort4(
         for unit_id in np.unique(cluster_ids)
     }
     state.sorted_spikes = sorted_spikes
+    state.metadata["sorting"] = {
+        "sorter": "Kilosort4",
+        "sorter_key": "kilosort4",
+        "version": env["kilosort_version"],
+        "device": env["device_name"],
+        "settings": settings,
+        "result_directory": str(results_dir),
+    }
     state.log(
-        f"Kilosort4完成：检出{len(sorted_spikes)}个Unit，"
-        f"{sum(len(v) for v in sorted_spikes.values())}个spike"
+        f"Kilosort4 completed: {len(sorted_spikes)} units, "
+        f"{sum(len(value) for value in sorted_spikes.values())} spikes"
     )
     (results_dir / "neuroflow_sorting_summary.json").write_text(
         json.dumps(
@@ -216,7 +322,7 @@ def run_kilosort4(
                 "environment": env,
                 "settings": settings,
                 "unit_count": len(sorted_spikes),
-                "spike_count": int(sum(len(v) for v in sorted_spikes.values())),
+                "spike_count": int(sum(len(value) for value in sorted_spikes.values())),
             },
             ensure_ascii=False,
             indent=2,
@@ -224,5 +330,5 @@ def run_kilosort4(
         encoding="utf-8",
     )
     if progress:
-        progress(f"sorting完成：{len(sorted_spikes)}个Unit")
+        progress(f"Sorting completed: {len(sorted_spikes)} units")
     return sorted_spikes
