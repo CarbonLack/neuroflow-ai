@@ -164,13 +164,23 @@ def refresh_sorter_catalog() -> list[dict]:
     return sorter_catalog()
 
 
-def _channel_locations(channel_count: int) -> np.ndarray:
+def _channel_locations(
+    channel_count: int,
+    stored_locations: list | np.ndarray | None = None,
+) -> np.ndarray:
+    if stored_locations is not None:
+        locations = np.asarray(stored_locations, dtype=float)
+        if locations.shape == (channel_count, 2) and np.all(np.isfinite(locations)):
+            return locations
     rows = np.arange(channel_count)
     return np.column_stack(((rows % 2) * 20.0, (rows // 2) * 20.0))
 
 
-def _attach_probe(recording):
-    locations = _channel_locations(recording.get_num_channels())
+def _attach_probe(recording, state: ProjectState):
+    locations = _channel_locations(
+        recording.get_num_channels(),
+        state.metadata.get("contact_positions_um"),
+    )
     try:
         from probeinterface import Probe
 
@@ -219,7 +229,7 @@ def run_sorter(
         dtype=state.dtype,
         gain_to_uV=state.scale_uv_per_bit,
     )
-    recording = _attach_probe(recording)
+    recording = _attach_probe(recording, state)
     if progress:
         progress(f"{item['name']} is running through SpikeInterface")
     sorter_settings = dict(settings or {})
@@ -277,8 +287,12 @@ def run_sorter(
     return sorted_spikes
 
 
-def _probe(channel_count: int) -> dict[str, np.ndarray | int]:
-    locations = _channel_locations(channel_count)
+def _probe(state: ProjectState) -> dict[str, np.ndarray | int]:
+    channel_count = state.channel_count
+    locations = _channel_locations(
+        channel_count,
+        state.metadata.get("contact_positions_um"),
+    )
     return {
         "chanMap": np.arange(channel_count, dtype=np.int32),
         "xc": locations[:, 0].astype(np.float32),
@@ -325,7 +339,7 @@ def run_kilosort4(
     settings["fs"] = state.sampling_rate
     kwargs = {
         "settings": settings,
-        "probe": _probe(state.channel_count),
+        "probe": _probe(state),
         "filename": state.recording_path,
         "results_dir": results_dir,
         "data_dtype": state.dtype,

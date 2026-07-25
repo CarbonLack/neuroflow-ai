@@ -22,8 +22,10 @@
         <a href="sources.html">Sources / 来源</a>
         <div class="sidebar-label">On this page</div>
         <a href="#stages">11 stages</a>
+        <a href="#manual">Stage manual</a>
         <a href="#inputs">Data inputs</a>
         <a href="#sorting">Sorting</a>
+        <a href="#synchronization">Synchronization</a>
       </aside>
       <main class="content">
         <div class="page-intro" data-searchable>
@@ -52,12 +54,65 @@
           </div>
         </section>
 
+        <section id="manual">
+          <h2 data-lang="zh">逐阶段操作手册</h2><h2 data-lang="en">Stage-by-stage operating manual</h2>
+          <p data-lang="zh">每一项都说明为什么运行、需要什么输入、参数改变会造成什么后果，以及完成后应检查哪些证据。下拉菜单中的每个子分析可以单独运行；共享前提只计算一次并保存在项目中。</p>
+          <p data-lang="en">Each stage states why it is run, which inputs it needs, how parameters change the result, and which evidence must be checked. Every analysis listed in a stage menu can run independently; shared prerequisites are cached once in the project.</p>
+
+          <article class="guide-stage" id="stage01" data-searchable>
+            <h3>01 · Data and project / 数据与项目</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Prevent a wrong sampling rate, channel count, dtype, scale, or stream from corrupting every downstream time and voltage value.</dd><dt>Inputs / 输入</dt><dd>Read-only acquisition source, probe/electrode description, sample rate, channel order, voltage scale, behavior log, and optional TTL file.</dd><dt>Run / 运行</dt><dd>Select the adapter for generic binary, Intan, Open Ephys, SpikeGLX/Neuropixels, Blackrock, Plexon, TDT, NWB, IBL ALF, or Kilosort/Phy. Inspect the first trace window immediately.</dd><dt>Evidence / 证据</dt><dd>Project manifest, exact source path, file-size divisibility, duration, channel inventory, unit conversion, and import log.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage02" data-searchable>
+            <h3>02 · Raw QC / 原始质控</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Find broadband noise, clipping, line-frequency contamination, discontinuities, and channels that could corrupt referencing or sorting.</dd><dt>Sub-analyses / 子分析</dt><dd>Zoomable raw traces; channel RMS and labels; channel × frequency power; time-resolved RMS/clipping timeline.</dd><dt>Parameters / 参数</dt><dd>Time start, visible window, first channel, channel count, and display gain affect viewing only. QC preview duration changes the amount of data sampled, not the original file.</dd><dt>Decision / 决策</dt><dd>A flagged channel is a candidate. Confirm it in traces and spectra before exclusion; preserve the manual decision.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage03" data-searchable>
+            <h3>03 · Preprocessing / 预处理</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Create separate AP/sorting and LFP branches without treating preprocessing as one fixed recipe.</dd><dt>AP branch</dt><dd>Preview high-pass/band-pass and referencing on the same segment. Confirm edge effects, polarity, artifacts, and whether the selected sorter already filters or whitens internally.</dd><dt>LFP branch</dt><dd>Low-pass before downsampling, preserve physical units, inspect line noise and transient artifacts, and record the new sampling rate.</dd><dt>Safety / 安全</dt><dd>The preview never overwrites raw data. Avoid applying whitening twice and confirm bad channels before common reference.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage04" data-searchable>
+            <h3>04 · Spike sorting</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Assign detected extracellular events to candidate units while retaining each algorithm's native evidence.</dd><dt>Selection / 选择</dt><dd>Kilosort4 targets dense probes and uses a GPU template-matching pipeline. MountainSort5 supplies CPU Schemes 1/2/3. SpyKING CIRCUS 2, Tridesclous 2, Simple, and Lupin run through their registered SpikeInterface implementations.</dd><dt>Parameters / 参数</dt><dd>For Kilosort, <code>batch_size</code> controls samples per batch, <code>nblocks</code> controls spatial divisions used in drift correction, and detection thresholds trade sensitivity against noise. For MS5, scheme, detection threshold, and training duration alter the CPU workflow.</dd><dt>Outputs / 输出</dt><dd>Native result folder, full run log, exact version and settings, plus NeuroFlow's stable Unit → spike-times-in-seconds schema. Kilosort-only drift/template/file views are never shown for another sorter.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage05" data-searchable>
+            <h3>05 · Unit QC / Unit 质控</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Separate candidate single units, multi-unit activity, duplicates, unstable clusters, and noise using multiple lines of evidence.</dd><dt>Per-unit views / 单元视图</dt><dd>Waveform and peak channel, autocorrelogram, ISI distribution, firing rate, SNR, amplitude, and stability over recording time.</dd><dt>Dependencies / 前提</dt><dd>Some metrics require waveforms, templates, amplitudes, spike locations, noise levels, or principal components. A missing prerequisite is reported rather than silently replaced.</dd><dt>Decision / 决策</dt><dd>No one metric certifies a neuron. Thresholds, manual labels, and reasons for exclusions remain in the audit trail.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage06" data-searchable>
+            <h3>06 · Synchronization / 事件同步</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Map behavior-device time to electrophysiology time before asking whether neural activity leads or follows an event.</dd><dt>Inputs / 输入</dt><dd>Behavior CSV with trial and behavior timestamp; optional TTL CSV with matching pulse times recorded by the ephys system. Seconds, milliseconds, and sample indices are accepted explicitly.</dd><dt>Method / 方法</dt><dd>Pair rows in order, fit <code>ephys_time = offset + slope × behavior_time</code>, then create a unified trial table. No TTL file means the clocks are declared shared, not inferred.</dd><dt>Evidence / 证据</dt><dd>Event counts, matched pairs, missing pulses, offset, drift in ppm, residual-vs-trial plot, mean and maximum absolute residual.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage07" data-searchable>
+            <h3>07 · Behavior / 行为分析</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Check whether trial counts, balance, performance, missing values, or reaction times can explain apparent neural differences.</dd><dt>Inputs / 输入</dt><dd>The synchronized trial table: condition, event type, choice/outcome, reaction time, stimulus variables, and exclusion flags.</dd><dt>Sub-analyses / 子分析</dt><dd>Condition counts, reaction-time distributions, psychometric curves when stimulus and choice fields exist, and explicit valid/excluded trial counts.</dd><dt>Decision / 决策</dt><dd>Inspect the number of trials behind each point. Behavior QC is completed before neural decoding.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage08" data-searchable>
+            <h3>08 · Neural workbench / 神经活动</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Keep event responses, spike-train statistics, LFP analysis, and spike-field coupling as separate objects with explicit assumptions.</dd><dt>Independent runs / 独立运行</dt><dd>One Unit raster/PSTH; Elephant firing/ISI/Fano/CCH; correlation, STTC and spike-train distances; LFP PSD/band power; coherence/phase lag; spectrogram; spike-field phase locking; respiration method-validation case.</dd><dt>Parameters / 参数</dt><dd>Alignment window, bin width, smoothing, frequency band, segment length, phase reference, and surrogate count alter different scientific questions and are stored per result.</dd><dt>Interpretation / 解释</dt><dd>Raster preserves trial variability; PSTH averages it. Spectral power, coherence, and phase locking are not interchangeable evidence.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage09" data-searchable>
+            <h3>09 · Statistics / 统计</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Define the sampling unit and repeated-measures structure before selecting a test.</dd><dt>Integrated methods / 方法</dt><dd>Paired t/Wilcoxon/permutation, Welch/Mann–Whitney, ANOVA/Kruskal–Wallis, Shapiro and Levene diagnostics, Pearson/Spearman, bootstrap CI, effect sizes, mixed-effects model, circular surrogate tests, FDR/Holm/Bonferroni.</dd><dt>Independent views / 独立视图</dt><dd>Effect and multiplicity; condition comparisons; distribution/correlation/mixed-model diagnostics; phase-locking surrogate; sampling hierarchy and decision record.</dd><dt>Warning / 警告</dt><dd>Units nested in sessions and animals are not automatically independent replicates.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage10" data-searchable>
+            <h3>10 · Machine learning / 机器学习</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Test whether trial-level neural features predict a label or continuous target without leaking information between train and test data.</dd><dt>Methods / 方法</dt><dd>Classification and regression model catalog, stratified/grouped cross-validation, permutation baseline, ROC/F1/confusion or R²/MAE, feature importance, PCA, clustering, and time-resolved decoding.</dd><dt>Parameters / 参数</dt><dd>Feature window, grouping variable, fold count, class balancing, random seed, and model hyperparameters are saved. Preprocessing is fit inside training folds.</dd><dt>Interpretation / 解释</dt><dd>Prediction above chance does not by itself prove a brain area encodes an abstract concept.</dd></dl>
+          </article>
+          <article class="guide-stage" id="stage11" data-searchable>
+            <h3>11 · Publication and reproduction / 论文与复现</h3>
+            <dl><dt>Purpose / 目的</dt><dd>Keep every figure connected to its data, parameters, statistical table, software environment, and manual choices.</dd><dt>Figure controls / 图形控制</dt><dd>Click marks for values, toolbar zoom/pan, double-click an axis to edit labels and limits, select one subplot to enlarge/edit/export, and switch presentation style without changing source data.</dd><dt>Exports / 导出</dt><dd>Editable SVG/PDF, 300 dpi PNG, CSV tables, workflow JSON, provenance, environment versions, run logs, and a Methods draft.</dd><dt>Check / 检查</dt><dd>Verify units, error-bar definitions, color accessibility, statistical annotation sources, and whether each result has actually run.</dd></dl>
+          </article>
+        </section>
+
         <section id="inputs" data-searchable>
           <h2 data-lang="zh">数据入口</h2><h2 data-lang="en">Data inputs</h2>
           <table>
             <thead><tr><th>Input</th><th>Raw voltage</th><th>Typical use</th><th>Validation</th></tr></thead>
             <tbody>
-              <tr><td>NeuroFlow simulation</td><td>Yes</td><td>Full workflow and sorter validation</td><td>Known spikes, events, respiration reference</td></tr>
+              <tr><td>Neuropixels-like decision demo</td><td>Yes · 32 ch</td><td>Dense-probe workflow; Kilosort comparison</td><td>Staggered geometry, choice/outcome, TTL, known spikes</td></tr>
+              <tr><td>Tetrode navigation demo</td><td>Yes · 16 ch</td><td>Tetrode workflow; CPU sorter comparison</td><td>Four tetrodes, position/speed/reward, TTL, known spikes</td></tr>
+              <tr><td>Microwire sensory demo</td><td>Yes · 8 ch</td><td>Low-channel-count workflow</td><td>Independent wires, tone/lick/outcome, TTL, known spikes</td></tr>
               <tr><td>Generic binary</td><td>Yes</td><td>Custom interleaved recordings</td><td>Rate, channels, dtype, scale, size</td></tr>
               <tr><td>Intan / Open Ephys / SpikeGLX / Blackrock / Plexon / TDT / NWB</td><td>Yes</td><td>Acquisition-system import</td><td>SpikeInterface reader and stream check</td></tr>
               <tr><td>IBL ALF</td><td>Optional</td><td>Public trial, spike and cluster objects</td><td>ALF object dimensions and time base</td></tr>
@@ -78,6 +133,30 @@
           <div class="callout" data-lang="en">Automatic clusters are candidate units, not certified single neurons. Unit QC and manual review remain required.</div>
           <div class="callout method" data-lang="zh">真实记录没有 ground truth，因此算法间一致不能被称为准确率。Precision、recall 与 F1 只在模拟或配对真值数据中显示。</div>
           <div class="callout method" data-lang="en">Real recordings have no ground truth, so cross-sorter agreement is not accuracy. Precision, recall, and F1 appear only for simulated or paired ground-truth data.</div>
+          <table>
+            <thead><tr><th>Recording geometry</th><th>First comparison</th><th>Reason</th><th>Still required</th></tr></thead>
+            <tbody>
+              <tr><td>Dense silicon / Neuropixels-like</td><td>Kilosort4 + SpyKING CIRCUS 2</td><td>Spatial template matching and drift-aware dense-probe route</td><td>Probe map, channel order, GPU check, Unit QC</td></tr>
+              <tr><td>Tetrodes</td><td>MountainSort5 + Tridesclous2</td><td>CPU workflows suited to low/medium channel counts</td><td>Tetrode grouping, threshold review, waveform/ACG review</td></tr>
+              <tr><td>Independent microwires</td><td>MountainSort5 + Simple preview</td><td>Low-channel-count baseline and fast teaching comparison</td><td>Wire identity, reference scheme, noise and duplicate-unit checks</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section id="synchronization" data-searchable>
+          <h2 data-lang="zh">行为与电生理如何对齐</h2><h2 data-lang="en">How behavior is aligned to electrophysiology</h2>
+          <table>
+            <thead><tr><th>File</th><th>Required fields</th><th>Optional fields</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td>behavior_events.csv</td><td>behavior_time_seconds or time_seconds</td><td>trial, condition, event_type, choice, outcome, reaction_time, position, speed, lick_count</td><td>Event times and trial variables in the behavior-device clock</td></tr>
+              <tr><td>ttl_events.csv</td><td>ttl_time_seconds or time_seconds</td><td>trial, pulse type</td><td>Matching pulses in the ephys clock</td></tr>
+              <tr><td>Unified trial table</td><td>time_seconds</td><td>alignment_residual_ms, exclusion flag</td><td>Aligned ephys time used by raster, PSTH, statistics, and decoding</td></tr>
+            </tbody>
+          </table>
+          <p data-lang="zh">示例项目真实包含前两个 CSV；在软件第 6 页点击“导入 / 替换行为与 TTL”即可查看路径、导入自己的文件并检查对齐图。只提供一个含 <code>time_seconds</code> 的事件文件时，NeuroFlow 会明确记录“共用时钟”假设。</p>
+          <p data-lang="en">The demo project includes both CSV files. In stage 06, choose “Import / replace behavior and TTL” to inspect paths, import your own files, and review alignment plots. Supplying only one event file with <code>time_seconds</code> records an explicit shared-clock assumption.</p>
+          <div class="callout method">
+            <strong>Independent execution:</strong> importing files does not silently align them. Run the synchronization subanalysis to fit the clock map, inspect residuals and missing pulses, then approve the unified trial table used by raster, PSTH, statistics, and decoding.
+          </div>
         </section>
         <footer class="footer">NeuroFlow workflow reference · Data and methods remain separable.</footer>
       </main>

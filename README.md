@@ -1,4 +1,4 @@
-# NeuroFlow v0.5
+# NeuroFlow v0.5.1
 
 NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 它不重新实现成熟 sorter，而是把数据导入、质量控制、Kilosort4、Unit 质控、
@@ -47,7 +47,9 @@ NeuroFlow 不复制其他软件或文章的界面、文案、截图、图表和�
 
 ## 数据入口
 
-- 固定模拟多通道示例，可作为 Neuropixels-like、tetrode 或线性探针教学数据；
+- 三套可选择的完整模拟项目：Neuropixels-like 二选一任务、tetrode 空间探索与奖励、独立微丝感觉刺激；
+- 每套项目均包含原始电压、真实探针接触位置、行为事件、TTL、条件/选择/结果/反应时以及 ground truth；
+- “导入自己的数据”也可创建自定义时长、采样率和通道数的模拟项目；
 - 自己的交错通道二进制记录，可附带事件 CSV；
 - Intan、Open Ephys、SpikeGLX/Neuropixels、Blackrock、Plexon、TDT、NWB，
   通过 SpikeInterface extractor 转成项目缓存；

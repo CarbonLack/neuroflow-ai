@@ -53,6 +53,218 @@ def _base_figure(
     return fig, axes
 
 
+def pending_step_figure(
+    state: ProjectState,
+    step_title: str,
+    purpose: str,
+    inputs: list[str],
+    action: str,
+) -> Figure:
+    fig, axes = _base_figure(1, 1, 5.6)
+    axis = axes[0, 0]
+    axis.axis("off")
+    english = state.metadata.get("language") == "en_US"
+    heading = (
+        f"{step_title} has not been run"
+        if english
+        else f"{step_title}尚未运行"
+    )
+    input_heading = "Current inputs" if english else "当前可用输入"
+    action_heading = "Run consequence" if english else "运行后将得到"
+    lines = "\n".join(f"• {item}" for item in inputs)
+    axis.text(
+        0.04,
+        0.90,
+        heading,
+        transform=axis.transAxes,
+        va="top",
+        fontsize=17,
+        fontweight="bold",
+        color=INK,
+    )
+    axis.text(
+        0.04,
+        0.76,
+        purpose,
+        transform=axis.transAxes,
+        va="top",
+        fontsize=11,
+        color=INK,
+        wrap=True,
+    )
+    axis.text(
+        0.04,
+        0.58,
+        f"{input_heading}\n{lines}",
+        transform=axis.transAxes,
+        va="top",
+        fontsize=10,
+        color=MUTED,
+        linespacing=1.5,
+    )
+    axis.text(
+        0.04,
+        0.25,
+        f"{action_heading}\n{action}",
+        transform=axis.transAxes,
+        va="top",
+        fontsize=10,
+        color=GREEN,
+        linespacing=1.5,
+    )
+    return fig
+
+
+def synchronization_figure(state: ProjectState) -> Figure:
+    result = state.metadata.get("synchronization", {})
+    if not result:
+        events = state.events
+        behavior_count = len(events)
+        ttl_count = sum(
+            "ttl_time_seconds" in event or "ephys_time_seconds" in event
+            for event in events
+        )
+        return pending_step_figure(
+            state,
+            _text(state, "事件同步", "Synchronization"),
+            _text(
+                state,
+                "把行为设备时间映射到电生理时间，确认事件发生顺序并量化时钟漂移。",
+                "Map behavior-device time to electrophysiology time and quantify clock drift.",
+            ),
+            [
+                _text(
+                    state,
+                    f"行为事件：{behavior_count}",
+                    f"Behavior events: {behavior_count}",
+                ),
+                _text(
+                    state,
+                    f"带 TTL 时间的事件：{ttl_count}",
+                    f"Events with TTL times: {ttl_count}",
+                ),
+                _text(
+                    state,
+                    "可在上方导入 behavior CSV 与 TTL CSV",
+                    "Import behavior and TTL CSV files above",
+                ),
+            ],
+            _text(
+                state,
+                "统一 trial 表、线性时钟映射、偏移/漂移、匹配残差和漏配计数。",
+                "A unified trial table, linear clock map, offset/drift, residuals, and missing-pulse counts.",
+            ),
+        )
+
+    fig, axes = _base_figure(2, 2, 6.4)
+    behavior = np.asarray(
+        [
+            float(event.get("behavior_time_seconds", event["time_seconds"]))
+            for event in state.events
+        ],
+        dtype=float,
+    )
+    ttl = np.asarray(
+        [
+            float(event.get("ttl_time_seconds", event["time_seconds"]))
+            for event in state.events
+        ],
+        dtype=float,
+    )
+    predicted = (
+        float(result.get("intercept_seconds", 0.0))
+        + float(result.get("slope", 1.0)) * behavior
+    )
+    axes[0, 0].scatter(behavior, ttl, color=GREEN, s=28, label="Paired event")
+    if behavior.size:
+        order = np.argsort(behavior)
+        axes[0, 0].plot(
+            behavior[order],
+            predicted[order],
+            color=CORAL,
+            linewidth=1.5,
+            label="Linear clock map",
+        )
+    axes[0, 0].set_title(
+        _text(state, "行为时钟 → 电生理时钟", "Behavior clock → ephys clock"),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 0].set_xlabel(
+        _text(state, "行为时间 (s)", "Behavior time (s)"), color=MUTED
+    )
+    axes[0, 0].set_ylabel(
+        _text(state, "TTL / 电生理时间 (s)", "TTL / ephys time (s)"), color=MUTED
+    )
+    axes[0, 0].legend(frameon=False, fontsize=8)
+
+    residual = np.asarray(result.get("residual_ms", []), dtype=float)
+    axes[0, 1].plot(
+        np.arange(1, len(residual) + 1),
+        residual,
+        "o-",
+        color=CORAL,
+        linewidth=1.2,
+        markersize=4,
+    )
+    axes[0, 1].axhline(0, color=INK, linewidth=0.8)
+    axes[0, 1].set_title(
+        _text(state, "逐事件匹配残差", "Per-event matching residual"),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 1].set_xlabel("Trial", color=MUTED)
+    axes[0, 1].set_ylabel("Residual (ms)", color=MUTED)
+
+    counts = [
+        int(result.get("behavior_event_count", 0)),
+        int(result.get("ttl_event_count", 0)),
+        int(result.get("matched_count", 0)),
+    ]
+    axes[1, 0].bar(
+        ["Behavior", "TTL", "Matched"],
+        counts,
+        color=[GOLD, CORAL, GREEN],
+    )
+    axes[1, 0].set_title(
+        _text(state, "事件清点与配对", "Event inventory and pairing"),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[1, 0].set_ylabel(_text(state, "事件数", "Event count"), color=MUTED)
+
+    axes[1, 1].axis("off")
+    summary = [
+        f"Status: {result.get('status', 'unknown')}",
+        f"Matched: {result.get('matched_count', 0)}",
+        f"Missing TTL: {result.get('missing_ttl_events', 0)}",
+        f"Missing behavior: {result.get('missing_behavior_events', 0)}",
+        f"Offset: {float(result.get('intercept_seconds', 0.0)) * 1000:.3f} ms",
+        f"Drift: {float(result.get('drift_ppm', 0.0)):.2f} ppm",
+        f"Mean |residual|: {float(result.get('mean_abs_residual_ms', 0.0)):.3f} ms",
+        f"Max |residual|: {float(result.get('max_abs_residual_ms', 0.0)):.3f} ms",
+    ]
+    axes[1, 1].text(
+        0.03,
+        0.96,
+        "\n".join(summary),
+        va="top",
+        fontsize=10,
+        family="monospace",
+        color=INK,
+    )
+    axes[1, 1].set_title(
+        _text(state, "同步质量摘要", "Synchronization quality summary"),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    return fig
+
+
 def raw_overview_figure(
     state: ProjectState,
     *,
@@ -1141,6 +1353,74 @@ def sorting_diagnostics_figure(state: ProjectState, view: str = "pipeline") -> F
         )
         return fig
 
+    sorting = state.metadata.get("sorting", {})
+    sorter_name = str(
+        sorting.get("sorter")
+        or sorting.get("sorter_key")
+        or state.active_sorter_key
+        or "unknown"
+    )
+    is_kilosort = "kilosort" in sorter_name.lower()
+    if view == "pipeline" and not is_kilosort:
+        fig, axes = _base_figure(1, 2, 5.4)
+        unit_ids = sorted(state.sorted_spikes)
+        spike_counts = np.asarray(
+            [len(state.sorted_spikes[unit]) for unit in unit_ids], dtype=float
+        )
+        rates = spike_counts / max(state.duration_seconds, 1e-9)
+        axes[0, 0].bar(np.arange(len(unit_ids)), rates, color=GREEN)
+        axes[0, 0].set_title(
+            _text(
+                state,
+                f"{sorter_name} 统一结果",
+                f"{sorter_name} normalized result",
+            ),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("Unit", color=MUTED)
+        axes[0, 0].set_ylabel(
+            _text(state, "放电率 (Hz)", "Firing rate (Hz)"), color=MUTED
+        )
+        axes[0, 1].axis("off")
+        provenance = state.sorting_provenance.get(
+            str(state.active_sorter_key), sorting
+        )
+        settings = provenance.get("settings", {})
+        lines = [
+            f"Sorter: {sorter_name}",
+            f"Key: {state.active_sorter_key or provenance.get('sorter_key', 'unknown')}",
+            f"Backend: {provenance.get('backend', 'unknown')}",
+            f"Version: {provenance.get('version', 'unknown')}",
+            f"Units: {len(unit_ids)}",
+            f"Spikes: {int(spike_counts.sum())}",
+            f"Time unit: {provenance.get('time_unit', 'seconds')}",
+            "",
+            "Parameters:",
+            *[f"{key}: {value}" for key, value in settings.items()],
+        ]
+        axes[0, 1].text(
+            0.02,
+            0.98,
+            "\n".join(lines),
+            va="top",
+            fontsize=9,
+            family="monospace",
+            color=INK,
+        )
+        axes[0, 1].set_title(
+            _text(
+                state,
+                "实际运行来源、参数与统一接口",
+                "Actual run provenance, parameters, and normalized interface",
+            ),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        return fig
+
     fig, axes = _base_figure(1, 2, 5.4)
     log_file = next(iter(root.rglob("kilosort4.log")), None)
     stages: list[str] = []
@@ -1171,13 +1451,16 @@ def sorting_diagnostics_figure(state: ProjectState, view: str = "pipeline") -> F
             _text(state, "阶段耗时 (s)", "Stage time (s)"), color=MUTED
         )
     axes[0, 0].set_title(
-        _text(state, "Kilosort 运行阶段", "Kilosort pipeline stages"),
+        _text(
+            state,
+            f"{sorter_name} 运行阶段",
+            f"{sorter_name} pipeline stages",
+        ),
         loc="left",
         fontsize=11,
         color=INK,
     )
     axes[0, 1].axis("off")
-    sorting = state.metadata.get("sorting", {})
     settings = sorting.get("settings", {})
     summary = sorting.get("runtime_summary", {})
     header = [

@@ -29,15 +29,15 @@ def test_scrollable_workspace_and_independent_panel_export(
     }
     register_sorting_result(
         state,
-        "sorter_a",
+        "kilosort4",
         {10: np.array([0.1001, 0.2001, 0.3001])},
-        {"sorter": "Sorter A", "backend": "test"},
+        {"sorter": "Kilosort4", "backend": "test"},
     )
     register_sorting_result(
         state,
-        "sorter_b",
+        "mountainsort5",
         {20: np.array([0.1002, 0.2002, 0.3002])},
-        {"sorter": "Sorter B", "backend": "test"},
+        {"sorter": "MountainSort5", "backend": "test"},
     )
     compare_sorting_results(state)
     window._load_state(state)
@@ -47,6 +47,7 @@ def test_scrollable_workspace_and_independent_panel_export(
     window._refresh_figure()
 
     assert isinstance(window.main_scroll, QScrollArea)
+    assert not window.main_scroll.widget().isAncestorOf(window.progress_bar)
     assert window.figure_host.minimumHeight() >= 600
     assert window.panel_combo.count() == 3
     assert "performance" in window.panel_combo.itemText(0).lower()
@@ -68,5 +69,51 @@ def test_scrollable_workspace_and_independent_panel_export(
 
     window._toggle_panel_focus()
     assert sum(axis.get_visible() for axis in window.canvas.figure.axes) == visible_before
+    window.close()
+    app.processEvents()
+
+
+def test_selecting_an_unrun_sorter_refreshes_the_pending_view(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    window = NeuroFlowWindow(tmp_path / "workspace")
+    state = ProjectState(
+        root=tmp_path / "project",
+        recording_path=tmp_path / "recording.bin",
+        channel_count=8,
+        sampling_rate=1_000.0,
+        duration_seconds=0.1,
+    )
+    state.recording_path.write_bytes(b"\0" * (100 * 8 * 2))
+    register_sorting_result(
+        state,
+        "kilosort4",
+        {1: np.array([0.02, 0.05])},
+        {"sorter": "Kilosort4", "backend": "test"},
+    )
+    register_sorting_result(
+        state,
+        "mountainsort5",
+        {2: np.array([0.021, 0.051])},
+        {"sorter": "MountainSort5", "backend": "test"},
+    )
+    compare_sorting_results(state)
+    window._load_state(state)
+    window._select_step("sorting")
+    diagnostic_index = window.sorting_workbench.diagnostic_combo.findData("comparison")
+    window.sorting_workbench.diagnostic_combo.setCurrentIndex(diagnostic_index)
+    row = next(
+        index
+        for index, item in enumerate(window.sorting_workbench.catalog)
+        if item["key"] == "spykingcircus2"
+    )
+    window.sorting_workbench.table.selectRow(row)
+    app.processEvents()
+    visible_text = " ".join(
+        item.get_text()
+        for axis in window.canvas.figure.axes
+        for item in axis.texts
+    )
+    assert "spykingcircus2" in visible_text.lower()
+    assert "kilosort4" not in visible_text.lower()
     window.close()
     app.processEvents()

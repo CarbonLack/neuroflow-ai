@@ -8,6 +8,88 @@ import numpy as np
 
 from .models import ProjectState
 
+DEMO_PROFILES = {
+    "neuropixels_decision": {
+        "name": "Neuropixels-like two-choice task",
+        "name_zh": "Neuropixels 类高密度探针 · 二选一任务",
+        "folder": "Neuropixels_Decision",
+        "electrode_family": "Neuropixels-like staggered linear probe",
+        "channel_count": 32,
+        "sampling_rate": 30_000.0,
+        "behavior_paradigm": "two-choice decision task",
+        "behavior_paradigm_zh": "二选一决策任务",
+        "conditions": ("left", "right"),
+        "epoch_names": ("Quiet", "Movement", "Reward"),
+        "recommended_sorters": ("Kilosort4", "SpyKING CIRCUS 2"),
+        "scenario": (
+            "High-density event responses, probe drift, a noisy channel, "
+            "choice, outcome, reaction time, behavior-clock drift, and TTL jitter."
+        ),
+        "scenario_zh": "高密度事件响应、探针漂移、噪声通道、选择、结果、反应时、行为时钟漂移与 TTL 抖动。",
+    },
+    "tetrode_navigation": {
+        "name": "Tetrode array navigation and reward",
+        "name_zh": "Tetrode 阵列 · 空间探索与奖励",
+        "folder": "Tetrode_Navigation",
+        "electrode_family": "Tetrode array (4 tetrodes)",
+        "channel_count": 16,
+        "sampling_rate": 30_000.0,
+        "behavior_paradigm": "open-field reward-zone navigation",
+        "behavior_paradigm_zh": "开放场奖励区导航",
+        "conditions": ("reward_zone", "control_zone"),
+        "epoch_names": ("Forage", "Approach", "Reward"),
+        "recommended_sorters": ("MountainSort5", "Tridesclous2"),
+        "scenario": (
+            "Four spatially separated tetrodes with position, speed, reward-zone "
+            "events, reaction latency, behavior-clock drift, and TTL jitter."
+        ),
+        "scenario_zh": "四组空间分离 tetrode，包含位置、速度、奖励区事件、反应延迟、行为时钟漂移与 TTL 抖动。",
+    },
+    "microwire_stimulus": {
+        "name": "Independent microwires sensory task",
+        "name_zh": "单根/多根微丝电极 · 感觉刺激任务",
+        "folder": "Microwire_Stimulus",
+        "electrode_family": "Independent microwire array",
+        "channel_count": 8,
+        "sampling_rate": 25_000.0,
+        "behavior_paradigm": "tone discrimination and licking",
+        "behavior_paradigm_zh": "音调辨别与舔舐",
+        "conditions": ("tone_low", "tone_high"),
+        "epoch_names": ("Baseline", "Tone", "Consumption"),
+        "recommended_sorters": ("MountainSort5", "SpikeInterface Simple"),
+        "scenario": (
+            "Independent low-channel-count wires with tone identity, lick count, "
+            "hit/miss outcome, behavior-clock drift, and TTL jitter."
+        ),
+        "scenario_zh": "独立低通道微丝，包含音调、舔舐次数、正确/错误结果、行为时钟漂移与 TTL 抖动。",
+    },
+}
+
+
+def demo_profile_catalog() -> list[dict]:
+    return [
+        {"key": key, **value}
+        for key, value in DEMO_PROFILES.items()
+    ]
+
+
+def _contact_positions(profile_key: str, channel_count: int) -> np.ndarray:
+    if profile_key == "tetrode_navigation":
+        positions = []
+        offsets = ((-10, -10), (10, -10), (-10, 10), (10, 10))
+        for channel in range(channel_count):
+            group = channel // 4
+            offset_x, offset_y = offsets[channel % 4]
+            positions.append((group * 180 + offset_x, offset_y))
+        return np.asarray(positions, dtype=float)
+    if profile_key == "microwire_stimulus":
+        return np.asarray(
+            [(channel * 200.0, (channel % 2) * 40.0) for channel in range(channel_count)],
+            dtype=float,
+        )
+    rows = np.arange(channel_count)
+    return np.column_stack(((rows % 2) * 32.0, (rows // 2) * 20.0))
+
 
 def _poisson_spikes(
     rng: np.random.Generator,
@@ -38,15 +120,23 @@ def generate_demo_recording(
     project_root: Path,
     seed: int = 20260724,
     duration_seconds: float = 30.0,
-    channel_count: int = 32,
-    sampling_rate: float = 30_000.0,
+    channel_count: int | None = None,
+    sampling_rate: float | None = None,
+    profile_key: str = "neuropixels_decision",
 ) -> ProjectState:
+    if profile_key not in DEMO_PROFILES:
+        raise ValueError(f"Unknown demo profile: {profile_key}")
+    profile = DEMO_PROFILES[profile_key]
+    channel_count = int(channel_count or profile["channel_count"])
+    sampling_rate = float(sampling_rate or profile["sampling_rate"])
     project_root.mkdir(parents=True, exist_ok=True)
     raw_dir = project_root / "raw"
     raw_dir.mkdir(exist_ok=True)
     recording_path = raw_dir / "neuroflow_simulated_recording.bin"
     metadata_path = raw_dir / "metadata.json"
     events_path = raw_dir / "events.csv"
+    behavior_events_path = raw_dir / "behavior_events.csv"
+    ttl_events_path = raw_dir / "ttl_events.csv"
     truth_path = raw_dir / "ground_truth.npz"
     respiration_path = raw_dir / "respiration_reference.npy"
     states_path = raw_dir / "behavioral_states.csv"
@@ -68,7 +158,7 @@ def generate_demo_recording(
             "nominal_respiration_hz": frequency,
         }
         for index, (name, frequency) in enumerate(
-            (("Home cage", 2.2), ("Tail suspension", 1.6), ("Reward", 4.2))
+            zip(profile["epoch_names"], (2.2, 1.6, 4.2), strict=True)
         )
     ]
     instantaneous_frequency = np.zeros(respiration_count, dtype=float)
@@ -89,19 +179,41 @@ def generate_demo_recording(
     events: list[dict[str, object]] = []
     event_margin = min(3.0, duration_seconds * 0.2)
     event_times = np.linspace(event_margin, duration_seconds - event_margin, 20)
+    behavior_clock_offset = 0.037
+    behavior_clock_scale = 1.00018
+    first_condition, second_condition = profile["conditions"]
     for index, event_time in enumerate(event_times):
+        behavior_time = (event_time - behavior_clock_offset) / behavior_clock_scale
+        ttl_time = float(event_time + rng.normal(0.0, 0.00018))
+        condition = first_condition if index % 2 == 0 else second_condition
+        reaction_time = float(
+            np.clip(
+                rng.normal(0.42 if index % 2 == 0 else 0.58, 0.07),
+                0.15,
+                1.2,
+            )
+        )
+        outcome = "correct" if rng.random() > 0.18 else "error"
+        choice = (
+            condition
+            if profile_key == "neuropixels_decision"
+            else ("approach" if index % 2 == 0 else "withhold")
+        )
         events.append(
             {
                 "trial": index + 1,
                 "time_seconds": float(event_time),
-                "condition": "A" if index % 2 == 0 else "B",
-                "reaction_time": float(
-                    np.clip(
-                        rng.normal(0.42 if index % 2 == 0 else 0.58, 0.07),
-                        0.15,
-                        1.2,
-                    )
-                ),
+                "behavior_time_seconds": float(behavior_time),
+                "ttl_time_seconds": ttl_time,
+                "event_type": "stimulus_onset",
+                "condition": condition,
+                "choice": choice,
+                "outcome": outcome,
+                "reaction_time": reaction_time,
+                "position_x_cm": float(rng.uniform(-45, 45)),
+                "position_y_cm": float(rng.uniform(-45, 45)),
+                "speed_cm_s": float(np.clip(rng.normal(16, 6), 0, 45)),
+                "lick_count": int(rng.poisson(5 if outcome == "correct" else 2)),
             }
         )
 
@@ -109,7 +221,13 @@ def generate_demo_recording(
     base_rates = [5.0, 7.0, 9.0, 6.0, 8.0, 11.0, 4.0, 6.5]
     for unit_id, base_rate in enumerate(base_rates):
         times = _poisson_spikes(rng, base_rate, duration_seconds)
-        preferred = "A" if unit_id < 3 else "B" if unit_id < 6 else None
+        preferred = (
+            first_condition
+            if unit_id < 3
+            else second_condition
+            if unit_id < 6
+            else None
+        )
         if preferred is not None:
             locked: list[np.ndarray] = []
             for event in events:
@@ -208,10 +326,62 @@ def generate_demo_recording(
     with events_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
             handle,
-            fieldnames=["trial", "time_seconds", "condition", "reaction_time"],
+            fieldnames=[
+                "trial",
+                "time_seconds",
+                "behavior_time_seconds",
+                "ttl_time_seconds",
+                "event_type",
+                "condition",
+                "choice",
+                "outcome",
+                "reaction_time",
+                "position_x_cm",
+                "position_y_cm",
+                "speed_cm_s",
+                "lick_count",
+            ],
         )
         writer.writeheader()
         writer.writerows(events)
+    with behavior_events_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=[
+                "trial",
+                "behavior_time_seconds",
+                "event_type",
+                "condition",
+                "choice",
+                "outcome",
+                "reaction_time",
+                "position_x_cm",
+                "position_y_cm",
+                "speed_cm_s",
+                "lick_count",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(
+            {
+                key: event[key]
+                for key in writer.fieldnames
+            }
+            for event in events
+        )
+    with ttl_events_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["trial", "ttl_time_seconds"],
+        )
+        writer.writeheader()
+        writer.writerows(
+            {
+                "trial": event["trial"],
+                "ttl_time_seconds": event["ttl_time_seconds"],
+            }
+            for event in events
+        )
 
     np.savez(
         truth_path,
@@ -230,15 +400,23 @@ def generate_demo_recording(
         )
         writer.writeheader()
         writer.writerows(behavioral_state_epochs)
+    contact_positions = _contact_positions(profile_key, channel_count)
     metadata = {
-        "dataset_name": "NeuroFlow simulated extracellular recording",
+        "dataset_name": profile["name"],
+        "demo_profile": profile_key,
+        "demo_schema_version": 2,
         "sampling_rate_hz": sampling_rate,
         "channel_count": channel_count,
         "duration_seconds": duration_seconds,
         "dtype": "int16",
         "scale_uv_per_bit": scale_uv_per_bit,
         "seed": seed,
-        "electrode_family": "Neuropixels-like linear probe",
+        "electrode_family": profile["electrode_family"],
+        "contact_positions_um": contact_positions.tolist(),
+        "behavior_paradigm": profile["behavior_paradigm"],
+        "behavior_columns": list(events[0]),
+        "recommended_sorters": list(profile["recommended_sorters"]),
+        "scenario": profile["scenario"],
         "ground_truth_unit_count": len(ground_truth),
         "known_issues": [
             f"Channel {noisy_channel} contains elevated broadband noise",
@@ -251,6 +429,8 @@ def generate_demo_recording(
         "respiration_reference": str(respiration_path),
         "respiration_sampling_rate_hz": respiration_sampling_rate,
         "behavioral_state_epochs": behavioral_state_epochs,
+        "behavior_source": str(behavior_events_path),
+        "ttl_source": str(ttl_events_path),
         "case_study_notice": (
             "Synthetic method-validation case only; not the Folschweiller and "
             "Sauer paper dataset or a reproduction of its numerical findings."
@@ -264,10 +444,16 @@ def generate_demo_recording(
             {
                 "recording": recording_path.name,
                 "events": events_path.name,
+                "behavior_events": behavior_events_path.name,
+                "ttl_events": ttl_events_path.name,
                 "sampling_rate_hz": sampling_rate,
                 "channel_count": channel_count,
                 "dtype": "int16",
                 "scale_uv_per_bit": scale_uv_per_bit,
+                "demo_profile": profile_key,
+                "electrode_family": profile["electrode_family"],
+                "contact_positions_um": contact_positions.tolist(),
+                "behavior_paradigm": profile["behavior_paradigm"],
                 "layout": "time-major interleaved channels (samples x channels)",
             },
             indent=2,
@@ -282,13 +468,18 @@ def generate_demo_recording(
             "- `raw/neuroflow_simulated_recording.bin`: time-major interleaved int16 "
             "voltage (`samples x channels`).\n"
             "- `raw/events.csv`: trial, alignment time in seconds, condition, and "
-            "reaction time.\n"
+            "behavior fields such as choice/outcome, position, speed, and licking.\n"
+            "- `raw/behavior_events.csv`: events in the simulated behavior-device clock.\n"
+            "- `raw/ttl_events.csv`: matching pulses in the electrophysiology clock.\n"
             "- `raw/metadata.json`: recording metadata and deliberately inserted issues.\n"
             "- `raw/import_config.json`: exact settings for the generic-binary importer.\n"
             "- `raw/ground_truth.npz`: simulated spike times for sorter validation only.\n\n"
             "- `raw/respiration_reference.npy`: 1 kHz synthetic respiration reference.\n"
             "- `raw/behavioral_states.csv`: three synthetic state epochs used by the "
             "respiration analysis case.\n\n"
+            f"Profile: `{profile_key}` / {profile['electrode_family']}.\n\n"
+            f"Behavior paradigm: {profile['behavior_paradigm']}.\n\n"
+            f"Recommended sorter comparison: {', '.join(profile['recommended_sorters'])}.\n\n"
             "## 中文说明\n\n"
             "这是可重复生成的完整细胞外多通道示例。若要练习“导入自己的数据”，"
             "请选择通用二进制，并按 `import_config.json` 填写采样率、通道数、"
@@ -300,7 +491,7 @@ def generate_demo_recording(
 
     state = ProjectState(
         root=project_root,
-        name="NeuroFlow simulated extracellular recording",
+        name=profile["name"],
         source_type="simulated",
         source_path=recording_path,
         recording_path=recording_path,
@@ -309,7 +500,7 @@ def generate_demo_recording(
         duration_seconds=duration_seconds,
         dtype="int16",
         scale_uv_per_bit=scale_uv_per_bit,
-        electrode_type="Neuropixels-like linear probe",
+        electrode_type=profile["electrode_family"],
         events=events,
         ground_truth=ground_truth,
         metadata=metadata,
@@ -319,12 +510,19 @@ def generate_demo_recording(
         f"Raw file: {recording_path.name}, {channel_count} channels, "
         f"{duration_seconds:.1f} seconds"
     )
+    state.metadata["behavior_source"] = str(behavior_events_path)
+    state.metadata["ttl_source"] = str(ttl_events_path)
     return state
 
 
-def load_or_generate_demo(project_root: Path) -> ProjectState:
+def load_or_generate_demo(
+    project_root: Path,
+    profile_key: str = "neuropixels_decision",
+) -> ProjectState:
     metadata_path = project_root / "raw" / "metadata.json"
     events_path = project_root / "raw" / "events.csv"
+    behavior_events_path = project_root / "raw" / "behavior_events.csv"
+    ttl_events_path = project_root / "raw" / "ttl_events.csv"
     truth_path = project_root / "raw" / "ground_truth.npz"
     respiration_path = project_root / "raw" / "respiration_reference.npy"
     states_path = project_root / "raw" / "behavioral_states.csv"
@@ -336,6 +534,8 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
         for path in (
             metadata_path,
             events_path,
+            behavior_events_path,
+            ttl_events_path,
             truth_path,
             respiration_path,
             states_path,
@@ -344,9 +544,14 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
             guide_path,
         )
     ):
-        return generate_demo_recording(project_root)
+        return generate_demo_recording(project_root, profile_key=profile_key)
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    if (
+        metadata.get("demo_profile", "neuropixels_decision") != profile_key
+        or int(metadata.get("demo_schema_version", 0)) < 2
+    ):
+        return generate_demo_recording(project_root, profile_key=profile_key)
     with events_path.open("r", newline="", encoding="utf-8") as handle:
         events = list(csv.DictReader(handle))
     for event in events:
@@ -375,4 +580,6 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
         metadata=metadata,
     )
     state.log("Local demo project loaded")
+    state.metadata.setdefault("behavior_source", str(behavior_events_path))
+    state.metadata.setdefault("ttl_source", str(ttl_events_path))
     return state

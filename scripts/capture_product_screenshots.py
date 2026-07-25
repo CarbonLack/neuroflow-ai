@@ -19,10 +19,11 @@ from neuroflow.sorting_results import (
     register_sorting_result,
 )
 from neuroflow.statistics import run_statistical_suite
-from neuroflow.ui import NeuroFlowWindow
+from neuroflow.synchronization import synchronize_existing_events
+from neuroflow.ui import DemoLibraryDialog, NeuroFlowWindow
 
 
-def _capture(window: NeuroFlowWindow, path: Path) -> None:
+def _capture(window, path: Path) -> None:
     QApplication.processEvents()
     QTest.qWait(350)
     screen = window.screen()
@@ -42,6 +43,10 @@ def main() -> int:
     window._set_language("en_US")
     window.show()
     _capture(window, output / "neuroflow-home.png")
+    library = DemoLibraryDialog(window, "en_US")
+    library.show()
+    _capture(library, output / "neuroflow-demo-library.png")
+    library.close()
 
     state = generate_demo_recording(
         workspace / "capture_v05",
@@ -84,6 +89,7 @@ def main() -> int:
     compute_unit_metrics(state)
     run_neural_toolkit(state)
     run_statistical_suite(state)
+    synchronize_existing_events(state)
     window._load_state(state)
     window.preview = preview
     window.matches = match_ground_truth(state.ground_truth, state.sorted_spikes)
@@ -92,6 +98,23 @@ def main() -> int:
     window.sorting_workbench.diagnostic_combo.setCurrentIndex(diagnostic_index)
     window._refresh_figure()
     _capture(window, output / "neuroflow-sorting.png")
+    pending_row = next(
+        row
+        for row, item in enumerate(window.sorting_workbench.catalog)
+        if item["key"] == "spykingcircus2"
+    )
+    window.sorting_workbench.table.selectRow(pending_row)
+    QApplication.processEvents()
+    _capture(window, output / "neuroflow-sorting-pending.png")
+    kilosort_row = next(
+        row
+        for row, item in enumerate(window.sorting_workbench.catalog)
+        if item["key"] == "kilosort4"
+    )
+    window.sorting_workbench.table.selectRow(kilosort_row)
+    diagnostic_index = window.sorting_workbench.diagnostic_combo.findData("comparison")
+    window.sorting_workbench.diagnostic_combo.setCurrentIndex(diagnostic_index)
+    window._refresh_figure()
     window._toggle_panel_focus()
     QApplication.processEvents()
     scroll_bar = window.main_scroll.verticalScrollBar()
@@ -99,6 +122,10 @@ def main() -> int:
     _capture(window, output / "neuroflow-panel-expanded.png")
     window._toggle_panel_focus()
     scroll_bar.setValue(0)
+
+    window._select_step("sync")
+    window._refresh_figure()
+    _capture(window, output / "neuroflow-synchronization.png")
 
     window._select_step("analysis")
     analysis_index = window.option_combo.findData("case:respiration")

@@ -28,7 +28,12 @@ from neuroflow.help_content import CONTROL_HELP, page_controls
 from neuroflow.i18n import step_text, tr
 from neuroflow.models import ProjectState
 from neuroflow.project import load_project, save_project
-from neuroflow.simulation import generate_demo_recording, load_or_generate_demo
+from neuroflow.self_test import run_packaged_figure_export_self_test
+from neuroflow.simulation import (
+    demo_profile_catalog,
+    generate_demo_recording,
+    load_or_generate_demo,
+)
 from neuroflow.sorting import refresh_sorter_catalog
 from neuroflow.sorting_results import (
     activate_sorting_result,
@@ -36,6 +41,7 @@ from neuroflow.sorting_results import (
     register_sorting_result,
 )
 from neuroflow.statistics import run_statistical_suite
+from neuroflow.synchronization import synchronize_existing_events
 from neuroflow.tutorials import TUTORIALS, tutorial_value
 
 
@@ -104,8 +110,47 @@ def test_demo_dataset_exposes_exact_import_contract(tmp_path: Path):
     assert (state.root / "README_DATASET.md").is_file()
     assert (state.root / "raw" / "import_config.json").is_file()
     assert (state.root / "raw" / "events.csv").is_file()
+    assert (state.root / "raw" / "behavior_events.csv").is_file()
+    assert (state.root / "raw" / "ttl_events.csv").is_file()
     assert (state.root / "raw" / "respiration_reference.npy").is_file()
     assert (state.root / "raw" / "behavioral_states.csv").is_file()
+
+
+def test_demo_library_covers_probe_geometries_and_behavior(tmp_path: Path):
+    catalog = demo_profile_catalog()
+    assert {item["key"] for item in catalog} == {
+        "neuropixels_decision",
+        "tetrode_navigation",
+        "microwire_stimulus",
+    }
+    for item in catalog:
+        state = generate_demo_recording(
+            tmp_path / item["folder"],
+            duration_seconds=1.0,
+            profile_key=item["key"],
+        )
+        positions = np.asarray(state.metadata["contact_positions_um"])
+        assert positions.shape == (state.channel_count, 2)
+        assert state.metadata["behavior_paradigm"]
+        assert state.metadata["recommended_sorters"]
+        assert {"choice", "outcome", "reaction_time"} <= set(state.events[0])
+        assert state.metadata["behavior_source"]
+        assert state.metadata["ttl_source"]
+
+
+def test_behavior_to_ephys_clock_alignment_is_auditable(tmp_path: Path):
+    state = generate_demo_recording(
+        tmp_path / "sync",
+        duration_seconds=4,
+        channel_count=4,
+        sampling_rate=10_000,
+    )
+    result = synchronize_existing_events(state)
+    assert result["matched_count"] == 20
+    assert abs(result["drift_ppm"]) > 10
+    assert result["max_abs_residual_ms"] < 1.0
+    assert state.trials
+    assert "alignment_residual_ms" in state.trials[0]
 
 
 def test_sorting_diagnostics_read_real_output_shapes(tmp_path: Path):
@@ -134,6 +179,47 @@ def test_sorting_diagnostics_read_real_output_shapes(tmp_path: Path):
     }
     for view in ("pipeline", "drift", "amplitudes", "templates", "similarity", "files"):
         assert sorting_diagnostics_figure(state, view).axes
+
+
+def test_non_kilosort_result_never_uses_kilosort_pipeline_title(tmp_path: Path):
+    root = tmp_path / "mountainsort5"
+    root.mkdir()
+    state = ProjectState(
+        root=tmp_path,
+        sampling_rate=30_000,
+        duration_seconds=2.0,
+    )
+    register_sorting_result(
+        state,
+        "mountainsort5",
+        {1: np.array([0.1, 0.4, 1.2])},
+        {
+            "sorter": "MountainSort5",
+            "backend": "SpikeInterface",
+            "version": "test",
+            "settings": {"scheme": "2"},
+            "result_directory": str(root),
+        },
+    )
+    figure = sorting_diagnostics_figure(state, "pipeline")
+    text = " ".join(
+        axis.get_title(loc=location)
+        for axis in figure.axes
+        for location in ("left", "center", "right")
+    )
+    assert "MountainSort5" in text
+    assert "Kilosort" not in text
+
+
+def test_svg_pdf_png_export_backends_are_available(tmp_path: Path):
+    assert run_packaged_figure_export_self_test(tmp_path) == 0
+    report = json.loads(
+        (tmp_path / "packaged_figure_export_self_test.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert report["ok"] is True
+    assert len(report["outputs"]) == 3
 
 
 def test_english_raw_figure_contains_no_chinese_labels(tmp_path: Path):

@@ -28,9 +28,18 @@ def load_recording(state: ProjectState, mode: str = "r") -> np.memmap:
     if not state.ready:
         raise RuntimeError("尚未准备原始记录")
     sample_count = int(state.duration_seconds * state.sampling_rate)
+    dtype = np.dtype(state.dtype)
+    expected_bytes = sample_count * state.channel_count * dtype.itemsize
+    actual_bytes = state.recording_path.stat().st_size
+    if actual_bytes < expected_bytes:
+        raise ValueError(
+            "Recording file is shorter than its project metadata: "
+            f"expected at least {expected_bytes:,} bytes, found {actual_bytes:,}. "
+            "Re-import the file with the correct channel count, sampling rate, and dtype."
+        )
     return np.memmap(
         state.recording_path,
-        dtype=np.dtype(state.dtype),
+        dtype=dtype,
         mode=mode,
         shape=(sample_count, state.channel_count),
     )

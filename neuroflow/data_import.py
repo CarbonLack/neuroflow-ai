@@ -150,7 +150,11 @@ def import_binary_recording(
         scale_uv_per_bit=scale_uv_per_bit,
         electrode_type=electrode_type,
         events=events,
-        metadata={"copy_source": copy_source, "can_run_sorting": dtype == "int16"},
+        metadata={
+            "copy_source": copy_source,
+            "can_run_sorting": dtype == "int16",
+            "behavior_source": str(events_path) if events_path else None,
+        },
     )
     state.log(f"Generic binary recording imported: {source.name}")
     save_project(state)

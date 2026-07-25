@@ -7,7 +7,7 @@
 | Tridesclous2 | SpikeInterface internal | Low/medium channel counts | Verified |
 | Simple | SpikeInterface internal | Fast teaching and smoke tests | Verified |
 | Lupin | SpikeInterface internal | Native comparison workflow | Verified |
-| MountainSort5 | SpikeInterface external Python package | Tetrodes and CPU workflows | Integrated; `isosplit6` is compiled during the Windows release build |
+| MountainSort5 | SpikeInterface external Python package | Tetrodes and CPU workflows | Verified in source and packaged Windows builds |
 
 ## Detection rule
 
@@ -32,6 +32,24 @@ Every sorter is converted to the same `neuroflow.sorting.v1` contract:
 
 Native files remain intact. The normalized view is what downstream Unit QC,
 event alignment, statistics, and plotting consume.
+
+The v0.5.1 release self-test runs SpyKING CIRCUS 2, Tridesclous2, Simple, and
+Lupin independently on the same raw recording. Kilosort4 and MountainSort5 have
+separate packaged self-tests because they exercise GPU and compiled-package
+paths. A sorter selected before execution shows only its own input contract and
+expected outputs; no completed sorter's figure is reused.
+
+## Probe-aware examples
+
+The example library includes distinct channel-location maps and behavior files:
+
+- a 32-channel Neuropixels-like staggered probe with a two-choice task;
+- four tetrodes (16 channels) with position, speed, and reward-zone events;
+- eight independent microwires with tone, lick, and outcome variables.
+
+Every profile writes raw voltage, contact positions, behavior-clock events,
+ephys-clock TTL pulses, a unified event table, and ground-truth spikes. The same
+stored contact positions are supplied to every sorter adapter.
 
 ## Cross-sorter comparison
 

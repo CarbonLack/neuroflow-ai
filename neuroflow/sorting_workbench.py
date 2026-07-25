@@ -29,6 +29,79 @@ SORTER_ZH = {
     "lupin": ("CPU", "SpikeInterface 原生方法比较"),
 }
 
+SORTER_CONTRACTS = {
+    "kilosort4": {
+        "zh": (
+            "输入：原始 AP 宽带二进制与探针几何。NeuroFlow 直接交给 Kilosort4，"
+            "由其执行 common-average reference、滤波/白化、检测、聚类与模板匹配；"
+            "第 03 页只是预览，不会把已白化数据再次传入。"
+        ),
+        "en": (
+            "Input: raw AP-band binary and probe geometry. NeuroFlow passes the raw "
+            "recording to Kilosort4, which performs referencing, filtering/whitening, "
+            "detection, clustering, and template matching. Stage 03 is a preview and "
+            "does not feed pre-whitened data into Kilosort."
+        ),
+    },
+    "mountainsort5": {
+        "zh": (
+            "输入：原始多通道记录与探针几何。通过 SpikeInterface 运行 MS5；Scheme 1 "
+            "用于快速检查，Scheme 2 为标准训练/分类流程，Scheme 3 面向更长、可能漂移"
+            "的记录。CPU 可运行，阈值越低通常检测越多，也可能增加噪声事件。"
+        ),
+        "en": (
+            "Input: raw multichannel recording and probe geometry. MS5 runs through "
+            "SpikeInterface. Scheme 1 is a quick check, Scheme 2 is the standard "
+            "training/classification route, and Scheme 3 targets longer or drifting "
+            "recordings. Lower thresholds usually detect more events and may add noise."
+        ),
+    },
+    "spykingcircus2": {
+        "zh": (
+            "输入：原始多通道记录与通道位置。使用当前 SpikeInterface 内部实现的受控"
+            "默认值；真实参数与版本写入来源记录。适合与 Kilosort/MS5 做方法一致度比较。"
+        ),
+        "en": (
+            "Input: raw multichannel data and channel locations. Controlled defaults "
+            "from the installed SpikeInterface implementation are used and fully logged. "
+            "Useful as an algorithm-agreement comparison with Kilosort or MS5."
+        ),
+    },
+    "tridesclous2": {
+        "zh": (
+            "输入：原始低至中等通道记录与几何。由 SpikeInterface 内部组件完成检测、"
+            "聚类和模板匹配；保留实际版本和输出，不显示 Kilosort 专属中间变量。"
+        ),
+        "en": (
+            "Input: raw low-to-medium channel-count data and geometry. SpikeInterface "
+            "components perform detection, clustering, and matching. Native provenance "
+            "is retained without pretending Kilosort-only variables exist."
+        ),
+    },
+    "simple": {
+        "zh": (
+            "输入：原始记录。面向快速教学和流程排错，不应因为运行快就替代正式 sorter "
+            "验证；输出仍进入相同的秒级 Unit 接口。"
+        ),
+        "en": (
+            "Input: raw recording. Intended for teaching and pipeline diagnosis rather "
+            "than replacing formal sorter validation. Output still enters the same "
+            "second-based Unit interface."
+        ),
+    },
+    "lupin": {
+        "zh": (
+            "输入：原始记录与探针几何。使用 SpikeInterface 原生模块化管线；适合研究"
+            "检测、聚类和模板步骤的替代方案，结果通过统一接口与其他 sorter 对比。"
+        ),
+        "en": (
+            "Input: raw recording and probe geometry. Uses the modular SpikeInterface "
+            "pipeline and supports comparison of alternative detection, clustering, "
+            "and matching choices through the common result interface."
+        ),
+    },
+}
+
 
 DIAGNOSTIC_VIEWS = (
     ("pipeline", "流程与运行日志", "Pipeline and run log"),
@@ -40,6 +113,18 @@ DIAGNOSTIC_VIEWS = (
     ("similarity", "模板相似度与污染率", "Template similarity and contamination"),
     ("files", "Kilosort 输出文件", "Kilosort output files"),
 )
+
+GENERIC_DIAGNOSTIC_KEYS = {"pipeline", "comparison", "validation"}
+KILOSORT_DIAGNOSTIC_KEYS = {
+    "pipeline",
+    "comparison",
+    "validation",
+    "drift",
+    "amplitudes",
+    "templates",
+    "similarity",
+    "files",
+}
 
 
 class SortingWorkbench(QFrame):
@@ -268,14 +353,7 @@ class SortingWorkbench(QFrame):
                 "real Kilosort/SpikeInterface outputs here.",
             )
         )
-        previous = self.diagnostic_combo.currentData()
-        self.diagnostic_combo.blockSignals(True)
-        self.diagnostic_combo.clear()
-        for key, zh, en in DIAGNOSTIC_VIEWS:
-            self.diagnostic_combo.addItem(en if language == "en_US" else zh, key)
-        index = self.diagnostic_combo.findData(previous)
-        self.diagnostic_combo.setCurrentIndex(max(index, 0))
-        self.diagnostic_combo.blockSignals(False)
+        self._refresh_diagnostic_views(self.selected_sorter())
         for widget in (
             self.table,
             self.preset,
@@ -297,6 +375,25 @@ class SortingWorkbench(QFrame):
         view = str(self.diagnostic_combo.currentData() or "pipeline")
         self.parameter_stack.setVisible(view != "comparison")
         self.diagnostic_changed.emit(view)
+
+    def _refresh_diagnostic_views(self, sorter_key: str | None) -> None:
+        previous = self.diagnostic_combo.currentData()
+        allowed = (
+            KILOSORT_DIAGNOSTIC_KEYS
+            if sorter_key == "kilosort4"
+            else GENERIC_DIAGNOSTIC_KEYS
+        )
+        self.diagnostic_combo.blockSignals(True)
+        self.diagnostic_combo.clear()
+        for key, zh, en in DIAGNOSTIC_VIEWS:
+            if key in allowed:
+                self.diagnostic_combo.addItem(
+                    en if self.language == "en_US" else zh,
+                    key,
+                )
+        index = self.diagnostic_combo.findData(previous)
+        self.diagnostic_combo.setCurrentIndex(max(index, 0))
+        self.diagnostic_combo.blockSignals(False)
 
     def set_catalog(self, catalog: list[dict]) -> None:
         selected = self.selected_sorter()
@@ -365,6 +462,10 @@ class SortingWorkbench(QFrame):
         detail = f"{item['backend']} · {item['version']}" + (
             f"\n{item['error']}" if item.get("error") else ""
         )
+        contract = SORTER_CONTRACTS.get(item["key"], {})
+        detail += "\n" + str(
+            contract.get("en" if self.language == "en_US" else "zh", "")
+        )
         if item["key"] in self.completed_keys:
             detail += self._label(
                 "\n已保存统一格式结果；选择此行可重新查看，重新运行会形成可追溯更新。",
@@ -395,6 +496,42 @@ class SortingWorkbench(QFrame):
             if is_mountainsort
             else self.default_panel
         )
+        self._refresh_diagnostic_views(item["key"])
+        has_result = item["key"] in self.completed_keys
+        self.diagnostic_combo.setEnabled(has_result)
+        self.view_label.setText(
+            self._label("运行后诊断视图", "Post-run diagnostic view")
+            if has_result
+            else self._label("运行后解锁诊断视图", "Run to unlock result views")
+        )
+        if is_kilosort:
+            self.output_explanation.setText(
+                self._label(
+                    "运行后可查看 Kilosort 阶段日志、漂移、振幅、模板、相似度和原生输出文件。",
+                    "After running, inspect Kilosort stage logs, drift, amplitudes, "
+                    "templates, similarity, and native output files.",
+                )
+                if has_result
+                else self._label(
+                    "当前只显示输入、参数和预期输出；实际运行后才会生成 Kilosort 诊断图。",
+                    "Only inputs, parameters, and expected outputs are shown now. "
+                    "Kilosort diagnostics appear only after this sorter has run.",
+                )
+            )
+        else:
+            self.output_explanation.setText(
+                self._label(
+                    "该排序器显示自身真实运行来源、参数和统一秒级结果；不会套用 Kilosort 专属诊断。",
+                    "This sorter shows its own run provenance, parameters, and normalized "
+                    "second-based result; Kilosort-only diagnostics are not reused.",
+                )
+                if has_result
+                else self._label(
+                    "当前 sorter 未运行；不会显示其他 sorter 的结果。运行后将保存自身来源、参数和统一结果。",
+                    "This sorter has not run, so no other sorter's result is shown. "
+                    "Its own provenance, parameters, and normalized result appear after execution.",
+                )
+            )
         self.selection_changed.emit(item["key"])
 
     def _apply_preset(self) -> None:
@@ -418,6 +555,9 @@ class SortingWorkbench(QFrame):
 
     def selected_diagnostic(self) -> str:
         return str(self.diagnostic_combo.currentData() or "pipeline")
+
+    def selected_description(self) -> str:
+        return self.selection_detail.text()
 
     def settings(self) -> dict:
         sorter = self.selected_sorter()

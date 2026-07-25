@@ -8,7 +8,11 @@ from PyInstaller.utils.hooks import (
 
 datas = []
 binaries = []
-hiddenimports = []
+hiddenimports = [
+    "matplotlib.backends.backend_agg",
+    "matplotlib.backends.backend_pdf",
+    "matplotlib.backends.backend_svg",
+]
 for package in (
     "kilosort",
     "mountainsort5",

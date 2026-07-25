@@ -10,6 +10,39 @@ from .simulation import generate_demo_recording
 from .sorting import kilosort_environment, refresh_sorter_catalog, run_sorter
 
 
+def run_packaged_figure_export_self_test(workspace: Path) -> int:
+    workspace.mkdir(parents=True, exist_ok=True)
+    report_path = workspace / "packaged_figure_export_self_test.json"
+    output_dir = workspace / "self_test" / "figure_export"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        from matplotlib.figure import Figure
+
+        figure = Figure(figsize=(4, 3))
+        axis = figure.subplots()
+        axis.plot([0, 1, 2], [0, 1, 0], color="#1f7a63")
+        axis.set(xlabel="Time (s)", ylabel="Value", title="NeuroFlow export test")
+        outputs = []
+        for suffix in ("svg", "pdf", "png"):
+            path = output_dir / f"export_test.{suffix}"
+            figure.savefig(path, dpi=150)
+            if not path.is_file() or path.stat().st_size < 100:
+                raise RuntimeError(f"Figure export did not create a valid {suffix} file")
+            outputs.append(str(path))
+        report = {"ok": True, "outputs": outputs}
+    except Exception as exc:  # noqa: BLE001 - self-test persists the full failure
+        report = {
+            "ok": False,
+            "error": f"{type(exc).__name__}: {exc}",
+            "traceback": traceback.format_exc(),
+        }
+    report_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return 0 if report["ok"] else 1
+
+
 def run_packaged_kilosort_self_test(workspace: Path) -> int:
     workspace.mkdir(parents=True, exist_ok=True)
     log_path = workspace / "packaged_kilosort_self_test.log"
@@ -110,6 +143,68 @@ def run_packaged_mountainsort_self_test(workspace: Path) -> int:
                 "ok": False,
                 "error": f"{type(exc).__name__}: {exc}",
                 "traceback": traceback.format_exc(),
+            }
+        report_path.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    return 0 if report["ok"] else 1
+
+
+def run_packaged_internal_sorters_self_test(workspace: Path) -> int:
+    workspace.mkdir(parents=True, exist_ok=True)
+    log_path = workspace / "packaged_internal_sorters_self_test.log"
+    report_path = workspace / "packaged_internal_sorters_self_test.json"
+    report: dict = {"ok": False, "sorters": {}}
+    with log_path.open("w", encoding="utf-8", buffering=1) as stream:
+        sys.stdout = stream
+        sys.stderr = stream
+        try:
+            stamp = datetime.now(timezone.utc).astimezone().strftime("%Y%m%d_%H%M%S")
+            project_root = workspace / "self_test" / f"{stamp}_internal_sorters"
+            state = generate_demo_recording(
+                project_root,
+                duration_seconds=6,
+                channel_count=8,
+                sampling_rate=30_000,
+            )
+            for sorter_key in (
+                "spykingcircus2",
+                "tridesclous2",
+                "simple",
+                "lupin",
+            ):
+                try:
+                    spikes = run_sorter(
+                        state,
+                        sorter_key,
+                        project_root / "results" / sorter_key,
+                        print,
+                    )
+                    report["sorters"][sorter_key] = {
+                        "ok": True,
+                        "units": len(spikes),
+                        "spikes": sum(len(value) for value in spikes.values()),
+                        "schema": state.sorting_provenance[sorter_key]["schema"],
+                    }
+                except Exception as exc:  # noqa: BLE001 - continue the matrix
+                    report["sorters"][sorter_key] = {
+                        "ok": False,
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "traceback": traceback.format_exc(),
+                    }
+            report["ok"] = all(
+                value["ok"] for value in report["sorters"].values()
+            )
+            report["comparison_sorters"] = sorted(
+                state.sorting_comparison.get("sorters", {})
+            )
+        except Exception as exc:  # noqa: BLE001 - persist setup failure
+            report = {
+                "ok": False,
+                "error": f"{type(exc).__name__}: {exc}",
+                "traceback": traceback.format_exc(),
+                "sorters": report.get("sorters", {}),
             }
         report_path.write_text(
             json.dumps(report, ensure_ascii=False, indent=2),
