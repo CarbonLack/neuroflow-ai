@@ -170,10 +170,20 @@ REGRESSION_DESCRIPTIONS = {
     "Gradient boosting regression": "Boosted trees optimized for continuous targets.",
 }
 
-try:
-    from xgboost import XGBClassifier
+MODELS["XGBoost"] = None
 
-    MODELS["XGBoost"] = XGBClassifier(
+
+def _model_instance(model_name: str):
+    if model_name != "XGBoost":
+        return clone(MODELS[model_name])
+    try:
+        from xgboost import XGBClassifier
+    except (ImportError, OSError) as exc:
+        raise RuntimeError(
+            "XGBoost is not available in this installation. "
+            "Choose another classifier or repair the optional XGBoost component."
+        ) from exc
+    return XGBClassifier(
         n_estimators=180,
         max_depth=3,
         learning_rate=0.05,
@@ -183,8 +193,6 @@ try:
         n_jobs=1,
         random_state=20260725,
     )
-except ImportError:
-    pass
 
 
 def trial_feature_matrix(
@@ -252,7 +260,9 @@ def _population_trajectory(
         [np.asarray(state.analysis["units"][unit]["rates"]) for unit in unit_ids],
         axis=2,
     )[valid_mask]
-    condition_means = np.stack([rates[labels == label].mean(axis=0) for label in classes])
+    condition_means = np.stack(
+        [rates[labels == label].mean(axis=0) for label in classes]
+    )
     bins = condition_means.shape[1]
     flattened = condition_means.reshape(-1, condition_means.shape[-1])
     components = min(3, flattened.shape[0], flattened.shape[1])
@@ -280,7 +290,7 @@ def run_decoding_suite(
     if folds < 2:
         raise ValueError("每个条件至少需要两个 trial")
     cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=20260725)
-    model = clone(MODELS[model_name])
+    model = _model_instance(model_name)
     label_lookup = {label: index for index, label in enumerate(classes)}
     model_labels = np.asarray([label_lookup[label] for label in labels])
     predictions_model = cross_val_predict(
@@ -324,17 +334,15 @@ def run_decoding_suite(
     trajectory = PCA(n_components=pca_components).fit_transform(
         StandardScaler().fit_transform(x)
     )
-    time_scores = _time_resolved_decoding(
-        state, model_labels, valid_mask, model, cv
-    )
+    time_scores = _time_resolved_decoding(state, model_labels, valid_mask, model, cv)
     population_trajectories, trajectory_distance = _population_trajectory(
         state, labels, valid_mask, classes
     )
     fpr, tpr, thresholds = roc_curve(binary, probabilities)
     scaled = StandardScaler().fit_transform(x)
-    kmeans_labels = KMeans(
-        n_clusters=2, n_init=20, random_state=20260725
-    ).fit_predict(scaled)
+    kmeans_labels = KMeans(n_clusters=2, n_init=20, random_state=20260725).fit_predict(
+        scaled
+    )
     gmm_labels = GaussianMixture(
         n_components=2, covariance_type="full", random_state=20260725
     ).fit_predict(scaled)

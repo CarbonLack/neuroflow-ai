@@ -11,6 +11,10 @@ __pycache__/
 # Generated NeuroFlow projects and results
 demo_project/
 projects/
+DemoData/
+*_smoke/
+self_test/
+packaged_*_self_test.*
 ibl_cache/
 results/
 exports/

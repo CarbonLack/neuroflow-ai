@@ -48,6 +48,8 @@ def generate_demo_recording(
     metadata_path = raw_dir / "metadata.json"
     events_path = raw_dir / "events.csv"
     truth_path = raw_dir / "ground_truth.npz"
+    import_config_path = raw_dir / "import_config.json"
+    guide_path = project_root / "README_DATASET.md"
 
     rng = np.random.default_rng(seed)
     sample_count = int(duration_seconds * sampling_rate)
@@ -101,9 +103,7 @@ def generate_demo_recording(
     ) / scale_uv_per_bit
     raw += common_noise[:, None]
     noisy_channel = min(29, channel_count - 1)
-    raw[:, noisy_channel] += rng.normal(
-        0.0, 55.0 / scale_uv_per_bit, size=sample_count
-    )
+    raw[:, noisy_channel] += rng.normal(0.0, 55.0 / scale_uv_per_bit, size=sample_count)
 
     waveform_samples = 61
     x = np.arange(waveform_samples, dtype=np.float64)
@@ -172,8 +172,45 @@ def generate_demo_recording(
             ),
             "A weak 50 Hz common signal is present",
         ],
+        "dataset_folder": str(project_root),
+        "import_config": str(import_config_path),
     }
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    import_config_path.write_text(
+        json.dumps(
+            {
+                "recording": recording_path.name,
+                "events": events_path.name,
+                "sampling_rate_hz": sampling_rate,
+                "channel_count": channel_count,
+                "dtype": "int16",
+                "scale_uv_per_bit": scale_uv_per_bit,
+                "layout": "time-major interleaved channels (samples x channels)",
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    guide_path.write_text(
+        (
+            "# NeuroFlow demo dataset\n\n"
+            "This is a complete deterministic extracellular recording example.\n\n"
+            "## Files\n\n"
+            "- `raw/neuroflow_simulated_recording.bin`: time-major interleaved int16 "
+            "voltage (`samples x channels`).\n"
+            "- `raw/events.csv`: trial, alignment time in seconds, condition, and "
+            "reaction time.\n"
+            "- `raw/metadata.json`: recording metadata and deliberately inserted issues.\n"
+            "- `raw/import_config.json`: exact settings for the generic-binary importer.\n"
+            "- `raw/ground_truth.npz`: simulated spike times for sorter validation only.\n\n"
+            "## 中文说明\n\n"
+            "这是可重复生成的完整细胞外多通道示例。若要练习“导入自己的数据”，"
+            "请选择通用二进制，并按 `import_config.json` 填写采样率、通道数、"
+            "dtype 和缩放系数，同时选择 `events.csv`。原始二进制按时间优先交错"
+            "存储，即数组形状为 `samples x channels`。\n"
+        ),
+        encoding="utf-8",
+    )
 
     state = ProjectState(
         root=project_root,
@@ -192,7 +229,9 @@ def generate_demo_recording(
         metadata=metadata,
     )
     state.log("已生成可复现的模拟多通道原始记录")
-    state.log(f"原始文件：{recording_path.name}，{channel_count}通道，{duration_seconds:.1f}秒")
+    state.log(
+        f"原始文件：{recording_path.name}，{channel_count}通道，{duration_seconds:.1f}秒"
+    )
     return state
 
 
@@ -201,7 +240,19 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
     events_path = project_root / "raw" / "events.csv"
     truth_path = project_root / "raw" / "ground_truth.npz"
     recording_path = project_root / "raw" / "neuroflow_simulated_recording.bin"
-    if not all(path.exists() for path in (metadata_path, events_path, truth_path, recording_path)):
+    import_config_path = project_root / "raw" / "import_config.json"
+    guide_path = project_root / "README_DATASET.md"
+    if not all(
+        path.exists()
+        for path in (
+            metadata_path,
+            events_path,
+            truth_path,
+            recording_path,
+            import_config_path,
+            guide_path,
+        )
+    ):
         return generate_demo_recording(project_root)
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))

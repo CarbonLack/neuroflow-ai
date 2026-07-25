@@ -15,7 +15,7 @@ TEXT = {
     "workflow": {"zh_CN": "分析流程", "en_US": "Analysis workflow"},
     "language": {"zh_CN": "语言", "en_US": "Language"},
     "import_data": {"zh_CN": "导入我的数据", "en_US": "Import my data"},
-    "sample": {"zh_CN": "打开完整模拟 Demo", "en_US": "Open full simulation demo"},
+    "sample": {"zh_CN": "打开示例数据", "en_US": "Open demo data"},
     "restore": {"zh_CN": "恢复 NeuroFlow 项目", "en_US": "Restore NeuroFlow project"},
     "hero": {
         "zh_CN": "从自己的原始数据开始，\n逐步走到可复现的论文图。",
@@ -94,7 +94,10 @@ STEP_TEXT = {
     },
     "sync": {
         "zh_CN": ("06  事件同步", "统一时间轴、trial 与条件"),
-        "en_US": ("06  Event synchronization", "Common timeline, trials, and conditions"),
+        "en_US": (
+            "06  Event synchronization",
+            "Common timeline, trials, and conditions",
+        ),
     },
     "behavior": {
         "zh_CN": ("07  行为分析", "条件、反应时与心理测量曲线"),
@@ -102,19 +105,31 @@ STEP_TEXT = {
     },
     "analysis": {
         "zh_CN": ("08  神经活动", "Raster、PSTH、热图与群体响应"),
-        "en_US": ("08  Neural activity", "Raster, PSTH, heatmap, and population response"),
+        "en_US": (
+            "08  Neural activity",
+            "Raster, PSTH, heatmap, and population response",
+        ),
     },
     "statistics": {
         "zh_CN": ("09  统计检验", "参数、非参数、效应量、混合模型与校正"),
-        "en_US": ("09  Statistics", "Parametric, nonparametric, effects, mixed models, correction"),
+        "en_US": (
+            "09  Statistics",
+            "Parametric, nonparametric, effects, mixed models, correction",
+        ),
     },
     "decoding": {
         "zh_CN": ("10  机器学习", "分类、聚类、交叉验证、置换与 PCA"),
-        "en_US": ("10  Machine learning", "Classification, clustering, CV, permutation, and PCA"),
+        "en_US": (
+            "10  Machine learning",
+            "Classification, clustering, CV, permutation, and PCA",
+        ),
     },
     "export": {
         "zh_CN": ("11  论文与复现", "可编辑图、表、Methods、环境与项目"),
-        "en_US": ("11  Publication and reproducibility", "Editable figures, tables, methods, and environment"),
+        "en_US": (
+            "11  Publication and reproducibility",
+            "Editable figures, tables, methods, and environment",
+        ),
     },
 }
 

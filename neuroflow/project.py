@@ -33,7 +33,10 @@ def save_project(state: ProjectState) -> Path:
     if state.sorted_spikes:
         np.savez(
             sorting_path,
-            **{f"unit_{unit_id}": spikes for unit_id, spikes in state.sorted_spikes.items()},
+            **{
+                f"unit_{unit_id}": spikes
+                for unit_id, spikes in state.sorted_spikes.items()
+            },
         )
 
     payload = {
@@ -79,7 +82,9 @@ def load_project(path: Path) -> ProjectState:
         root=manifest_path.parent,
         name=payload.get("name", manifest_path.parent.name),
         source_type=payload.get("source_type", "unknown"),
-        source_path=Path(payload["source_path"]) if payload.get("source_path") else None,
+        source_path=Path(payload["source_path"])
+        if payload.get("source_path")
+        else None,
         recording_path=(
             Path(payload["recording_path"]) if payload.get("recording_path") else None
         ),
@@ -101,10 +106,14 @@ def load_project(path: Path) -> ProjectState:
         workflow_status=payload.get("workflow_status", {}),
         run_log=payload.get("run_log", []),
     )
-    if state.sorted_spikes and state.events and (
-        state.statistics
-        or state.decoding
-        or state.workflow_status.get("analysis") == "completed"
+    if (
+        state.sorted_spikes
+        and state.events
+        and (
+            state.statistics
+            or state.decoding
+            or state.workflow_status.get("analysis") == "completed"
+        )
     ):
         from .analysis import event_aligned_analysis
 

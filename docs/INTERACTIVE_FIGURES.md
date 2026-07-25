@@ -4,6 +4,8 @@ NeuroFlow figures are live Matplotlib canvases rather than screenshots.
 
 - Click a supported line, point, bar, or image element to inspect its layer name,
   x-axis quantity, y-axis quantity, and numerical coordinate.
+- In the raw-trace browser, set start time, window length, first channel, visible
+  channel count, and display-only gain. Every trace is labeled with its channel.
 - Double-click an axis to edit title, x/y labels, x/y limits, and grid visibility.
 - Use the embedded toolbar to reset, navigate, pan, zoom, configure subplots, and save.
 - Use the presentation selector to emphasize data points, convert lines to step
@@ -12,3 +14,9 @@ NeuroFlow figures are live Matplotlib canvases rather than screenshots.
 
 Interactive edits apply to the current canvas. Analysis data and the original
 deterministic figures remain reproducible from the saved project.
+
+The interaction model follows inspection tasks exposed by Plexon Offline Sorter
+and Phy, while computation remains in NeuroFlow/SpikeInterface:
+
+- https://plexon.com/products/offline-sorter/
+- https://phy.readthedocs.io/en/latest/quickstart/

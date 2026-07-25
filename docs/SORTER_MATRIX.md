@@ -21,3 +21,18 @@ backend failure independently.
 Every successful run stores sorter name, key, package version, execution backend,
 result directory, Kilosort settings when applicable, and the run log in the
 NeuroFlow project.
+
+## Kilosort inspection
+
+The workbench exposes the documented Kilosort outputs instead of showing only a
+unit count: spike depth over time, amplitude stability, template waveforms,
+template similarity, contamination estimates, stage timing, log tail, exported
+files, and simulation ground-truth matching.
+
+Primary references:
+
+- https://kilosort.readthedocs.io/en/latest/gui_guide.html
+- https://kilosort.readthedocs.io/en/latest/parameters.html
+- https://kilosort.readthedocs.io/en/latest/export_files.html
+- https://kilosort.readthedocs.io/en/latest/drift.html
+- https://spikeinterface.readthedocs.io/en/latest/modules/sorters_internal.html

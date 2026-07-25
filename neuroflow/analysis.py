@@ -85,9 +85,7 @@ def preprocessing_preview(
     traces = np.asarray(raw[start : start + count, :8], dtype=np.float32)
     high_cutoff = min(6000.0, state.sampling_rate * 0.45)
     if high_cutoff <= 300.0:
-        raise ValueError(
-            "Sampling rate is too low for the 300 Hz spike-band preview"
-        )
+        raise ValueError("Sampling rate is too low for the 300 Hz spike-band preview")
     sos = signal.butter(
         3,
         [300.0, high_cutoff],
@@ -121,12 +119,19 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
         if raw is not None and sample_indices.size:
             selected = sample_indices[: min(300, sample_indices.size)]
             snippets = np.stack(
-                [np.asarray(raw[index - 20 : index + 21], dtype=np.float32) for index in selected]
+                [
+                    np.asarray(raw[index - 20 : index + 21], dtype=np.float32)
+                    for index in selected
+                ]
             )
             mean_waveform = snippets.mean(axis=0)
-            peak_channel = int(np.unravel_index(np.argmin(mean_waveform), mean_waveform.shape)[1])
+            peak_channel = int(
+                np.unravel_index(np.argmin(mean_waveform), mean_waveform.shape)[1]
+            )
             peak_to_peak = float(np.ptp(mean_waveform[:, peak_channel]))
-            noise = float(np.median(np.abs(raw[: min(raw.shape[0], 150_000), peak_channel])))
+            noise = float(
+                np.median(np.abs(raw[: min(raw.shape[0], 150_000), peak_channel]))
+            )
             snr = peak_to_peak / max(noise * 1.4826, 1e-6)
         else:
             peak_channel = -1

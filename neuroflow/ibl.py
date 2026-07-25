@@ -19,7 +19,12 @@ FIGURE_RECIPES = [
     },
     {
         "name": "Reaction time by signed contrast",
-        "fields": ["stimOn_times", "firstMovement_times", "contrastLeft", "contrastRight"],
+        "fields": [
+            "stimOn_times",
+            "firstMovement_times",
+            "contrastLeft",
+            "contrastRight",
+        ],
         "neuroflow_view": "行为分析",
         "paper_relation": "Figure 1 reaction-time behavior",
     },
@@ -31,7 +36,13 @@ FIGURE_RECIPES = [
     },
     {
         "name": "Time-resolved stimulus decoding",
-        "fields": ["spikes.times", "spikes.clusters", "stimOn_times", "contrastLeft", "contrastRight"],
+        "fields": [
+            "spikes.times",
+            "spikes.clusters",
+            "stimOn_times",
+            "contrastLeft",
+            "contrastRight",
+        ],
         "neuroflow_view": "机器学习",
         "paper_relation": "Figure 4 decoded stimulus probability",
     },

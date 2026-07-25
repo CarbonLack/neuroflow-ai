@@ -1,6 +1,10 @@
 # PyInstaller one-folder build. Scientific libraries remain inspectable and
 # the application does not need to unpack them on every launch.
-from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs
+from PyInstaller.utils.hooks import (
+    collect_all,
+    collect_data_files,
+    collect_dynamic_libs,
+)
 
 datas = []
 binaries = []
@@ -20,6 +24,7 @@ for package in (
 # XGBoost loads its native library at runtime, so PyInstaller cannot infer it
 # from the delayed Python import in the model catalog.
 binaries += collect_dynamic_libs("xgboost")
+datas += collect_data_files("xgboost", includes=["VERSION"])
 
 analysis = Analysis(
     ["app.py"],

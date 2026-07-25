@@ -25,7 +25,9 @@ class ImportFormat:
 
 
 SUPPORTED_FORMATS = (
-    ImportFormat("simulated", "模拟多通道记录", "Neuropixels、tetrode 或线性探针", True, True),
+    ImportFormat(
+        "simulated", "模拟多通道记录", "Neuropixels、tetrode 或线性探针", True, True
+    ),
     ImportFormat("binary", "通用二进制", "int16/float32 交错通道原始记录", True, False),
     ImportFormat(
         "device",
@@ -41,7 +43,13 @@ SUPPORTED_FORMATS = (
         False,
         True,
     ),
-    ImportFormat("kilosort", "Kilosort/Phy 结果", "spike_times、spike_clusters 与参数", False, True),
+    ImportFormat(
+        "kilosort",
+        "Kilosort/Phy 结果",
+        "spike_times、spike_clusters 与参数",
+        False,
+        True,
+    ),
 )
 
 
@@ -242,7 +250,9 @@ def import_kilosort_results(
     if times.size != clusters.size:
         raise ValueError("spike times 与 cluster id 数量不一致")
     is_seconds = times_path.name.startswith("spikes.times")
-    spike_seconds = times.astype(float) if is_seconds else times.astype(float) / sampling_rate
+    spike_seconds = (
+        times.astype(float) if is_seconds else times.astype(float) / sampling_rate
+    )
     sorted_spikes = {
         int(unit): spike_seconds[clusters == unit] for unit in np.unique(clusters)
     }
@@ -266,7 +276,9 @@ def _load_alf_object(root: Path, object_name: str) -> dict[str, np.ndarray]:
     for path in root.rglob(f"{object_name}.*.npy"):
         attribute = path.name[len(object_name) + 1 : -4]
         result[attribute] = np.load(path, allow_pickle=True)
-    table = _find_one(root, (f"{object_name}.table.pqt", f"_ibl_{object_name}.table.pqt"))
+    table = _find_one(
+        root, (f"{object_name}.table.pqt", f"_ibl_{object_name}.table.pqt")
+    )
     if table:
         frame = pd.read_parquet(table)
         result.update({column: frame[column].to_numpy() for column in frame.columns})
@@ -286,9 +298,7 @@ def import_ibl_alf(project_root: Path, alf_root: Path) -> ProjectState:
         raise ValueError("IBL ALF 文件夹缺少 spikes.times.npy 或 spikes.clusters.npy")
     clusters = np.asarray(clusters).reshape(-1).astype(int)
     times = np.asarray(times).reshape(-1).astype(float)
-    sorted_spikes = {
-        int(unit): times[clusters == unit] for unit in np.unique(clusters)
-    }
+    sorted_spikes = {int(unit): times[clusters == unit] for unit in np.unique(clusters)}
     trial_count = max((len(value) for value in trials_obj.values()), default=0)
     trials: list[dict[str, Any]] = []
     for index in range(trial_count):
@@ -299,14 +309,24 @@ def import_ibl_alf(project_root: Path, alf_root: Path) -> ProjectState:
                 row[key] = value.item() if isinstance(value, np.generic) else value
         trials.append(row)
     event_key = next(
-        (key for key in ("stimOn_times", "goCue_times", "feedback_times") if key in trials_obj),
+        (
+            key
+            for key in ("stimOn_times", "goCue_times", "feedback_times")
+            if key in trials_obj
+        ),
         None,
     )
     events = []
     if event_key:
-        contrast_left = np.asarray(trials_obj.get("contrastLeft", np.full(trial_count, np.nan)))
-        contrast_right = np.asarray(trials_obj.get("contrastRight", np.full(trial_count, np.nan)))
-        for index, event_time in enumerate(np.asarray(trials_obj[event_key], dtype=float)):
+        contrast_left = np.asarray(
+            trials_obj.get("contrastLeft", np.full(trial_count, np.nan))
+        )
+        contrast_right = np.asarray(
+            trials_obj.get("contrastRight", np.full(trial_count, np.nan))
+        )
+        for index, event_time in enumerate(
+            np.asarray(trials_obj[event_key], dtype=float)
+        ):
             if not np.isfinite(event_time):
                 continue
             if np.isfinite(contrast_left[index]):
@@ -378,11 +398,7 @@ def import_ibl_trials_aggregate(
         left = row.get("contrastLeft")
         right = row.get("contrastRight")
         condition = (
-            "left"
-            if np.isfinite(left)
-            else "right"
-            if np.isfinite(right)
-            else "zero"
+            "left" if np.isfinite(left) else "right" if np.isfinite(right) else "zero"
         )
         events.append(
             {

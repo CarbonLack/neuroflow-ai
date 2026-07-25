@@ -62,6 +62,13 @@ SORTER_DEFINITIONS = (
     },
 )
 
+INSTALL_GUIDANCE = {
+    "mountainsort5": (
+        "Not installed. MountainSort5 depends on isosplit6; its current PyPI release "
+        "requires Microsoft C++ Build Tools on Windows/Python 3.12."
+    ),
+}
+
 
 def _package_version(package: str) -> str | None:
     try:
@@ -134,6 +141,11 @@ def sorter_catalog() -> list[dict]:
         else:
             installed, error = _spikeinterface_sorter_status(item["key"])
             version = _package_version(item["package"])
+            if not installed and not error:
+                error = INSTALL_GUIDANCE.get(
+                    item["key"],
+                    "The optional sorter package is not installed.",
+                )
         item.update(
             {
                 "installed": installed,
@@ -178,9 +190,10 @@ def run_sorter(
     sorter_name: str,
     results_dir: Path,
     progress: Callable[[str], None] | None = None,
+    settings: dict | None = None,
 ) -> dict[int, np.ndarray]:
     if sorter_name == "kilosort4":
-        return run_kilosort4(state, results_dir, progress)
+        return run_kilosort4(state, results_dir, progress, settings)
     available = {item["key"]: item for item in refresh_sorter_catalog()}
     item = available.get(sorter_name)
     if item is None:
@@ -207,12 +220,41 @@ def run_sorter(
     recording = _attach_probe(recording)
     if progress:
         progress(f"{item['name']} is running through SpikeInterface")
+    sorter_settings = dict(settings or {})
+    default_settings = ss.get_default_sorter_params(sorter_name)
+    if "freq_max" in default_settings:
+        nyquist = state.sampling_rate / 2
+        default_max = float(default_settings["freq_max"])
+        if default_max >= nyquist:
+            adjusted_max = max(
+                float(default_settings.get("freq_min", 300)) + 100,
+                nyquist * 0.9,
+            )
+            sorter_settings["freq_max"] = adjusted_max
+            if progress:
+                progress(
+                    f"{item['name']} freq_max adjusted to {adjusted_max:.0f} Hz "
+                    f"for a {state.sampling_rate:.0f} Hz recording"
+                )
+    filtering = default_settings.get("filtering")
+    if isinstance(filtering, dict) and float(filtering.get("freq_max", 0)) >= (
+        state.sampling_rate / 2
+    ):
+        adjusted_filtering = dict(filtering)
+        adjusted_filtering["freq_max"] = state.sampling_rate * 0.45
+        sorter_settings["filtering"] = adjusted_filtering
+        if progress:
+            progress(
+                f"{item['name']} filtering.freq_max adjusted to "
+                f"{adjusted_filtering['freq_max']:.0f} Hz"
+            )
     sorting = ss.run_sorter(
         sorter_name=sorter_name,
         recording=recording,
         folder=results_dir,
         remove_existing_folder=True,
         verbose=True,
+        **sorter_settings,
     )
     sorted_spikes = {
         int(unit): sorting.get_unit_spike_train(unit).astype(float)
@@ -225,6 +267,7 @@ def run_sorter(
         "sorter_key": sorter_name,
         "version": item["version"],
         "backend": item["backend"],
+        "settings": sorter_settings,
         "result_directory": str(results_dir),
     }
     state.log(f"{item['name']} completed: {len(sorted_spikes)} units")
@@ -246,6 +289,7 @@ def run_kilosort4(
     state: ProjectState,
     results_dir: Path,
     progress: Callable[[str], None] | None = None,
+    user_settings: dict | None = None,
 ) -> dict[int, np.ndarray]:
     if not state.ready:
         raise RuntimeError("Raw recording is not available")
@@ -271,6 +315,11 @@ def run_kilosort4(
         "Th_learned": 8,
         "artifact_threshold": 12_000,
     }
+    requested = dict(user_settings or {})
+    save_extra_vars = bool(requested.pop("save_extra_vars", True))
+    settings.update(requested)
+    settings["n_chan_bin"] = state.channel_count
+    settings["fs"] = state.sampling_rate
     kwargs = {
         "settings": settings,
         "probe": _probe(state.channel_count),
@@ -281,10 +330,14 @@ def run_kilosort4(
         "invert_sign": False,
         "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         "clear_cache": True,
+        "save_extra_vars": save_extra_vars,
+        "verbose_log": True,
     }
     signature = inspect.signature(run_kilosort)
-    kwargs = {key: value for key, value in kwargs.items() if key in signature.parameters}
-    run_kilosort(**kwargs)
+    kwargs = {
+        key: value for key, value in kwargs.items() if key in signature.parameters
+    }
+    outputs = run_kilosort(**kwargs)
 
     spike_times_path = results_dir / "spike_times.npy"
     spike_clusters_path = results_dir / "spike_clusters.npy"
@@ -311,7 +364,21 @@ def run_kilosort4(
         "device": env["device_name"],
         "settings": settings,
         "result_directory": str(results_dir),
+        "save_extra_vars": save_extra_vars,
+        "diagnostic_files": sorted(
+            path.name for path in results_dir.iterdir() if path.is_file()
+        ),
     }
+    if isinstance(outputs, tuple) and len(outputs) >= 9:
+        _, st, clu, _, _, similar_templates, is_ref, contam, kept = outputs[:9]
+        state.metadata["sorting"]["runtime_summary"] = {
+            "detected_spikes_before_deduplication": len(st),
+            "cluster_count_before_export": len(np.unique(clu)),
+            "refractory_cluster_count": int(np.count_nonzero(is_ref)),
+            "median_contamination": float(np.nanmedian(contam)),
+            "kept_spike_fraction": float(np.mean(kept)),
+            "similarity_matrix_shape": list(np.shape(similar_templates)),
+        }
     state.log(
         f"Kilosort4 completed: {len(sorted_spikes)} units, "
         f"{sum(len(value) for value in sorted_spikes.values())} spikes"

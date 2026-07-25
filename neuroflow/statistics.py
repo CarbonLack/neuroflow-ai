@@ -52,9 +52,8 @@ def independent_effect(first: np.ndarray, second: np.ndarray) -> dict[str, float
     second = np.asarray(second, dtype=float)
     n1, n2 = len(first), len(second)
     variance = (
-        ((n1 - 1) * np.var(first, ddof=1) + (n2 - 1) * np.var(second, ddof=1))
-        / max(n1 + n2 - 2, 1)
-    )
+        (n1 - 1) * np.var(first, ddof=1) + (n2 - 1) * np.var(second, ddof=1)
+    ) / max(n1 + n2 - 2, 1)
     pooled = float(np.sqrt(max(variance, 0.0)))
     cohens_d = float((np.mean(second) - np.mean(first)) / pooled) if pooled else 0.0
     correction = 1 - 3 / max(4 * (n1 + n2) - 9, 1)
@@ -150,9 +149,7 @@ def run_statistical_suite(state: ProjectState) -> dict:
             second = response[conditions == usable_labels[1]]
             if len(first) >= 2 and len(second) >= 2:
                 welch = stats.ttest_ind(second, first, equal_var=False)
-                mannwhitney = stats.mannwhitneyu(
-                    second, first, alternative="two-sided"
-                )
+                mannwhitney = stats.mannwhitneyu(second, first, alternative="two-sided")
                 levene = stats.levene(first, second, center="median")
                 anova = stats.f_oneway(first, second)
                 kruskal = stats.kruskal(first, second)
@@ -277,7 +274,5 @@ def run_statistical_suite(state: ProjectState) -> dict:
         ],
     }
     state.statistics = result
-    state.log(
-        f"统计套件完成：{result['significant_count']}/{len(rows)} units 通过 FDR"
-    )
+    state.log(f"统计套件完成：{result['significant_count']}/{len(rows)} units 通过 FDR")
     return result

@@ -12,8 +12,8 @@ from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg,
     NavigationToolbar2QT,
 )
-from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtCore import QEvent, Qt, QThread, QUrl, Signal
+from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpinBox,
     QStackedWidget,
+    QStyle,
     QTableWidget,
     QTableWidgetItem,
     QTextBrowser,
@@ -57,7 +58,6 @@ from .analysis import (
 from .data_import import (
     DEVICE_READERS,
     SUPPORTED_FORMATS,
-    create_simulated_project,
     import_binary_recording,
     import_device_recording,
     import_ibl_alf,
@@ -80,21 +80,26 @@ from .figures import (
     qc_figure,
     raw_overview_figure,
     regression_figure,
+    sorting_diagnostics_figure,
     sorting_figure,
     statistics_figure,
     unit_metrics_figure,
 )
+from .help_content import REFERENCES, control_help, page_controls
 from .i18n import LANGUAGES, step_text, tr
 from .ibl import download_bwm_trials_aggregate
 from .models import ProjectState, WorkflowStep
 from .project import MANIFEST_NAME, load_project, save_project
+from .simulation import load_or_generate_demo
 from .sorting import (
     kilosort_environment,
     refresh_sorter_catalog,
     run_sorter,
     sorter_catalog,
 )
+from .sorting_workbench import SortingWorkbench
 from .statistics import run_statistical_suite
+from .trace_controls import TraceControls
 from .tutorials import TUTORIALS, tutorial_value
 
 STEPS = [
@@ -126,50 +131,101 @@ STEP_TUTORIAL = {
     "export": "export",
 }
 
+FORMAT_TEXT_EN = {
+    "simulated": (
+        "Demo/simulated multichannel recording",
+        "Neuropixels-like, tetrode, or linear probe",
+    ),
+    "binary": ("Generic binary", "Interleaved int16/int32/float32 raw recording"),
+    "device": (
+        "Acquisition-system data",
+        "Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, NWB",
+    ),
+    "ibl_alf": ("IBL public data", "ALF session or BWM aggregate trials.pqt"),
+    "kilosort": (
+        "Kilosort/Phy output",
+        "Spike times, cluster assignments, and parameters",
+    ),
+}
+
+STATISTICAL_METHODS = (
+    "paired t-test",
+    "Wilcoxon signed-rank",
+    "paired permutation",
+    "bootstrap 95% CI",
+    "Shapiro-Wilk",
+    "Welch t-test",
+    "Mann-Whitney U",
+    "Levene test",
+    "one-way ANOVA",
+    "Kruskal-Wallis",
+    "Pearson / Spearman",
+    "mixed-effects model",
+    "FDR / Holm / Bonferroni",
+)
+
 
 APP_STYLE = """
 QMainWindow, QWidget {
-    background: #f4f6f5;
-    color: #17221f;
+    background: #f5f7f6;
+    color: #17211e;
     font-family: "Microsoft YaHei", "Segoe UI";
     font-size: 13px;
 }
-#Header, #HomeHeader { background: #ffffff; border-bottom: 1px solid #dce3e0; }
-#Brand { font-size: 21px; font-weight: 700; color: #17221f; }
-#Hero { font-size: 31px; font-weight: 750; color: #14211d; }
+#Header, #HomeHeader { background: #ffffff; border-bottom: 1px solid #d8e0dc; }
+#Brand { font-size: 22px; font-weight: 700; color: #14211d; }
+#Hero { font-size: 30px; font-weight: 700; color: #14211d; }
 #Sidebar, #Assistant { background: #ffffff; }
-#Sidebar { border-right: 1px solid #dce3e0; }
-#Assistant { border-left: 1px solid #dce3e0; }
+#Sidebar { border-right: 1px solid #d8e0dc; }
+#Assistant { border-left: 1px solid #d8e0dc; }
 QPushButton {
-    min-height: 35px;
-    border: 1px solid #cbd6d1;
+    min-height: 36px;
+    border: 1px solid #c9d4cf;
     background: #ffffff;
-    padding: 0 12px;
+    padding: 0 14px;
     border-radius: 5px;
 }
 QPushButton:hover { border-color: #1f7a63; background: #eff6f3; }
+QPushButton:disabled { color: #96a09b; background: #f1f3f2; border-color: #dce1df; }
 QPushButton:checked, QPushButton#Primary {
     color: #ffffff; background: #1f7a63; border-color: #1f7a63; font-weight: 600;
 }
 QPushButton#StepButton {
-    text-align: left; min-height: 50px; border: none; border-left: 3px solid transparent;
-    border-radius: 0; padding-left: 14px;
+    text-align: left; min-height: 53px; border: none; border-left: 3px solid transparent;
+    border-radius: 0; padding: 2px 12px 2px 14px;
 }
 QPushButton#StepButton:checked {
     color: #17221f; background: #e7f0ec; border-left: 3px solid #1f7a63; font-weight: 650;
 }
 QPushButton#StepButton[status="completed"] { color: #1f7a63; }
 QPushButton#StepButton[status="failed"] { color: #b34f36; }
-QFrame#Card, QFrame#Metric {
-    background: #ffffff; border: 1px solid #dce3e0; border-radius: 6px;
+QFrame#Card, QFrame#Metric, QFrame#SortingWorkbench, QFrame#TraceControls {
+    background: #ffffff; border: 1px solid #d8e0dc; border-radius: 6px;
 }
-QLabel#MetricValue { font-size: 20px; font-weight: 700; }
+QFrame#InsetPanel {
+    background: #f7f9f8; border: 1px solid #e0e6e3; border-radius: 5px;
+}
+QLabel#MetricValue { font-size: 19px; font-weight: 700; }
 QLabel#Muted, QLabel#MetricLabel { color: #69756f; }
-QLineEdit, QPlainTextEdit, QTextBrowser, QTableWidget, QComboBox, QSpinBox, QDoubleSpinBox, QListWidget {
-    background: #ffffff; border: 1px solid #d5ded9; border-radius: 4px; min-height: 30px;
+QLabel#PanelTitle { font-size: 15px; font-weight: 700; }
+QLabel#FieldLabel { color: #4e5d57; font-weight: 600; }
+QLabel#StatusBadge {
+    color: #8d3e2d; background: #fff1ec; border: 1px solid #f0c1b2;
+    border-radius: 4px; padding: 3px 8px; font-weight: 600;
 }
+QLabel#StatusBadge[available="true"] {
+    color: #17634f; background: #eaf5f0; border-color: #b7d9cb;
+}
+QLineEdit, QPlainTextEdit, QTextBrowser, QTableWidget, QComboBox, QSpinBox, QDoubleSpinBox, QListWidget {
+    background: #ffffff; border: 1px solid #d2dbd7; border-radius: 4px; min-height: 31px;
+    selection-background-color: #cfe5dc;
+}
+QComboBox { padding: 0 8px; }
+QTableWidget { gridline-color: #e5ebe8; }
+QTableWidget::item { padding: 4px; }
+QTableWidget::item:selected { background: #dcece5; color: #17211e; }
 QHeaderView::section {
-    background: #edf1ef; border: none; border-bottom: 1px solid #d2dcd7; padding: 6px; font-weight: 600;
+    background: #edf1ef; border: none; border-bottom: 1px solid #d2dcd7; padding: 7px; font-weight: 600;
 }
 QProgressBar {
     border: 1px solid #cfd8d4; border-radius: 4px; background: #ffffff;
@@ -188,9 +244,7 @@ class AxisEditorDialog(QDialog):
         self.resize(470, 370)
         layout = QVBoxLayout(self)
         axis_index = axis.figure.axes.index(axis) + 1
-        heading = QLabel(
-            f"{'坐标轴' if language == 'zh_CN' else 'Axis'} {axis_index}"
-        )
+        heading = QLabel(f"{'坐标轴' if language == 'zh_CN' else 'Axis'} {axis_index}")
         heading.setStyleSheet("font-size: 18px; font-weight: 700;")
         layout.addWidget(heading)
         form = QFormLayout()
@@ -208,15 +262,29 @@ class AxisEditorDialog(QDialog):
         self.xmax.setValue(axis.get_xlim()[1])
         self.ymin.setValue(axis.get_ylim()[0])
         self.ymax.setValue(axis.get_ylim()[1])
-        self.grid = QCheckBox(
-            "显示网格" if language == "zh_CN" else "Show grid"
-        )
+        self.grid = QCheckBox("显示网格" if language == "zh_CN" else "Show grid")
         visible_grid = any(line.get_visible() for line in axis.get_xgridlines())
         self.grid.setChecked(visible_grid)
         labels = (
-            ("标题", "X 轴标签", "Y 轴标签", "X 最小值", "X 最大值", "Y 最小值", "Y 最大值")
+            (
+                "标题",
+                "X 轴标签",
+                "Y 轴标签",
+                "X 最小值",
+                "X 最大值",
+                "Y 最小值",
+                "Y 最大值",
+            )
             if language == "zh_CN"
-            else ("Title", "X label", "Y label", "X minimum", "X maximum", "Y minimum", "Y maximum")
+            else (
+                "Title",
+                "X label",
+                "Y label",
+                "X minimum",
+                "X maximum",
+                "Y minimum",
+                "Y maximum",
+            )
         )
         for label, widget in zip(
             labels,
@@ -249,7 +317,10 @@ class AxisEditorDialog(QDialog):
         layout.addWidget(buttons)
 
     def _apply(self) -> None:
-        if self.xmin.value() >= self.xmax.value() or self.ymin.value() >= self.ymax.value():
+        if (
+            self.xmin.value() >= self.xmax.value()
+            or self.ymin.value() >= self.ymax.value()
+        ):
             QMessageBox.warning(
                 self,
                 tr("plot_settings", self.language),
@@ -323,8 +394,10 @@ class SorterManagerDialog(QDialog):
         catalog = refresh_sorter_catalog()
         self.table.setRowCount(len(catalog))
         for row, item in enumerate(catalog):
-            status = tr("available", self.language) if item["installed"] else tr(
-                "unavailable", self.language
+            status = (
+                tr("available", self.language)
+                if item["installed"]
+                else tr("unavailable", self.language)
             )
             values = [
                 item["name"],
@@ -352,13 +425,13 @@ class ImportDialog(QDialog):
         self.state: ProjectState | None = None
         english = language == "en_US"
         self.setWindowTitle(
-            "Import or generate electrophysiology data"
-            if english
-            else "导入或生成电生理数据"
+            "Import your electrophysiology data" if english else "导入自己的电生理数据"
         )
-        self.resize(670, 570)
+        self.resize(920, 720)
         layout = QVBoxLayout(self)
-        title = QLabel("Create a NeuroFlow project" if english else "建立 NeuroFlow 项目")
+        title = QLabel(
+            "Create a NeuroFlow project" if english else "建立 NeuroFlow 项目"
+        )
         title.setStyleSheet("font-size: 22px; font-weight: 700;")
         layout.addWidget(title)
         subtitle = QLabel(
@@ -371,32 +444,52 @@ class ImportDialog(QDialog):
 
         source_form = QFormLayout()
         self.source_combo = QComboBox()
-        for item in SUPPORTED_FORMATS:
-            self.source_combo.addItem(item.name, item.key)
+        self.source_combo.setToolTip(
+            "Choose the adapter that matches the files you have."
+            if english
+            else "选择与你手头文件相匹配的读取适配器；不会修改源文件。"
+        )
+        self.import_formats = [
+            item for item in SUPPORTED_FORMATS if item.key != "simulated"
+        ]
+        for item in self.import_formats:
+            name = FORMAT_TEXT_EN[item.key][0] if english else item.name
+            self.source_combo.addItem(name, item.key)
         source_form.addRow("Data source" if english else "数据来源", self.source_combo)
         self.project_name = QLineEdit("NeuroFlow project")
+        self.project_name.setToolTip(
+            "Names the NeuroFlow project folder; source files are not renamed."
+            if english
+            else "用于 NeuroFlow 项目文件夹；不会重命名源文件。"
+        )
         source_form.addRow("Project name" if english else "项目名称", self.project_name)
         layout.addLayout(source_form)
 
+        self.source_explanation = QLabel()
+        self.source_explanation.setObjectName("InsetPanel")
+        self.source_explanation.setWordWrap(True)
+        self.source_explanation.setContentsMargins(12, 9, 12, 9)
+        layout.addWidget(self.source_explanation)
+
         self.pages = QStackedWidget()
-        self.pages.addWidget(self._simulation_page())
         self.pages.addWidget(self._binary_page())
         self.pages.addWidget(self._device_page())
         self.pages.addWidget(self._alf_page())
         self.pages.addWidget(self._kilosort_page())
         layout.addWidget(self.pages, 1)
-        self.source_combo.currentIndexChanged.connect(self.pages.setCurrentIndex)
+        self.source_combo.currentIndexChanged.connect(self._source_changed)
+        self._source_changed(0)
 
         note = QLabel(
             (
-                "Choose Simulated multichannel recording for a complete workflow. "
-                "It generates real binary voltage for actual sorter execution. "
-                "IBL ALF and Kilosort results enter downstream of sorting."
+                "Raw-voltage inputs can run the complete workflow including sorting. "
+                "IBL/ALF and Kilosort/Phy imports begin downstream because they contain "
+                "processed spikes rather than the original broadband voltage."
             )
             if english
             else (
-                "完整全流程演示请选择“模拟多通道记录”：它会生成真实二进制电压，"
-                "随后由所选 sorter 实际运行。IBL ALF 与 Kilosort 结果从 sorting 后阶段接入。"
+                "带原始电压的数据可运行包含 sorting 的完整链路。IBL/ALF 与 "
+                "Kilosort/Phy 导入通常只有处理后的 spike，因此从下游阶段接入。"
             )
         )
         note.setWordWrap(True)
@@ -409,6 +502,33 @@ class ImportDialog(QDialog):
         buttons.accepted.connect(self._create)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def _source_changed(self, index: int) -> None:
+        self.pages.setCurrentIndex(max(index, 0))
+        if index < 0 or index >= len(self.import_formats):
+            return
+        item = self.import_formats[index]
+        english = self.language == "en_US"
+        raw_text = "includes raw voltage" if item.raw_signal else "processed data only"
+        route_text = (
+            "Complete route: import → QC → preprocessing → sorting → downstream analysis."
+            if item.raw_signal
+            else "Entry route: import → unit/behavior checks → downstream analysis."
+        )
+        if english:
+            name, description = FORMAT_TEXT_EN[item.key]
+            text = f"<b>{name}</b> · {raw_text}<br>{description}<br>{route_text}"
+        else:
+            raw_text = "包含原始电压" if item.raw_signal else "仅含处理后数据"
+            route_text = (
+                "可运行：导入 → 原始质控 → 预处理 → sorting → 下游分析。"
+                if item.raw_signal
+                else "接入位置：导入 → Unit/行为检查 → 下游分析。"
+            )
+            text = (
+                f"<b>{item.name}</b> · {raw_text}<br>{item.description}<br>{route_text}"
+            )
+        self.source_explanation.setText(text)
 
     def _simulation_page(self) -> QWidget:
         page = QWidget()
@@ -429,7 +549,9 @@ class ImportDialog(QDialog):
         self.sim_channels = QSpinBox()
         self.sim_channels.setRange(4, 128)
         self.sim_channels.setValue(32)
-        form.addRow("Electrode geometry" if english else "电极结构", self.electrode_combo)
+        form.addRow(
+            "Electrode geometry" if english else "电极结构", self.electrode_combo
+        )
         form.addRow("Duration" if english else "模拟时长", self.sim_duration)
         form.addRow("Sampling rate" if english else "采样率", self.sim_rate)
         form.addRow("Channels" if english else "通道数", self.sim_channels)
@@ -460,9 +582,7 @@ class ImportDialog(QDialog):
                 lambda: line.setText(
                     QFileDialog.getExistingDirectory(
                         self,
-                        "Select folder"
-                        if self.language == "en_US"
-                        else "选择文件夹",
+                        "Select folder" if self.language == "en_US" else "选择文件夹",
                     )
                 )
             )
@@ -502,13 +622,55 @@ class ImportDialog(QDialog):
             if english
             else "复制原始文件到项目（默认只建立只读索引）"
         )
+        self.binary_rate.setToolTip(
+            "Required. Converts sample index to seconds."
+            if english
+            else "必填。用于把采样点换算为秒；填写错误会使所有时间结果失真。"
+        )
+        self.binary_channels.setToolTip(
+            "Required. A wrong value reshapes an interleaved file incorrectly."
+            if english
+            else "必填。错误的通道数会错误重排交错二进制，常表现为重复或斜纹波形。"
+        )
+        self.binary_dtype.setToolTip(
+            "Storage type of each sample, not the analysis precision."
+            if english
+            else "每个原始样本的存储类型，不是后续分析精度。"
+        )
+        self.binary_scale.setToolTip(
+            "Microvolts represented by one stored integer step."
+            if english
+            else "一个整数步长所代表的微伏数；用于 ADC 值到电压的换算。"
+        )
         form.addRow("Raw binary" if english else "原始二进制", holder)
-        form.addRow("Events CSV (optional)" if english else "事件 CSV（可选）", event_holder)
+        form.addRow(
+            "Events CSV (optional)" if english else "事件 CSV（可选）", event_holder
+        )
         form.addRow("Sampling rate" if english else "采样率", self.binary_rate)
         form.addRow("Channels" if english else "通道数", self.binary_channels)
         form.addRow("Data type" if english else "数据类型", self.binary_dtype)
         form.addRow("μV / bit", self.binary_scale)
         form.addRow(self.copy_source)
+        binary_help = QLabel(
+            (
+                "<b>Expected layout</b>: time-major interleaved samples "
+                "[sample0_ch0, sample0_ch1, …, sample1_ch0, …]. "
+                "File size must be divisible by channels × bytes-per-sample.<br>"
+                "<b>Optional events CSV</b>: must contain <code>time_seconds</code>; "
+                "<code>trial</code> and <code>condition</code> are recommended."
+            )
+            if english
+            else (
+                "<b>文件结构</b>：按时间优先交错存储 "
+                "[sample0_ch0, sample0_ch1, …, sample1_ch0, …]。文件大小必须能被"
+                "“通道数 × 每样本字节数”整除。<br><b>可选事件 CSV</b>：必须包含 "
+                "<code>time_seconds</code>，建议同时包含 <code>trial</code> 和 "
+                "<code>condition</code>。"
+            )
+        )
+        binary_help.setWordWrap(True)
+        binary_help.setObjectName("Muted")
+        form.addRow(binary_help)
         return page
 
     def _alf_page(self) -> QWidget:
@@ -621,7 +783,9 @@ class ImportDialog(QDialog):
         )
         form.addRow("Acquisition system" if english else "记录系统", self.device_combo)
         form.addRow("File or folder" if english else "文件或文件夹", holder)
-        form.addRow("Stream ID (optional)" if english else "Stream ID（可选）", self.stream_id)
+        form.addRow(
+            "Stream ID (optional)" if english else "Stream ID（可选）", self.stream_id
+        )
         text = QLabel(
             (
                 "NeuroFlow uses SpikeInterface extractors and creates a normalized "
@@ -646,7 +810,9 @@ class ImportDialog(QDialog):
         self.ks_rate.setRange(1000, 100_000)
         self.ks_rate.setValue(30_000)
         form.addRow("Kilosort/Phy folder" if english else "Kilosort/Phy 文件夹", holder)
-        form.addRow("Original sampling rate" if english else "原记录采样率", self.ks_rate)
+        form.addRow(
+            "Original sampling rate" if english else "原记录采样率", self.ks_rate
+        )
         text = QLabel(
             "Requires spike_times.npy and spike_clusters.npy or spike_templates.npy."
             if english
@@ -666,19 +832,13 @@ class ImportDialog(QDialog):
         try:
             key = self.source_combo.currentData()
             root = self._project_root()
-            if key == "simulated":
-                self.state = create_simulated_project(
-                    root,
-                    electrode_type=self.electrode_combo.currentText(),
-                    duration_seconds=self.sim_duration.value(),
-                    sampling_rate=float(self.sim_rate.value()),
-                    channel_count=self.sim_channels.value(),
-                )
-            elif key == "binary":
+            if key == "binary":
                 source = Path(self.binary_path.text())
                 if not source.is_file():
                     raise ValueError("请选择有效的原始二进制文件")
-                events = Path(self.events_path.text()) if self.events_path.text() else None
+                events = (
+                    Path(self.events_path.text()) if self.events_path.text() else None
+                )
                 self.state = import_binary_recording(
                     root,
                     source,
@@ -738,13 +898,18 @@ class TutorialDialog(QDialog):
         self.list = QListWidget()
         self.list.setFixedWidth(250)
         self.browser = QTextBrowser()
+        self.browser.setOpenExternalLinks(True)
         layout.addWidget(self.list)
         layout.addWidget(self.browser, 1)
         for chapter in TUTORIALS:
             self.list.addItem(tutorial_value(chapter, "title", language))
         self.list.currentRowChanged.connect(self._show)
         index = next(
-            (index for index, item in enumerate(TUTORIALS) if item["key"] == initial_key),
+            (
+                index
+                for index, item in enumerate(TUTORIALS)
+                if item["key"] == initial_key
+            ),
             0,
         )
         self.list.setCurrentRow(index)
@@ -754,6 +919,20 @@ class TutorialDialog(QDialog):
             return
         item = TUTORIALS[index]
         english = self.language == "en_US"
+        controls = page_controls(item["key"], self.language)
+        controls_html = "".join(
+            (
+                "<tr>"
+                f"<td style='padding:8px;vertical-align:top'><b>{name}</b></td>"
+                f"<td style='padding:8px'>{description}</td>"
+                "</tr>"
+            )
+            for name, description in controls
+        )
+        references_html = "".join(
+            f"<li><a href='{reference['url']}'>{reference['name']}</a></li>"
+            for reference in REFERENCES
+        )
         self.browser.setHtml(
             f"<h1>{tutorial_value(item, 'title', self.language)}</h1>"
             f"<h3>{'Why' if english else '为什么做'}</h3>"
@@ -764,8 +943,12 @@ class TutorialDialog(QDialog):
             f"<p>{tutorial_value(item, 'output', self.language)}</p>"
             f"<h3>{'What to check' if english else '必须检查'}</h3>"
             f"<p>{tutorial_value(item, 'checks', self.language)}</p>"
+            f"<h3>{'Controls and consequences' if english else '页面控件与操作后果'}</h3>"
+            "<table style='border-collapse:collapse;width:100%' border='1' "
+            f"cellpadding='0'>{controls_html}</table>"
             f"<h3>{'Methods and sources' if english else '方法来源'}</h3>"
             f"<p>{item['reference']}</p>"
+            f"<ul>{references_html}</ul>"
             + (
                 "<p><b>Principle:</b> tutorials explain decisions; the user confirms and records final parameters.</p>"
                 if english
@@ -785,12 +968,14 @@ class PipelineWorker(QThread):
         state: ProjectState,
         keys: list[str],
         sorter_name: str,
+        sorter_settings: dict,
         model_name: str,
     ):
         super().__init__()
         self.state = state
         self.keys = keys
         self.sorter_name = sorter_name
+        self.sorter_settings = sorter_settings
         self.model_name = model_name
 
     def _emit(self, key: str, value: object, message: str) -> None:
@@ -813,7 +998,9 @@ class PipelineWorker(QThread):
                         self._skip(key, "当前项目只有处理后数据，没有原始电压")
                 elif key == "preprocess":
                     if self.state.ready:
-                        self._emit(key, preprocessing_preview(self.state), "预处理预览完成")
+                        self._emit(
+                            key, preprocessing_preview(self.state), "预处理预览完成"
+                        )
                     else:
                         self._skip(key, "当前项目没有原始电压")
                 elif key == "sorting":
@@ -823,6 +1010,7 @@ class PipelineWorker(QThread):
                             self.sorter_name,
                             self.state.root / "results" / self.sorter_name,
                             self.progress.emit,
+                            settings=self.sorter_settings,
                         )
                         self._emit(key, value, f"{self.sorter_name} sorting 完成")
                     elif self.state.sorted_spikes:
@@ -833,13 +1021,21 @@ class PipelineWorker(QThread):
                     self._emit(key, compute_unit_metrics(self.state), "Unit 质控完成")
                 elif key == "sync":
                     if not self.state.events:
-                        raise RuntimeError("事件相关分析需要事件时间；请导入 events.csv 或 ALF trials")
+                        raise RuntimeError(
+                            "事件相关分析需要事件时间；请导入 events.csv 或 ALF trials"
+                        )
                     self.state.log(f"事件时间轴确认：{len(self.state.events)} trials")
                     self._emit(key, self.state.events, "事件时间轴与条件已确认")
                 elif key == "behavior":
-                    self._emit(key, self.state.trials or self.state.events, "行为摘要已生成")
+                    self._emit(
+                        key, self.state.trials or self.state.events, "行为摘要已生成"
+                    )
                 elif key == "analysis":
-                    self._emit(key, event_aligned_analysis(self.state), "Raster、PSTH 与热图已生成")
+                    self._emit(
+                        key,
+                        event_aligned_analysis(self.state),
+                        "Raster、PSTH 与热图已生成",
+                    )
                 elif key == "statistics":
                     self._emit(key, run_statistical_suite(self.state), "统计套件完成")
                 elif key == "decoding":
@@ -897,6 +1093,8 @@ class NeuroFlowWindow(QMainWindow):
         self.pages.addWidget(self.workspace_page)
         self.setCentralWidget(self.pages)
         self.setStyleSheet(APP_STYLE)
+        self._apply_icons()
+        self._register_help_controls()
         self._apply_language()
 
     def _home_page(self) -> QWidget:
@@ -913,6 +1111,7 @@ class NeuroFlowWindow(QMainWindow):
         row.addWidget(brand)
         row.addStretch()
         self.home_language_combo = QComboBox()
+        self.home_language_combo.setProperty("neuroflow_help_key", "global.language")
         for key, label in LANGUAGES.items():
             self.home_language_combo.addItem(label, key)
         self.home_language_combo.currentIndexChanged.connect(
@@ -921,9 +1120,7 @@ class NeuroFlowWindow(QMainWindow):
         row.addWidget(self.home_language_combo)
         self.home_tutorial_button = QPushButton("教程中心")
         self.home_tutorial_button.clicked.connect(
-            lambda: TutorialDialog(
-                parent=self, language=self.language
-            ).exec()
+            lambda: TutorialDialog(parent=self, language=self.language).exec()
         )
         row.addWidget(self.home_tutorial_button)
         outer.addWidget(header)
@@ -946,27 +1143,40 @@ class NeuroFlowWindow(QMainWindow):
         layout.addWidget(self.hero_subtitle)
 
         actions = QHBoxLayout()
-        self.import_button = QPushButton("导入我的数据")
-        self.import_button.setObjectName("Primary")
-        self.import_button.clicked.connect(self._show_import)
-        self.sample_button = QPushButton("打开完整模拟 Demo")
+        actions.setSpacing(12)
+        self.sample_button = QPushButton("打开示例数据")
+        self.sample_button.setObjectName("Primary")
+        self.sample_button.setMinimumHeight(48)
+        self.sample_button.setMinimumWidth(210)
+        self.sample_button.setProperty("neuroflow_help_key", "home.demo")
         self.sample_button.clicked.connect(self._open_sample)
+        self.import_button = QPushButton("导入自己的数据")
+        self.import_button.setMinimumHeight(48)
+        self.import_button.setMinimumWidth(210)
+        self.import_button.setProperty("neuroflow_help_key", "home.import")
+        self.import_button.clicked.connect(self._show_import)
         self.project_button = QPushButton("恢复 NeuroFlow 项目")
+        self.project_button.setProperty("neuroflow_help_key", "home.restore")
         self.project_button.clicked.connect(self._open_project)
-        actions.addWidget(self.import_button)
         actions.addWidget(self.sample_button)
+        actions.addWidget(self.import_button)
         actions.addWidget(self.project_button)
+        self.demo_folder_button = QPushButton("查看示例数据文件夹")
+        self.demo_folder_button.clicked.connect(self._open_demo_folder)
+        actions.addWidget(self.demo_folder_button)
         actions.addStretch()
         layout.addLayout(actions)
 
         capability = QFrame()
         capability.setObjectName("Card")
         cap_layout = QVBoxLayout(capability)
-        self.cap_title = QLabel("当前可验证的数据入口")
+        self.cap_title = QLabel("数据入口与接入位置")
         self.cap_title.setStyleSheet("font-size: 17px; font-weight: 700;")
         cap_layout.addWidget(self.cap_title)
         self.input_table = QTableWidget(len(SUPPORTED_FORMATS), 4)
-        self.input_table.setHorizontalHeaderLabels(["来源", "可读内容", "原始电压", "可从 sorting 后接入"])
+        self.input_table.setHorizontalHeaderLabels(
+            ["来源", "可读内容", "原始电压", "可从 sorting 后接入"]
+        )
         self.input_table.verticalHeader().setVisible(False)
         self.input_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.input_table.setSelectionMode(QTableWidget.NoSelection)
@@ -1041,6 +1251,9 @@ class NeuroFlowWindow(QMainWindow):
         layout.addLayout(title_box)
         layout.addStretch()
         self.workspace_language_combo = QComboBox()
+        self.workspace_language_combo.setProperty(
+            "neuroflow_help_key", "global.language"
+        )
         for key, label in LANGUAGES.items():
             self.workspace_language_combo.addItem(label, key)
         self.workspace_language_combo.currentIndexChanged.connect(
@@ -1051,11 +1264,13 @@ class NeuroFlowWindow(QMainWindow):
             lambda: SorterManagerDialog(self.language, self).exec()
         )
         self.save_button = QPushButton("保存项目")
+        self.save_button.setProperty("neuroflow_help_key", "global.save")
         self.save_button.clicked.connect(self._save)
         self.tutorial_button = QPushButton("教程")
         self.tutorial_button.clicked.connect(self._open_context_tutorial)
         self.run_button = QPushButton("运行完整流程")
         self.run_button.setObjectName("Primary")
+        self.run_button.setProperty("neuroflow_help_key", "global.run_all")
         self.run_button.clicked.connect(self._run_full_pipeline)
         layout.addWidget(self.workspace_language_combo)
         layout.addWidget(self.sorter_manager_button)
@@ -1088,7 +1303,9 @@ class NeuroFlowWindow(QMainWindow):
             button.setObjectName("StepButton")
             button.setCheckable(True)
             button.setProperty("status", "pending")
-            button.clicked.connect(lambda checked=False, key=step.key: self._select_step(key))
+            button.clicked.connect(
+                lambda checked=False, key=step.key: self._select_step(key)
+            )
             group.addButton(button)
             step_layout.addWidget(button)
             self.step_buttons[step.key] = button
@@ -1119,13 +1336,25 @@ class NeuroFlowWindow(QMainWindow):
         title_row.addLayout(title_box)
         title_row.addStretch()
         self.option_combo = QComboBox()
-        self.option_combo.setMinimumWidth(190)
-        self.option_combo.currentIndexChanged.connect(self._refresh_figure)
+        self.option_combo.setMinimumWidth(260)
+        self.option_combo.setProperty("neuroflow_help_key", "page.option")
+        self.option_combo.currentIndexChanged.connect(self._on_option_changed)
         title_row.addWidget(self.option_combo)
         self.run_step_button = QPushButton("运行此节点")
+        self.run_step_button.setProperty("neuroflow_help_key", "global.run_step")
         self.run_step_button.clicked.connect(self._run_current_step)
         title_row.addWidget(self.run_step_button)
         layout.addLayout(title_row)
+
+        self.sorting_workbench = SortingWorkbench(self.language)
+        self.sorting_workbench.selection_changed.connect(
+            lambda _: self._show_control_help("sorting.selector")
+        )
+        self.sorting_workbench.diagnostic_changed.connect(
+            lambda _: self._refresh_figure()
+        )
+        self.sorting_workbench.setVisible(False)
+        layout.addWidget(self.sorting_workbench)
 
         plot_controls = QHBoxLayout()
         self.plot_help_label = QLabel()
@@ -1133,14 +1362,21 @@ class NeuroFlowWindow(QMainWindow):
         self.plot_help_label.setWordWrap(True)
         plot_controls.addWidget(self.plot_help_label, 1)
         self.plot_style_combo = QComboBox()
+        self.plot_style_combo.setProperty("neuroflow_help_key", "plot.style")
         for key in ("standard", "points", "step", "grayscale", "high_contrast"):
             self.plot_style_combo.addItem(tr(key, self.language), key)
         self.plot_style_combo.currentIndexChanged.connect(self._apply_plot_style)
         plot_controls.addWidget(self.plot_style_combo)
         self.figure_settings_button = QPushButton("图形设置")
+        self.figure_settings_button.setProperty("neuroflow_help_key", "plot.settings")
         self.figure_settings_button.clicked.connect(self._open_figure_settings)
         plot_controls.addWidget(self.figure_settings_button)
         layout.addLayout(plot_controls)
+
+        self.trace_controls = TraceControls(self.language)
+        self.trace_controls.changed.connect(self._refresh_figure)
+        self.trace_controls.setVisible(False)
+        layout.addWidget(self.trace_controls)
 
         metrics = QHBoxLayout()
         self.metric_source = MetricBox("数据源", "—")
@@ -1156,6 +1392,7 @@ class NeuroFlowWindow(QMainWindow):
             metrics.addWidget(metric)
         layout.addLayout(metrics)
         placeholder = ProjectState(root=self.workspace)
+        placeholder.metadata["language"] = self.language
         self.canvas = FigureCanvasQTAgg(raw_overview_figure_empty(placeholder))
         self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.figure_host = QWidget()
@@ -1221,6 +1458,52 @@ class NeuroFlowWindow(QMainWindow):
         layout.addWidget(self.log_view, 1)
         return assistant
 
+    def _register_help_controls(self) -> None:
+        for widget in self.findChildren(QWidget):
+            key = widget.property("neuroflow_help_key")
+            if not key:
+                continue
+            widget.installEventFilter(self)
+            title, description = control_help(str(key), self.language)
+            widget.setToolTip(f"{title}\n{description}")
+
+    def _apply_icons(self) -> None:
+        icon = self.style().standardIcon
+        standard = QStyle.StandardPixmap
+        for button, icon_name in (
+            (self.sample_button, standard.SP_MediaPlay),
+            (self.import_button, standard.SP_DialogOpenButton),
+            (self.project_button, standard.SP_DialogOpenButton),
+            (self.demo_folder_button, standard.SP_DirOpenIcon),
+            (self.home_button, standard.SP_DirHomeIcon),
+            (self.sorter_manager_button, standard.SP_ComputerIcon),
+            (self.save_button, standard.SP_DialogSaveButton),
+            (self.tutorial_button, standard.SP_DialogHelpButton),
+            (self.run_button, standard.SP_MediaPlay),
+            (self.run_step_button, standard.SP_MediaPlay),
+            (self.figure_settings_button, standard.SP_FileDialogDetailedView),
+        ):
+            button.setIcon(icon(icon_name))
+
+    def _update_control_tooltips(self) -> None:
+        for widget in self.findChildren(QWidget):
+            key = widget.property("neuroflow_help_key")
+            if key:
+                title, description = control_help(str(key), self.language)
+                widget.setToolTip(f"{title}\n{description}")
+
+    def eventFilter(self, watched, event) -> bool:
+        if event.type() in {QEvent.Enter, QEvent.FocusIn}:
+            key = watched.property("neuroflow_help_key")
+            if key:
+                self._show_control_help(str(key))
+        return super().eventFilter(watched, event)
+
+    def _show_control_help(self, key: str) -> None:
+        title, description = control_help(key, self.language)
+        self.help_title.setText(title)
+        self.help_text.setText(description)
+
     def _set_language(self, language: str | None) -> None:
         if language not in LANGUAGES or language == self.language:
             return
@@ -1244,6 +1527,9 @@ class NeuroFlowWindow(QMainWindow):
         self.import_button.setText(tr("import_data", language))
         self.sample_button.setText(tr("sample", language))
         self.project_button.setText(tr("restore", language))
+        self.demo_folder_button.setText(
+            "Open demo data folder" if language == "en_US" else "查看示例数据文件夹"
+        )
         self.cap_title.setText(tr("verified_inputs", language))
         self.flow_title.setText(tr("full_chain", language))
         self.input_table.setHorizontalHeaderLabels(
@@ -1252,6 +1538,13 @@ class NeuroFlowWindow(QMainWindow):
             else ["Source", "Readable content", "Raw voltage", "Downstream entry"]
         )
         for row, item in enumerate(SUPPORTED_FORMATS):
+            name, description = (
+                FORMAT_TEXT_EN[item.key]
+                if language == "en_US"
+                else (item.name, item.description)
+            )
+            self.input_table.item(row, 0).setText(name)
+            self.input_table.item(row, 1).setText(description)
             self.input_table.item(row, 2).setText(
                 ("是" if item.raw_signal else "否")
                 if language == "zh_CN"
@@ -1278,6 +1571,12 @@ class NeuroFlowWindow(QMainWindow):
         for step in STEPS:
             title, subtitle = step_text(step.key, language)
             self.step_buttons[step.key].setText(f"{title}\n    {subtitle}")
+            chapter = next(
+                item for item in TUTORIALS if item["key"] == STEP_TUTORIAL[step.key]
+            )
+            self.step_buttons[step.key].setToolTip(
+                tutorial_value(chapter, "why", language)
+            )
         self.run_step_button.setText(tr("run_step", language))
         self.plot_help_label.setText(tr("plot_help", language))
         self.figure_settings_button.setText(tr("plot_settings", language))
@@ -1299,6 +1598,9 @@ class NeuroFlowWindow(QMainWindow):
         self.open_tutorial_button.setText(tr("open_chapter", language))
         self.warning_heading.setText(tr("current_checks", language))
         self.log_title.setText(tr("audit_log", language))
+        self.trace_controls.set_language(language)
+        self.sorting_workbench.set_language(language)
+        self._update_control_tooltips()
         self._refresh_environment()
         if not self.state:
             self.project_label.setText(tr("no_project", language))
@@ -1315,14 +1617,24 @@ class NeuroFlowWindow(QMainWindow):
             axis = getattr(selection.artist, "axes", None)
             x_name = axis.get_xlabel() if axis is not None else "x"
             y_name = axis.get_ylabel() if axis is not None else "y"
-            if len(target) >= 2:
+            gid = getattr(selection.artist, "get_gid", lambda: None)()
+            if gid and str(gid).startswith("neuroflow-trace:") and len(target) >= 2:
+                _, channel, offset, gain = str(gid).split(":")
+                voltage = (target[1] - float(offset)) / max(float(gain), 1e-12)
                 coordinates = (
-                    f"{x_name or 'x'}={target[0]:.5g}, "
-                    f"{y_name or 'y'}={target[1]:.5g}"
+                    f"{x_name or 'Time'}={target[0]:.5g}, "
+                    f"{'电压' if self.language == 'zh_CN' else 'Voltage'}="
+                    f"{voltage:.5g} µV"
                 )
+                label = f"Ch {channel}"
+            elif len(target) >= 2:
+                coordinates = (
+                    f"{x_name or 'x'}={target[0]:.5g}, {y_name or 'y'}={target[1]:.5g}"
+                )
+                label = selection.artist.get_label()
             else:
                 coordinates = ", ".join(f"{value:.5g}" for value in target[:3])
-            label = selection.artist.get_label()
+                label = selection.artist.get_label()
             if not label or str(label).startswith("_"):
                 label = type(selection.artist).__name__
             text = (
@@ -1405,14 +1717,34 @@ class NeuroFlowWindow(QMainWindow):
             self._load_state(dialog.state)
 
     def _open_sample(self) -> None:
-        dialog = ImportDialog(self.workspace, self, self.language)
-        dialog.project_name.setText("NeuroFlow full pipeline demo")
-        if dialog.exec() == QDialog.Accepted and dialog.state:
-            self._load_state(dialog.state)
+        try:
+            root = self.workspace / "DemoData" / "NeuroFlow_demo"
+            state = load_or_generate_demo(root)
+            state.metadata["language"] = self.language
+            save_project(state)
+            self._load_state(state)
+        except Exception as exc:  # noqa: BLE001 - user-facing dataset creation
+            QMessageBox.warning(
+                self,
+                "Demo data unavailable"
+                if self.language == "en_US"
+                else "示例数据不可用",
+                str(exc),
+            )
+
+    def _open_demo_folder(self) -> None:
+        root = self.workspace / "DemoData" / "NeuroFlow_demo"
+        if not root.exists():
+            state = load_or_generate_demo(root)
+            save_project(state)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(root)))
 
     def _open_project(self) -> None:
         path = QFileDialog.getOpenFileName(
-            self, "选择 NeuroFlow 项目", str(self.workspace), f"NeuroFlow ({MANIFEST_NAME})"
+            self,
+            "选择 NeuroFlow 项目",
+            str(self.workspace),
+            f"NeuroFlow ({MANIFEST_NAME})",
         )[0]
         if not path:
             return
@@ -1426,6 +1758,7 @@ class NeuroFlowWindow(QMainWindow):
         stored_language = state.metadata.get("language")
         if stored_language in LANGUAGES:
             self.language = stored_language
+        state.metadata["language"] = self.language
         self.preview = None
         self.matches = []
         self.project_label.setText(f"{state.name}  ·  {state.root}")
@@ -1433,11 +1766,21 @@ class NeuroFlowWindow(QMainWindow):
         self.metric_channels.value_label.setText(str(state.channel_count or "—"))
         self.metric_duration.value_label.setText(f"{state.duration_seconds:.1f}s")
         self.metric_units.value_label.setText(str(len(state.sorted_spikes) or "—"))
+        self.trace_controls.set_recording(
+            state.duration_seconds,
+            state.channel_count,
+        )
+        self.sorting_workbench.set_catalog(sorter_catalog())
         for key, status in state.workflow_status.items():
             if key in self.step_buttons:
                 self._set_step_status(key, status)
         if state.sorted_spikes:
             self._set_step_status("sorting", "completed")
+            if state.ground_truth:
+                self.matches = match_ground_truth(
+                    state.ground_truth,
+                    state.sorted_spikes,
+                )
         self.pages.setCurrentWidget(self.workspace_page)
         self._apply_language()
         self._select_step("import")
@@ -1453,10 +1796,14 @@ class NeuroFlowWindow(QMainWindow):
         env = kilosort_environment()
         sorters = sorter_catalog()
         installed = [item["name"] for item in sorters if item["installed"]]
-        gpu = env["device_name"] if env["cuda_available"] else (
-            "未检测到 CUDA GPU"
-            if self.language == "zh_CN"
-            else "No CUDA GPU detected"
+        gpu = (
+            env["device_name"]
+            if env["cuda_available"]
+            else (
+                "未检测到 CUDA GPU"
+                if self.language == "zh_CN"
+                else "No CUDA GPU detected"
+            )
         )
         self.environment_label.setText(
             f"计算环境\n{gpu}\n可运行 sorter：{', '.join(installed) or '无'}"
@@ -1467,7 +1814,7 @@ class NeuroFlowWindow(QMainWindow):
     def _select_step(self, key: str) -> None:
         previous_option = (
             self.option_combo.currentData()
-            if getattr(self, "current_step", None) == key
+            if getattr(self, "current_step", None) == key and key != "sorting"
             else None
         )
         self.current_step = key
@@ -1488,18 +1835,17 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.option_combo.blockSignals(True)
         self.option_combo.clear()
-        if key == "sorting":
-            for item in sorter_catalog():
-                suffix = tr("available", self.language) if item["installed"] else tr(
-                    "unavailable", self.language
-                )
-                self.option_combo.addItem(f"{item['name']} · {suffix}", item["key"])
-                self.option_combo.setItemData(
-                    self.option_combo.count() - 1,
-                    f"{item['hardware']} · {item['best_for']}"
-                    + (f"\n{item['error']}" if item.get("error") else ""),
-                    Qt.ToolTipRole,
-                )
+        if key == "qc":
+            views = (
+                [("多通道原始波形", "traces"), ("质控指标总览", "summary")]
+                if self.language == "zh_CN"
+                else [
+                    ("Multichannel raw traces", "traces"),
+                    ("QC metric summary", "summary"),
+                ]
+            )
+            for label, value in views:
+                self.option_combo.addItem(label, value)
         elif key == "decoding":
             for model in MODELS:
                 label = (
@@ -1548,11 +1894,56 @@ class NeuroFlowWindow(QMainWindow):
             previous_index = self.option_combo.findData(previous_option)
             if previous_index >= 0:
                 self.option_combo.setCurrentIndex(previous_index)
-        self.option_combo.setVisible(self.option_combo.count() > 0)
+        self.sorting_workbench.setVisible(key == "sorting")
+        if key == "sorting":
+            self.sorting_workbench.set_catalog(sorter_catalog())
+        self.trace_controls.setVisible(key in {"import", "qc"})
+        self.option_combo.setVisible(key != "sorting" and self.option_combo.count() > 0)
         self.option_combo.blockSignals(False)
+        self._update_page_option_help()
         self._refresh_figure()
         self._refresh_table()
         self._refresh_warnings()
+
+    def _on_option_changed(self) -> None:
+        self._update_page_option_help()
+        self._refresh_figure()
+
+    def _update_page_option_help(self) -> None:
+        chapter = next(
+            item
+            for item in TUTORIALS
+            if item["key"] == STEP_TUTORIAL[self.current_step]
+        )
+        check_label = "检查：" if self.language == "zh_CN" else "Check: "
+        text = (
+            tutorial_value(chapter, "why", self.language)
+            + "\n\n"
+            + check_label
+            + tutorial_value(chapter, "checks", self.language)
+        )
+        if self.current_step == "statistics":
+            heading = (
+                "\n\n已集成方法："
+                if self.language == "zh_CN"
+                else "\n\nIntegrated methods: "
+            )
+            text += heading + "\n" + " · ".join(STATISTICAL_METHODS)
+        elif self.current_step == "decoding":
+            selection = str(self.option_combo.currentData() or "")
+            task, _, model = selection.partition(":")
+            descriptions = (
+                REGRESSION_DESCRIPTIONS if task == "regression" else MODEL_DESCRIPTIONS
+            )
+            description = descriptions.get(model, "")
+            validation = (
+                "运行后报告分层交叉验证、置换基线、混淆矩阵/误差、特征重要性和群体降维。"
+                if self.language == "zh_CN"
+                else "The run reports stratified cross-validation, a permutation baseline, "
+                "confusion/error metrics, feature importance, and population reduction."
+            )
+            text += f"\n\n{model}\n{description}\n{validation}"
+        self.help_text.setText(text)
 
     def _replace_figure(self, figure) -> None:
         self.figure_layout.removeWidget(self.toolbar)
@@ -1575,12 +1966,21 @@ class NeuroFlowWindow(QMainWindow):
         if not self.state:
             return
         key = self.current_step
-        if key == "qc" and self.state.qc:
+        trace_values = self.trace_controls.values()
+        if (
+            key == "qc"
+            and self.state.qc
+            and self.option_combo.currentData() == "summary"
+        ):
             figure = qc_figure(self.state)
         elif key == "preprocess" and self.preview:
-            figure = preprocessing_figure(self.preview)
-        elif key == "sorting" and self.matches:
-            figure = sorting_figure(self.matches, self.state)
+            figure = preprocessing_figure(self.preview, self.language)
+        elif key == "sorting":
+            diagnostic = self.sorting_workbench.selected_diagnostic()
+            if diagnostic == "validation" and self.matches:
+                figure = sorting_figure(self.matches, self.state)
+            else:
+                figure = sorting_diagnostics_figure(self.state, diagnostic)
         elif key == "unit_qc" and self.state.unit_metrics:
             figure = unit_metrics_figure(self.state)
         elif key == "behavior":
@@ -1598,9 +1998,13 @@ class NeuroFlowWindow(QMainWindow):
             elif self.state.decoding:
                 figure = decoding_figure(self.state)
             else:
-                figure = raw_overview_figure(self.state)
+                figure = raw_overview_figure(self.state, **trace_values)
         else:
-            figure = raw_overview_figure(self.state)
+            figure = raw_overview_figure(
+                self.state,
+                show_ground_truth=key == "import",
+                **trace_values,
+            )
         self._replace_figure(figure)
 
     def _refresh_table(self) -> None:
@@ -1631,31 +2035,66 @@ class NeuroFlowWindow(QMainWindow):
     def _refresh_warnings(self) -> None:
         if not self.state:
             return
-        messages = [
-            f"来源：{self.state.source_type}",
-            f"原始电压：{'可用' if self.state.ready else '不可用'}",
-            f"事件：{len(self.state.events)}",
-        ]
+        english = self.language == "en_US"
+        messages = (
+            [
+                f"Source: {self.state.source_type}",
+                f"Raw voltage: {'available' if self.state.ready else 'unavailable'}",
+                f"Events: {len(self.state.events)}",
+                f"Project: {self.state.root}",
+            ]
+            if english
+            else [
+                f"来源：{self.state.source_type}",
+                f"原始电压：{'可用' if self.state.ready else '不可用'}",
+                f"事件：{len(self.state.events)}",
+                f"项目：{self.state.root}",
+            ]
+        )
         if self.state.qc:
-            messages.append(f"坏通道：{self.state.qc.get('bad_channels', []) or '未检出'}")
-            messages.append(f"50 Hz 比值：{self.state.qc.get('line_noise_ratio', 0):.2f}")
+            messages.append(
+                f"Bad channels: {self.state.qc.get('bad_channels', []) or 'none detected'}"
+                if english
+                else f"坏通道：{self.state.qc.get('bad_channels', []) or '未检出'}"
+            )
+            messages.append(
+                f"50 Hz ratio: {self.state.qc.get('line_noise_ratio', 0):.2f}"
+                if english
+                else f"50 Hz 比值：{self.state.qc.get('line_noise_ratio', 0):.2f}"
+            )
         if self.state.sorted_spikes:
-            messages.append(f"Unit：{len(self.state.sorted_spikes)}")
+            messages.append(
+                f"Units: {len(self.state.sorted_spikes)}"
+                if english
+                else f"Unit：{len(self.state.sorted_spikes)}"
+            )
         if self.state.statistics:
-            messages.append(f"FDR 显著：{self.state.statistics['significant_count']}")
+            messages.append(
+                f"FDR significant: {self.state.statistics['significant_count']}"
+                if english
+                else f"FDR 显著：{self.state.statistics['significant_count']}"
+            )
         if self.state.decoding:
             messages.append(
-                f"解码：{self.state.decoding['balanced_accuracy']:.3f}，"
+                f"Decoding: {self.state.decoding['balanced_accuracy']:.3f}, "
+                f"permutation p={self.state.decoding['permutation_p']:.4f}"
+                if english
+                else f"解码：{self.state.decoding['balanced_accuracy']:.3f}，"
                 f"置换 p={self.state.decoding['permutation_p']:.4f}"
             )
         if self.state.regression:
             messages.append(
-                f"回归：R²={self.state.regression['r2']:.3f}，"
+                f"Regression: R²={self.state.regression['r2']:.3f}, "
+                f"MAE={self.state.regression['mae_seconds']:.3f}s"
+                if english
+                else f"回归：R²={self.state.regression['r2']:.3f}，"
                 f"MAE={self.state.regression['mae_seconds']:.3f}s"
             )
         self.warning_text.setText("\n".join(messages))
         self.log_view.setPlainText("\n".join(self.state.run_log))
-        self.log_view.verticalScrollBar().setValue(self.log_view.verticalScrollBar().maximum())
+        self.log_view.verticalScrollBar().setValue(
+            self.log_view.verticalScrollBar().maximum()
+        )
 
     def _set_step_status(self, key: str, status: str) -> None:
         button = self.step_buttons[key]
@@ -1677,16 +2116,21 @@ class NeuroFlowWindow(QMainWindow):
             return
         if self.worker and self.worker.isRunning():
             return
-        sorter_name = "kilosort4"
+        sorter_name = self.sorting_workbench.selected_sorter()
+        sorter_settings = self.sorting_workbench.settings()
         model_name = "classification:Logistic regression"
-        if self.current_step == "sorting" and self.option_combo.currentData():
-            sorter_name = self.option_combo.currentData()
         if self.current_step == "decoding" and self.option_combo.currentData():
             model_name = self.option_combo.currentData()
         self.run_button.setEnabled(False)
         self.run_step_button.setEnabled(False)
         self.progress_bar.setFormat("正在运行… %v/%m")
-        self.worker = PipelineWorker(self.state, keys, sorter_name, model_name)
+        self.worker = PipelineWorker(
+            self.state,
+            keys,
+            sorter_name,
+            sorter_settings,
+            model_name,
+        )
         self.worker.progress.connect(self._on_progress)
         self.worker.step_done.connect(self._on_step_done)
         self.worker.failed.connect(self._on_failed)
@@ -1711,7 +2155,9 @@ class NeuroFlowWindow(QMainWindow):
                     self.state.ground_truth, self.state.sorted_spikes
                 )
             if self.state:
-                self.metric_units.value_label.setText(str(len(self.state.sorted_spikes)))
+                self.metric_units.value_label.setText(
+                    str(len(self.state.sorted_spikes))
+                )
         if self.state:
             save_project(self.state)
         self._select_step(key)
@@ -1757,7 +2203,11 @@ def raw_overview_figure_empty(state: ProjectState):
     axis.text(
         0.5,
         0.55,
-        "从首页导入自己的数据，或生成可运行 Kilosort4 的模拟记录",
+        (
+            "Import your own data or open the sorting-ready demo dataset"
+            if state.metadata.get("language") == "en_US"
+            else "从首页导入自己的数据，或打开可运行 Kilosort4 的示例数据"
+        ),
         ha="center",
         va="center",
         fontsize=15,
@@ -1766,7 +2216,11 @@ def raw_overview_figure_empty(state: ProjectState):
     axis.text(
         0.5,
         0.43,
-        "数据结构、参数、分析结果和教程会在同一个项目中保持可追溯",
+        (
+            "Data structure, parameters, results, and tutorials remain traceable in one project"
+            if state.metadata.get("language") == "en_US"
+            else "数据结构、参数、分析结果和教程会在同一个项目中保持可追溯"
+        ),
         ha="center",
         va="center",
         fontsize=10,
@@ -1776,6 +2230,13 @@ def raw_overview_figure_empty(state: ProjectState):
 
 
 def run_app(workspace: Path) -> int:
+    workspace.mkdir(parents=True, exist_ok=True)
+    runtime_log = workspace / "neuroflow_runtime.log"
+    runtime_stream = runtime_log.open("a", encoding="utf-8", buffering=1)
+    if sys.stdout is None:
+        sys.stdout = runtime_stream
+    if sys.stderr is None:
+        sys.stderr = runtime_stream
     app = QApplication.instance() or QApplication([])
     app.setApplicationName("NeuroFlow")
     app.setFont(QFont("Microsoft YaHei", 10))
@@ -1784,7 +2245,6 @@ def run_app(workspace: Path) -> int:
     def handle_exception(exc_type, value, trace) -> None:
         details = "".join(traceback.format_exception(exc_type, value, trace))
         try:
-            workspace.mkdir(parents=True, exist_ok=True)
             crash_log.write_text(details, encoding="utf-8")
         except OSError:
             pass

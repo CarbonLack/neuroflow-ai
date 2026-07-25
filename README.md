@@ -1,4 +1,4 @@
-# NeuroFlow v0.3
+# NeuroFlow v0.4
 
 NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 它不重新实现成熟 sorter，而是把数据导入、质量控制、Kilosort4、Unit 质控、
@@ -6,7 +6,9 @@ NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电�
 
 ## 这不是界面原型
 
-完整模拟 Demo 会生成真实的交错 `int16` 多通道电压，然后实际执行：
+首页只有两个主要数据入口：固定示例数据和用户自己的数据。示例数据保存在
+`Documents/NeuroFlow/DemoData/NeuroFlow_demo`，包含二进制原始电压、事件表、
+元数据、ground truth、精确导入配置和数据说明。完整 Demo 会实际执行：
 
 1. 原始信号 RMS、坏通道、饱和与 50 Hz 检查；
 2. 300–6000 Hz 与 common median reference 预览；
@@ -22,15 +24,16 @@ NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电�
 ## 交互与语言
 
 - 图中数据元素可点击，显示图层、横纵坐标含义和精确值；
+- 原始波形可以选择起始时间、时间窗、首通道、可见通道数和显示增益；
 - 双击任意坐标轴可修改标题、轴标签、范围与网格；
 - 内置缩放、平移、复位和图片保存工具栏；
 - 可切换突出数据点、阶梯线、灰度和高对比呈现；
 - 系统级中文/English 切换，语言选择写入项目；
-- 11 个工作流节点各自拥有“为什么做、输入、输出、必须检查、方法来源”教程。
+- 11 个工作流节点各自拥有“为什么做、输入、输出、必须检查、逐控件后果、方法来源”教程。
 
 ## 数据入口
 
-- 模拟 Neuropixels-like、四电极阵列或线性探针；
+- 固定模拟多通道示例，可作为 Neuropixels-like、tetrode 或线性探针教学数据；
 - 自己的交错通道二进制记录，可附带事件 CSV；
 - Intan、Open Ephys、SpikeGLX/Neuropixels、Blackrock、Plexon、TDT、NWB，
   通过 SpikeInterface extractor 转成项目缓存；
@@ -44,13 +47,15 @@ NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电�
 
 - **Kilosort4**：原生 NeuroFlow 适配器，完整 Demo 的默认 sorter；
 - **SpyKING CIRCUS 2、Tridesclous2、Simple、Lupin**：SpikeInterface 原生
-  sorter，当前发行环境已完成实际运行验证；
+  sorter，均已接入并完成可用性探测；本轮另外实跑验证了 Tridesclous2 和 Simple；
 - **MountainSort5**：适配器和安装清单已集成。其 `isosplit6` 在
   Windows/Python 3.12 下需要 Microsoft C++ Build Tools，未满足时会明确显示
   “不可用”，不会误报或阻止程序启动。
 
 NeuroFlow 只逐项探测上述白名单 sorter，不再调用会枚举 HDSort、MATLAB 等所有
 后端的全局检测，因此无关后端的编码或编译错误不会导致主程序启动崩溃。
+Kilosort4 运行后可检查流程耗时、完整日志、深度-时间图、振幅稳定性、模板波形、
+模板相似度、污染率、输出文件清单和模拟 ground truth 验证。
 
 ## 启动
 
@@ -93,8 +98,8 @@ python -m pytest -q
 ```
 
 测试覆盖模拟原始记录、质控、通用二进制、Kilosort 输出、IBL ALF、项目恢复、
-多统计视图、双语帮助、sorter 容错检测与机器学习解码。Kilosort4 GPU 和四个
-SpikeInterface 原生 sorter 的完整运行属于单独的集成验证。
+多统计视图、双语帮助、sorter 容错检测与机器学习解码。Kilosort4 GPU、
+Tridesclous2 和 Simple 的真实运行属于单独的集成验证。
 
 ## 数据与仓库原则
 
