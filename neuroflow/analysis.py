@@ -45,7 +45,7 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
     bad_channels = np.flatnonzero(rms > median_rms * 2.6).astype(int).tolist()
 
     frequencies, power = signal.welch(
-        preview[:, : min(8, state.channel_count)],
+        preview,
         fs=state.sampling_rate,
         nperseg=min(8192, count),
         axis=0,
@@ -55,21 +55,70 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
     neighborhood = (frequencies >= 45.0) & (frequencies <= 55.0)
     baseline = np.median(mean_power[neighborhood])
     line_noise_ratio = float(mean_power[target_index] / max(baseline, 1e-12))
-    saturated = int(np.count_nonzero(np.abs(preview) >= 32760))
+    channel_baseline = np.median(power[neighborhood], axis=0)
+    channel_line_ratios = power[target_index] / np.maximum(channel_baseline, 1e-12)
+    saturated_by_channel = np.count_nonzero(np.abs(preview) >= 32760, axis=0)
+    saturated = int(saturated_by_channel.sum())
+
+    timeline_window = max(int(state.sampling_rate), 1)
+    timeline_starts = np.unique(
+        np.linspace(
+            0,
+            max(raw.shape[0] - timeline_window, 0),
+            num=min(12, max(int(state.duration_seconds), 2)),
+            dtype=int,
+        )
+    )
+    rms_timeline = []
+    for start in timeline_starts:
+        chunk = np.asarray(
+            raw[start : min(start + timeline_window, raw.shape[0])],
+            dtype=np.float32,
+        )
+        rms_timeline.append(np.sqrt(np.mean(chunk**2, axis=0)))
+    rms_timeline_array = np.asarray(rms_timeline, dtype=float)
+    clipping_fraction = saturated_by_channel / max(count, 1)
+    quality_score = 100.0
+    quality_score -= min(40.0, len(bad_channels) / max(state.channel_count, 1) * 100)
+    quality_score -= min(25.0, max(line_noise_ratio - 1.0, 0.0) * 6.0)
+    quality_score -= min(25.0, saturated / max(preview.size, 1) * 100_000.0)
+    quality_score = float(np.clip(quality_score, 0.0, 100.0))
+    channel_labels = [
+        (
+            "high_noise"
+            if channel in bad_channels
+            else "clipped"
+            if clipping_fraction[channel] > 0.001
+            else "line_noise"
+            if channel_line_ratios[channel] > 2.5
+            else "candidate_good"
+        )
+        for channel in range(state.channel_count)
+    ]
+    psd_mask = frequencies <= min(300.0, state.sampling_rate * 0.45)
 
     result = {
         "channel_rms": rms.tolist(),
         "median_rms": median_rms,
         "bad_channels": bad_channels,
         "line_noise_ratio": line_noise_ratio,
+        "channel_line_noise_ratio": channel_line_ratios.tolist(),
         "saturated_samples": saturated,
+        "saturated_by_channel": saturated_by_channel.tolist(),
+        "clipping_fraction": clipping_fraction.tolist(),
+        "channel_labels": channel_labels,
+        "quality_score": quality_score,
+        "psd_frequencies_hz": frequencies[psd_mask].tolist(),
+        "channel_psd": power[psd_mask].T.tolist(),
+        "timeline_seconds": (timeline_starts / state.sampling_rate).tolist(),
+        "rms_timeline": rms_timeline_array.tolist(),
         "preview_seconds": count / state.sampling_rate,
         "status": "warning" if bad_channels or line_noise_ratio > 2.5 else "pass",
     }
     state.qc = result
     state.log(
-        f"原始质控完成：识别{len(bad_channels)}个高噪声通道，"
-        f"50 Hz比值{line_noise_ratio:.2f}"
+        f"Raw QC completed: quality score {quality_score:.1f}/100, "
+        f"{len(bad_channels)} high-noise channels, 50 Hz ratio {line_noise_ratio:.2f}"
     )
     return result
 
@@ -77,7 +126,7 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
 def preprocessing_preview(
     state: ProjectState,
     start_seconds: float = 2.0,
-    duration_seconds: float = 0.08,
+    duration_seconds: float = 2.0,
 ) -> dict[str, np.ndarray]:
     raw = load_recording(state)
     start = int(start_seconds * state.sampling_rate)
@@ -95,18 +144,68 @@ def preprocessing_preview(
     )
     filtered = signal.sosfiltfilt(sos, traces, axis=0)
     referenced = filtered - np.median(filtered, axis=1, keepdims=True)
-    state.log("已生成300-6000 Hz带通与common median reference预览")
+    lfp_high = min(300.0, state.sampling_rate * 0.4)
+    lfp_sos = signal.butter(
+        3,
+        [1.0, lfp_high],
+        btype="bandpass",
+        fs=state.sampling_rate,
+        output="sos",
+    )
+    lfp = signal.sosfiltfilt(lfp_sos, traces, axis=0)
+    lfp_target_rate = min(1_000.0, state.sampling_rate)
+    divisor = max(round(state.sampling_rate / lfp_target_rate), 1)
+    lfp = signal.resample_poly(lfp, up=1, down=divisor, axis=0)
+    lfp_rate = state.sampling_rate / divisor
+    state.log(
+        "AP branch created (300-6000 Hz + common median reference) and "
+        "LFP branch created (1-300 Hz + 1 kHz preview)"
+    )
     return {
         "time_ms": np.arange(count) / state.sampling_rate * 1000.0,
         "raw": traces,
         "processed": referenced,
+        "lfp_time_s": np.arange(len(lfp)) / lfp_rate,
+        "lfp": lfp,
+        "lfp_sampling_rate_hz": lfp_rate,
         "bandpass_hz": (300.0, high_cutoff),
+        "pipeline": [
+            {
+                "branch": "AP / sorting",
+                "step": "bandpass_filter",
+                "parameters": {"freq_min": 300.0, "freq_max": high_cutoff},
+                "status": "previewed",
+            },
+            {
+                "branch": "AP / sorting",
+                "step": "common_median_reference",
+                "parameters": {"reference": "global", "operator": "median"},
+                "status": "previewed",
+            },
+            {
+                "branch": "LFP",
+                "step": "bandpass_and_downsample",
+                "parameters": {
+                    "freq_min": 1.0,
+                    "freq_max": lfp_high,
+                    "target_rate_hz": lfp_rate,
+                },
+                "status": "previewed",
+            },
+        ],
+        "guardrails": [
+            "Confirm bad-channel decisions before referencing.",
+            "Do not whiten twice when the selected sorter already whitens internally.",
+            "Apply Neuropixels phase-shift correction before common referencing when metadata support it.",
+            "The preview never overwrites the source recording.",
+        ],
     }
 
 
 def compute_unit_metrics(state: ProjectState) -> list[dict]:
     raw = load_recording(state) if state.ready else None
     metrics: list[dict] = []
+    diagnostics: dict[int, dict] = {}
     for unit_id, spikes in sorted(state.sorted_spikes.items()):
         firing_rate = len(spikes) / max(state.duration_seconds, 1e-9)
         intervals = np.diff(spikes)
@@ -133,10 +232,51 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
                 np.median(np.abs(raw[: min(raw.shape[0], 150_000), peak_channel]))
             )
             snr = peak_to_peak / max(noise * 1.4826, 1e-6)
+            first_channel = max(peak_channel - 2, 0)
+            last_channel = min(peak_channel + 3, state.channel_count)
+            local_waveform = mean_waveform[:, first_channel:last_channel]
+            selected_amplitudes = -np.min(snippets[:, :, peak_channel], axis=1)
+            selected_times = selected / state.sampling_rate
         else:
             peak_channel = -1
             peak_to_peak = 0.0
             snr = float("nan") if raw is None else 0.0
+            first_channel = 0
+            last_channel = 0
+            local_waveform = np.empty((0, 0))
+            selected_amplitudes = np.empty(0)
+            selected_times = np.empty(0)
+        positive_lags = []
+        for spike_index, spike_time in enumerate(spikes):
+            later = spikes[spike_index + 1 :]
+            local = later[(later - spike_time) <= 0.05] - spike_time
+            if local.size:
+                positive_lags.extend(local.tolist())
+        acg_lags = np.asarray(positive_lags, dtype=float) * 1_000.0
+        acg_edges = np.arange(0.0, 51.0, 1.0)
+        acg_counts, _ = np.histogram(acg_lags, bins=acg_edges)
+        time_edges = np.arange(0.0, state.duration_seconds + 1.0, 1.0)
+        if time_edges.size < 2:
+            time_edges = np.array([0.0, max(state.duration_seconds, 1.0)])
+        stability_counts, _ = np.histogram(spikes, bins=time_edges)
+        diagnostics[int(unit_id)] = {
+            "isi_ms": (intervals * 1_000.0).tolist(),
+            "acg_lags_ms": ((acg_edges[:-1] + acg_edges[1:]) / 2).tolist(),
+            "acg_counts": acg_counts.tolist(),
+            "stability_time_s": ((time_edges[:-1] + time_edges[1:]) / 2).tolist(),
+            "stability_rate_hz": (
+                stability_counts / np.maximum(np.diff(time_edges), 1e-9)
+            ).tolist(),
+            "waveform_time_ms": (
+                (np.arange(local_waveform.shape[0]) - 20)
+                / state.sampling_rate
+                * 1_000.0
+            ).tolist(),
+            "waveform": local_waveform.tolist(),
+            "waveform_channels": list(range(first_channel, last_channel)),
+            "amplitude_time_s": selected_times.tolist(),
+            "amplitude_adc": selected_amplitudes.tolist(),
+        }
         label = (
             "候选单神经元"
             if isi_violations < 0.02 and (not np.isfinite(snr) or snr >= 4.0)
@@ -155,7 +295,11 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
             }
         )
     state.unit_metrics = metrics
-    state.log(f"Unit质控完成：计算{len(metrics)}个Unit的放电率、ISI和SNR")
+    state.unit_diagnostics = diagnostics
+    state.log(
+        f"Unit QC completed: firing rate, ISI, waveform, stability, "
+        f"and SNR computed for {len(metrics)} units"
+    )
     return metrics
 
 
@@ -266,8 +410,8 @@ def event_aligned_analysis(
     }
     state.analysis = result
     state.log(
-        f"事件分析完成：{len(events)}个trial，"
-        f"{result['responsive_units']}/{len(unit_results)}个Unit通过FDR校正"
+        f"Event analysis completed: {len(events)} trials, "
+        f"{result['responsive_units']}/{len(unit_results)} units passed FDR correction"
     )
     return result
 
@@ -287,6 +431,10 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
             "unit_qc",
             "event_alignment",
             "behavior",
+            "spike_train_statistics",
+            "lfp_spectral_analysis",
+            "spike_field_coupling",
+            "method_validation_case",
             "statistics",
             "decoding",
             "regression",
@@ -311,6 +459,10 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         "raw_file": state.recording_path.name if state.recording_path else None,
         "qc": state.qc,
         "unit_metrics": state.unit_metrics,
+        "spike_train_analysis": _json_ready(state.spike_train_analysis),
+        "lfp_analysis": _json_ready(state.lfp_analysis),
+        "spike_field_analysis": _json_ready(state.spike_field_analysis),
+        "case_studies": _json_ready(state.case_studies),
         "statistics": _json_ready(state.statistics),
         "decoding": {
             key: _json_ready(value)
@@ -342,6 +494,9 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         "scikit-learn",
         "spikeinterface",
         "kilosort",
+        "neo",
+        "quantities",
+        "elephant",
         "PySide6",
         "ONE-api",
         "statsmodels",
@@ -360,6 +515,36 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         if sorter_name
         else "Previously processed spike-sorting results were imported with source provenance. "
     )
+    spike_train_sentence = (
+        "Unit spike trains were represented as unit-aware Neo SpikeTrain objects. "
+        "Elephant was used for firing-rate and inter-spike-interval statistics, "
+        "trial Fano factors, cross-correlation histograms, STTC, and "
+        "Victor-Purpura and van Rossum distances. "
+        if state.spike_train_analysis
+        else ""
+    )
+    lfp_sentence = (
+        "The LFP branch was resampled to 1 kHz and analyzed using Welch power "
+        "spectral density, magnitude-squared coherence, cross-spectral phase lag, "
+        "spectrograms, and integrated canonical-band power. "
+        if state.lfp_analysis
+        else ""
+    )
+    coupling_sentence = (
+        "Spike-field coupling was assessed from 1-5 Hz analytic phase using "
+        "spike-triggered phase, mean vector length, a Rayleigh approximation, and "
+        "circular-shift surrogate tests. Phase-amplitude coupling used 18 phase "
+        "bins and Kullback-Leibler divergence from the uniform distribution. "
+        if state.spike_field_analysis
+        else ""
+    )
+    case_sentence = (
+        "A respiration-state workflow was demonstrated on NeuroFlow's own "
+        "simulated reference signal; it is a method validation case and does not "
+        "reproduce or claim the numerical findings of the cited biological study. "
+        if state.case_studies.get("respiration")
+        else ""
+    )
     methods = (
         "# Methods draft\n\n"
         f"A {state.channel_count}-channel extracellular recording was sampled at "
@@ -373,7 +558,13 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         "permutation, bootstrap confidence intervals, and Benjamini-Hochberg "
         "correction across units. Trial labels were decoded with a preprocessing "
         "pipeline fit inside stratified cross-validation, and evaluated against a "
-        "label-permutation null distribution.\n"
+        "label-permutation null distribution. "
+        f"{spike_train_sentence}{lfp_sentence}{coupling_sentence}{case_sentence}\n"
+        "\n## Method sources\n\n"
+        "- SpikeInterface: data interfaces, preprocessing and postprocessing architecture.\n"
+        "- Neo: unit-aware electrophysiology data objects.\n"
+        "- Elephant: validated spike-train, spectral and phase-analysis functions.\n"
+        "- Folschweiller and Sauer (2023): respiration-state case-study structure only.\n"
     )
     (output_dir / "methods.md").write_text(methods, encoding="utf-8")
 
@@ -384,6 +575,34 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
     if state.unit_metrics:
         pd.DataFrame(state.unit_metrics).to_csv(
             tables_dir / "unit_metrics.csv", index=False
+        )
+    if state.spike_train_analysis.get("rows"):
+        pd.DataFrame(state.spike_train_analysis["rows"]).to_csv(
+            tables_dir / "spike_train_statistics.csv", index=False
+        )
+    if state.lfp_analysis.get("band_power"):
+        band_power = state.lfp_analysis["band_power"]
+        pd.DataFrame(
+            {
+                "band": list(band_power),
+                **{
+                    f"channel_{channel_id}": [
+                        band_power[band][index] for band in band_power
+                    ]
+                    for index, channel_id in enumerate(
+                        state.lfp_analysis.get("channel_ids", [])
+                    )
+                },
+            }
+        ).to_csv(tables_dir / "lfp_band_power.csv", index=False)
+    if state.spike_field_analysis.get("rows"):
+        pd.DataFrame(state.spike_field_analysis["rows"]).to_csv(
+            tables_dir / "spike_field_coupling.csv", index=False
+        )
+    respiration_case = state.case_studies.get("respiration", {})
+    if respiration_case.get("rows"):
+        pd.DataFrame(respiration_case["rows"]).to_csv(
+            tables_dir / "respiration_case.csv", index=False
         )
     if state.statistics.get("rows"):
         pd.DataFrame(state.statistics["rows"]).to_csv(
@@ -404,6 +623,7 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         behavior_figure,
         decoding_figure,
         event_analysis_figure,
+        neural_toolkit_figure,
         qc_figure,
         regression_figure,
         statistics_figure,
@@ -420,6 +640,53 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
     if state.analysis:
         figure_builders.append(
             ("raster_psth_population", lambda: event_analysis_figure(state))
+        )
+    if state.spike_train_analysis:
+        figure_builders.extend(
+            [
+                (
+                    "spike_train_statistics",
+                    lambda: neural_toolkit_figure(state, "spike:statistics"),
+                ),
+                (
+                    "spike_train_relationships",
+                    lambda: neural_toolkit_figure(state, "spike:relationships"),
+                ),
+            ]
+        )
+    if state.lfp_analysis:
+        figure_builders.extend(
+            [
+                ("lfp_psd", lambda: neural_toolkit_figure(state, "lfp:psd")),
+                (
+                    "lfp_coherence",
+                    lambda: neural_toolkit_figure(state, "lfp:coherence"),
+                ),
+                (
+                    "lfp_spectrogram",
+                    lambda: neural_toolkit_figure(state, "lfp:spectrogram"),
+                ),
+            ]
+        )
+    if state.spike_field_analysis:
+        figure_builders.append(
+            (
+                "spike_field_coupling",
+                lambda: neural_toolkit_figure(state, "coupling:phase"),
+            )
+        )
+    if respiration_case:
+        figure_builders.extend(
+            [
+                (
+                    "respiration_state_analysis",
+                    lambda: neural_toolkit_figure(state, "case:respiration"),
+                ),
+                (
+                    "respiration_phase_amplitude_coupling",
+                    lambda: neural_toolkit_figure(state, "case:pac"),
+                ),
+            ]
         )
     if state.statistics:
         figure_builders.append(("statistics", lambda: statistics_figure(state)))

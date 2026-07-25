@@ -12,6 +12,7 @@ from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg,
     NavigationToolbar2QT,
 )
+from matplotlib.transforms import Bbox
 from PySide6.QtCore import QEvent, Qt, QThread, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
@@ -26,6 +27,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QFrame,
     QHBoxLayout,
+    QHeaderView,
     QInputDialog,
     QLabel,
     QLineEdit,
@@ -49,7 +51,6 @@ from PySide6.QtWidgets import (
 
 from .analysis import (
     compute_unit_metrics,
-    event_aligned_analysis,
     export_reproducible_bundle,
     match_ground_truth,
     preprocessing_preview,
@@ -72,12 +73,13 @@ from .decoding import (
     run_decoding_suite,
     run_regression_suite,
 )
+from .ephys_toolkit import METHOD_CATALOG, provider_status, run_neural_toolkit
 from .figures import (
     behavior_figure,
     decoding_figure,
-    event_analysis_figure,
-    preprocessing_figure,
-    qc_figure,
+    neural_toolkit_figure,
+    preprocessing_diagnostics_figure,
+    qc_diagnostics_figure,
     raw_overview_figure,
     regression_figure,
     sorting_diagnostics_figure,
@@ -97,6 +99,7 @@ from .sorting import (
     run_sorter,
     sorter_catalog,
 )
+from .sorting_results import activate_sorting_result
 from .sorting_workbench import SortingWorkbench
 from .statistics import run_statistical_suite
 from .trace_controls import TraceControls
@@ -161,8 +164,17 @@ STATISTICAL_METHODS = (
     "Kruskal-Wallis",
     "Pearson / Spearman",
     "mixed-effects model",
+    "Rayleigh phase-locking approximation",
+    "circular-shift surrogate test",
     "FDR / Holm / Bonferroni",
 )
+
+
+def _documentation_index() -> Path:
+    if getattr(sys, "frozen", False):
+        bundle_root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        return bundle_root / "neuroflow_docs" / "index.html"
+    return Path(__file__).resolve().parents[1] / "docs" / "site" / "index.html"
 
 
 APP_STYLE = """
@@ -977,32 +989,64 @@ class PipelineWorker(QThread):
         self.sorter_name = sorter_name
         self.sorter_settings = sorter_settings
         self.model_name = model_name
+        self.language = str(state.metadata.get("language", "zh_CN"))
+
+    def _message(self, zh: str, en: str) -> str:
+        return en if self.language == "en_US" else zh
 
     def _emit(self, key: str, value: object, message: str) -> None:
         self.progress.emit(message)
         self.step_done.emit(key, value)
 
-    def _skip(self, key: str, reason: str) -> None:
-        self._emit(key, {"skipped": True, "reason": reason}, f"{key} 已跳过：{reason}")
+    def _skip(self, key: str, reason_zh: str, reason_en: str) -> None:
+        reason = self._message(reason_zh, reason_en)
+        self._emit(
+            key,
+            {"skipped": True, "reason": reason},
+            self._message(f"{key} 已跳过：{reason}", f"{key} skipped: {reason}"),
+        )
 
     def run(self) -> None:
         key = self.keys[0] if self.keys else "import"
         try:
             for key in self.keys:
                 if key == "import":
-                    self._emit(key, self.state, "项目来源、格式与事件清单已确认")
+                    self._emit(
+                        key,
+                        self.state,
+                        self._message(
+                            "项目来源、格式与事件清单已确认",
+                            "Project source, format, and event inventory confirmed",
+                        ),
+                    )
                 elif key == "qc":
                     if self.state.ready:
-                        self._emit(key, run_raw_qc(self.state), "原始质控完成")
+                        self._emit(
+                            key,
+                            run_raw_qc(self.state),
+                            self._message("原始质控完成", "Raw QC completed"),
+                        )
                     else:
-                        self._skip(key, "当前项目只有处理后数据，没有原始电压")
+                        self._skip(
+                            key,
+                            "当前项目只有处理后数据，没有原始电压",
+                            "the project contains processed data but no raw voltage",
+                        )
                 elif key == "preprocess":
                     if self.state.ready:
                         self._emit(
-                            key, preprocessing_preview(self.state), "预处理预览完成"
+                            key,
+                            preprocessing_preview(self.state),
+                            self._message(
+                                "预处理预览完成", "Preprocessing preview completed"
+                            ),
                         )
                     else:
-                        self._skip(key, "当前项目没有原始电压")
+                        self._skip(
+                            key,
+                            "当前项目没有原始电压",
+                            "the project has no raw voltage",
+                        )
                 elif key == "sorting":
                     if self.state.ready:
                         value = run_sorter(
@@ -1012,46 +1056,114 @@ class PipelineWorker(QThread):
                             self.progress.emit,
                             settings=self.sorter_settings,
                         )
-                        self._emit(key, value, f"{self.sorter_name} sorting 完成")
+                        self._emit(
+                            key,
+                            value,
+                            self._message(
+                                f"{self.sorter_name} sorting 完成",
+                                f"{self.sorter_name} sorting completed",
+                            ),
+                        )
                     elif self.state.sorted_spikes:
-                        self._skip(key, "已导入外部 sorting 结果")
+                        self._skip(
+                            key,
+                            "已导入外部 sorting 结果",
+                            "external sorting results are already imported",
+                        )
                     else:
-                        raise RuntimeError("没有可用于 sorting 的原始记录")
+                        raise RuntimeError(
+                            self._message(
+                                "没有可用于 sorting 的原始记录",
+                                "No raw recording is available for sorting",
+                            )
+                        )
                 elif key == "unit_qc":
-                    self._emit(key, compute_unit_metrics(self.state), "Unit 质控完成")
+                    self._emit(
+                        key,
+                        compute_unit_metrics(self.state),
+                        self._message("Unit 质控完成", "Unit QC completed"),
+                    )
                 elif key == "sync":
                     if not self.state.events:
                         raise RuntimeError(
-                            "事件相关分析需要事件时间；请导入 events.csv 或 ALF trials"
+                            self._message(
+                                "事件相关分析需要事件时间；请导入 events.csv 或 ALF trials",
+                                "Event analysis requires timestamps; import events.csv "
+                                "or ALF trials",
+                            )
                         )
-                    self.state.log(f"事件时间轴确认：{len(self.state.events)} trials")
-                    self._emit(key, self.state.events, "事件时间轴与条件已确认")
+                    self.state.log(
+                        f"Event timeline confirmed: {len(self.state.events)} trials"
+                    )
+                    self._emit(
+                        key,
+                        self.state.events,
+                        self._message(
+                            "事件时间轴与条件已确认",
+                            "Event timeline and conditions confirmed",
+                        ),
+                    )
                 elif key == "behavior":
                     self._emit(
-                        key, self.state.trials or self.state.events, "行为摘要已生成"
+                        key,
+                        self.state.trials or self.state.events,
+                        self._message(
+                            "行为摘要已生成", "Behavior summary generated"
+                        ),
                     )
                 elif key == "analysis":
                     self._emit(
                         key,
-                        event_aligned_analysis(self.state),
-                        "Raster、PSTH 与热图已生成",
+                        run_neural_toolkit(self.state),
+                        self._message(
+                            "事件、spike train、LFP、spike-field 与案例分析已生成",
+                            "Event, spike-train, LFP, spike-field, and case analyses "
+                            "generated",
+                        ),
                     )
                 elif key == "statistics":
-                    self._emit(key, run_statistical_suite(self.state), "统计套件完成")
+                    self._emit(
+                        key,
+                        run_statistical_suite(self.state),
+                        self._message(
+                            "统计套件完成", "Statistical suite completed"
+                        ),
+                    )
                 elif key == "decoding":
                     task, model_name = self.model_name.split(":", 1)
                     if task == "regression":
                         value = run_regression_suite(self.state, model_name)
-                        self._emit(key, value, f"{model_name} 回归完成")
+                        self._emit(
+                            key,
+                            value,
+                            self._message(
+                                f"{model_name} 回归完成",
+                                f"{model_name} regression completed",
+                            ),
+                        )
                     else:
                         value = run_decoding_suite(self.state, model_name)
-                        self._emit(key, value, f"{model_name} 解码完成")
+                        self._emit(
+                            key,
+                            value,
+                            self._message(
+                                f"{model_name} 解码完成",
+                                f"{model_name} decoding completed",
+                            ),
+                        )
                 elif key == "export":
                     output = export_reproducible_bundle(
                         self.state, self.state.root / "exports"
                     )
                     save_project(self.state)
-                    self._emit(key, output, "可复现分析包与项目已保存")
+                    self._emit(
+                        key,
+                        output,
+                        self._message(
+                            "可复现分析包与项目已保存",
+                            "Reproducible analysis bundle and project saved",
+                        ),
+                    )
             self.succeeded.emit()
         except Exception as exc:  # noqa: BLE001 - worker forwards full tool failure
             self.failed.emit(key, f"{exc}\n\n{traceback.format_exc()}")
@@ -1189,7 +1301,12 @@ class NeuroFlowWindow(QMainWindow):
             ]
             for column, value in enumerate(values):
                 self.input_table.setItem(row_index, column, QTableWidgetItem(value))
-        self.input_table.horizontalHeader().setStretchLastSection(True)
+        header = self.input_table.horizontalHeader()
+        header.setMinimumSectionSize(88)
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.input_table.setFixedHeight(180)
         cap_layout.addWidget(self.input_table)
         layout.addWidget(capability)
@@ -1223,7 +1340,13 @@ class NeuroFlowWindow(QMainWindow):
         content.setContentsMargins(0, 0, 0, 0)
         content.setSpacing(0)
         content.addWidget(self._sidebar())
-        content.addWidget(self._main_area(), 1)
+        self.main_scroll = QScrollArea()
+        self.main_scroll.setWidgetResizable(True)
+        self.main_scroll.setFrameShape(QFrame.NoFrame)
+        self.main_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.main_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.main_scroll.setWidget(self._main_area())
+        content.addWidget(self.main_scroll, 1)
         content.addWidget(self._assistant())
         body = QWidget()
         body.setLayout(content)
@@ -1268,6 +1391,8 @@ class NeuroFlowWindow(QMainWindow):
         self.save_button.clicked.connect(self._save)
         self.tutorial_button = QPushButton("教程")
         self.tutorial_button.clicked.connect(self._open_context_tutorial)
+        self.docs_button = QPushButton("产品文档")
+        self.docs_button.clicked.connect(self._open_documentation)
         self.run_button = QPushButton("运行完整流程")
         self.run_button.setObjectName("Primary")
         self.run_button.setProperty("neuroflow_help_key", "global.run_all")
@@ -1276,6 +1401,7 @@ class NeuroFlowWindow(QMainWindow):
         layout.addWidget(self.sorter_manager_button)
         layout.addWidget(self.save_button)
         layout.addWidget(self.tutorial_button)
+        layout.addWidget(self.docs_button)
         layout.addWidget(self.run_button)
         return header
 
@@ -1347,11 +1473,9 @@ class NeuroFlowWindow(QMainWindow):
         layout.addLayout(title_row)
 
         self.sorting_workbench = SortingWorkbench(self.language)
-        self.sorting_workbench.selection_changed.connect(
-            lambda _: self._show_control_help("sorting.selector")
-        )
+        self.sorting_workbench.selection_changed.connect(self._on_sorter_selected)
         self.sorting_workbench.diagnostic_changed.connect(
-            lambda _: self._refresh_figure()
+            self._on_sorting_diagnostic_changed
         )
         self.sorting_workbench.setVisible(False)
         layout.addWidget(self.sorting_workbench)
@@ -1372,6 +1496,28 @@ class NeuroFlowWindow(QMainWindow):
         self.figure_settings_button.clicked.connect(self._open_figure_settings)
         plot_controls.addWidget(self.figure_settings_button)
         layout.addLayout(plot_controls)
+
+        panel_controls = QHBoxLayout()
+        self.panel_label = QLabel()
+        self.panel_label.setObjectName("Muted")
+        panel_controls.addWidget(self.panel_label)
+        self.panel_combo = QComboBox()
+        self.panel_combo.setMinimumWidth(250)
+        self.panel_combo.setProperty("neuroflow_help_key", "plot.panel")
+        panel_controls.addWidget(self.panel_combo, 1)
+        self.panel_focus_button = QPushButton()
+        self.panel_focus_button.setProperty("neuroflow_help_key", "plot.panel_focus")
+        self.panel_focus_button.clicked.connect(self._toggle_panel_focus)
+        panel_controls.addWidget(self.panel_focus_button)
+        self.panel_edit_button = QPushButton()
+        self.panel_edit_button.setProperty("neuroflow_help_key", "plot.panel_edit")
+        self.panel_edit_button.clicked.connect(self._edit_selected_panel)
+        panel_controls.addWidget(self.panel_edit_button)
+        self.panel_save_button = QPushButton()
+        self.panel_save_button.setProperty("neuroflow_help_key", "plot.panel_save")
+        self.panel_save_button.clicked.connect(self._save_selected_panel)
+        panel_controls.addWidget(self.panel_save_button)
+        layout.addLayout(panel_controls)
 
         self.trace_controls = TraceControls(self.language)
         self.trace_controls.changed.connect(self._refresh_figure)
@@ -1402,7 +1548,8 @@ class NeuroFlowWindow(QMainWindow):
         self.toolbar = NavigationToolbar2QT(self.canvas, self.figure_host)
         self.figure_layout.addWidget(self.toolbar)
         self.figure_layout.addWidget(self.canvas, 1)
-        layout.addWidget(self.figure_host, 1)
+        self.figure_host.setMinimumHeight(600)
+        layout.addWidget(self.figure_host)
         self.plot_info_label = QLabel()
         self.plot_info_label.setObjectName("Muted")
         self.plot_info_label.setMinimumHeight(22)
@@ -1418,6 +1565,8 @@ class NeuroFlowWindow(QMainWindow):
         self.status_label = QLabel("请从首页打开或创建项目")
         self.status_label.setObjectName("Muted")
         layout.addWidget(self.status_label)
+        layout.addStretch()
+        self._refresh_panel_controls()
         return widget
 
     def _assistant(self) -> QWidget:
@@ -1479,9 +1628,13 @@ class NeuroFlowWindow(QMainWindow):
             (self.sorter_manager_button, standard.SP_ComputerIcon),
             (self.save_button, standard.SP_DialogSaveButton),
             (self.tutorial_button, standard.SP_DialogHelpButton),
+            (self.docs_button, standard.SP_FileDialogInfoView),
             (self.run_button, standard.SP_MediaPlay),
             (self.run_step_button, standard.SP_MediaPlay),
             (self.figure_settings_button, standard.SP_FileDialogDetailedView),
+            (self.panel_focus_button, standard.SP_TitleBarMaxButton),
+            (self.panel_edit_button, standard.SP_FileDialogDetailedView),
+            (self.panel_save_button, standard.SP_DialogSaveButton),
         ):
             button.setIcon(icon(icon_name))
 
@@ -1565,6 +1718,9 @@ class NeuroFlowWindow(QMainWindow):
         self.home_button.setText(tr("home", language))
         self.save_button.setText(tr("save", language))
         self.tutorial_button.setText(tr("tutorial", language))
+        self.docs_button.setText(
+            "Product docs" if language == "en_US" else "产品文档"
+        )
         self.sorter_manager_button.setText(tr("sorter_manager", language))
         self.run_button.setText(tr("run_all", language))
         self.workflow_label.setText(f"  {tr('workflow', language)}")
@@ -1580,6 +1736,7 @@ class NeuroFlowWindow(QMainWindow):
         self.run_step_button.setText(tr("run_step", language))
         self.plot_help_label.setText(tr("plot_help", language))
         self.figure_settings_button.setText(tr("plot_settings", language))
+        self._update_panel_control_text()
         current_style = self.plot_style_combo.currentData()
         self.plot_style_combo.blockSignals(True)
         self.plot_style_combo.clear()
@@ -1675,6 +1832,161 @@ class NeuroFlowWindow(QMainWindow):
             axis = axes[names.index(selected)]
         AxisEditorDialog(axis, self.language, self).exec()
 
+    def _figure_panel_axes(self) -> list:
+        return [
+            axis
+            for axis in self.canvas.figure.axes
+            if axis.get_visible() and axis.get_label() != "<colorbar>"
+        ]
+
+    def _panel_axis_group(self, axis) -> list:
+        group = [axis]
+        for candidate in self.canvas.figure.axes:
+            colorbar = getattr(candidate, "_colorbar", None)
+            mappable = getattr(colorbar, "mappable", None)
+            if candidate.get_label() == "<colorbar>" and getattr(
+                mappable, "axes", None
+            ) is axis:
+                group.append(candidate)
+        return group
+
+    def _refresh_panel_controls(self) -> None:
+        if not hasattr(self, "panel_combo") or not hasattr(self, "canvas"):
+            return
+        self._panel_layout_snapshot = None
+        self._panel_axes = self._figure_panel_axes()
+        self.panel_combo.blockSignals(True)
+        self.panel_combo.clear()
+        for index, axis in enumerate(self._panel_axes):
+            name = (
+                axis.get_title(loc="left")
+                or axis.get_title()
+                or axis.get_title(loc="right")
+                or axis.get_xlabel()
+                or axis.get_ylabel()
+            )
+            fallback = "子图" if self.language == "zh_CN" else "Panel"
+            self.panel_combo.addItem(f"{index + 1}. {name or fallback}", index)
+        self.panel_combo.blockSignals(False)
+        enabled = bool(self._panel_axes)
+        self.panel_combo.setEnabled(enabled)
+        self.panel_focus_button.setEnabled(enabled)
+        self.panel_edit_button.setEnabled(enabled)
+        self.panel_save_button.setEnabled(enabled)
+        self._update_panel_control_text()
+
+    def _update_panel_control_text(self) -> None:
+        if not hasattr(self, "panel_label"):
+            return
+        focused = bool(getattr(self, "_panel_layout_snapshot", None))
+        if self.language == "zh_CN":
+            self.panel_label.setText("图表面板")
+            self.panel_focus_button.setText("显示全部" if focused else "单独放大")
+            self.panel_edit_button.setText("编辑子图")
+            self.panel_save_button.setText("保存子图")
+        else:
+            self.panel_label.setText("Figure panels")
+            self.panel_focus_button.setText("Show all" if focused else "Expand panel")
+            self.panel_edit_button.setText("Edit panel")
+            self.panel_save_button.setText("Save panel")
+
+    def _selected_panel_axis(self):
+        index = self.panel_combo.currentData()
+        if index is None or not 0 <= int(index) < len(self._panel_axes):
+            return None
+        return self._panel_axes[int(index)]
+
+    def _toggle_panel_focus(self) -> None:
+        snapshot = getattr(self, "_panel_layout_snapshot", None)
+        if snapshot:
+            for axis, position, visible in snapshot:
+                axis.set_position(position)
+                axis.set_visible(visible)
+            self._panel_layout_snapshot = None
+            self.panel_combo.setEnabled(True)
+            self._update_panel_control_text()
+            self.canvas.draw_idle()
+            return
+        axis = self._selected_panel_axis()
+        if axis is None:
+            return
+        figure_axes = list(self.canvas.figure.axes)
+        self._panel_layout_snapshot = [
+            (item, item.get_position().frozen(), item.get_visible())
+            for item in figure_axes
+        ]
+        group = self._panel_axis_group(axis)
+        for item in figure_axes:
+            item.set_visible(item in group)
+        if len(group) > 1:
+            axis.set_position([0.10, 0.14, 0.70, 0.76])
+            for colorbar in group[1:]:
+                colorbar.set_position([0.84, 0.16, 0.025, 0.72])
+        else:
+            axis.set_position([0.10, 0.14, 0.84, 0.76])
+        self.panel_combo.setEnabled(False)
+        self._update_panel_control_text()
+        self.canvas.draw_idle()
+
+    def _edit_selected_panel(self) -> None:
+        axis = self._selected_panel_axis()
+        if axis is not None:
+            AxisEditorDialog(axis, self.language, self).exec()
+
+    def _save_selected_panel(self) -> None:
+        axis = self._selected_panel_axis()
+        if axis is None:
+            return
+        output_root = (
+            self.state.root / "exports" if self.state is not None else self.workspace
+        )
+        output_root.mkdir(parents=True, exist_ok=True)
+        title = re.sub(r"[^A-Za-z0-9_-]+", "_", axis.get_title()).strip("_")
+        default_name = f"{title or 'neuroflow_panel'}.svg"
+        selected, _ = QFileDialog.getSaveFileName(
+            self,
+            "保存子图" if self.language == "zh_CN" else "Save selected panel",
+            str(output_root / default_name),
+            "SVG (*.svg);;PDF (*.pdf);;PNG (*.png)",
+        )
+        if not selected:
+            return
+        path = Path(selected)
+        if path.suffix.lower() not in {".svg", ".pdf", ".png"}:
+            path = path.with_suffix(".svg")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        group = self._panel_axis_group(axis)
+        visibility = [(item, item.get_visible()) for item in self.canvas.figure.axes]
+        try:
+            for item, _ in visibility:
+                item.set_visible(item in group)
+            self.canvas.draw()
+            renderer = self.canvas.get_renderer()
+            boxes = []
+            for item in group:
+                box = item.get_tightbbox(renderer)
+                if box is not None:
+                    boxes.append(box)
+            if not boxes:
+                boxes.append(axis.get_window_extent(renderer))
+            extent = Bbox.union(boxes).transformed(
+                self.canvas.figure.dpi_scale_trans.inverted()
+            )
+            self.canvas.figure.savefig(
+                path,
+                bbox_inches=extent.expanded(1.06, 1.10),
+                dpi=300,
+            )
+        finally:
+            for item, visible in visibility:
+                item.set_visible(visible)
+            self.canvas.draw_idle()
+        self.status_label.setText(
+            f"子图已保存：{path}"
+            if self.language == "zh_CN"
+            else f"Panel saved: {path}"
+        )
+
     def _apply_plot_style(self) -> None:
         if not hasattr(self, "canvas"):
             return
@@ -1739,6 +2051,19 @@ class NeuroFlowWindow(QMainWindow):
             save_project(state)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(root)))
 
+    def _open_documentation(self) -> None:
+        index = _documentation_index()
+        if not index.exists():
+            QMessageBox.warning(
+                self,
+                "Documentation unavailable"
+                if self.language == "en_US"
+                else "产品文档不可用",
+                str(index),
+            )
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(index)))
+
     def _open_project(self) -> None:
         path = QFileDialog.getOpenFileName(
             self,
@@ -1771,6 +2096,10 @@ class NeuroFlowWindow(QMainWindow):
             state.channel_count,
         )
         self.sorting_workbench.set_catalog(sorter_catalog())
+        self.sorting_workbench.set_results(
+            set(state.sorting_results),
+            state.active_sorter_key,
+        )
         for key, status in state.workflow_status.items():
             if key in self.step_buttons:
                 self._set_step_status(key, status)
@@ -1784,7 +2113,11 @@ class NeuroFlowWindow(QMainWindow):
         self.pages.setCurrentWidget(self.workspace_page)
         self._apply_language()
         self._select_step("import")
-        self.status_label.setText("项目已打开；可逐节点运行，也可执行完整流程")
+        self.status_label.setText(
+            "Project opened; run one step or the full workflow"
+            if self.language == "en_US"
+            else "项目已打开；可逐节点运行，也可执行完整流程"
+        )
         self._refresh_warnings()
 
     def _save(self) -> None:
@@ -1795,6 +2128,7 @@ class NeuroFlowWindow(QMainWindow):
     def _refresh_environment(self) -> None:
         env = kilosort_environment()
         sorters = sorter_catalog()
+        toolkit = provider_status()
         installed = [item["name"] for item in sorters if item["installed"]]
         gpu = (
             env["device_name"]
@@ -1806,9 +2140,11 @@ class NeuroFlowWindow(QMainWindow):
             )
         )
         self.environment_label.setText(
-            f"计算环境\n{gpu}\n可运行 sorter：{', '.join(installed) or '无'}"
+            f"计算环境\n{gpu}\n可运行 sorter：{', '.join(installed) or '无'}\n"
+            f"Elephant {toolkit['elephant']} · Neo {toolkit['neo']}"
             if self.language == "zh_CN"
-            else f"Environment\n{gpu}\nAvailable sorters: {', '.join(installed) or 'None'}"
+            else f"Environment\n{gpu}\nAvailable sorters: {', '.join(installed) or 'None'}\n"
+            f"Elephant {toolkit['elephant']} · Neo {toolkit['neo']}"
         )
 
     def _select_step(self, key: str) -> None:
@@ -1837,15 +2173,49 @@ class NeuroFlowWindow(QMainWindow):
         self.option_combo.clear()
         if key == "qc":
             views = (
-                [("多通道原始波形", "traces"), ("质控指标总览", "summary")]
+                [
+                    ("多通道原始波形", "traces"),
+                    ("质控指标总览", "summary"),
+                    ("通道 × 频率功率图", "psd"),
+                    ("记录期间质量时间线", "timeline"),
+                ]
                 if self.language == "zh_CN"
                 else [
                     ("Multichannel raw traces", "traces"),
                     ("QC metric summary", "summary"),
+                    ("Channel-by-frequency power", "psd"),
+                    ("Quality timeline", "timeline"),
                 ]
             )
             for label, value in views:
                 self.option_combo.addItem(label, value)
+        elif key == "preprocess":
+            views = (
+                [
+                    ("AP / sorting 分支", "ap"),
+                    ("LFP 分支", "lfp"),
+                    ("可审计处理链与安全检查", "pipeline"),
+                ]
+                if self.language == "zh_CN"
+                else [
+                    ("AP / sorting branch", "ap"),
+                    ("LFP branch", "lfp"),
+                    ("Auditable chain and safeguards", "pipeline"),
+                ]
+            )
+            for label, value in views:
+                self.option_combo.addItem(label, value)
+        elif key == "unit_qc" and self.state:
+            self.option_combo.addItem(
+                "Unit 指标总览" if self.language == "zh_CN" else "Unit metric overview",
+                "overview",
+            )
+            for unit_id in sorted(self.state.sorted_spikes):
+                self.option_combo.addItem(
+                    f"Unit {unit_id} · "
+                    + ("波形/ACG/ISI/稳定性" if self.language == "zh_CN" else "waveform/ACG/ISI/stability"),
+                    f"unit:{unit_id}",
+                )
         elif key == "decoding":
             for model in MODELS:
                 label = (
@@ -1877,26 +2247,69 @@ class NeuroFlowWindow(QMainWindow):
                     ("效应量与多重比较", "effects"),
                     ("条件检验与效应量", "conditions"),
                     ("分布、相关与混合模型", "diagnostics"),
+                    ("相位锁定与 circular surrogate", "circular"),
+                    ("样本层级与检验决策", "design"),
                 ]
                 if self.language == "zh_CN"
                 else [
                     ("Effects and multiplicity", "effects"),
                     ("Condition tests and effects", "conditions"),
                     ("Distribution, correlation, and mixed model", "diagnostics"),
+                    ("Phase locking and circular surrogate", "circular"),
+                    ("Sampling hierarchy and test decisions", "design"),
                 ]
             )
             for label, value in views:
                 self.option_combo.addItem(label, value)
         elif key == "analysis" and self.state:
             for unit_id in sorted(self.state.sorted_spikes):
-                self.option_combo.addItem(f"Unit {unit_id}", unit_id)
+                self.option_combo.addItem(
+                    f"Event · Unit {unit_id}",
+                    f"event:{unit_id}",
+                )
+            analysis_views = (
+                [
+                    ("Spike train · 放电统计与 CCH", "spike:statistics"),
+                    ("Spike train · 相关、STTC 与距离", "spike:relationships"),
+                    ("LFP · PSD 与频段功率", "lfp:psd"),
+                    ("LFP · coherence 与相位延迟", "lfp:coherence"),
+                    ("LFP · 时频图", "lfp:spectrogram"),
+                    ("Spike-field · 相位锁定", "coupling:phase"),
+                    ("案例 · 呼吸频谱与 LFP coherence", "case:respiration"),
+                    ("案例 · 呼吸相位-gamma 振幅耦合", "case:pac"),
+                ]
+                if self.language == "zh_CN"
+                else [
+                    ("Spike train · statistics and CCH", "spike:statistics"),
+                    ("Spike train · correlation, STTC, distances", "spike:relationships"),
+                    ("LFP · PSD and band power", "lfp:psd"),
+                    ("LFP · coherence and phase lag", "lfp:coherence"),
+                    ("LFP · time-frequency map", "lfp:spectrogram"),
+                    ("Spike-field · phase locking", "coupling:phase"),
+                    ("Case · respiration PSD and LFP coherence", "case:respiration"),
+                    ("Case · respiration phase-gamma amplitude", "case:pac"),
+                ]
+            )
+            for label, value in analysis_views:
+                self.option_combo.addItem(label, value)
         if previous_option is not None:
             previous_index = self.option_combo.findData(previous_option)
             if previous_index >= 0:
                 self.option_combo.setCurrentIndex(previous_index)
         self.sorting_workbench.setVisible(key == "sorting")
+        for metric in (
+            self.metric_source,
+            self.metric_channels,
+            self.metric_duration,
+            self.metric_units,
+        ):
+            metric.setVisible(key != "sorting")
         if key == "sorting":
             self.sorting_workbench.set_catalog(sorter_catalog())
+            self.sorting_workbench.set_results(
+                set(self.state.sorting_results) if self.state else set(),
+                self.state.active_sorter_key if self.state else None,
+            )
         self.trace_controls.setVisible(key in {"import", "qc"})
         self.option_combo.setVisible(key != "sorting" and self.option_combo.count() > 0)
         self.option_combo.blockSignals(False)
@@ -1908,6 +2321,42 @@ class NeuroFlowWindow(QMainWindow):
     def _on_option_changed(self) -> None:
         self._update_page_option_help()
         self._refresh_figure()
+
+    def _on_sorter_selected(self, sorter_key: str) -> None:
+        self._show_control_help("sorting.selector")
+        if not self.state or sorter_key not in self.state.sorting_results:
+            return
+        if self.state.active_sorter_key == sorter_key:
+            return
+        activate_sorting_result(self.state, sorter_key)
+        self.matches = (
+            match_ground_truth(self.state.ground_truth, self.state.sorted_spikes)
+            if self.state.ground_truth
+            else []
+        )
+        self.state.unit_metrics = []
+        self.state.unit_diagnostics = {}
+        self.state.analysis = {}
+        self.state.statistics = {}
+        self.state.decoding = {}
+        self.state.regression = {}
+        for key in ("unit_qc", "analysis", "statistics", "decoding", "export"):
+            self.state.workflow_status[key] = "pending"
+            self._set_step_status(key, "pending")
+        self.metric_units.value_label.setText(str(len(self.state.sorted_spikes)))
+        self.state.log(f"Active sorting result changed to {sorter_key}")
+        self.sorting_workbench.set_results(
+            set(self.state.sorting_results),
+            self.state.active_sorter_key,
+        )
+        save_project(self.state)
+        self._refresh_figure()
+        self._refresh_table()
+        self._refresh_warnings()
+
+    def _on_sorting_diagnostic_changed(self, _: str) -> None:
+        self._refresh_figure()
+        self._refresh_table()
 
     def _update_page_option_help(self) -> None:
         chapter = next(
@@ -1943,6 +2392,36 @@ class NeuroFlowWindow(QMainWindow):
                 "confusion/error metrics, feature importance, and population reduction."
             )
             text += f"\n\n{model}\n{description}\n{validation}"
+        elif self.current_step == "analysis":
+            selection = str(self.option_combo.currentData() or "")
+            method = next(
+                (
+                    item
+                    for item in METHOD_CATALOG
+                    if selection.startswith(
+                        {
+                            "spike_train": "spike:",
+                            "lfp": "lfp:",
+                            "combined": "coupling:",
+                        }.get(item["stage"], "__none__")
+                    )
+                ),
+                None,
+            )
+            if method:
+                text += (
+                    f"\n\n{method['provider']} · {method['status']}\n"
+                    f"{method['methods']}\nRequires: {method['requires']}"
+                )
+            elif selection.startswith("case:"):
+                text += (
+                    "\n\n该案例使用 NeuroFlow 模拟数据验证方法结构，不复制原论文图，"
+                    "也不声称复现论文数值。"
+                    if self.language == "zh_CN"
+                    else "\n\nThis case validates the method structure on NeuroFlow "
+                    "simulation data. It neither copies paper figures nor claims to "
+                    "reproduce the paper's numerical findings."
+                )
         self.help_text.setText(text)
 
     def _replace_figure(self, figure) -> None:
@@ -1958,6 +2437,7 @@ class NeuroFlowWindow(QMainWindow):
         self.figure_layout.addWidget(self.toolbar)
         self.figure_layout.addWidget(self.canvas, 1)
         self._connect_figure_interactions()
+        self._refresh_panel_controls()
         self.canvas.draw_idle()
         if self.plot_style_combo.currentData() != "standard":
             self._apply_plot_style()
@@ -1967,14 +2447,16 @@ class NeuroFlowWindow(QMainWindow):
             return
         key = self.current_step
         trace_values = self.trace_controls.values()
-        if (
-            key == "qc"
-            and self.state.qc
-            and self.option_combo.currentData() == "summary"
-        ):
-            figure = qc_figure(self.state)
+        if key == "qc" and self.state.qc and self.option_combo.currentData() != "traces":
+            figure = qc_diagnostics_figure(
+                self.state, str(self.option_combo.currentData() or "summary")
+            )
         elif key == "preprocess" and self.preview:
-            figure = preprocessing_figure(self.preview, self.language)
+            figure = preprocessing_diagnostics_figure(
+                self.preview,
+                self.state,
+                str(self.option_combo.currentData() or "ap"),
+            )
         elif key == "sorting":
             diagnostic = self.sorting_workbench.selected_diagnostic()
             if diagnostic == "validation" and self.matches:
@@ -1982,11 +2464,15 @@ class NeuroFlowWindow(QMainWindow):
             else:
                 figure = sorting_diagnostics_figure(self.state, diagnostic)
         elif key == "unit_qc" and self.state.unit_metrics:
-            figure = unit_metrics_figure(self.state)
+            figure = unit_metrics_figure(
+                self.state, str(self.option_combo.currentData() or "overview")
+            )
         elif key == "behavior":
             figure = behavior_figure(self.state)
         elif key == "analysis" and self.state.analysis:
-            figure = event_analysis_figure(self.state, self.option_combo.currentData())
+            figure = neural_toolkit_figure(
+                self.state, str(self.option_combo.currentData() or "event:0")
+            )
         elif key == "statistics" and self.state.statistics:
             figure = statistics_figure(
                 self.state, self.option_combo.currentData() or "effects"
@@ -2013,8 +2499,20 @@ class NeuroFlowWindow(QMainWindow):
         rows: list[dict] = []
         if self.current_step == "unit_qc":
             rows = self.state.unit_metrics
+        elif self.current_step == "analysis":
+            selection = str(self.option_combo.currentData() or "")
+            if selection == "spike:statistics":
+                rows = self.state.spike_train_analysis.get("rows", [])
+            elif selection == "coupling:phase":
+                rows = self.state.spike_field_analysis.get("rows", [])
+            elif selection.startswith("case:"):
+                rows = self.state.case_studies.get("respiration", {}).get("rows", [])
         elif self.current_step == "statistics":
-            rows = self.state.statistics.get("rows", [])
+            rows = (
+                self.state.spike_field_analysis.get("rows", [])
+                if self.option_combo.currentData() == "circular"
+                else self.state.statistics.get("rows", [])
+            )
         self.detail_table.setVisible(bool(rows))
         if not rows:
             return
@@ -2041,7 +2539,7 @@ class NeuroFlowWindow(QMainWindow):
                 f"Source: {self.state.source_type}",
                 f"Raw voltage: {'available' if self.state.ready else 'unavailable'}",
                 f"Events: {len(self.state.events)}",
-                f"Project: {self.state.root}",
+                f"Project: {self.state.name}",
             ]
             if english
             else [
@@ -2123,7 +2621,9 @@ class NeuroFlowWindow(QMainWindow):
             model_name = self.option_combo.currentData()
         self.run_button.setEnabled(False)
         self.run_step_button.setEnabled(False)
-        self.progress_bar.setFormat("正在运行… %v/%m")
+        self.progress_bar.setFormat(
+            "Running… %v/%m" if self.language == "en_US" else "正在运行… %v/%m"
+        )
         self.worker = PipelineWorker(
             self.state,
             keys,
@@ -2158,6 +2658,10 @@ class NeuroFlowWindow(QMainWindow):
                 self.metric_units.value_label.setText(
                     str(len(self.state.sorted_spikes))
                 )
+                self.sorting_workbench.set_results(
+                    set(self.state.sorting_results),
+                    self.state.active_sorter_key,
+                )
         if self.state:
             save_project(self.state)
         self._select_step(key)
@@ -2166,22 +2670,40 @@ class NeuroFlowWindow(QMainWindow):
         self._set_step_status(key, "failed")
         self.run_button.setEnabled(True)
         self.run_step_button.setEnabled(True)
-        self.progress_bar.setFormat("运行失败")
+        self.progress_bar.setFormat(
+            "Failed" if self.language == "en_US" else "运行失败"
+        )
         self.status_label.setText(details.splitlines()[0])
         if self.state:
-            self.state.log(f"{key} 失败：{details.splitlines()[0]}")
+            self.state.log(
+                f"{key} failed: {details.splitlines()[0]}"
+                if self.language == "en_US"
+                else f"{key} 失败：{details.splitlines()[0]}"
+            )
         self._refresh_warnings()
         QMessageBox.critical(
             self,
-            "节点运行失败",
-            f"{details.splitlines()[0]}\n\n详细信息已写入运行记录，已完成结果不会被删除。",
+            "Step failed" if self.language == "en_US" else "节点运行失败",
+            (
+                f"{details.splitlines()[0]}\n\nDetails were written to the run log. "
+                "Completed results were retained."
+                if self.language == "en_US"
+                else f"{details.splitlines()[0]}\n\n"
+                "详细信息已写入运行记录，已完成结果不会被删除。"
+            ),
         )
 
     def _on_succeeded(self) -> None:
         self.run_button.setEnabled(True)
         self.run_step_button.setEnabled(True)
-        self.progress_bar.setFormat("运行完成")
-        self.status_label.setText("所选节点已完成，结果、参数与日志已经保存")
+        self.progress_bar.setFormat(
+            "Completed" if self.language == "en_US" else "运行完成"
+        )
+        self.status_label.setText(
+            "Selected steps completed; results, parameters, and logs were saved"
+            if self.language == "en_US"
+            else "所选节点已完成，结果、参数与日志已经保存"
+        )
         self._refresh_figure()
         self._refresh_table()
         self._refresh_warnings()

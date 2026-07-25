@@ -274,5 +274,8 @@ def run_statistical_suite(state: ProjectState) -> dict:
         ],
     }
     state.statistics = result
-    state.log(f"统计套件完成：{result['significant_count']}/{len(rows)} units 通过 FDR")
+    state.log(
+        f"Statistical suite completed: {result['significant_count']}/{len(rows)} "
+        "units passed FDR correction"
+    )
     return result

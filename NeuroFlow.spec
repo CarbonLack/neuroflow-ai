@@ -11,7 +11,12 @@ binaries = []
 hiddenimports = []
 for package in (
     "kilosort",
+    "mountainsort5",
+    "isosplit6",
     "spikeinterface",
+    "neo",
+    "quantities",
+    "elephant",
     "hdbscan",
     "one",
     "sklearn",
@@ -20,6 +25,8 @@ for package in (
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hidden
+
+datas += [("docs/site", "neuroflow_docs")]
 
 # XGBoost loads its native library at runtime, so PyInstaller cannot infer it
 # from the delayed Python import in the model catalog.

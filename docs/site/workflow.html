@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Workflow · NeuroFlow</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-language="zh">
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Menu">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page / 搜索本页">
+      <div class="topbar-actions"><button class="language-button" type="button" data-language-toggle>EN</button></div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">NeuroFlow</div>
+        <a href="index.html">Overview / 概览</a>
+        <a class="active" href="workflow.html">Workflow / 全流程</a>
+        <a href="methods.html">Methods / 方法</a>
+        <a href="sources.html">Sources / 来源</a>
+        <div class="sidebar-label">On this page</div>
+        <a href="#stages">11 stages</a>
+        <a href="#inputs">Data inputs</a>
+        <a href="#sorting">Sorting</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">Complete vertical chain</p>
+          <h1 data-lang="zh">完整流程不是一键黑箱</h1>
+          <h1 data-lang="en">A complete workflow without a one-click black box</h1>
+          <p class="lead" data-lang="zh">横向方法可以逐步增加，但从数据到论文的每个必要阶段都必须存在、可跳过、可替换并说明原因。</p>
+          <p class="lead" data-lang="en">Horizontal methods can grow over time, while every required stage from data to publication remains present, replaceable, skippable, and explained.</p>
+          <img class="product-shot" src="assets/neuroflow-sorting.png" alt="NeuroFlow sorting workbench">
+        </div>
+
+        <section id="stages">
+          <h2 data-lang="zh">11 个阶段</h2><h2 data-lang="en">Eleven stages</h2>
+          <div class="workflow">
+            <div class="workflow-number">01</div><article class="workflow-item" data-searchable><h3>Data and project / 数据与项目</h3><p>Format, probe, units, events, source integrity, and a read-only project link.</p></article>
+            <div class="workflow-number">02</div><article class="workflow-item" data-searchable><h3>Raw QC / 原始质控</h3><p>Zoomable traces, RMS, clipping, line noise, channel-frequency power, and quality over time.</p></article>
+            <div class="workflow-number">03</div><article class="workflow-item" data-searchable><h3>Preprocessing / 预处理</h3><p>Separate AP/sorting and LFP branches, visible parameters, preview, and duplicate-processing safeguards.</p></article>
+            <div class="workflow-number">04</div><article class="workflow-item" data-searchable><h3>Spike sorting</h3><p>Kilosort4 first, replaceable sorters, real logs, templates, drift, amplitudes, similarity, and exported files.</p></article>
+            <div class="workflow-number">05</div><article class="workflow-item" data-searchable><h3>Unit QC / Unit 质控</h3><p>Rate, ISI violations, SNR, waveform, ACG, amplitude, stability, and a manual-decision trail.</p></article>
+            <div class="workflow-number">06</div><article class="workflow-item" data-searchable><h3>Synchronization / 事件同步</h3><p>Common time base, trial table, event counts, residuals, missing pulses, and drift checks.</p></article>
+            <div class="workflow-number">07</div><article class="workflow-item" data-searchable><h3>Behavior / 行为分析</h3><p>Condition balance, reaction time, psychometrics, missing values, and trial exclusions.</p></article>
+            <div class="workflow-number">08</div><article class="workflow-item" data-searchable><h3>Neural workbench / 神经活动</h3><p>Event responses, Elephant spike statistics, LFP spectra, spike-field coupling, and method cases.</p></article>
+            <div class="workflow-number">09</div><article class="workflow-item" data-searchable><h3>Statistics / 统计</h3><p>Sampling hierarchy, paired/independent tests, effects, confidence intervals, mixed models, circular surrogates, and multiplicity.</p></article>
+            <div class="workflow-number">10</div><article class="workflow-item" data-searchable><h3>Machine learning / 机器学习</h3><p>Classification, regression, clustering, grouped validation, permutation tests, ROC, importance, and population trajectories.</p></article>
+            <div class="workflow-number">11</div><article class="workflow-item" data-searchable><h3>Publication / 论文与复现</h3><p>Editable vector figures, data tables, Methods draft, environment versions, parameters, and project provenance.</p></article>
+          </div>
+        </section>
+
+        <section id="inputs" data-searchable>
+          <h2 data-lang="zh">数据入口</h2><h2 data-lang="en">Data inputs</h2>
+          <table>
+            <thead><tr><th>Input</th><th>Raw voltage</th><th>Typical use</th><th>Validation</th></tr></thead>
+            <tbody>
+              <tr><td>NeuroFlow simulation</td><td>Yes</td><td>Full workflow and sorter validation</td><td>Known spikes, events, respiration reference</td></tr>
+              <tr><td>Generic binary</td><td>Yes</td><td>Custom interleaved recordings</td><td>Rate, channels, dtype, scale, size</td></tr>
+              <tr><td>Intan / Open Ephys / SpikeGLX / Blackrock / Plexon / TDT / NWB</td><td>Yes</td><td>Acquisition-system import</td><td>SpikeInterface reader and stream check</td></tr>
+              <tr><td>IBL ALF</td><td>Optional</td><td>Public trial, spike and cluster objects</td><td>ALF object dimensions and time base</td></tr>
+              <tr><td>Kilosort / Phy output</td><td>No</td><td>Resume after external sorting</td><td>spike_times, clusters, parameters</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="sorting" data-searchable>
+          <h2>Sorting workbench</h2>
+          <p data-lang="zh">选择 sorter 后仍需确认硬件、探针、参数和输出。Kilosort4 运行后可以切换真实的流程日志、漂移、振幅、模板、相似度、污染率与文件视图。</p>
+          <p data-lang="en">Selecting a sorter does not remove the need to verify hardware, probe, parameters, and output. Kilosort4 results expose pipeline logs, drift, amplitudes, templates, similarity, contamination, and files.</p>
+          <p data-lang="zh">Kilosort4、MountainSort5 与其他已运行 sorter 会分别保存，再转换成统一的 Unit→秒级 spike times。比较视图使用 SpikeInterface 的事件匹配与 Hungarian Unit 匹配，显示算法间一致度、独有 Unit 和至少两个 sorter 支持的共识 Unit。</p>
+          <p data-lang="en">Kilosort4, MountainSort5, and other completed sorter outputs are retained separately and normalized to Unit-to-spike-times in seconds. The comparison view uses SpikeInterface event and Hungarian Unit matching to show agreement, unique units, and consensus units supported by at least two sorters.</p>
+          <p data-lang="zh">中央分析区可独立上下滚动，并为科研图保留稳定的大画布。多面板图中的每个子图都可单独选择、放大、编辑和导出为 SVG、PDF 或 300 dpi PNG。</p>
+          <p data-lang="en">The central workspace scrolls independently and reserves a large, stable scientific canvas. Each subplot can be selected, expanded, edited, and exported independently as SVG, PDF, or 300 dpi PNG.</p>
+          <div class="callout" data-lang="zh">自动 cluster 是候选 unit，不是已经认证的单神经元。Unit 质控和人工复核不能省略。</div>
+          <div class="callout" data-lang="en">Automatic clusters are candidate units, not certified single neurons. Unit QC and manual review remain required.</div>
+          <div class="callout method" data-lang="zh">真实记录没有 ground truth，因此算法间一致不能被称为准确率。Precision、recall 与 F1 只在模拟或配对真值数据中显示。</div>
+          <div class="callout method" data-lang="en">Real recordings have no ground truth, so cross-sorter agreement is not accuracy. Precision, recall, and F1 appear only for simulated or paired ground-truth data.</div>
+        </section>
+        <footer class="footer">NeuroFlow workflow reference · Data and methods remain separable.</footer>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

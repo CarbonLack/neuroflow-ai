@@ -403,7 +403,7 @@ def run_decoding_suite(
     }
     state.decoding = result
     state.log(
-        f"{model_name} 解码完成：balanced accuracy={score:.3f}，"
+        f"{model_name} decoding completed: balanced accuracy={score:.3f}, "
         f"permutation p={p_value:.4f}"
     )
     return result

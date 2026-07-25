@@ -17,3 +17,10 @@ Sorter adapters are capability-checked. Kilosort4 has a native NeuroFlow
 adapter. MountainSort5, SpyKING CIRCUS 2, and Tridesclous 2 use
 SpikeInterface when their dependencies are actually installed. The UI never
 labels an unavailable sorter as executable.
+
+Successful runs enter a multi-result registry rather than replacing the previous
+sorter output. Each result keeps native files and a normalized, seconds-based
+Unit/spike view. Any saved result can be activated for downstream stages.
+SpikeInterface comparison then provides ground-truth benchmarking, symmetric
+two-sorter matching, and multi-sorter consensus without confusing agreement with
+accuracy.

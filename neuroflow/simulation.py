@@ -48,12 +48,43 @@ def generate_demo_recording(
     metadata_path = raw_dir / "metadata.json"
     events_path = raw_dir / "events.csv"
     truth_path = raw_dir / "ground_truth.npz"
+    respiration_path = raw_dir / "respiration_reference.npy"
+    states_path = raw_dir / "behavioral_states.csv"
     import_config_path = raw_dir / "import_config.json"
     guide_path = project_root / "README_DATASET.md"
 
     rng = np.random.default_rng(seed)
     sample_count = int(duration_seconds * sampling_rate)
     scale_uv_per_bit = 0.195
+    respiration_sampling_rate = 1_000.0
+    respiration_count = int(duration_seconds * respiration_sampling_rate)
+    respiration_time = np.arange(respiration_count) / respiration_sampling_rate
+    epoch_edges = np.linspace(0.0, duration_seconds, 4)
+    behavioral_state_epochs = [
+        {
+            "state": name,
+            "start_seconds": float(epoch_edges[index]),
+            "stop_seconds": float(epoch_edges[index + 1]),
+            "nominal_respiration_hz": frequency,
+        }
+        for index, (name, frequency) in enumerate(
+            (("Home cage", 2.2), ("Tail suspension", 1.6), ("Reward", 4.2))
+        )
+    ]
+    instantaneous_frequency = np.zeros(respiration_count, dtype=float)
+    for epoch in behavioral_state_epochs:
+        mask = (respiration_time >= epoch["start_seconds"]) & (
+            respiration_time < epoch["stop_seconds"]
+        )
+        instantaneous_frequency[mask] = float(epoch["nominal_respiration_hz"])
+    respiration_phase = np.cumsum(2 * np.pi * instantaneous_frequency) / (
+        respiration_sampling_rate
+    )
+    respiration_reference = (
+        np.sin(respiration_phase)
+        + 0.18 * np.sin(2 * respiration_phase + 0.4)
+        + rng.normal(0.0, 0.08, respiration_count)
+    )
 
     events: list[dict[str, object]] = []
     event_margin = min(3.0, duration_seconds * 0.2)
@@ -91,17 +122,49 @@ def generate_demo_recording(
                         )
             if locked:
                 times = np.concatenate([times, *locked])
+        if unit_id in {0, 1, 2}:
+            phase_locked = []
+            phase_fraction = {0: 0.12, 1: 0.42, 2: 0.72}[unit_id]
+            for epoch in behavioral_state_epochs:
+                frequency = float(epoch["nominal_respiration_hz"])
+                cycles = np.arange(
+                    float(epoch["start_seconds"]) + phase_fraction / frequency,
+                    float(epoch["stop_seconds"]),
+                    1.0 / frequency,
+                )
+                phase_locked.append(cycles + rng.normal(0.0, 0.012, len(cycles)))
+            times = np.concatenate([times, *phase_locked])
         ground_truth[unit_id] = _enforce_refractory(
             times[(times > 0.05) & (times < duration_seconds - 0.05)]
         )
 
     raw = rng.normal(0.0, 16.0 / scale_uv_per_bit, size=(sample_count, channel_count))
     time_axis = np.arange(sample_count, dtype=np.float64) / sampling_rate
+    respiration_raw = np.interp(
+        time_axis, respiration_time, respiration_reference
+    )
+    gamma_strength = np.select(
+        [
+            time_axis < epoch_edges[1],
+            time_axis < epoch_edges[2],
+        ],
+        [7.0, 2.8],
+        default=4.2,
+    )
+    respiration_phase_raw = np.interp(
+        time_axis, respiration_time, respiration_phase
+    )
+    gamma_envelope = gamma_strength * (1.0 + 0.42 * np.cos(respiration_phase_raw))
     common_noise = (
         5.0 * np.sin(2 * np.pi * 50.0 * time_axis)
-        + 2.5 * np.sin(2 * np.pi * 2.0 * time_axis)
+        + 7.5 * respiration_raw
     ) / scale_uv_per_bit
     raw += common_noise[:, None]
+    raw[:, : min(8, channel_count)] += (
+        gamma_envelope[:, None]
+        * np.sin(2 * np.pi * 90.0 * time_axis)[:, None]
+        / scale_uv_per_bit
+    )
     noisy_channel = min(29, channel_count - 1)
     raw[:, noisy_channel] += rng.normal(0.0, 55.0 / scale_uv_per_bit, size=sample_count)
 
@@ -154,6 +217,19 @@ def generate_demo_recording(
         truth_path,
         **{f"unit_{unit_id}": spikes for unit_id, spikes in ground_truth.items()},
     )
+    np.save(respiration_path, respiration_reference.astype(np.float32))
+    with states_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=[
+                "state",
+                "start_seconds",
+                "stop_seconds",
+                "nominal_respiration_hz",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(behavioral_state_epochs)
     metadata = {
         "dataset_name": "NeuroFlow simulated extracellular recording",
         "sampling_rate_hz": sampling_rate,
@@ -172,6 +248,13 @@ def generate_demo_recording(
             ),
             "A weak 50 Hz common signal is present",
         ],
+        "respiration_reference": str(respiration_path),
+        "respiration_sampling_rate_hz": respiration_sampling_rate,
+        "behavioral_state_epochs": behavioral_state_epochs,
+        "case_study_notice": (
+            "Synthetic method-validation case only; not the Folschweiller and "
+            "Sauer paper dataset or a reproduction of its numerical findings."
+        ),
         "dataset_folder": str(project_root),
         "import_config": str(import_config_path),
     }
@@ -203,6 +286,9 @@ def generate_demo_recording(
             "- `raw/metadata.json`: recording metadata and deliberately inserted issues.\n"
             "- `raw/import_config.json`: exact settings for the generic-binary importer.\n"
             "- `raw/ground_truth.npz`: simulated spike times for sorter validation only.\n\n"
+            "- `raw/respiration_reference.npy`: 1 kHz synthetic respiration reference.\n"
+            "- `raw/behavioral_states.csv`: three synthetic state epochs used by the "
+            "respiration analysis case.\n\n"
             "## 中文说明\n\n"
             "这是可重复生成的完整细胞外多通道示例。若要练习“导入自己的数据”，"
             "请选择通用二进制，并按 `import_config.json` 填写采样率、通道数、"
@@ -228,9 +314,10 @@ def generate_demo_recording(
         ground_truth=ground_truth,
         metadata=metadata,
     )
-    state.log("已生成可复现的模拟多通道原始记录")
+    state.log("Reproducible simulated multichannel raw recording generated")
     state.log(
-        f"原始文件：{recording_path.name}，{channel_count}通道，{duration_seconds:.1f}秒"
+        f"Raw file: {recording_path.name}, {channel_count} channels, "
+        f"{duration_seconds:.1f} seconds"
     )
     return state
 
@@ -239,6 +326,8 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
     metadata_path = project_root / "raw" / "metadata.json"
     events_path = project_root / "raw" / "events.csv"
     truth_path = project_root / "raw" / "ground_truth.npz"
+    respiration_path = project_root / "raw" / "respiration_reference.npy"
+    states_path = project_root / "raw" / "behavioral_states.csv"
     recording_path = project_root / "raw" / "neuroflow_simulated_recording.bin"
     import_config_path = project_root / "raw" / "import_config.json"
     guide_path = project_root / "README_DATASET.md"
@@ -248,6 +337,8 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
             metadata_path,
             events_path,
             truth_path,
+            respiration_path,
+            states_path,
             recording_path,
             import_config_path,
             guide_path,
@@ -283,5 +374,5 @@ def load_or_generate_demo(project_root: Path) -> ProjectState:
         ground_truth=ground_truth,
         metadata=metadata,
     )
-    state.log("已载入本地演示项目")
+    state.log("Local demo project loaded")
     return state

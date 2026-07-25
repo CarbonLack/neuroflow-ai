@@ -1,8 +1,9 @@
-# NeuroFlow v0.4
+# NeuroFlow v0.5
 
 NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 它不重新实现成熟 sorter，而是把数据导入、质量控制、Kilosort4、Unit 质控、
-行为对齐、统计、机器学习、论文图和复现记录组织成一条可以逐步检查的链路。
+行为对齐、Neo/Elephant 神经分析、统计、机器学习、论文图和复现记录组织成一条
+可以逐步检查的链路。
 
 ## 这不是界面原型
 
@@ -19,7 +20,20 @@ NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电�
 7. 参数/非参数检验、置换、bootstrap、效应量、条件比较、混合模型与多重校正；
 8. 11 种分类器、5 种连续变量回归、交叉验证、置换、ROC/F1、特征重要性、K-means 与 GMM；
 9. IBL 风格时间分辨解码、心理测量曲线、反应时和群体 PCA 轨迹；
-10. 项目、参数、Methods、统计表与 provenance 导出。
+10. Elephant 放电统计、CCH、STTC、spike-train 距离与 LFP 频谱、相干性分析；
+11. Spike-field 相位锁定、循环移位检验和呼吸相位-振幅耦合验证案例；
+12. 项目、参数、Methods、统计表、完整图集与 provenance 导出。
+
+## 原创性与来源
+
+NeuroFlow 不复制其他软件或文章的界面、文案、截图、图表和实现代码。项目只调用
+开源库公开 API，并依据官方文档和原始论文核对数据结构、方法定义与能力边界；
+界面、适配器、规则、教程、示例数据和图形均由 NeuroFlow 独立设计。
+
+- 官方方法与 API 来源见 [`docs/METHODS_AND_SOURCES.md`](docs/METHODS_AND_SOURCES.md)；
+- 原创双语产品文档入口为 [`docs/site/index.html`](docs/site/index.html)；
+- 呼吸案例使用 NeuroFlow 自己的模拟数据，只演示方法结构，不宣称复现论文结果；
+- 微信推文仅用于发现主题和追溯原文，不复制其内容。
 
 ## 交互与语言
 
@@ -48,14 +62,18 @@ NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电�
 - **Kilosort4**：原生 NeuroFlow 适配器，完整 Demo 的默认 sorter；
 - **SpyKING CIRCUS 2、Tridesclous2、Simple、Lupin**：SpikeInterface 原生
   sorter，均已接入并完成可用性探测；本轮另外实跑验证了 Tridesclous2 和 Simple；
-- **MountainSort5**：适配器和安装清单已集成。其 `isosplit6` 在
-  Windows/Python 3.12 下需要 Microsoft C++ Build Tools，未满足时会明确显示
-  “不可用”，不会误报或阻止程序启动。
+- **MountainSort5**：通过 SpikeInterface 接入，Windows 发布环境会编译并封装
+  `isosplit6`；适合 CPU、tetrode 和中低通道数流程；
 
 NeuroFlow 只逐项探测上述白名单 sorter，不再调用会枚举 HDSort、MATLAB 等所有
 后端的全局检测，因此无关后端的编码或编译错误不会导致主程序启动崩溃。
 Kilosort4 运行后可检查流程耗时、完整日志、深度-时间图、振幅稳定性、模板波形、
 模板相似度、污染率、输出文件清单和模拟 ground truth 验证。
+
+每个 sorter 的原生文件保留不变，同时转换为统一的 Unit→秒级 spike times
+结构。多次运行不会覆盖其他 sorter：用户可切换当前结果，并在“Sorter 统一结果与
+比较”视图查看 Unit 匹配、一致度、算法独有 Unit 和共识 Unit。只有模拟或配对
+ground truth 数据才显示 precision、recall 与 F1。
 
 ## 启动
 

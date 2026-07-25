@@ -26,21 +26,39 @@ def _jsonable(value: Any) -> Any:
 
 
 def save_project(state: ProjectState) -> Path:
+    from .sorting_results import ensure_sorting_registry
+
+    ensure_sorting_registry(state)
     state.root.mkdir(parents=True, exist_ok=True)
     derived = state.root / "derived"
     derived.mkdir(exist_ok=True)
-    sorting_path = derived / "sorted_spikes.npz"
-    if state.sorted_spikes:
+    sortings_dir = derived / "sortings"
+    sortings_dir.mkdir(exist_ok=True)
+    ground_truth_archive: str | None = None
+    if state.ground_truth:
+        ground_truth_path = derived / "ground_truth.npz"
+        np.savez(
+            ground_truth_path,
+            **{
+                f"unit_{unit_id}": spikes
+                for unit_id, spikes in state.ground_truth.items()
+            },
+        )
+        ground_truth_archive = str(ground_truth_path.relative_to(state.root))
+    sorting_archives: dict[str, str] = {}
+    for sorter_key, spikes_by_unit in state.sorting_results.items():
+        sorting_path = sortings_dir / f"{sorter_key}.npz"
         np.savez(
             sorting_path,
             **{
                 f"unit_{unit_id}": spikes
-                for unit_id, spikes in state.sorted_spikes.items()
+                for unit_id, spikes in spikes_by_unit.items()
             },
         )
+        sorting_archives[sorter_key] = str(sorting_path.relative_to(state.root))
 
     payload = {
-        "schema_version": 2,
+        "schema_version": 3,
         "name": state.name,
         "source_type": state.source_type,
         "source_path": str(state.source_path) if state.source_path else None,
@@ -53,15 +71,24 @@ def save_project(state: ProjectState) -> Path:
         "electrode_type": state.electrode_type,
         "events": _jsonable(state.events),
         "trials": _jsonable(state.trials),
+        "ground_truth_archive": ground_truth_archive,
+        "sorting_archives": sorting_archives,
+        "sorting_provenance": _jsonable(state.sorting_provenance),
+        "active_sorter_key": state.active_sorter_key,
+        "sorting_comparison": _jsonable(state.sorting_comparison),
         "qc": _jsonable(state.qc),
         "unit_metrics": _jsonable(state.unit_metrics),
+        "unit_diagnostics": _jsonable(state.unit_diagnostics),
+        "spike_train_analysis": _jsonable(state.spike_train_analysis),
+        "lfp_analysis": _jsonable(state.lfp_analysis),
+        "spike_field_analysis": _jsonable(state.spike_field_analysis),
+        "case_studies": _jsonable(state.case_studies),
         "statistics": _jsonable(state.statistics),
         "decoding": _jsonable(state.decoding),
         "regression": _jsonable(state.regression),
         "metadata": _jsonable(state.metadata),
         "workflow_status": state.workflow_status,
         "run_log": state.run_log,
-        "sorting_archive": str(sorting_path) if state.sorted_spikes else None,
     }
     path = state.root / MANIFEST_NAME
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -71,13 +98,41 @@ def save_project(state: ProjectState) -> Path:
 def load_project(path: Path) -> ProjectState:
     manifest_path = path / MANIFEST_NAME if path.is_dir() else path
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    sorting_results: dict[str, dict[int, np.ndarray]] = {}
+    for sorter_key, archive_value in payload.get("sorting_archives", {}).items():
+        archive_path = Path(archive_value)
+        if not archive_path.is_absolute():
+            archive_path = manifest_path.parent / archive_path
+        if archive_path.exists():
+            with np.load(archive_path) as archive:
+                sorting_results[sorter_key] = {
+                    int(key.rsplit("_", 1)[-1]): archive[key] for key in archive.files
+                }
     sorted_spikes: dict[int, np.ndarray] = {}
-    archive_path = payload.get("sorting_archive")
-    if archive_path and Path(archive_path).exists():
-        archive = np.load(archive_path)
-        sorted_spikes = {
-            int(key.rsplit("_", 1)[-1]): archive[key] for key in archive.files
-        }
+    ground_truth: dict[int, np.ndarray] = {}
+    ground_truth_value = payload.get("ground_truth_archive")
+    if ground_truth_value:
+        ground_truth_path = Path(ground_truth_value)
+        if not ground_truth_path.is_absolute():
+            ground_truth_path = manifest_path.parent / ground_truth_path
+        if ground_truth_path.exists():
+            with np.load(ground_truth_path) as archive:
+                ground_truth = {
+                    int(key.rsplit("_", 1)[-1]): archive[key]
+                    for key in archive.files
+                }
+    active_sorter_key = payload.get("active_sorter_key")
+    if active_sorter_key in sorting_results:
+        sorted_spikes = sorting_results[active_sorter_key]
+    archive_value = payload.get("sorting_archive")
+    if not sorted_spikes and archive_value:
+        archive_path = Path(archive_value)
+        if archive_path.exists():
+            with np.load(archive_path) as archive:
+                sorted_spikes = {
+                    int(key.rsplit("_", 1)[-1]): archive[key]
+                    for key in archive.files
+                }
     state = ProjectState(
         root=manifest_path.parent,
         name=payload.get("name", manifest_path.parent.name),
@@ -96,9 +151,22 @@ def load_project(path: Path) -> ProjectState:
         electrode_type=payload.get("electrode_type", "generic"),
         events=payload.get("events", []),
         trials=payload.get("trials", []),
+        ground_truth=ground_truth,
         sorted_spikes=sorted_spikes,
+        sorting_results=sorting_results,
+        sorting_provenance=payload.get("sorting_provenance", {}),
+        active_sorter_key=active_sorter_key,
+        sorting_comparison=payload.get("sorting_comparison", {}),
         qc=payload.get("qc", {}),
         unit_metrics=payload.get("unit_metrics", []),
+        unit_diagnostics={
+            int(key): value
+            for key, value in payload.get("unit_diagnostics", {}).items()
+        },
+        spike_train_analysis=payload.get("spike_train_analysis", {}),
+        lfp_analysis=payload.get("lfp_analysis", {}),
+        spike_field_analysis=payload.get("spike_field_analysis", {}),
+        case_studies=payload.get("case_studies", {}),
         statistics=payload.get("statistics", {}),
         decoding=payload.get("decoding", {}),
         regression=payload.get("regression", {}),
@@ -106,6 +174,9 @@ def load_project(path: Path) -> ProjectState:
         workflow_status=payload.get("workflow_status", {}),
         run_log=payload.get("run_log", []),
     )
+    from .sorting_results import ensure_sorting_registry
+
+    ensure_sorting_registry(state)
     if (
         state.sorted_spikes
         and state.events
@@ -118,5 +189,5 @@ def load_project(path: Path) -> ProjectState:
         from .analysis import event_aligned_analysis
 
         event_aligned_analysis(state)
-    state.log("已恢复 NeuroFlow 项目")
+    state.log("NeuroFlow project restored")
     return state

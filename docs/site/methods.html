@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Methods · NeuroFlow</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-language="zh">
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Menu">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page / 搜索本页">
+      <div class="topbar-actions"><button class="language-button" type="button" data-language-toggle>EN</button></div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">NeuroFlow</div>
+        <a href="index.html">Overview / 概览</a>
+        <a href="workflow.html">Workflow / 全流程</a>
+        <a class="active" href="methods.html">Methods / 方法</a>
+        <a href="sources.html">Sources / 来源</a>
+        <div class="sidebar-label">On this page</div>
+        <a href="#architecture">Method architecture</a>
+        <a href="#elephant">Elephant tranche</a>
+        <a href="#respiration">Respiration case</a>
+        <a href="#statistics">Statistical guardrails</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">Method-aware integration</p>
+          <h1 data-lang="zh">工具不是列表，方法必须接得上</h1>
+          <h1 data-lang="en">Methods must connect, not merely appear in a tool list</h1>
+          <p class="lead" data-lang="zh">SpikeInterface 负责记录与 sorting 主干，Neo 保存带单位的数据对象，Elephant 提供经过文档化的电生理分析，NeuroFlow 负责连接、解释、验证和追溯。</p>
+          <p class="lead" data-lang="en">SpikeInterface provides the recording/sorting backbone, Neo carries unit-aware objects, Elephant provides documented analyses, and NeuroFlow connects, explains, validates, and records them.</p>
+          <img class="product-shot" src="assets/neuroflow-analysis.png" alt="NeuroFlow neural analysis workbench">
+        </div>
+
+        <section id="architecture" data-searchable>
+          <h2 data-lang="zh">方法架构</h2><h2 data-lang="en">Method architecture</h2>
+          <pre><code>NeuroFlow project
+├─ SpikeInterface: Recording / Sorting / SortingAnalyzer
+├─ Neo: AnalogSignal / SpikeTrain / Event / Epoch
+├─ Elephant: spike, spectral, synchrony, spike-field
+├─ SciPy + statsmodels: signal processing and inferential tests
+└─ NeuroFlow: adapters, guardrails, UI, provenance, figures</code></pre>
+          <p data-lang="zh">用户仍可以完全手动运行、跳过节点或导入外部结果。Neo/Elephant 不改变项目的原始文件，只读取标准化视图。</p>
+          <p data-lang="en">Users can still operate manually, skip stages, or import external results. Neo/Elephant read standardized views without altering source files.</p>
+        </section>
+
+        <section id="elephant" data-searchable>
+          <h2>Elephant integration</h2>
+          <table>
+            <thead><tr><th>Object</th><th>Integrated methods</th><th>Result shown</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Spike train</td><td>Rate, ISI, CV, CV2, Lv, LvR, Fano</td><td>Per-unit metrics and variability panels</td><td><span class="status">Integrated</span></td></tr>
+              <tr><td>Spike pairs</td><td>Correlation, CCH, STTC</td><td>Lag histogram and pairwise matrices</td><td><span class="status">Integrated</span></td></tr>
+              <tr><td>Spike distances</td><td>Victor-Purpura, van Rossum</td><td>Pairwise dissimilarity matrices</td><td><span class="status">Integrated</span></td></tr>
+              <tr><td>LFP</td><td>Welch PSD, coherence, phase lag</td><td>Spectrum, bands, coherence curves</td><td><span class="status">Integrated</span></td></tr>
+              <tr><td>Spike-field</td><td>Hilbert phase, spike-triggered phase, mean vector</td><td>Preferred phase, strength, surrogate evidence</td><td><span class="status">Integrated</span></td></tr>
+              <tr><td>Advanced patterns</td><td>SPADE, ASSET, UE, CAD, CuBIC, GPFA</td><td>Requirements catalog only</td><td><span class="status catalogued">Catalogued</span></td></tr>
+            </tbody>
+          </table>
+          <div class="callout method" data-lang="zh">“已收录”不等于“适合当前数据”。每个方法仍需满足 spike 数、平稳性、trial 设计、频段和样本层级要求。</div>
+          <div class="callout method" data-lang="en">Integrated does not mean suitable for every dataset. Spike count, stationarity, trial design, frequency bands, and sampling hierarchy still matter.</div>
+        </section>
+
+        <section id="respiration" data-searchable>
+          <h2 data-lang="zh">呼吸调制案例</h2><h2 data-lang="en">Respiration-modulation case</h2>
+          <p data-lang="zh">案例参考 Folschweiller 与 Sauer（2023）的分析结构：分状态呼吸 PSD、呼吸-LFP coherence、呼吸相位下 gamma 振幅，以及 spike 相位锁定。NeuroFlow 使用自己生成的三状态模拟数据和自己的图形实现。</p>
+          <p data-lang="en">The case follows the analytical structure of Folschweiller and Sauer (2023): state-specific respiration PSD, respiration-LFP coherence, gamma amplitude over respiration phase, and spike phase locking. NeuroFlow uses its own three-state simulation and figures.</p>
+          <div class="callout">
+            <strong data-lang="zh">不是论文复现：</strong><strong data-lang="en">Not a paper reproduction:</strong>
+            <span data-lang="zh">没有使用原论文数据，不复制原图，也不声称得到相同数值或生物学结论。</span>
+            <span data-lang="en">The original data and figures are not used, and matching numerical or biological conclusions are not claimed.</span>
+          </div>
+        </section>
+
+        <section id="statistics" data-searchable>
+          <h2 data-lang="zh">统计护栏</h2><h2 data-lang="en">Statistical guardrails</h2>
+          <div class="grid-2">
+            <article class="panel"><h3>Hierarchy</h3><p>Trials, units, sessions, and animals are recorded as distinct sampling levels.</p></article>
+            <article class="panel"><h3>Pairing</h3><p>Baseline-response and repeated observations remain explicitly paired.</p></article>
+            <article class="panel"><h3>Circular evidence</h3><p>Phase locking reports vector strength, a Rayleigh approximation, and circular-shift surrogates.</p></article>
+            <article class="panel"><h3>Multiplicity</h3><p>Raw p values, effect sizes, confidence intervals, and corrected values remain visible together.</p></article>
+          </div>
+        </section>
+        <footer class="footer">NeuroFlow methods · Deterministic computation, visible assumptions.</footer>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
+

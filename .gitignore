@@ -24,6 +24,9 @@ ui_*.png
 *.npy
 *.npz
 *.nwb
+docs_capture_workspace/
+docs/site/assets/font_test.png
+docs/site/assets/native_test.png
 
 # Build artifacts
 build/

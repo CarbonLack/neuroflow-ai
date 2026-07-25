@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 from matplotlib import rcParams
 from matplotlib.figure import Figure
+from scipy import signal as scipy_signal
 
 from .analysis import load_recording
 from .models import ProjectState
@@ -323,6 +324,90 @@ def qc_figure(state: ProjectState) -> Figure:
     return fig
 
 
+def qc_diagnostics_figure(state: ProjectState, view: str = "summary") -> Figure:
+    if view == "summary":
+        return qc_figure(state)
+    if view == "psd":
+        fig, axes = _base_figure(1, 2, 5.0)
+        frequencies = np.asarray(state.qc.get("psd_frequencies_hz", []), dtype=float)
+        channel_psd = np.asarray(state.qc.get("channel_psd", []), dtype=float)
+        if channel_psd.size:
+            image = axes[0, 0].imshow(
+                10 * np.log10(np.maximum(channel_psd, 1e-12)),
+                aspect="auto",
+                interpolation="nearest",
+                extent=[frequencies[0], frequencies[-1], len(channel_psd), 0],
+                cmap="magma",
+            )
+            fig.colorbar(image, ax=axes[0, 0], label="Power (dB)", shrink=0.78)
+            axes[0, 1].plot(
+                frequencies,
+                10 * np.log10(np.maximum(np.median(channel_psd, axis=0), 1e-12)),
+                color=GREEN,
+                linewidth=1.5,
+                label="Median across channels",
+            )
+            axes[0, 1].axvline(50, color=CORAL, linestyle="--", label="50 Hz")
+            axes[0, 1].legend(frameon=False, fontsize=8)
+        axes[0, 0].set_title(
+            _text(state, "通道 × 频率功率图", "Channel-by-frequency power map"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel(_text(state, "频率 (Hz)", "Frequency (Hz)"), color=MUTED)
+        axes[0, 0].set_ylabel(_text(state, "通道", "Channel"), color=MUTED)
+        axes[0, 1].set_title(
+            _text(state, "全通道中位功率谱", "Median power spectrum"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel(_text(state, "频率 (Hz)", "Frequency (Hz)"), color=MUTED)
+        axes[0, 1].set_ylabel("Power (dB)", color=MUTED)
+        return fig
+    fig, axes = _base_figure(1, 2, 5.0)
+    timeline = np.asarray(state.qc.get("rms_timeline", []), dtype=float)
+    times = np.asarray(state.qc.get("timeline_seconds", []), dtype=float)
+    if timeline.size:
+        normalized = timeline / np.maximum(np.median(timeline, axis=0), 1e-9)
+        image = axes[0, 0].imshow(
+            normalized.T,
+            aspect="auto",
+            interpolation="nearest",
+            extent=[times[0], times[-1] + 1, len(normalized.T), 0],
+            cmap="viridis",
+            vmin=0.5,
+            vmax=min(3.0, float(np.nanpercentile(normalized, 98))),
+        )
+        fig.colorbar(image, ax=axes[0, 0], label="RMS / channel median", shrink=0.78)
+    axes[0, 0].set_title(
+        _text(state, "记录期间的通道质量", "Channel quality over the recording"),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 0].set_xlabel(_text(state, "记录时间 (s)", "Recording time (s)"), color=MUTED)
+    axes[0, 0].set_ylabel(_text(state, "通道", "Channel"), color=MUTED)
+    labels, counts = np.unique(
+        np.asarray(state.qc.get("channel_labels", []), dtype=str), return_counts=True
+    )
+    axes[0, 1].barh(labels, counts, color=[GREEN, GOLD, CORAL, MUTED][: len(labels)])
+    score = float(state.qc.get("quality_score", 0.0))
+    axes[0, 1].set_title(
+        _text(
+            state,
+            f"数据健康评分 {score:.1f}/100",
+            f"Data health score {score:.1f}/100",
+        ),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 1].set_xlabel(_text(state, "通道数", "Channel count"), color=MUTED)
+    return fig
+
+
 def preprocessing_figure(
     preview: dict[str, np.ndarray], language: str = "zh_CN"
 ) -> Figure:
@@ -352,6 +437,136 @@ def preprocessing_figure(
     for axis in axes.flat:
         axis.set_yticks(offsets)
         axis.set_yticklabels([f"Ch {index}" for index in range(raw.shape[1])])
+    return fig
+
+
+def preprocessing_diagnostics_figure(
+    preview: dict[str, np.ndarray],
+    state: ProjectState,
+    view: str = "ap",
+) -> Figure:
+    if view == "ap":
+        fig, axes = _base_figure(2, 1, 5.8)
+        time_ms = np.asarray(preview["time_ms"], dtype=float)
+        visible = time_ms <= time_ms[0] + 80.0
+        raw = np.asarray(preview["raw"])[visible]
+        processed = np.asarray(preview["processed"])[visible]
+        shown_time = time_ms[visible]
+        offsets = np.arange(raw.shape[1]) * 650
+        axes[0, 0].plot(shown_time, raw + offsets, color=MUTED, linewidth=0.55)
+        axes[1, 0].plot(shown_time, processed + offsets, color=GREEN, linewidth=0.55)
+        axes[0, 0].set_title(
+            _text(state, "AP 分支：处理前", "AP branch: before preprocessing"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[1, 0].set_title(
+            _text(
+                state,
+                "AP 分支：300-6000 Hz + common median reference",
+                "AP branch: 300-6000 Hz + common median reference",
+            ),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[1, 0].set_xlabel(_text(state, "时间 (ms)", "Time (ms)"), color=MUTED)
+        for axis in axes.flat:
+            axis.set_yticks(offsets)
+            axis.set_yticklabels([f"Ch {index}" for index in range(raw.shape[1])])
+        return fig
+    if view == "lfp":
+        fig, axes = _base_figure(1, 2, 5.0)
+        lfp = np.asarray(preview["lfp"], dtype=float)
+        times = np.asarray(preview["lfp_time_s"], dtype=float)
+        channels = min(4, lfp.shape[1])
+        scale = max(float(np.nanpercentile(np.abs(lfp[:, :channels]), 98)) * 2.5, 10)
+        offsets = np.arange(channels) * scale
+        axes[0, 0].plot(
+            times,
+            lfp[:, :channels] + offsets,
+            color=GREEN,
+            linewidth=0.6,
+        )
+        frequencies, power = np.array([]), np.empty((0, 0))
+        if len(lfp):
+            frequencies, power = scipy_signal.welch(
+                lfp[:, :channels],
+                fs=float(preview["lfp_sampling_rate_hz"]),
+                nperseg=min(1024, len(lfp)),
+                axis=0,
+            )
+        if power.size:
+            axes[0, 1].plot(
+                frequencies,
+                10 * np.log10(np.maximum(power, 1e-12)),
+                linewidth=1.0,
+            )
+            axes[0, 1].set_xlim(0, min(150, frequencies[-1]))
+        axes[0, 0].set_title(
+            _text(state, "LFP 分支波形预览", "LFP branch trace preview"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel(_text(state, "时间 (s)", "Time (s)"), color=MUTED)
+        axes[0, 0].set_yticks(offsets)
+        axes[0, 0].set_yticklabels([f"Ch {index}" for index in range(channels)])
+        axes[0, 1].set_title(
+            _text(state, "LFP 分支功率谱", "LFP branch power spectrum"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel(_text(state, "频率 (Hz)", "Frequency (Hz)"), color=MUTED)
+        axes[0, 1].set_ylabel("Power (dB)", color=MUTED)
+        return fig
+    fig, axes = _base_figure(1, 2, 5.2)
+    axes[0, 0].axis("off")
+    pipeline = preview.get("pipeline", [])
+    y = 0.92
+    for index, step in enumerate(pipeline, start=1):
+        text = (
+            f"{index:02d}  {step['branch']}\n"
+            f"{step['step']}\n"
+            + " · ".join(
+                f"{key}={value}" for key, value in step["parameters"].items()
+            )
+        )
+        axes[0, 0].text(
+            0.03,
+            y,
+            text,
+            va="top",
+            fontsize=9,
+            color=INK,
+            bbox={
+                "boxstyle": "round,pad=0.45,rounding_size=0.15",
+                "facecolor": "#eef5f2",
+                "edgecolor": "#b9cdc4",
+            },
+        )
+        y -= 0.28
+    axes[0, 0].set_title(
+        _text(state, "可审计预处理链", "Auditable preprocessing chain"),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 1].axis("off")
+    guardrails = preview.get("guardrails", [])
+    axes[0, 1].text(
+        0.02,
+        0.95,
+        _text(state, "运行前安全检查", "Pre-run safeguards")
+        + "\n\n"
+        + "\n\n".join(f"{index}. {item}" for index, item in enumerate(guardrails, 1)),
+        va="top",
+        fontsize=9,
+        color=INK,
+        wrap=True,
+    )
     return fig
 
 
@@ -396,6 +611,198 @@ def sorting_figure(matches: list[dict], state: ProjectState) -> Figure:
     return fig
 
 
+def sorting_comparison_figure(state: ProjectState) -> Figure:
+    comparison = state.sorting_comparison
+    fig, axes = _base_figure(1, 3, 3.2)
+    if not comparison or not comparison.get("sorters"):
+        for axis in axes.flat:
+            axis.axis("off")
+        axes[0, 0].text(
+            0.02,
+            0.9,
+            _text(
+                state,
+                "尚无可比较的统一 sorting 结果",
+                "No normalized sorting results are available for comparison",
+            ),
+            va="top",
+            fontsize=15,
+            color=INK,
+        )
+        axes[0, 0].text(
+            0.02,
+            0.7,
+            _text(
+                state,
+                "运行一个 sorter 可与模拟真值比较；运行两个或更多 sorter "
+                "可查看算法间匹配、独有 Unit 与共识 Unit。",
+                "Run one sorter for simulated ground-truth validation, or two or "
+                "more sorters for matched, unique, and consensus units.",
+            ),
+            va="top",
+            fontsize=10,
+            color=MUTED,
+            wrap=True,
+        )
+        return fig
+
+    sorters = comparison["sorters"]
+    keys = list(sorters)
+    units = [sorters[key]["unit_count"] for key in keys]
+    spikes = [sorters[key]["spike_count"] for key in keys]
+    x = np.arange(len(keys))
+    ground_truth = comparison.get("ground_truth", {})
+    if ground_truth:
+        metric_names = ("mean_precision", "mean_recall", "mean_f1")
+        labels = ("Precision", "Recall", "F1")
+        width = 0.22
+        for index, (metric, label) in enumerate(zip(metric_names, labels, strict=True)):
+            axes[0, 0].bar(
+                x + (index - 1) * width,
+                [ground_truth[key][metric] for key in keys],
+                width=width,
+                label=label,
+                color=(GREEN, GOLD, CORAL)[index],
+            )
+        axes[0, 0].set_ylim(0, 1.05)
+        axes[0, 0].set_ylabel("Score", color=MUTED)
+        axes[0, 0].set_title(
+            _text(
+                state,
+                "仅模拟真值：准确性指标",
+                "Ground truth only: performance",
+            ),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 0].legend(frameon=False, fontsize=7, ncols=3)
+    else:
+        axes[0, 0].bar(x - 0.18, units, width=0.36, color=GREEN, label="Units")
+        spike_scale = max(max(spikes, default=1) / max(max(units, default=1), 1), 1)
+        axes[0, 0].bar(
+            x + 0.18,
+            np.asarray(spikes) / spike_scale,
+            width=0.36,
+            color=GOLD,
+            label=f"Spikes / {spike_scale:.0f}",
+        )
+        axes[0, 0].set_ylabel(
+            _text(state, "归一化数量", "Normalized count"), color=MUTED
+        )
+        axes[0, 0].set_title(
+            _text(state, "统一结果规模", "Normalized result size"),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 0].legend(frameon=False, fontsize=7)
+    axes[0, 0].set_xticks(x)
+    axes[0, 0].set_xticklabels(keys, rotation=18, ha="right", fontsize=8)
+
+    agreement = np.eye(len(keys), dtype=float)
+    for row in comparison.get("pairwise", []):
+        i = keys.index(row["sorter_a"])
+        j = keys.index(row["sorter_b"])
+        agreement[i, j] = agreement[j, i] = row["mean_matched_agreement"]
+    axes[0, 1].imshow(
+        agreement,
+        cmap="viridis",
+        vmin=0,
+        vmax=1,
+        interpolation="nearest",
+    )
+    for i in range(len(keys)):
+        for j in range(len(keys)):
+            axes[0, 1].text(
+                j,
+                i,
+                f"{agreement[i, j]:.2f}",
+                ha="center",
+                va="center",
+                color="white" if agreement[i, j] < 0.65 else INK,
+                fontsize=8,
+            )
+    axes[0, 1].set_xticks(np.arange(len(keys)), keys, rotation=25, ha="right")
+    axes[0, 1].set_yticks(np.arange(len(keys)), keys)
+    axes[0, 1].set_title(
+        _text(state, "匹配 Unit 的平均一致度", "Mean agreement of matched units"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+
+    axes[0, 2].axis("off")
+    consensus = comparison.get("consensus", {})
+    result_lines = [
+        f"{key}: {sorters[key]['unit_count']} U / {sorters[key]['spike_count']} spikes"
+        for key in keys
+    ]
+    pair_lines = [
+        (
+            f"{row['sorter_a']} / {row['sorter_b']}: "
+            f"{row['matched_unit_count']} match | "
+            f"{row['unique_units_a']}/{row['unique_units_b']} unique"
+        )
+        for row in comparison.get("pairwise", [])
+    ]
+    consensus_line = (
+        f"Consensus ≥{consensus.get('minimum_agreement_count', 2)}: "
+        f"{consensus.get('unit_count', 0)} U / "
+        f"{consensus.get('spike_count', 0)} spikes"
+        if consensus
+        else _text(state, "至少需要两个结果计算共识", "At least two results are required")
+    )
+    axes[0, 2].text(
+        0.02,
+        0.95,
+        _text(state, "匹配摘要", "Matching summary"),
+        va="top",
+        fontsize=10,
+        fontweight="bold",
+        color=INK,
+    )
+    axes[0, 2].text(
+        0.02,
+        0.82,
+        "\n".join(result_lines),
+        va="top",
+        fontsize=7.8,
+        color=INK,
+        wrap=True,
+    )
+    axes[0, 2].text(
+        0.02,
+        0.54,
+        consensus_line,
+        va="top",
+        fontsize=7.8,
+        color=INK,
+        wrap=True,
+    )
+    axes[0, 2].text(
+        0.02,
+        0.38,
+        "\n".join(pair_lines[:4]),
+        va="top",
+        fontsize=7.2,
+        color=INK,
+    )
+    axes[0, 2].text(
+        0.02,
+        0.04,
+        _text(
+            state,
+            "一致度不是生物学真值；仍需波形、ISI、漂移与人工复核。",
+            "Agreement is not ground truth.\nReview waveform, ISI, drift, and units manually.",
+        ),
+        va="bottom",
+        fontsize=7.2,
+        color=CORAL,
+    )
+    return fig
+
+
 def _sorting_result_dir(state: ProjectState) -> Path | None:
     value = state.metadata.get("sorting", {}).get("result_directory")
     if not value:
@@ -416,6 +823,8 @@ def _load_npy(root: Path, name: str) -> np.ndarray | None:
 
 
 def sorting_diagnostics_figure(state: ProjectState, view: str = "pipeline") -> Figure:
+    if view == "comparison":
+        return sorting_comparison_figure(state)
     root = _sorting_result_dir(state)
     if root is None:
         fig, axes = _base_figure(1, 1, 5.6)
@@ -810,7 +1219,89 @@ def sorting_diagnostics_figure(state: ProjectState, view: str = "pipeline") -> F
     return fig
 
 
-def unit_metrics_figure(state: ProjectState) -> Figure:
+def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
+    if view.startswith("unit:"):
+        unit_id = int(view.split(":", 1)[1])
+        diagnostic = state.unit_diagnostics.get(unit_id, {})
+        if diagnostic:
+            fig, axes = _base_figure(2, 2, 6.4)
+            waveform = np.asarray(diagnostic["waveform"], dtype=float)
+            waveform_time = np.asarray(diagnostic["waveform_time_ms"], dtype=float)
+            for index, channel in enumerate(diagnostic["waveform_channels"]):
+                axes[0, 0].plot(
+                    waveform_time,
+                    waveform[:, index],
+                    linewidth=1.2,
+                    label=f"Ch {channel}",
+                )
+            axes[0, 0].legend(frameon=False, fontsize=7, ncols=2)
+            axes[0, 0].set_title(
+                _text(
+                    state,
+                    f"Unit {unit_id} 平均波形",
+                    f"Unit {unit_id} mean waveform",
+                ),
+                loc="left",
+                fontsize=11,
+                color=INK,
+            )
+            axes[0, 0].set_xlabel("Time (ms)", color=MUTED)
+            axes[0, 0].set_ylabel("ADC", color=MUTED)
+            axes[0, 1].bar(
+                diagnostic["acg_lags_ms"],
+                diagnostic["acg_counts"],
+                width=0.9,
+                color=GREEN,
+            )
+            axes[0, 1].axvspan(0, 1.5, color=CORAL, alpha=0.18)
+            axes[0, 1].set_title(
+                _text(state, "自相关与不应期", "Autocorrelation and refractory period"),
+                loc="left",
+                fontsize=11,
+                color=INK,
+            )
+            axes[0, 1].set_xlabel("Lag (ms)", color=MUTED)
+            isi_values = np.asarray(diagnostic["isi_ms"], dtype=float)
+            axes[1, 0].hist(
+                isi_values[(isi_values > 0) & (isi_values <= 100)],
+                bins=np.arange(0, 102, 2),
+                color=GOLD,
+            )
+            axes[1, 0].axvline(1.5, color=CORAL, linestyle="--")
+            axes[1, 0].set_title(
+                _text(state, "ISI 分布", "ISI distribution"),
+                loc="left",
+                fontsize=11,
+                color=INK,
+            )
+            axes[1, 0].set_xlabel("ISI (ms)", color=MUTED)
+            axes[1, 1].plot(
+                diagnostic["stability_time_s"],
+                diagnostic["stability_rate_hz"],
+                color=GREEN,
+                linewidth=1.4,
+                label="Firing rate",
+            )
+            if diagnostic["amplitude_time_s"]:
+                secondary = axes[1, 1].twinx()
+                secondary.scatter(
+                    diagnostic["amplitude_time_s"],
+                    diagnostic["amplitude_adc"],
+                    s=8,
+                    alpha=0.35,
+                    color=CORAL,
+                    label="Spike amplitude",
+                )
+                secondary.set_ylabel("Amplitude (ADC)", color=CORAL)
+            axes[1, 1].set_title(
+                _text(state, "时间稳定性", "Stability over time"),
+                loc="left",
+                fontsize=11,
+                color=INK,
+            )
+            axes[1, 1].set_xlabel(_text(state, "时间 (s)", "Time (s)"), color=MUTED)
+            axes[1, 1].set_ylabel("Rate (Hz)", color=MUTED)
+            return fig
     fig, axes = _base_figure(1, 2, 4.8)
     metrics = state.unit_metrics
     if metrics:
@@ -836,6 +1327,235 @@ def unit_metrics_figure(state: ProjectState) -> Figure:
     )
     axes[0, 1].set_xlabel("Unit", color=MUTED)
     axes[0, 1].set_ylabel("ISI violation (%)", color=MUTED)
+    return fig
+
+
+def neural_toolkit_figure(state: ProjectState, view: str) -> Figure:
+    if view.startswith("event:"):
+        return event_analysis_figure(state, int(view.split(":", 1)[1]))
+    if view == "spike:statistics":
+        fig, axes = _base_figure(2, 2, 6.4)
+        rows = state.spike_train_analysis.get("rows", [])
+        if rows:
+            rates = np.asarray([row["rate_hz"] for row in rows], dtype=float)
+            cv2_values = np.asarray([row["cv2"] for row in rows], dtype=float)
+            fano = np.asarray([row["fano_trials"] for row in rows], dtype=float)
+            lv_values = np.asarray([row["lv"] for row in rows], dtype=float)
+            ids = np.asarray([row["unit_id"] for row in rows], dtype=int)
+            axes[0, 0].scatter(rates, cv2_values, c=ids, cmap="viridis", s=48)
+            axes[0, 1].bar(ids, fano, color=GOLD)
+            axes[1, 0].scatter(lv_values, cv2_values, c=rates, cmap="magma", s=48)
+            cch = state.spike_train_analysis.get("cch", {})
+            axes[1, 1].bar(
+                cch.get("lags_ms", []),
+                cch.get("counts", []),
+                width=4.2,
+                color=GREEN,
+            )
+        axes[0, 0].set_title("Rate vs CV2", loc="left", fontsize=11, color=INK)
+        axes[0, 0].set_xlabel("Rate (Hz)", color=MUTED)
+        axes[0, 0].set_ylabel("CV2", color=MUTED)
+        axes[0, 1].set_title(
+            _text(state, "Trial Fano factor", "Trial Fano factor"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel("Unit", color=MUTED)
+        axes[0, 1].set_ylabel("Fano factor", color=MUTED)
+        axes[1, 0].set_title("Lv vs CV2", loc="left", fontsize=11, color=INK)
+        axes[1, 0].set_xlabel("Lv", color=MUTED)
+        axes[1, 0].set_ylabel("CV2", color=MUTED)
+        axes[1, 1].set_title(
+            _text(state, "前两个 Unit 的 CCH", "CCH for the first two units"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[1, 1].set_xlabel("Lag (ms)", color=MUTED)
+        return fig
+    if view == "spike:relationships":
+        fig, axes = _base_figure(2, 2, 6.4)
+        matrices = (
+            ("correlation", "Binned correlation", "viridis"),
+            ("sttc", "Spike time tiling coefficient", "RdYlGn"),
+            ("victor_purpura", "Victor-Purpura distance", "magma"),
+            ("van_rossum", "van Rossum distance", "magma"),
+        )
+        for axis, (key, title, cmap) in zip(axes.flat, matrices):
+            values = np.asarray(state.spike_train_analysis.get(key, []), dtype=float)
+            if values.size:
+                image = axis.imshow(values, cmap=cmap, aspect="auto")
+                fig.colorbar(image, ax=axis, shrink=0.68)
+            axis.set_title(title, loc="left", fontsize=10, color=INK)
+            axis.set_xlabel("Unit", color=MUTED)
+            axis.set_ylabel("Unit", color=MUTED)
+        return fig
+    if view in {"lfp:psd", "lfp:coherence", "lfp:spectrogram"}:
+        result = state.lfp_analysis
+        fig, axes = _base_figure(1, 2, 5.2)
+        if view == "lfp:psd":
+            frequencies = np.asarray(result.get("frequencies_hz", []), dtype=float)
+            psd = np.asarray(result.get("psd", []), dtype=float)
+            for index, channel in enumerate(result.get("channel_ids", [])):
+                axes[0, 0].plot(
+                    frequencies,
+                    10 * np.log10(np.maximum(psd[index], 1e-12)),
+                    label=f"Ch {channel}",
+                )
+            axes[0, 0].set_xlim(0, min(150, frequencies[-1] if frequencies.size else 150))
+            axes[0, 0].legend(frameon=False, fontsize=8)
+            bands = list(result.get("band_power", {}))
+            values = np.asarray(list(result.get("band_power", {}).values()), dtype=float)
+            if values.size:
+                width = 0.8 / values.shape[1]
+                for channel_index in range(values.shape[1]):
+                    axes[0, 1].bar(
+                        np.arange(len(bands)) + channel_index * width,
+                        values[:, channel_index],
+                        width=width,
+                        label=f"Ch {result['channel_ids'][channel_index]}",
+                    )
+                axes[0, 1].set_xticks(
+                    np.arange(len(bands)) + width * (values.shape[1] - 1) / 2,
+                    bands,
+                    rotation=25,
+                )
+                axes[0, 1].legend(frameon=False, fontsize=8)
+            axes[0, 0].set_title("Welch PSD", loc="left", fontsize=11, color=INK)
+            axes[0, 0].set_xlabel("Frequency (Hz)", color=MUTED)
+            axes[0, 1].set_title("Band power", loc="left", fontsize=11, color=INK)
+            axes[0, 1].set_ylabel("Integrated power", color=MUTED)
+            return fig
+        if view == "lfp:coherence":
+            frequencies = np.asarray(
+                result.get("coherence_frequencies_hz", []), dtype=float
+            )
+            axes[0, 0].plot(
+                frequencies, result.get("coherence", []), color=GREEN, linewidth=1.5
+            )
+            axes[0, 0].set_ylim(0, 1.02)
+            axes[0, 1].plot(
+                frequencies,
+                result.get("phase_lag_rad", []),
+                color=CORAL,
+                linewidth=1.3,
+            )
+            axes[0, 0].set_title("Magnitude-squared coherence", loc="left")
+            axes[0, 1].set_title("Cross-spectral phase lag", loc="left")
+            for axis in axes.flat:
+                axis.set_xlim(0, min(100, frequencies[-1] if frequencies.size else 100))
+                axis.set_xlabel("Frequency (Hz)", color=MUTED)
+            axes[0, 0].set_ylabel("Coherence", color=MUTED)
+            axes[0, 1].set_ylabel("Phase lag (rad)", color=MUTED)
+            return fig
+        spectrogram_f = np.asarray(
+            result.get("spectrogram_frequencies_hz", []), dtype=float
+        )
+        spectrogram_t = np.asarray(result.get("spectrogram_times_s", []), dtype=float)
+        spectrogram_power = np.asarray(result.get("spectrogram_power", []), dtype=float)
+        if spectrogram_power.size:
+            mask = spectrogram_f <= 150
+            image = axes[0, 0].pcolormesh(
+                spectrogram_t,
+                spectrogram_f[mask],
+                10 * np.log10(np.maximum(spectrogram_power[mask], 1e-12)),
+                shading="auto",
+                cmap="magma",
+            )
+            fig.colorbar(image, ax=axes[0, 0], label="Power (dB)", shrink=0.78)
+            median_power = np.median(spectrogram_power[mask], axis=1)
+            axes[0, 1].plot(spectrogram_f[mask], median_power, color=GREEN)
+        axes[0, 0].set_title("LFP spectrogram", loc="left")
+        axes[0, 0].set_xlabel("Time (s)", color=MUTED)
+        axes[0, 0].set_ylabel("Frequency (Hz)", color=MUTED)
+        axes[0, 1].set_title("Median time-frequency power", loc="left")
+        axes[0, 1].set_xlabel("Frequency (Hz)", color=MUTED)
+        return fig
+    if view == "coupling:phase":
+        fig, axes = _base_figure(1, 2, 5.2)
+        rows = state.spike_field_analysis.get("rows", [])
+        if rows:
+            ids = [row["unit_id"] for row in rows]
+            strengths = [row["vector_strength"] for row in rows]
+            p_values = [row["surrogate_p"] for row in rows]
+            colors = [GREEN if value < 0.05 else MUTED for value in p_values]
+            axes[0, 0].bar(ids, strengths, color=colors)
+            first_id = ids[0]
+            histogram = state.spike_field_analysis["phase_histograms"][first_id]
+            axes[0, 1].bar(
+                histogram["centers"],
+                histogram["counts"],
+                width=2 * np.pi / 18 * 0.9,
+                color=GOLD,
+            )
+        axes[0, 0].set_title(
+            _text(state, "相位锁定强度与 surrogate 检验", "Phase locking and surrogate test"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("Unit", color=MUTED)
+        axes[0, 0].set_ylabel("Mean vector length", color=MUTED)
+        axes[0, 1].set_title(
+            _text(state, "Unit 0 spike 相位分布", "Unit 0 spike-phase distribution"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel("Phase (rad)", color=MUTED)
+        return fig
+    case = state.case_studies.get("respiration", {})
+    rows = case.get("rows", [])
+    fig, axes = _base_figure(1, 2, 5.2)
+    if view == "case:pac":
+        for name, values in case.get("state_curves", {}).items():
+            pac = values["pac"]
+            axes[0, 0].plot(
+                pac["phase_centers"],
+                pac["normalized_amplitude"],
+                linewidth=1.5,
+                label=name,
+            )
+        axes[0, 0].legend(frameon=False, fontsize=8)
+        axes[0, 0].set_title(
+            _text(state, "呼吸相位 × gamma 振幅", "Respiration phase x gamma amplitude"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("Respiration phase (rad)", color=MUTED)
+        if rows:
+            axes[0, 1].bar(
+                [row["state"] for row in rows],
+                [row["pac_kld"] for row in rows],
+                color=[GREEN, CORAL, GOLD],
+            )
+        axes[0, 1].set_title("PAC modulation index (KLD)", loc="left")
+        axes[0, 1].tick_params(axis="x", rotation=20)
+        return fig
+    for name, values in case.get("state_curves", {}).items():
+        axes[0, 0].plot(
+            values["respiration_psd_frequencies_hz"],
+            values["respiration_psd"],
+            linewidth=1.4,
+            label=name,
+        )
+        axes[0, 1].plot(
+            values["coherence_frequencies_hz"],
+            values["coherence"],
+            linewidth=1.4,
+            label=name,
+        )
+    axes[0, 0].set_xlim(0, 12)
+    axes[0, 1].set_xlim(0, 12)
+    axes[0, 1].set_ylim(0, 1.02)
+    axes[0, 0].legend(frameon=False, fontsize=8)
+    axes[0, 1].legend(frameon=False, fontsize=8)
+    axes[0, 0].set_title("Respiration PSD by simulated state", loc="left")
+    axes[0, 1].set_title("Respiration-LFP coherence", loc="left")
+    for axis in axes.flat:
+        axis.set_xlabel("Frequency (Hz)", color=MUTED)
     return fig
 
 
@@ -942,6 +1662,110 @@ def statistics_figure(state: ProjectState, view: str = "effects") -> Figure:
             _text(state, "尚未运行统计套件", "Statistical suite has not run"),
             ha="center",
             va="center",
+        )
+        return fig
+    if view == "circular":
+        coupling_rows = state.spike_field_analysis.get("rows", [])
+        if coupling_rows:
+            ids = np.asarray([row["unit_id"] for row in coupling_rows], dtype=int)
+            preferred = np.asarray(
+                [row["preferred_phase_rad"] for row in coupling_rows], dtype=float
+            )
+            strengths = np.asarray(
+                [row["vector_strength"] for row in coupling_rows], dtype=float
+            )
+            surrogate_p = np.asarray(
+                [row["surrogate_p"] for row in coupling_rows], dtype=float
+            )
+            colors = np.where(surrogate_p < 0.05, GREEN, MUTED)
+            axes[0, 0].scatter(preferred, strengths, c=colors, s=46)
+            for unit_id, x, y in zip(ids, preferred, strengths):
+                axes[0, 0].annotate(
+                    str(unit_id), (x, y), xytext=(3, 3), textcoords="offset points"
+                )
+            axes[0, 1].scatter(
+                -np.log10(
+                    np.maximum(
+                        [row["rayleigh_p"] for row in coupling_rows], 1e-12
+                    )
+                ),
+                -np.log10(np.maximum(surrogate_p, 1e-12)),
+                c=colors,
+                s=46,
+            )
+            threshold = -np.log10(0.05)
+            axes[0, 1].axhline(threshold, color=CORAL, linestyle="--")
+            axes[0, 1].axvline(threshold, color=CORAL, linestyle="--")
+        axes[0, 0].set_title(
+            _text(state, "偏好相位与锁定强度", "Preferred phase and locking strength"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("Preferred phase (rad)", color=MUTED)
+        axes[0, 0].set_ylabel("Mean vector length", color=MUTED)
+        axes[0, 1].set_title(
+            _text(
+                state,
+                "Rayleigh 近似与 circular-shift surrogate",
+                "Rayleigh approximation vs circular-shift surrogate",
+            ),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel("-log10(Rayleigh p)", color=MUTED)
+        axes[0, 1].set_ylabel("-log10(surrogate p)", color=MUTED)
+        return fig
+    if view == "design":
+        axes[0, 0].axis("off")
+        axes[0, 1].axis("off")
+        hierarchy = (
+            f"Trials: {len(state.events)}\n"
+            f"Units: {len(state.sorted_spikes)}\n"
+            f"Sessions represented: 1 (demo)\n"
+            f"Animals represented: not encoded (demo)\n\n"
+            "Current primary contrast:\n"
+            "within-trial baseline vs response\n\n"
+            "Current multiplicity:\n"
+            "units controlled with BH-FDR"
+        )
+        axes[0, 0].text(
+            0.02,
+            0.97,
+            hierarchy,
+            va="top",
+            fontsize=10,
+            color=INK,
+        )
+        design_notes = (
+            "Decision checks\n\n"
+            "1. Define the biological sampling unit.\n"
+            "2. Mark paired or independent observations.\n"
+            "3. Encode animal and session identifiers.\n"
+            "4. Inspect distribution and variance assumptions.\n"
+            "5. Use circular or surrogate statistics for phase data.\n"
+            "6. Report effect sizes and uncertainty with p values."
+        )
+        axes[0, 1].text(
+            0.02,
+            0.97,
+            design_notes,
+            va="top",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 0].set_title(
+            _text(state, "当前样本层级", "Current sampling hierarchy"),
+            loc="left",
+            fontsize=11,
+            color=INK,
+        )
+        axes[0, 1].set_title(
+            _text(state, "检验前决策", "Pre-test decisions"),
+            loc="left",
+            fontsize=11,
+            color=INK,
         )
         return fig
     if view == "conditions":

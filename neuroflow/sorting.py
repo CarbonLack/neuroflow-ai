@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 
 from .models import ProjectState
+from .sorting_results import compare_sorting_results, register_sorting_result
 
 SORTER_DEFINITIONS = (
     {
@@ -64,8 +65,9 @@ SORTER_DEFINITIONS = (
 
 INSTALL_GUIDANCE = {
     "mountainsort5": (
-        "Not installed. MountainSort5 depends on isosplit6; its current PyPI release "
-        "requires Microsoft C++ Build Tools on Windows/Python 3.12."
+        "MountainSort5 requires isosplit6. The NeuroFlow Windows release bundles the "
+        "compiled dependency; source installations on Python 3.12 require Microsoft "
+        "C++ Build Tools."
     ),
 }
 
@@ -261,8 +263,7 @@ def run_sorter(
         / state.sampling_rate
         for unit in sorting.unit_ids
     }
-    state.sorted_spikes = sorted_spikes
-    state.metadata["sorting"] = {
+    provenance = {
         "sorter": item["name"],
         "sorter_key": sorter_name,
         "version": item["version"],
@@ -270,6 +271,8 @@ def run_sorter(
         "settings": sorter_settings,
         "result_directory": str(results_dir),
     }
+    register_sorting_result(state, sorter_name, sorted_spikes, provenance)
+    compare_sorting_results(state)
     state.log(f"{item['name']} completed: {len(sorted_spikes)} units")
     return sorted_spikes
 
@@ -356,8 +359,7 @@ def run_kilosort4(
         / state.sampling_rate
         for unit_id in np.unique(cluster_ids)
     }
-    state.sorted_spikes = sorted_spikes
-    state.metadata["sorting"] = {
+    provenance = {
         "sorter": "Kilosort4",
         "sorter_key": "kilosort4",
         "version": env["kilosort_version"],
@@ -371,7 +373,7 @@ def run_kilosort4(
     }
     if isinstance(outputs, tuple) and len(outputs) >= 9:
         _, st, clu, _, _, similar_templates, is_ref, contam, kept = outputs[:9]
-        state.metadata["sorting"]["runtime_summary"] = {
+        provenance["runtime_summary"] = {
             "detected_spikes_before_deduplication": len(st),
             "cluster_count_before_export": len(np.unique(clu)),
             "refractory_cluster_count": int(np.count_nonzero(is_ref)),
@@ -379,6 +381,8 @@ def run_kilosort4(
             "kept_spike_fraction": float(np.mean(kept)),
             "similarity_matrix_shape": list(np.shape(similar_templates)),
         }
+    register_sorting_result(state, "kilosort4", sorted_spikes, provenance)
+    compare_sorting_results(state)
     state.log(
         f"Kilosort4 completed: {len(sorted_spikes)} units, "
         f"{sum(len(value) for value in sorted_spikes.values())} spikes"

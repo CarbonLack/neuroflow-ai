@@ -13,6 +13,7 @@ import pandas as pd
 from .models import ProjectState
 from .project import save_project
 from .simulation import generate_demo_recording
+from .sorting_results import register_sorting_result
 
 
 @dataclass(frozen=True)
@@ -151,7 +152,7 @@ def import_binary_recording(
         events=events,
         metadata={"copy_source": copy_source, "can_run_sorting": dtype == "int16"},
     )
-    state.log(f"已导入通用二进制记录：{source.name}")
+    state.log(f"Generic binary recording imported: {source.name}")
     save_project(state)
     return state
 
@@ -215,8 +216,8 @@ def import_device_recording(
         },
     )
     state.log(
-        f"通过 SpikeInterface 导入 {device_name}："
-        f"{state.channel_count} 通道，{state.duration_seconds:.1f} 秒"
+        f"{device_name} imported through SpikeInterface: "
+        f"{state.channel_count} channels, {state.duration_seconds:.1f} seconds"
     )
     save_project(state)
     return state
@@ -266,7 +267,18 @@ def import_kilosort_results(
         sorted_spikes=sorted_spikes,
         metadata={"sorter": "Kilosort/Phy", "raw_signal_available": False},
     )
-    state.log(f"已导入 sorting 结果：{len(sorted_spikes)} 个 unit")
+    register_sorting_result(
+        state,
+        "imported_kilosort",
+        sorted_spikes,
+        {
+            "sorter": "Kilosort/Phy import",
+            "backend": "External result import",
+            "source_directory": str(source),
+            "source_time_unit": "seconds" if is_seconds else "samples",
+        },
+    )
+    state.log(f"Sorting results imported: {len(sorted_spikes)} units")
     save_project(state)
     return state
 
@@ -362,9 +374,20 @@ def import_ibl_alf(project_root: Path, alf_root: Path) -> ProjectState:
             "source_notice": "Public IBL data; retain dataset citation and session identifiers.",
         },
     )
+    register_sorting_result(
+        state,
+        "ibl_alf",
+        sorted_spikes,
+        {
+            "sorter": "IBL ALF sorting import",
+            "backend": "IBL ALF",
+            "source_directory": str(alf_root),
+            "source_time_unit": "seconds",
+        },
+    )
     state.log(
-        f"已导入 IBL ALF：{len(trials)} trials，{len(sorted_spikes)} units，"
-        f"对齐事件 {event_key or '未找到'}"
+        f"IBL ALF imported: {len(trials)} trials, {len(sorted_spikes)} units, "
+        f"alignment event {event_key or 'not found'}"
     )
     save_project(state)
     return state
@@ -426,6 +449,8 @@ def import_ibl_trials_aggregate(
             "citation": "International Brain Laboratory et al., Nature (2025)",
         },
     )
-    state.log(f"已导入真实 IBL BWM 行为数据：session {eid}，{len(trials)} trials")
+    state.log(
+        f"IBL BWM behavioral data imported: session {eid}, {len(trials)} trials"
+    )
     save_project(state)
     return state

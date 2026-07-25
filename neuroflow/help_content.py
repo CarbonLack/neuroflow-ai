@@ -25,6 +25,34 @@ REFERENCES = (
         "url": "https://spikeinterface.readthedocs.io/en/stable/",
     },
     {
+        "name": "SpikeInterface preprocessing and pipeline model",
+        "url": "https://spikeinterface.readthedocs.io/en/stable/modules/preprocessing.html",
+    },
+    {
+        "name": "SpikeInterface SortingAnalyzer postprocessing",
+        "url": "https://spikeinterface.readthedocs.io/en/stable/modules/postprocessing.html",
+    },
+    {
+        "name": "SpikeInterface sorter comparison",
+        "url": "https://spikeinterface.readthedocs.io/en/stable/modules/comparison.html",
+    },
+    {
+        "name": "MountainSort5 package and sorting schemes",
+        "url": "https://pypi.org/project/mountainsort5/",
+    },
+    {
+        "name": "Neo standard electrophysiology data objects",
+        "url": "https://neo.readthedocs.io/en/stable/read_and_analyze.html",
+    },
+    {
+        "name": "Elephant electrophysiology analysis APIs",
+        "url": "https://elephant.readthedocs.io/en/stable/modules.html",
+    },
+    {
+        "name": "Folschweiller and Sauer (2023), respiration/PFC study",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10312056/",
+    },
+    {
         "name": "Plexon Offline Sorter feature reference",
         "url": "https://plexon.com/products/offline-sorter/",
     },
@@ -140,6 +168,54 @@ CONTROL_HELP = {
             "Figure settings",
             "Choose a subplot and edit its title, axis labels, limits, and grid. "
             "Changes affect the current figure and remain editable after SVG export.",
+        ),
+    },
+    "plot.panel": {
+        "zh_CN": (
+            "子图选择",
+            "选择当前多面板图中的一个子图。后续的单独放大、直接编辑和独立保存"
+            "只作用于这里选中的子图，不会重新计算分析结果。",
+        ),
+        "en_US": (
+            "Panel selection",
+            "Choose one subplot from the current multi-panel figure. Expand, edit, "
+            "and save actions target this panel without recomputing results.",
+        ),
+    },
+    "plot.panel_focus": {
+        "zh_CN": (
+            "单独放大子图",
+            "暂时隐藏其他子图，让所选子图占满主画布。放大后仍可使用工具栏缩放、"
+            "平移和查看数值；再次点击可恢复全部子图。",
+        ),
+        "en_US": (
+            "Expand selected panel",
+            "Temporarily hide other panels and let the selected panel fill the canvas. "
+            "Zoom, pan, and value inspection remain available; click again to restore all.",
+        ),
+    },
+    "plot.panel_edit": {
+        "zh_CN": (
+            "编辑所选子图",
+            "直接修改所选子图的标题、坐标轴名称、显示范围和网格。修改仅影响当前"
+            "图形显示，不改变原始数据或分析结果。",
+        ),
+        "en_US": (
+            "Edit selected panel",
+            "Edit the selected panel title, axis labels, limits, and grid. Changes affect "
+            "the current presentation only, not source data or computed results.",
+        ),
+    },
+    "plot.panel_save": {
+        "zh_CN": (
+            "独立保存子图",
+            "只导出当前选中的子图，可选择 SVG、PDF 或 300 dpi PNG。优先使用 "
+            "SVG/PDF 继续排版；导出不会覆盖原始分析文件。",
+        ),
+        "en_US": (
+            "Save selected panel",
+            "Export only the selected panel as SVG, PDF, or 300 dpi PNG. SVG and PDF "
+            "remain suitable for publication layout; source analysis files are unchanged.",
         ),
     },
     "page.option": {
@@ -262,17 +338,57 @@ CONTROL_HELP = {
             "noise risk. Adjust by 1-2 and compare unit count, contamination, and stability.",
         ),
     },
+    "sorting.ms5_scheme": {
+        "zh_CN": (
+            "MountainSort5 方案",
+            "Scheme 1 把记录载入内存，适合快速测试；Scheme 2 用训练片段建立分类器，"
+            "是常规默认；Scheme 3 按块运行 Scheme 2 并跨块关联 Unit，面向长记录和"
+            "波形漂移。方案改变实际算法路径。",
+        ),
+        "en_US": (
+            "MountainSort5 scheme",
+            "Scheme 1 loads the recording for quick tests; Scheme 2 trains classifiers "
+            "on a subset and is the standard default; Scheme 3 processes blocks and "
+            "associates units across them for long, drifting recordings.",
+        ),
+    },
+    "sorting.ms5_threshold": {
+        "zh_CN": (
+            "MountainSort5 检测阈值",
+            "以噪声尺度为基准的 spike 检测阈值，默认 5.5。降低通常增加候选 spike "
+            "与误检，升高通常增加漏检；应结合波形、事件率和真值/跨 sorter 比较检查。",
+        ),
+        "en_US": (
+            "MountainSort5 detection threshold",
+            "Spike threshold relative to the noise scale; default 5.5. Lower values "
+            "usually increase candidates and false detections, while higher values "
+            "increase misses. Check waveforms, rates, and validation evidence.",
+        ),
+    },
+    "sorting.ms5_training": {
+        "zh_CN": (
+            "MountainSort5 训练时长",
+            "Scheme 2 第一阶段用于无监督聚类和分类器训练的记录时长。更长可覆盖更多"
+            "状态但增加耗时；如果记录更短，适配器会由算法按可用范围处理。",
+        ),
+        "en_US": (
+            "MountainSort5 training duration",
+            "Recording duration used by Scheme 2 phase 1 for clustering and classifier "
+            "training. Longer windows cover more states at greater computational cost.",
+        ),
+    },
     "sorting.view": {
         "zh_CN": (
             "Sorting 诊断视图",
-            "在 ground truth 验证、流程日志、深度-时间漂移图、振幅稳定性、模板波形、"
-            "相似度矩阵和输出文件之间切换。它们读取真实 sorter 输出，不重新 sorting。",
+            "在统一结果比较、ground truth 验证、流程日志、深度-时间漂移图、振幅"
+            "稳定性、模板波形、相似度矩阵和输出文件之间切换。它们读取真实 sorter "
+            "输出，不重新 sorting。",
         ),
         "en_US": (
             "Sorting diagnostic view",
-            "Switch among ground-truth validation, pipeline log, depth-time drift, "
-            "amplitude stability, templates, similarity matrix, and exported files. "
-            "Views read real sorter output.",
+            "Switch among normalized comparison, ground-truth validation, pipeline log, "
+            "depth-time drift, amplitude stability, templates, similarity matrix, and "
+            "exported files. Views read real sorter output.",
         ),
     },
 }
@@ -325,7 +441,10 @@ PAGE_CONTROLS = {
         ("Unit 选择", "选择一个 unit 后，Raster、PSTH 和摘要同步更新。"),
         ("Raster", "每行一个 trial，每个短线一个 spike，保留试次差异。"),
         ("PSTH", "对 spike 分箱并跨 trial 平均；分箱宽度影响平滑程度。"),
-        ("群体热图", "按 unit 展示标准化时间响应，不能代替单元级统计。"),
+        ("Spike train 统计", "CV2、Lv、Fano、CCH、STTC 和距离回答不同的变异性、相关性或相似性问题。"),
+        ("LFP", "PSD、coherence、相位延迟和时频图使用带单位的 Neo 信号与 Elephant/SciPy 计算。"),
+        ("Spike-field", "相位锁定必须说明参考频段、相位定义、spike 数和 surrogate 方法。"),
+        ("呼吸案例", "只在 NeuroFlow 模拟数据上验证论文方法结构，不复制原图或数值结论。"),
     ],
     "statistics": [
         ("视图选择", "在效应、多重比较、分布假设和混合模型诊断间切换。"),
@@ -475,8 +594,20 @@ PAGE_CONTROLS_EN = {
             "Bins spikes and averages across trials; bin width controls temporal smoothing.",
         ),
         (
-            "Population heatmap",
-            "Shows normalized responses by unit and cannot replace unit-level statistics.",
+            "Spike-train statistics",
+            "CV2, Lv, Fano, CCH, STTC, and distances address different variability, correlation, or similarity questions.",
+        ),
+        (
+            "LFP",
+            "PSD, coherence, phase lag, and time-frequency maps use unit-aware Neo signals with Elephant/SciPy.",
+        ),
+        (
+            "Spike-field",
+            "Phase locking must report the reference band, phase definition, spike count, and surrogate method.",
+        ),
+        (
+            "Respiration case",
+            "Validates a paper-derived method structure on NeuroFlow simulation data without copying figures or numerical claims.",
         ),
     ],
     "statistics": [

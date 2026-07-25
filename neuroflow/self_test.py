@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .simulation import generate_demo_recording
-from .sorting import kilosort_environment, run_sorter
+from .sorting import kilosort_environment, refresh_sorter_catalog, run_sorter
 
 
 def run_packaged_kilosort_self_test(workspace: Path) -> int:
@@ -46,6 +46,64 @@ def run_packaged_kilosort_self_test(workspace: Path) -> int:
                 "units": len(spikes),
                 "spikes": sum(len(value) for value in spikes.values()),
                 "diagnostic_files": state.metadata["sorting"]["diagnostic_files"],
+            }
+        except Exception as exc:  # noqa: BLE001 - self-test must persist full failure
+            report = {
+                "ok": False,
+                "error": f"{type(exc).__name__}: {exc}",
+                "traceback": traceback.format_exc(),
+            }
+        report_path.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    return 0 if report["ok"] else 1
+
+
+def run_packaged_mountainsort_self_test(workspace: Path) -> int:
+    workspace.mkdir(parents=True, exist_ok=True)
+    log_path = workspace / "packaged_mountainsort_self_test.log"
+    report_path = workspace / "packaged_mountainsort_self_test.json"
+    with log_path.open("w", encoding="utf-8", buffering=1) as stream:
+        sys.stdout = stream
+        sys.stderr = stream
+        try:
+            stamp = datetime.now(timezone.utc).astimezone().strftime("%Y%m%d_%H%M%S")
+            project_root = workspace / "self_test" / f"{stamp}_mountainsort5"
+            state = generate_demo_recording(
+                project_root,
+                duration_seconds=6,
+                channel_count=8,
+                sampling_rate=30_000,
+            )
+            spikes = run_sorter(
+                state,
+                "mountainsort5",
+                project_root / "results" / "mountainsort5",
+                print,
+                settings={
+                    "scheme": "1",
+                    "detect_threshold": 5.0,
+                },
+            )
+            catalog = {
+                item["key"]: item for item in refresh_sorter_catalog()
+            }
+            sorter = catalog["mountainsort5"]
+            comparison = state.sorting_comparison
+            report = {
+                "ok": True,
+                "environment": {
+                    "available": sorter["installed"],
+                    "version": sorter["version"],
+                    "backend": sorter["backend"],
+                },
+                "project": str(project_root),
+                "units": len(spikes),
+                "spikes": sum(len(value) for value in spikes.values()),
+                "schema": state.sorting_provenance["mountainsort5"]["schema"],
+                "time_unit": state.sorting_provenance["mountainsort5"]["time_unit"],
+                "comparison_mode": comparison.get("mode"),
             }
         except Exception as exc:  # noqa: BLE001 - self-test must persist full failure
             report = {

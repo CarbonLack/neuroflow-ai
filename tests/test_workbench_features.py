@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -6,9 +7,18 @@ import spikeinterface.sorters as ss
 from neuroflow.analysis import (
     compute_unit_metrics,
     event_aligned_analysis,
+    export_reproducible_bundle,
 )
 from neuroflow.data_import import create_simulated_project
 from neuroflow.decoding import MODELS, REGRESSION_MODELS, run_regression_suite
+from neuroflow.ephys_toolkit import (
+    METHOD_CATALOG,
+    provider_status,
+    run_lfp_suite,
+    run_respiration_case,
+    run_spike_field_suite,
+    run_spike_train_suite,
+)
 from neuroflow.figures import (
     raw_overview_figure,
     sorting_diagnostics_figure,
@@ -17,8 +27,14 @@ from neuroflow.figures import (
 from neuroflow.help_content import CONTROL_HELP, page_controls
 from neuroflow.i18n import step_text, tr
 from neuroflow.models import ProjectState
-from neuroflow.simulation import load_or_generate_demo
+from neuroflow.project import load_project, save_project
+from neuroflow.simulation import generate_demo_recording, load_or_generate_demo
 from neuroflow.sorting import refresh_sorter_catalog
+from neuroflow.sorting_results import (
+    activate_sorting_result,
+    compare_sorting_results,
+    register_sorting_result,
+)
 from neuroflow.statistics import run_statistical_suite
 from neuroflow.tutorials import TUTORIALS, tutorial_value
 
@@ -88,6 +104,8 @@ def test_demo_dataset_exposes_exact_import_contract(tmp_path: Path):
     assert (state.root / "README_DATASET.md").is_file()
     assert (state.root / "raw" / "import_config.json").is_file()
     assert (state.root / "raw" / "events.csv").is_file()
+    assert (state.root / "raw" / "respiration_reference.npy").is_file()
+    assert (state.root / "raw" / "behavioral_states.csv").is_file()
 
 
 def test_sorting_diagnostics_read_real_output_shapes(tmp_path: Path):
@@ -133,3 +151,84 @@ def test_english_raw_figure_contains_no_chinese_labels(tmp_path: Path):
         ]
     )
     assert not any("\u4e00" <= character <= "\u9fff" for character in visible_text)
+
+
+def test_elephant_toolkit_produces_real_results(tmp_path: Path):
+    state = generate_demo_recording(
+        tmp_path / "toolkit",
+        duration_seconds=12.0,
+        channel_count=8,
+    )
+    state.sorted_spikes = state.ground_truth
+
+    spike_result = run_spike_train_suite(state)
+    lfp_result = run_lfp_suite(state)
+    coupling_result = run_spike_field_suite(state, surrogate_count=20)
+    respiration_result = run_respiration_case(state)
+
+    assert provider_status()["available"] is True
+    assert len(METHOD_CATALOG) >= 5
+    assert len(spike_result["rows"]) == len(state.ground_truth)
+    assert spike_result["correlation"].shape == (
+        len(state.ground_truth),
+        len(state.ground_truth),
+    )
+    assert len(lfp_result["channel_ids"]) == 2
+    assert np.asarray(lfp_result["psd"]).shape[0] == 2
+    assert len(coupling_result["rows"]) == len(state.ground_truth)
+    assert coupling_result["surrogate_count"] == 20
+    assert len(respiration_result["rows"]) == 3
+    assert "not the original paper dataset" in respiration_result["limitations"][0]
+
+    exported = export_reproducible_bundle(state, tmp_path / "export")
+    provenance = json.loads((exported / "provenance.json").read_text(encoding="utf-8"))
+    assert provenance["software_versions"]["elephant"] != "not installed"
+    assert provenance["spike_train_analysis"]["rows"]
+    assert provenance["lfp_analysis"]["band_power"]
+    assert provenance["spike_field_analysis"]["rows"]
+    assert provenance["case_studies"]["respiration"]["rows"]
+    assert (exported / "tables" / "spike_train_statistics.csv").is_file()
+    assert (exported / "tables" / "lfp_band_power.csv").is_file()
+    assert (exported / "figures" / "spike_field_coupling.svg").is_file()
+
+
+def test_normalized_multi_sorter_comparison_and_roundtrip(tmp_path: Path):
+    state = ProjectState(root=tmp_path / "comparison", sampling_rate=30_000)
+    state.ground_truth = {
+        0: np.array([0.1, 0.2, 0.3]),
+        1: np.array([0.15, 0.25, 0.35]),
+    }
+    register_sorting_result(
+        state,
+        "sorter_a",
+        {
+            10: np.array([0.1001, 0.2001, 0.3001]),
+            11: np.array([0.1501, 0.2501, 0.3501]),
+            12: np.array([0.72, 0.82]),
+        },
+        {"sorter": "Sorter A", "backend": "test"},
+    )
+    register_sorting_result(
+        state,
+        "sorter_b",
+        {
+            20: np.array([0.1002, 0.2002, 0.3002]),
+            21: np.array([0.1502, 0.2502, 0.3502]),
+        },
+        {"sorter": "Sorter B", "backend": "test"},
+    )
+    comparison = compare_sorting_results(state)
+    assert comparison["schema"] == "neuroflow.sorting-comparison.v1"
+    assert comparison["pairwise"][0]["matched_unit_count"] == 2
+    assert comparison["pairwise"][0]["unique_units_a"] == 1
+    assert comparison["consensus"]["unit_count"] == 2
+    assert comparison["ground_truth"]["sorter_b"]["mean_f1"] == 1.0
+    assert sorting_diagnostics_figure(state, "comparison").axes
+
+    activate_sorting_result(state, "sorter_a")
+    restored = load_project(save_project(state))
+    assert set(restored.sorting_results) == {"sorter_a", "sorter_b"}
+    assert restored.active_sorter_key == "sorter_a"
+    assert set(restored.sorted_spikes) == {10, 11, 12}
+    assert set(restored.ground_truth) == {0, 1}
+    assert restored.sorting_provenance["sorter_b"]["time_unit"] == "seconds"

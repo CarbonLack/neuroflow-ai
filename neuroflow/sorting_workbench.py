@@ -5,12 +5,14 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
-    QFormLayout,
+    QDoubleSpinBox,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QSpinBox,
+    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -30,6 +32,7 @@ SORTER_ZH = {
 
 DIAGNOSTIC_VIEWS = (
     ("pipeline", "流程与运行日志", "Pipeline and run log"),
+    ("comparison", "Sorter 统一结果与比较", "Normalized sorter comparison"),
     ("validation", "模拟 ground truth 验证", "Simulation ground-truth validation"),
     ("drift", "Spike 深度-时间与漂移", "Spike depth-time and drift"),
     ("amplitudes", "振幅随时间稳定性", "Amplitude stability over time"),
@@ -47,6 +50,8 @@ class SortingWorkbench(QFrame):
         super().__init__(parent)
         self.language = language
         self.catalog: list[dict] = []
+        self.completed_keys: set[str] = set()
+        self.active_key: str | None = None
         self.setObjectName("SortingWorkbench")
         root = QVBoxLayout(self)
         root.setContentsMargins(12, 11, 12, 11)
@@ -62,7 +67,7 @@ class SortingWorkbench(QFrame):
         heading_row.addWidget(self.selected_badge)
         root.addLayout(heading_row)
 
-        self.table = QTableWidget(0, 4)
+        self.table = QTableWidget(0, 5)
         self.table.setObjectName("SorterTable")
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -77,8 +82,11 @@ class SortingWorkbench(QFrame):
         self.table.horizontalHeader().setSectionResizeMode(
             2, QHeaderView.ResizeToContents
         )
-        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
-        self.table.setMinimumHeight(183)
+        self.table.horizontalHeader().setSectionResizeMode(
+            3, QHeaderView.ResizeToContents
+        )
+        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.table.setMinimumHeight(148)
         self.table.itemSelectionChanged.connect(self._selection_changed)
         self.table.setProperty("neuroflow_help_key", "sorting.selector")
         root.addWidget(self.table)
@@ -90,10 +98,6 @@ class SortingWorkbench(QFrame):
 
         settings_row = QHBoxLayout()
         settings_row.setSpacing(12)
-        parameter_frame = QFrame()
-        parameter_frame.setObjectName("InsetPanel")
-        parameter_form = QFormLayout(parameter_frame)
-        parameter_form.setContentsMargins(12, 8, 12, 8)
         self.preset = QComboBox()
         self.preset.addItem("Demo / low-channel", "demo")
         self.preset.addItem("Neuropixels", "neuropixels")
@@ -109,8 +113,8 @@ class SortingWorkbench(QFrame):
         self.nblocks.setRange(0, 20)
         self.nblocks.setValue(0)
         self.nblocks.setProperty("neuroflow_help_key", "sorting.nblocks")
-        threshold_holder = QFrame()
-        threshold_row = QHBoxLayout(threshold_holder)
+        self.threshold_holder = QFrame()
+        threshold_row = QHBoxLayout(self.threshold_holder)
         threshold_row.setContentsMargins(0, 0, 0, 0)
         self.th_universal = QSpinBox()
         self.th_universal.setRange(4, 20)
@@ -126,17 +130,78 @@ class SortingWorkbench(QFrame):
         threshold_row.addWidget(self.th_learned)
         self.save_extra = QCheckBox()
         self.save_extra.setChecked(True)
-        parameter_form.addRow(self._label("预设", "Preset"), self.preset)
-        parameter_form.addRow("batch_size", self.batch_size)
-        parameter_form.addRow("nblocks", self.nblocks)
-        parameter_form.addRow(
-            self._label("检测阈值", "Detection thresholds"), threshold_holder
+        self.ms5_scheme = QComboBox()
+        self.ms5_scheme.addItem("Scheme 1 · quick/debug", "1")
+        self.ms5_scheme.addItem("Scheme 2 · standard", "2")
+        self.ms5_scheme.addItem("Scheme 3 · long/drift", "3")
+        self.ms5_scheme.setCurrentIndex(1)
+        self.ms5_scheme.setProperty("neuroflow_help_key", "sorting.ms5_scheme")
+        self.ms5_threshold = QDoubleSpinBox()
+        self.ms5_threshold.setRange(3.0, 12.0)
+        self.ms5_threshold.setSingleStep(0.5)
+        self.ms5_threshold.setValue(5.5)
+        self.ms5_threshold.setProperty(
+            "neuroflow_help_key", "sorting.ms5_threshold"
         )
-        parameter_form.addRow(
-            self._label("保存额外诊断变量", "Save extra diagnostic variables"),
-            self.save_extra,
-        )
-        settings_row.addWidget(parameter_frame, 3)
+        self.ms5_training = QSpinBox()
+        self.ms5_training.setRange(30, 3_600)
+        self.ms5_training.setSingleStep(30)
+        self.ms5_training.setValue(300)
+        self.ms5_training.setSuffix(" s")
+        self.ms5_training.setProperty("neuroflow_help_key", "sorting.ms5_training")
+        self.preset_label = QLabel()
+        self.threshold_label = QLabel()
+        self.ms5_scheme_label = QLabel()
+        self.ms5_threshold_label = QLabel()
+        self.ms5_training_label = QLabel()
+
+        self.parameter_stack = QStackedWidget()
+        self.kilosort_panel = QFrame()
+        self.kilosort_panel.setObjectName("InsetPanel")
+        kilosort_grid = QGridLayout(self.kilosort_panel)
+        kilosort_grid.setContentsMargins(12, 8, 12, 8)
+        kilosort_grid.setHorizontalSpacing(10)
+        kilosort_grid.setVerticalSpacing(6)
+        kilosort_grid.addWidget(self.preset_label, 0, 0)
+        kilosort_grid.addWidget(self.preset, 0, 1, 1, 3)
+        kilosort_grid.addWidget(QLabel("batch_size"), 1, 0)
+        kilosort_grid.addWidget(self.batch_size, 1, 1)
+        kilosort_grid.addWidget(QLabel("nblocks"), 1, 2)
+        kilosort_grid.addWidget(self.nblocks, 1, 3)
+        kilosort_grid.addWidget(self.threshold_label, 2, 0)
+        kilosort_grid.addWidget(self.threshold_holder, 2, 1, 1, 2)
+        kilosort_grid.addWidget(self.save_extra, 2, 3)
+        kilosort_grid.setColumnStretch(1, 2)
+        kilosort_grid.setColumnStretch(3, 2)
+
+        self.mountainsort_panel = QFrame()
+        self.mountainsort_panel.setObjectName("InsetPanel")
+        mountainsort_grid = QGridLayout(self.mountainsort_panel)
+        mountainsort_grid.setContentsMargins(12, 8, 12, 8)
+        mountainsort_grid.setHorizontalSpacing(10)
+        mountainsort_grid.setVerticalSpacing(6)
+        mountainsort_grid.addWidget(self.ms5_scheme_label, 0, 0)
+        mountainsort_grid.addWidget(self.ms5_scheme, 0, 1, 1, 3)
+        mountainsort_grid.addWidget(self.ms5_threshold_label, 1, 0)
+        mountainsort_grid.addWidget(self.ms5_threshold, 1, 1)
+        mountainsort_grid.addWidget(self.ms5_training_label, 1, 2)
+        mountainsort_grid.addWidget(self.ms5_training, 1, 3)
+        mountainsort_grid.setColumnStretch(1, 2)
+        mountainsort_grid.setColumnStretch(3, 2)
+
+        self.default_panel = QFrame()
+        self.default_panel.setObjectName("InsetPanel")
+        default_layout = QVBoxLayout(self.default_panel)
+        default_layout.setContentsMargins(12, 8, 12, 8)
+        self.default_parameter_text = QLabel()
+        self.default_parameter_text.setWordWrap(True)
+        self.default_parameter_text.setObjectName("Muted")
+        default_layout.addWidget(self.default_parameter_text)
+
+        self.parameter_stack.addWidget(self.kilosort_panel)
+        self.parameter_stack.addWidget(self.mountainsort_panel)
+        self.parameter_stack.addWidget(self.default_panel)
+        settings_row.addWidget(self.parameter_stack, 3)
 
         result_frame = QFrame()
         result_frame.setObjectName("InsetPanel")
@@ -147,11 +212,7 @@ class SortingWorkbench(QFrame):
         result_layout.addWidget(self.view_label)
         self.diagnostic_combo = QComboBox()
         self.diagnostic_combo.setProperty("neuroflow_help_key", "sorting.view")
-        self.diagnostic_combo.currentIndexChanged.connect(
-            lambda: self.diagnostic_changed.emit(
-                str(self.diagnostic_combo.currentData() or "pipeline")
-            )
-        )
+        self.diagnostic_combo.currentIndexChanged.connect(self._diagnostic_selected)
         result_layout.addWidget(self.diagnostic_combo)
         self.output_explanation = QLabel()
         self.output_explanation.setWordWrap(True)
@@ -171,12 +232,34 @@ class SortingWorkbench(QFrame):
             self._label("选择排序器并核对参数", "Select a sorter and verify parameters")
         )
         self.table.setHorizontalHeaderLabels(
-            ["Sorter", "状态", "硬件", "适用记录"]
+            ["Sorter", "环境", "结果", "硬件", "适用记录"]
             if language == "zh_CN"
-            else ["Sorter", "Status", "Hardware", "Best suited recordings"]
+            else ["Sorter", "Environment", "Result", "Hardware", "Best suited recordings"]
         )
         self.view_label.setText(
             self._label("运行后诊断视图", "Post-run diagnostic view")
+        )
+        self.preset_label.setText(self._label("预设", "Preset"))
+        self.threshold_label.setText(self._label("检测阈值", "Detection thresholds"))
+        self.ms5_scheme_label.setText(
+            self._label("MountainSort5 方案", "MountainSort5 scheme")
+        )
+        self.ms5_threshold_label.setText(
+            self._label("MS5 检测阈值", "MS5 detection threshold")
+        )
+        self.ms5_training_label.setText(
+            self._label("MS5 训练时长", "MS5 training duration")
+        )
+        self.default_parameter_text.setText(
+            self._label(
+                "该 SpikeInterface 内部 sorter 使用当前版本的受控默认参数。"
+                "运行前可在教程中查看参数来源，结果会保留版本与完整配置。",
+                "This SpikeInterface internal sorter uses versioned, controlled defaults. "
+                "The tutorial explains their source and the complete configuration is saved.",
+            )
+        )
+        self.save_extra.setText(
+            self._label("保存额外诊断变量", "Save extra diagnostic variables")
         )
         self.output_explanation.setText(
             self._label(
@@ -201,16 +284,29 @@ class SortingWorkbench(QFrame):
             self.th_universal,
             self.th_learned,
             self.diagnostic_combo,
+            self.ms5_scheme,
+            self.ms5_threshold,
+            self.ms5_training,
         ):
             key = widget.property("neuroflow_help_key")
             if key:
                 widget.setToolTip(control_help(str(key), language)[1])
         self._populate()
 
+    def _diagnostic_selected(self) -> None:
+        view = str(self.diagnostic_combo.currentData() or "pipeline")
+        self.parameter_stack.setVisible(view != "comparison")
+        self.diagnostic_changed.emit(view)
+
     def set_catalog(self, catalog: list[dict]) -> None:
         selected = self.selected_sorter()
         self.catalog = list(catalog)
         self._populate(selected)
+
+    def set_results(self, sorter_keys: set[str], active_key: str | None) -> None:
+        self.completed_keys = set(sorter_keys)
+        self.active_key = active_key
+        self._populate(active_key or self.selected_sorter())
 
     def _populate(self, selected: str | None = None) -> None:
         if not self.catalog:
@@ -223,12 +319,20 @@ class SortingWorkbench(QFrame):
                 if item["installed"]
                 else self._label("不可用", "Unavailable")
             )
+            if item["key"] == self.active_key:
+                result_status = self._label("当前结果", "Active result")
+            elif item["key"] in self.completed_keys:
+                result_status = self._label("已保存", "Saved")
+            else:
+                result_status = self._label("未运行", "Not run")
             hardware, best_for = (
                 (item["hardware"], item["best_for"])
                 if self.language == "en_US"
                 else SORTER_ZH.get(item["key"], (item["hardware"], item["best_for"]))
             )
-            for column, value in enumerate((item["name"], status, hardware, best_for)):
+            for column, value in enumerate(
+                (item["name"], status, result_status, hardware, best_for)
+            ):
                 table_item = QTableWidgetItem(str(value))
                 table_item.setData(Qt.UserRole, item["key"])
                 if not item["installed"]:
@@ -261,8 +365,14 @@ class SortingWorkbench(QFrame):
         detail = f"{item['backend']} · {item['version']}" + (
             f"\n{item['error']}" if item.get("error") else ""
         )
+        if item["key"] in self.completed_keys:
+            detail += self._label(
+                "\n已保存统一格式结果；选择此行可重新查看，重新运行会形成可追溯更新。",
+                "\nA normalized result is saved. Select this row to inspect it; reruns are audited.",
+            )
         self.selection_detail.setText(detail)
         is_kilosort = item["key"] == "kilosort4"
+        is_mountainsort = item["key"] == "mountainsort5"
         for widget in (
             self.preset,
             self.batch_size,
@@ -272,6 +382,19 @@ class SortingWorkbench(QFrame):
             self.save_extra,
         ):
             widget.setEnabled(is_kilosort)
+        for widget in (
+            self.ms5_scheme,
+            self.ms5_threshold,
+            self.ms5_training,
+        ):
+            widget.setEnabled(is_mountainsort)
+        self.parameter_stack.setCurrentWidget(
+            self.kilosort_panel
+            if is_kilosort
+            else self.mountainsort_panel
+            if is_mountainsort
+            else self.default_panel
+        )
         self.selection_changed.emit(item["key"])
 
     def _apply_preset(self) -> None:
@@ -297,16 +420,23 @@ class SortingWorkbench(QFrame):
         return str(self.diagnostic_combo.currentData() or "pipeline")
 
     def settings(self) -> dict:
-        if self.selected_sorter() != "kilosort4":
-            return {}
-        return {
-            "batch_size": int(self.batch_size.value()),
-            "nblocks": int(self.nblocks.value()),
-            "Th_universal": int(self.th_universal.value()),
-            "Th_learned": int(self.th_learned.value()),
-            "artifact_threshold": 12_000,
-            "save_extra_vars": bool(self.save_extra.isChecked()),
-        }
+        sorter = self.selected_sorter()
+        if sorter == "kilosort4":
+            return {
+                "batch_size": int(self.batch_size.value()),
+                "nblocks": int(self.nblocks.value()),
+                "Th_universal": int(self.th_universal.value()),
+                "Th_learned": int(self.th_learned.value()),
+                "artifact_threshold": 12_000,
+                "save_extra_vars": bool(self.save_extra.isChecked()),
+            }
+        if sorter == "mountainsort5":
+            return {
+                "scheme": str(self.ms5_scheme.currentData()),
+                "detect_threshold": float(self.ms5_threshold.value()),
+                "scheme2_training_duration_sec": int(self.ms5_training.value()),
+            }
+        return {}
 
     def help_controls(self) -> list:
         return [
@@ -317,4 +447,7 @@ class SortingWorkbench(QFrame):
             self.th_universal,
             self.th_learned,
             self.diagnostic_combo,
+            self.ms5_scheme,
+            self.ms5_threshold,
+            self.ms5_training,
         ]
