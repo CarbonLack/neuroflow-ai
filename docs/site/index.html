@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>NeuroFlow Documentation</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=0.6.0">
   </head>
   <body data-language="zh">
     <header class="topbar">
@@ -19,7 +19,11 @@
       <aside class="sidebar">
         <div class="sidebar-label">NeuroFlow</div>
         <a class="active" href="index.html">Overview / 概览</a>
+        <a href="manual.html">Manual / 操作手册</a>
+        <a href="data-inputs.html">Data inputs / 数据入口</a>
         <a href="workflow.html">Workflow / 全流程</a>
+        <a href="figure-studio.html">Figure Studio / 图形工作室</a>
+        <a href="public-validation.html">Public validation / 公开验证</a>
         <a href="methods.html">Methods / 方法</a>
         <a href="sources.html">Sources / 来源</a>
         <div class="sidebar-label">On this page</div>
@@ -61,6 +65,33 @@
               <h3 data-lang="zh">追得回</h3><h3 data-lang="en">Traceable</h3>
               <p data-lang="zh">项目保存来源、版本、参数、人工判断和导出文件，使图表能够回到分析证据。</p>
               <p data-lang="en">Projects preserve sources, versions, parameters, decisions, and exports so figures remain linked to evidence.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="documentation" data-searchable>
+          <h2 data-lang="zh">从哪里查具体问题</h2>
+          <h2 data-lang="en">Find the right level of detail</h2>
+          <div class="grid-2">
+            <article class="panel">
+              <h3><a href="manual.html">逐页操作手册</a></h3>
+              <p data-lang="zh">11 个节点的目的、每个按钮、参数含义、输出、检查和失败处理。</p>
+              <p data-lang="en">Purpose, controls, parameters, outputs, checks, and failures for all 11 stages.</p>
+            </article>
+            <article class="panel">
+              <h3><a href="data-inputs.html">五条数据入口</a></h3>
+              <p data-lang="zh">解释模拟、binary、记录系统、公开数据和已有 sorting 分别何时选择。</p>
+              <p data-lang="en">When to use simulation, binary, acquisition, public, or existing-sorting routes.</p>
+            </article>
+            <article class="panel">
+              <h3><a href="figure-studio.html">Figure Studio</a></h3>
+              <p data-lang="zh">逐个修改线、点、柱、热图、文字、坐标轴、图例和出版尺寸。</p>
+              <p data-lang="en">Object-level editing for lines, points, patches, images, text, axes, legends, and size.</p>
+            </article>
+            <article class="panel">
+              <h3><a href="public-validation.html">真实公开数据验证</a></h3>
+              <p data-lang="zh">准确列出 IBL 与 Buzsáki/DANDI 会话、运行结果、失败修复和能力边界。</p>
+              <p data-lang="en">Exact IBL and Buzsáki/DANDI sessions, results, fixes, and bounded claims.</p>
             </article>
           </div>
         </section>
@@ -108,4 +139,3 @@
     <script src="app.js"></script>
   </body>
 </html>
-

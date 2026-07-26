@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Data inputs · NeuroFlow</title>
+    <link rel="stylesheet" href="styles.css?v=0.6.0">
+  </head>
+  <body data-language="zh">
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Menu">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page / 搜索本页">
+      <div class="topbar-actions"><button class="language-button" type="button" data-language-toggle>EN</button></div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">NeuroFlow</div>
+        <a href="index.html">Overview / 概览</a>
+        <a href="manual.html">Manual / 操作手册</a>
+        <a class="active" href="data-inputs.html">Data inputs / 数据入口</a>
+        <a href="workflow.html">Workflow / 全流程</a>
+        <a href="figure-studio.html">Figure Studio / 图形工作室</a>
+        <a href="public-validation.html">Public validation / 公开验证</a>
+        <a href="methods.html">Methods / 方法</a>
+        <a href="sources.html">Sources / 来源</a>
+        <div class="sidebar-label">On this page</div>
+        <a href="#decision">先做哪项选择</a>
+        <a href="#simulation">教学模拟项目</a>
+        <a href="#binary">通用二进制</a>
+        <a href="#device">记录系统文件</a>
+        <a href="#public">公开数据</a>
+        <a href="#sorting-result">已有 sorting</a>
+        <a href="#behavior-schema">行为与 TTL</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">Choose by what you actually have</p>
+          <h1 data-lang="zh">五项不是五种算法，而是五条数据入口</h1>
+          <h1 data-lang="en">Five entry routes, not five algorithms</h1>
+          <p class="lead" data-lang="zh">
+            首页的每一行回答的是“你手里有什么文件、NeuroFlow 应从哪一步开始”。
+            是否能运行 spike sorting 取决于原始宽带电压是否存在，而不是取决于文件名听起来是否专业。
+          </p>
+          <p class="lead" data-lang="en">
+            Each row answers what files you have and where NeuroFlow should begin.
+            Spike sorting requires raw broadband voltage; a processed file name does not replace it.
+          </p>
+        </div>
+
+        <section id="decision" data-searchable>
+          <h2 data-lang="zh">先判断：你的文件处于流程哪一层</h2>
+          <h2 data-lang="en">First determine the stage represented by your files</h2>
+          <table class="control-table">
+            <thead><tr><th>手里已有内容</th><th>应选入口</th><th>流程起点</th><th>能否在 NeuroFlow 重跑 sorting</th></tr></thead>
+            <tbody>
+              <tr><td>尚无数据，只想学习或测试</td><td>教学模拟项目</td><td>原始数据</td><td>可以，且有 ground truth</td></tr>
+              <tr><td>自定义采集程序输出的 .bin/.dat</td><td>我的通用二进制</td><td>原始数据</td><td>可以</td></tr>
+              <tr><td>Intan/Open Ephys/SpikeGLX 等设备目录</td><td>我的记录系统文件</td><td>原始数据</td><td>原始 AP/宽带流存在时可以</td></tr>
+              <tr><td>IBL ALF、BWM 表或 DANDI/NWB Units</td><td>公开数据验证</td><td>行为或 Unit</td><td>通常不可以，因为多为处理后数据</td></tr>
+              <tr><td>spike_times.npy 与 cluster 分配</td><td>已有 sorting 结果</td><td>Unit 质控</td><td>无需重跑；可导入并比较</td></tr>
+            </tbody>
+          </table>
+          <div class="callout method" data-lang="zh">
+            <strong>判断原则：</strong>如果文件只保存 spike 时间和 Unit 编号，它已经是 sorting 的结果。
+            NeuroFlow 可以做 Unit QC、PSTH、统计和解码，但不能凭这些结果重建原始噪声、坏通道或重新 sorting。
+          </div>
+          <div class="callout method" data-lang="en">
+            If a file contains only spike times and unit IDs, it is already a sorting result.
+            Downstream analysis is possible, but raw noise, bad channels, and sorting cannot be reconstructed.
+          </div>
+        </section>
+
+        <section id="simulation" data-searchable>
+          <h2>1. 教学模拟项目 / Guided simulation</h2>
+          <p data-lang="zh">
+            用于第一次使用、演示、自动测试和 sorter 定量比较。系统生成确定性 int16 原始电压，
+            同时保存真正的 spike 时间，所以能够区分“算法之间一致”与“相对于真值准确”。
+          </p>
+          <p data-lang="en">Creates deterministic int16 raw voltage plus known spikes for training, testing, and quantitative sorter validation.</p>
+          <table class="parameter-table">
+            <thead><tr><th>控件</th><th>改变什么</th><th>什么时候调整</th><th>风险或结果</th></tr></thead>
+            <tbody>
+              <tr><td>电极结构</td><td>通道几何、默认通道数、神经元空间扩散与典型场景</td><td>选择 Neuropixels、高密度硅探针、tetrode 或单根微丝</td><td>用于体验不同 sorter 的适用性；不代表所有真实硬件细节</td></tr>
+              <tr><td>模拟时长</td><td>样本数、事件数与 spike 数</td><td>快速体验用 10–30 s；比较 sorter 时用更长记录</td><td>时长越长，sorting、波形提取和统计越慢</td></tr>
+              <tr><td>采样率</td><td>每秒电压样本数与可表示的最高频率</td><td>AP 常用 20–30 kHz；按目标硬件调整</td><td>过低无法保留动作电位波形；文件体积与采样率成正比</td></tr>
+              <tr><td>通道数</td><td>并行记录维度和文件每帧宽度</td><td>按探针场景测试电脑负载</td><td>影响内存、文件大小、sorting 速度与空间信息</td></tr>
+            </tbody>
+          </table>
+          <h3>生成的文件</h3>
+          <pre><code>recording.bin           # time-major interleaved int16 voltage
+metadata.json           # rate, channels, dtype, scale, duration
+probe_geometry.csv      # channel positions and groups
+behavior_events.csv     # trial, condition, event_type, behavior clock
+ephys_ttl.csv           # matching pulses in the ephys clock
+ground_truth.npz        # known spike times by simulated unit
+import_config.json      # exact values required by the binary importer</code></pre>
+          <ul class="checklist">
+            <li>先在数据页确认来源显示为 SIMULATED，且通道数、时长与设置一致。</li>
+            <li>原始质控应能看到预设的工频噪声、坏通道或瞬时伪迹。</li>
+            <li>运行不同 sorter 后，查看 ground-truth precision、recall 与 F1，而不是只看 Unit 数量。</li>
+          </ul>
+        </section>
+
+        <section id="binary" data-searchable>
+          <h2>2. 我的通用二进制 / Generic binary</h2>
+          <p data-lang="zh">
+            适用于没有现成读取器的交错二进制。NeuroFlow 不猜测关键元数据：
+            通道数、采样率、dtype 和电压缩放必须来自采集系统说明或原始记录配置。
+          </p>
+          <div class="route">[sample0_ch0, sample0_ch1, …, sample0_chN, sample1_ch0, …]</div>
+          <table class="parameter-table">
+            <thead><tr><th>字段</th><th>含义</th><th>填错时的典型现象</th><th>检查方法</th></tr></thead>
+            <tbody>
+              <tr><td>采样率 Hz</td><td>采样点到秒的换算</td><td>所有事件和 spike 时间成比例错位，频谱横轴错误</td><td>与设备配置文件核对，不从波形外观猜</td></tr>
+              <tr><td>通道数</td><td>每个时间帧包含多少样本</td><td>通道出现周期重复、斜纹、相邻通道像被轮转</td><td>文件字节数必须整除 dtype 字节 × 通道数</td></tr>
+              <tr><td>dtype</td><td>磁盘上每个样本的编码</td><td>振幅巨大、接近零、NaN 或波形完全随机</td><td>优先读取设备元数据；常见为 int16</td></tr>
+              <tr><td>μV / bit</td><td>ADC 整数步长对应的微伏</td><td>波形形状正确但所有电压幅值按固定倍数错误</td><td>使用设备增益和 ADC 说明计算</td></tr>
+              <tr><td>复制源文件</td><td>复制到项目 raw/ 或保持只读链接</td><td>复制大文件会占用额外磁盘</td><td>默认保留只读链接；移动源文件前再考虑复制</td></tr>
+              <tr><td>事件 CSV</td><td>可选行为事件，至少有 time_seconds</td><td>缺少时仍能 sorting，但无法做事件对齐 PSTH</td><td>检查秒/毫秒/采样点单位，建议含 trial、condition、event_type</td></tr>
+            </tbody>
+          </table>
+          <ol class="step-list">
+            <li>选择原始 .bin 或 .dat 文件，不要选择压缩包或 sorting 输出。</li>
+            <li>从采集元数据填写采样率、通道数、dtype 和 μV/bit。</li>
+            <li>如行为与电生理已在同一时钟，选择事件 CSV；否则稍后在“事件同步”中同时导入行为时钟与 TTL。</li>
+            <li>创建项目后先看 50–100 ms 多通道波形，再看 RMS 和功率谱；结构不对时立即返回重新导入。</li>
+            <li>只有数据结构通过检查后，才继续预处理和 sorting。</li>
+          </ol>
+        </section>
+
+        <section id="device" data-searchable>
+          <h2>3. 我的记录系统文件 / Acquisition-system data</h2>
+          <p data-lang="zh">
+            该入口使用 SpikeInterface extractors 读取成熟格式。源文件保持不变，
+            NeuroFlow 在项目缓存中建立统一的 int16 记录，以便后续模块共享相同接口。
+          </p>
+          <table class="control-table">
+            <thead><tr><th>系统</th><th>通常选择</th><th>需要关注</th><th>sorting 前确认</th></tr></thead>
+            <tbody>
+              <tr><td>Intan</td><td>.rhd/.rhs 文件</td><td>放大器流、数字输入、原始量纲</td><td>通道顺序、参考通道、刺激伪迹</td></tr>
+              <tr><td>Open Ephys</td><td>记录目录</td><td>多 stream、多 recording/segment</td><td>选择正确 AP/continuous stream</td></tr>
+              <tr><td>SpikeGLX / Neuropixels</td><td>含 .meta/.bin 的目录</td><td>imec0.ap、imec0.lf、nidq 的职责不同</td><td>AP stream 用于 sorting，LF 用于 LFP，nidq/同步不可混淆</td></tr>
+              <tr><td>Blackrock/Plexon/TDT</td><td>设备文件或 block 目录</td><td>不同版本和 stream 命名</td><td>确认是否为连续宽带数据，而非仅事件或已检测 spike</td></tr>
+              <tr><td>NWB ElectricalSeries</td><td>.nwb</td><td>文件可同时有 raw、LFP、Units 与行为</td><td>选原始 ElectricalSeries 才能重跑 sorting；Units 表属于处理后结果</td></tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>多 stream 不是重复文件。</strong>Neuropixels 的 AP、LF 与同步流采样率和用途不同。
+            若将 LF 流交给 sorter，结果没有科学意义；若只导入 AP 而丢失同步流，行为对齐会受限。
+          </div>
+          <p>
+            读取能力与参数以
+            <a href="https://spikeinterface.readthedocs.io/en/stable/modules/extractors.html">SpikeInterface extractors 官方文档</a>
+            为准。NeuroFlow 的适配器负责选择、检查、缓存与记录来源，不重新实现设备解析器。
+          </p>
+        </section>
+
+        <section id="public" data-searchable>
+          <h2>4. 公开数据验证 / Public validation data</h2>
+          <p data-lang="zh">
+            公开入口用于复现真实会话和验证下游功能，不等价于原始数据入口。导入界面先选择结构，
+            再选择对应文件；结构与路径不匹配时会拒绝导入。
+          </p>
+          <table class="control-table">
+            <thead><tr><th>结构</th><th>必须存在</th><th>可选内容</th><th>可继续的阶段</th></tr></thead>
+            <tbody>
+              <tr><td>IBL ALF 会话</td><td>spikes.times.npy、spikes.clusters.npy；trials 对象用于行为</td><td>cluster metrics、channels、probe metadata</td><td>Unit QC、行为、PSTH、统计、解码</td></tr>
+              <tr><td>IBL BWM aggregate</td><td>trials Parquet 与 eid</td><td>bwm_include、reaction time 等字段</td><td>行为分析；无神经数据时不能生成 PSTH</td></tr>
+              <tr><td>DANDI/Buzsáki NWB</td><td>Units/id、spike_times、spike_times_index</td><td>奖励、位置、睡眠状态、ripple</td><td>Unit QC、事件/状态分析、统计、解码</td></tr>
+            </tbody>
+          </table>
+          <p>
+            IBL ALF 字段参照
+            <a href="https://docs.internationalbrainlab.org/notebooks_external/loading_spikesorting_data.html">IBL spike-sorting data guide</a>；
+            NWB Units、TimeSeries 与 intervals 的语义参照
+            <a href="https://pynwb.readthedocs.io/en/stable/">PyNWB</a>。
+          </p>
+          <div class="callout method">
+            NeuroFlow 会保存 session/eid、原文件路径、数据集版本、许可与引用提醒。
+            公开数据的分析结果不能脱离原数据集版本和论文语境单独宣称。
+          </div>
+        </section>
+
+        <section id="sorting-result" data-searchable>
+          <h2>5. 已有 sorting 结果 / Existing sorting results</h2>
+          <p data-lang="zh">
+            用于从 Kilosort/Phy 或兼容目录继续。NeuroFlow 将各 sorter 的 spike 时间统一成秒，
+            保留原生输出与 provenance，并允许多个结果同时存在、切换和比较。
+          </p>
+          <table class="parameter-table">
+            <thead><tr><th>文件/字段</th><th>用途</th><th>常见问题</th><th>NeuroFlow 处理</th></tr></thead>
+            <tbody>
+              <tr><td>spike_times.npy</td><td>每个 spike 的采样点</td><td>误当成秒会放大采样率倍</td><td>按填写的原采样率转换为秒</td></tr>
+              <tr><td>spike_clusters.npy</td><td>人工整理后的 cluster 分配</td><td>缺失时只能退回 template 分配</td><td>优先使用 cluster；缺失时读取 spike_templates</td></tr>
+              <tr><td>params.py / ops.npy</td><td>排序参数与数据来源</td><td>移动目录后 dat_path 失效</td><td>作为 provenance 保留，不直接执行不受信脚本</td></tr>
+              <tr><td>cluster_info.tsv</td><td>Phy 标签和人工决定</td><td>good 不等于跨项目统一标准</td><td>后续版本映射到人工复核记录，不覆盖原文件</td></tr>
+              <tr><td>采样率</td><td>采样点换算为秒</td><td>填写错误导致所有事件对齐错误</td><td>创建项目前强制明确填写</td></tr>
+            </tbody>
+          </table>
+          <p>
+            Kilosort 的标准输出定义见
+            <a href="https://kilosort.readthedocs.io/en/latest/export_files.html">Kilosort exported files</a>。
+            多 sorter 比较采用统一 Unit/spike 接口；真实数据上的算法一致度不是准确率，只有 ground truth 数据才能报告 precision/recall。
+          </p>
+        </section>
+
+        <section id="behavior-schema" data-searchable>
+          <h2>行为事件与 TTL 文件 / Behavior and TTL schemas</h2>
+          <p data-lang="zh">
+            行为程序和电生理设备通常各有自己的时钟。只有已确认同一时钟时，
+            才能直接把行为 time_seconds 当作电生理秒；否则应导入两份脉冲并拟合时间映射。
+          </p>
+          <div class="grid-2">
+            <article class="panel">
+              <h3>behavior_events.csv</h3>
+              <pre><code>trial,condition,event_type,behavior_time_seconds
+1,left,stimulus,12.403
+1,left,response,12.918
+2,right,stimulus,18.271</code></pre>
+              <p><code>trial</code> 定义重复试次；<code>condition</code> 用于分组；<code>event_type</code> 决定对齐事件。</p>
+            </article>
+            <article class="panel">
+              <h3>ephys_ttl.csv</h3>
+              <pre><code>pulse_index,ephys_time_seconds
+1,12.418632
+2,18.286941
+3,24.099104</code></pre>
+              <p>TTL 时间必须来自电生理时钟。系统按顺序/标识配对后拟合 <code>ephys = offset + slope × behavior</code>。</p>
+            </article>
+          </div>
+          <table class="parameter-table">
+            <thead><tr><th>输出</th><th>代表什么</th><th>如何判断</th><th>不能忽略的异常</th></tr></thead>
+            <tbody>
+              <tr><td>offset</td><td>两设备起始时刻差</td><td>可大可小，本身不代表失败</td><td>不同 session 不应盲目复用</td></tr>
+              <tr><td>slope</td><td>时钟速率比例</td><td>接近 1；偏离说明时钟漂移</td><td>长记录只做单一 offset 会累积误差</td></tr>
+              <tr><td>residual</td><td>每对脉冲拟合后的剩余误差</td><td>查看均值、最大值和随时间趋势</td><td>阶跃常提示漏脉冲或错配，曲线趋势可能为非线性漂移</td></tr>
+              <tr><td>matched/missing</td><td>成功配对与缺失脉冲数</td><td>与行为日志和 TTL 数量核对</td><td>不能为了让数量一致而静默删除事件</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <footer class="footer">NeuroFlow data-entry guide · Source files remain read-only · Original explanatory text.</footer>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

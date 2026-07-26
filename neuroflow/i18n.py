@@ -26,8 +26,8 @@ TEXT = {
         "en_US": "Local-first · Replaceable modules · Explainable steps · Real sorters · AI optional",
     },
     "verified_inputs": {
-        "zh_CN": "当前可验证的数据入口",
-        "en_US": "Validated data inputs",
+        "zh_CN": "选择与你手头文件匹配的数据入口",
+        "en_US": "Choose the entry route that matches your files",
     },
     "full_chain": {"zh_CN": "完整纵向链路", "en_US": "Complete vertical workflow"},
     "assistant": {"zh_CN": "引导与证据", "en_US": "Guidance and evidence"},

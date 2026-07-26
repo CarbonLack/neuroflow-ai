@@ -39,8 +39,8 @@ SUPPORTED_FORMATS = (
     ),
     ImportFormat(
         "ibl_alf",
-        "IBL 公开数据",
-        "ALF session 或 BWM aggregate trials.pqt",
+        "公开验证数据",
+        "IBL ALF/BWM 或带 Units 与行为事件的 Buzsáki/DANDI NWB",
         False,
         True,
     ),
@@ -392,6 +392,238 @@ def import_ibl_alf(project_root: Path, alf_root: Path) -> ProjectState:
     state.log(
         f"IBL ALF imported: {len(trials)} trials, {len(sorted_spikes)} units, "
         f"alignment event {event_key or 'not found'}"
+    )
+    save_project(state)
+    return state
+
+
+def _decode_nwb_values(values: np.ndarray) -> list[Any]:
+    decoded: list[Any] = []
+    for value in np.asarray(values).reshape(-1):
+        if isinstance(value, (bytes, np.bytes_)):
+            decoded.append(value.decode("utf-8", errors="replace"))
+        elif isinstance(value, np.generic):
+            decoded.append(value.item())
+        else:
+            decoded.append(value)
+    return decoded
+
+
+def _read_nwb_ragged(
+    handle: Any,
+    value_path: str,
+    index_path: str,
+    ids: np.ndarray,
+) -> dict[int, np.ndarray]:
+    values = np.asarray(handle[value_path], dtype=float)
+    stops = np.asarray(handle[index_path], dtype=np.int64).reshape(-1)
+    if stops.size != ids.size:
+        raise ValueError(
+            "NWB Units 表中的 spike_times_index 与 unit id 数量不一致"
+        )
+    starts = np.concatenate(([0], stops[:-1]))
+    return {
+        int(unit_id): np.asarray(values[start:stop], dtype=float)
+        for unit_id, start, stop in zip(ids, starts, stops)
+    }
+
+
+def import_nwb_units(
+    project_root: Path,
+    source: Path,
+    *,
+    event_series_path: str | None = None,
+) -> ProjectState:
+    """Import a processed NWB session with Units and optional behavior events.
+
+    The importer deliberately starts downstream of raw QC and sorting unless the
+    selected NWB also exposes a raw ElectricalSeries through the device adapter.
+    Units are normalized to NeuroFlow's seconds-based sorting interface.
+    """
+    import h5py
+
+    if not source.is_file():
+        raise ValueError("请选择有效的 NWB 文件")
+    with h5py.File(source, "r") as handle:
+        required = ("units/id", "units/spike_times", "units/spike_times_index")
+        missing = [path for path in required if path not in handle]
+        if missing:
+            raise ValueError(
+                "该 NWB 不包含可导入的 Units 表：缺少 " + ", ".join(missing)
+            )
+        unit_ids = np.asarray(handle["units/id"], dtype=np.int64).reshape(-1)
+        sorted_spikes = _read_nwb_ragged(
+            handle,
+            "units/spike_times",
+            "units/spike_times_index",
+            unit_ids,
+        )
+
+        reward_candidates = (
+            event_series_path,
+            "processing/behavior/RewardEventsEightMazeTrack",
+            "processing/behavior/rewards",
+            "acquisition/rewards",
+        )
+        selected_event_path = next(
+            (
+                candidate
+                for candidate in reward_candidates
+                if candidate and candidate in handle
+            ),
+            None,
+        )
+        events: list[dict[str, Any]] = []
+        trials: list[dict[str, Any]] = []
+        if selected_event_path:
+            series = handle[selected_event_path]
+            if "timestamps" in series:
+                event_times = np.asarray(series["timestamps"], dtype=float).reshape(-1)
+                event_values = (
+                    _decode_nwb_values(np.asarray(series["data"]))
+                    if "data" in series
+                    else ["event"] * len(event_times)
+                )
+                for index, event_time in enumerate(event_times):
+                    value = event_values[index] if index < len(event_values) else "event"
+                    condition = f"reward-{value}"
+                    row = {
+                        "trial": index + 1,
+                        "time_seconds": float(event_time),
+                        "condition": condition,
+                        "event_name": Path(selected_event_path).name,
+                        "event_value": value,
+                    }
+                    events.append(row)
+                    trials.append(dict(row))
+
+        position_candidates = (
+            "processing/behavior/LinearizedPosition/LinearizedSpatialSeries",
+            "processing/behavior/SubjectPosition/SpatialSeries",
+        )
+        position_payload: dict[str, np.ndarray] = {}
+        selected_positions: list[str] = []
+        for candidate in position_candidates:
+            if candidate not in handle:
+                continue
+            series = handle[candidate]
+            if "data" not in series or "timestamps" not in series:
+                continue
+            key = "linearized_position" if "Linearized" in candidate else "subject_position"
+            position_payload[f"{key}_data"] = np.asarray(series["data"])
+            position_payload[f"{key}_timestamps"] = np.asarray(
+                series["timestamps"], dtype=float
+            )
+            selected_positions.append(candidate)
+
+        intervals: dict[str, list[dict[str, Any]]] = {}
+        interval_candidates = {
+            "sleep_states": "processing/behavior/SleepStates",
+            "ripples": "processing/ecephys/Ripples",
+        }
+        for name, candidate in interval_candidates.items():
+            if candidate not in handle:
+                continue
+            table = handle[candidate]
+            if "start_time" not in table or "stop_time" not in table:
+                continue
+            starts = np.asarray(table["start_time"], dtype=float)
+            stops = np.asarray(table["stop_time"], dtype=float)
+            labels = (
+                _decode_nwb_values(np.asarray(table["label"]))
+                if "label" in table
+                else [name] * len(starts)
+            )
+            intervals[name] = [
+                {
+                    "start_time": float(start),
+                    "stop_time": float(stop),
+                    "label": labels[index] if index < len(labels) else name,
+                }
+                for index, (start, stop) in enumerate(zip(starts, stops))
+            ]
+
+        electrode_path = "general/extracellular_ephys/electrodes/id"
+        channel_count = (
+            int(np.asarray(handle[electrode_path]).size)
+            if electrode_path in handle
+            else 0
+        )
+        session_id = (
+            handle["general/session_id"][()].decode("utf-8", errors="replace")
+            if "general/session_id" in handle
+            and isinstance(handle["general/session_id"][()], bytes)
+            else str(handle["general/session_id"][()])
+            if "general/session_id" in handle
+            else source.stem
+        )
+
+    project_root.mkdir(parents=True, exist_ok=True)
+    derived_dir = project_root / "derived" / "public_data"
+    derived_dir.mkdir(parents=True, exist_ok=True)
+    position_path: Path | None = None
+    if position_payload:
+        position_path = derived_dir / "position_series.npz"
+        np.savez_compressed(position_path, **position_payload)
+
+    max_spike_time = max(
+        (float(values.max()) for values in sorted_spikes.values() if values.size),
+        default=0.0,
+    )
+    max_event_time = max(
+        (float(event["time_seconds"]) for event in events), default=0.0
+    )
+    max_interval_time = max(
+        (
+            float(row["stop_time"])
+            for rows in intervals.values()
+            for row in rows
+        ),
+        default=0.0,
+    )
+    is_buzsaki = "buzsaki" in source.name.lower() or bool(
+        intervals.get("ripples") or selected_positions
+    )
+    state = ProjectState(
+        root=project_root,
+        name=f"{'Buzsáki' if is_buzsaki else 'NWB'} {session_id}",
+        source_type="nwb_units",
+        source_path=source,
+        sampling_rate=30_000.0,
+        channel_count=channel_count,
+        duration_seconds=max(max_spike_time, max_event_time, max_interval_time),
+        electrode_type="silicon probe / processed NWB",
+        events=events,
+        trials=trials,
+        sorted_spikes=sorted_spikes,
+        metadata={
+            "standard": "NWB Units + behavior",
+            "session_id": session_id,
+            "raw_signal_available": False,
+            "event_series": selected_event_path,
+            "position_series": selected_positions,
+            "position_cache": str(position_path) if position_path else None,
+            "intervals": intervals,
+            "source_notice": (
+                "Processed public NWB data. Preserve the DANDI DOI, dataset "
+                "version, license, and article citation."
+            ),
+        },
+    )
+    register_sorting_result(
+        state,
+        "imported_nwb_units",
+        sorted_spikes,
+        {
+            "sorter": "Imported NWB Units table",
+            "backend": "NWB",
+            "source_file": str(source),
+            "source_time_unit": "seconds",
+        },
+    )
+    state.log(
+        f"NWB Units imported: {len(sorted_spikes)} units, {len(events)} events, "
+        f"{sum(len(rows) for rows in intervals.values())} labeled intervals"
     )
     save_project(state)
     return state

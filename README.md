@@ -1,4 +1,4 @@
-# NeuroFlow v0.5.1
+# NeuroFlow v0.6.0
 
 NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 它不重新实现成熟 sorter，而是把数据导入、质量控制、Kilosort4、Unit 质控、
@@ -7,7 +7,10 @@ NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电�
 
 ## 这不是界面原型
 
-首页只有两个主要数据入口：固定示例数据和用户自己的数据。示例数据保存在
+首页把用户手头的文件拆成五条清晰入口：引导式模拟、通用二进制原始记录、
+主流记录系统文件、公开验证数据、已有 sorting 结果。它们不是五种算法，而是
+决定从哪个流程阶段开始、是否还能运行 sorting、后续需要补充哪些元数据的五种入口。
+示例数据保存在
 `Documents/NeuroFlow/DemoData/NeuroFlow_demo`，包含二进制原始电压、事件表、
 元数据、ground truth、精确导入配置和数据说明。完整 Demo 会实际执行：
 
@@ -39,7 +42,8 @@ NeuroFlow 不复制其他软件或文章的界面、文案、截图、图表和�
 
 - 图中数据元素可点击，显示图层、横纵坐标含义和精确值；
 - 原始波形可以选择起始时间、时间窗、首通道、可见通道数和显示增益；
-- 双击任意坐标轴可修改标题、轴标签、范围与网格；
+- 双击坐标轴或点击“图形设置”可打开 Figure Studio；整图、坐标轴、线、散点、
+  柱/填充区、热图、文字和图例均可逐对象编辑，并在内嵌预览中即时检查；
 - 内置缩放、平移、复位和图片保存工具栏；
 - 可切换突出数据点、阶梯线、灰度和高对比呈现；
 - 系统级中文/English 切换，语言选择写入项目；
@@ -54,6 +58,8 @@ NeuroFlow 不复制其他软件或文章的界面、文案、截图、图表和�
 - Intan、Open Ephys、SpikeGLX/Neuropixels、Blackrock、Plexon、TDT、NWB，
   通过 SpikeInterface extractor 转成项目缓存；
 - IBL ALF 的 trials、spikes 和 clusters；
+- 具有 Units、行为事件、位置、睡眠状态或 ripple 区间的 NWB，例如
+  DANDI 上公开的 Buzsáki Lab 会话；
 - 已有 Kilosort/Phy sorting 结果。
 
 原始文件保持只读。只有明确选择复制时才复制通用二进制；记录系统适配器生成
@@ -100,16 +106,37 @@ powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
 结果位于 `dist\NeuroFlow\NeuroFlow.exe`。选择 one-folder 是为了让大型科研依赖
 保持可检查，并避免每次启动都重新解压。
 
-## IBL 公开数据
+## 真实公开数据验证
 
-下载一个处理后的 Brain-Wide Map session（不会下载巨大的原始 AP 文件）：
+NeuroFlow 已用两条互补的真实公开数据入口完成集成验证：
+
+- IBL Brain-Wide Map 的 ALF session：
+  `EID 4ecb5d24-f5cc-402c-be28-9d0f7cb14b3a`、`probe00`；
+- Buzsáki Lab / DANDI `000552` 的 NWB session：
+  `sub-e14-2m3_ses-e14-2m3-201121_behavior+ecephys.nwb`。
+
+下载 IBL 处理后会话（不会下载巨大的原始 AP 文件）：
 
 ```powershell
 python scripts\download_ibl_example.py --cache ibl_cache
 ```
 
-然后在首页选择 **导入我的数据 > IBL ALF**。分析与论文 panel 的对应关系见
-[`docs/IBL_REPRODUCTION.md`](docs/IBL_REPRODUCTION.md)。
+下载固定的 Buzsáki/DANDI NWB 示例：
+
+```powershell
+python scripts\download_buzsaki_example.py
+```
+
+运行两套公开数据的可重复集成验证：
+
+```powershell
+python scripts\validate_public_datasets.py
+```
+
+完整数据 ID、实际导入数量、图、指标、运行限制和官方来源见
+[`docs/site/public-validation.html`](docs/site/public-validation.html)。这些结果用于证明
+导入、统一数据结构、事件分析、统计和解码链路能够运行，不等于复现原论文结论，
+也不把 20 次置换的 smoke test 当作正式显著性证据。
 
 ## 测试
 
@@ -117,8 +144,9 @@ python scripts\download_ibl_example.py --cache ibl_cache
 python -m pytest -q
 ```
 
-测试覆盖模拟原始记录、质控、通用二进制、Kilosort 输出、IBL ALF、项目恢复、
-多统计视图、双语帮助、sorter 容错检测与机器学习解码。Kilosort4 GPU、
+测试覆盖模拟原始记录、质控、通用二进制、Kilosort 输出、IBL ALF、NWB Units、
+Figure Studio 对象目录、常量数据统计容错、项目恢复、多统计视图、双语帮助、
+sorter 容错检测与机器学习解码。Kilosort4 GPU、
 Tridesclous2 和 Simple 的真实运行属于单独的集成验证。
 
 ## 数据与仓库原则

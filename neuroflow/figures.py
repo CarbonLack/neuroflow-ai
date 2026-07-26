@@ -2278,8 +2278,8 @@ def decoding_figure(state: ProjectState) -> Figure:
     axes[1, 0].set_title(
         _text(
             state,
-            "IBL 风格时间分辨解码",
-            "IBL-style time-resolved decoding",
+            "时间分辨神经解码",
+            "Time-resolved neural decoding",
         ),
         loc="left",
         fontsize=11,

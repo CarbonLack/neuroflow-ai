@@ -160,14 +160,18 @@ CONTROL_HELP = {
     },
     "plot.settings": {
         "zh_CN": (
-            "图形设置",
-            "选择一个子图并修改标题、坐标名称、范围和网格。修改只作用于当前图，"
-            "导出 SVG 后仍可继续编辑。",
+            "Figure Studio 图形工作室",
+            "打开对象级编辑器。左侧可选择整图、坐标轴、曲线、散点、柱/填充区域、"
+            "热图、文字和图例；右侧按对象提供尺寸、DPI、标题、单位、范围、颜色、"
+            "透明度、粗细、线型、marker、色图、刻度、边框和图例设置。修改只影响"
+            "当前呈现，不重新计算数据。",
         ),
         "en_US": (
-            "Figure settings",
-            "Choose a subplot and edit its title, axis labels, limits, and grid. "
-            "Changes affect the current figure and remain editable after SVG export.",
+            "Figure Studio",
+            "Open the object-level editor for the whole figure, axes, lines, scatters, "
+            "patches, images, text, and legends. Controls include size, DPI, labels, "
+            "limits, colors, alpha, widths, styles, markers, colormaps, ticks, spines, "
+            "and legends. Presentation changes do not recompute data.",
         ),
     },
     "plot.panel": {
@@ -197,13 +201,13 @@ CONTROL_HELP = {
     "plot.panel_edit": {
         "zh_CN": (
             "编辑所选子图",
-            "直接修改所选子图的标题、坐标轴名称、显示范围和网格。修改仅影响当前"
-            "图形显示，不改变原始数据或分析结果。",
+            "打开 Figure Studio 并自动定位到所选坐标轴。可继续选择该子图内的线、"
+            "点、柱、热图或文字逐项编辑；不会改变原始数据或数值分析结果。",
         ),
         "en_US": (
             "Edit selected panel",
-            "Edit the selected panel title, axis labels, limits, and grid. Changes affect "
-            "the current presentation only, not source data or computed results.",
+            "Open Figure Studio focused on the selected axis, then edit its lines, "
+            "points, patches, images, or text individually. Numerical results remain unchanged.",
         ),
     },
     "plot.panel_save": {

@@ -28,7 +28,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QHeaderView,
-    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -65,6 +64,7 @@ from .data_import import (
     import_ibl_alf,
     import_ibl_trials_aggregate,
     import_kilosort_results,
+    import_nwb_units,
 )
 from .decoding import (
     MODEL_DESCRIPTIONS,
@@ -98,6 +98,7 @@ from .figures import (
     synchronization_figure,
     unit_metrics_figure,
 )
+from .figure_studio import FigureStudioDialog
 from .help_content import REFERENCES, control_help, page_controls
 from .i18n import LANGUAGES, step_text, tr
 from .ibl import download_bwm_trials_aggregate
@@ -161,11 +162,101 @@ FORMAT_TEXT_EN = {
         "Acquisition-system data",
         "Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, NWB",
     ),
-    "ibl_alf": ("IBL public data", "ALF session or BWM aggregate trials.pqt"),
+    "ibl_alf": (
+        "Public validation data",
+        "IBL ALF/BWM or Buzsáki/DANDI NWB with Units and behavior",
+    ),
     "kilosort": (
         "Kilosort/Phy output",
         "Spike times, cluster assignments, and parameters",
     ),
+}
+
+ENTRY_ROUTE_TEXT = {
+    "zh_CN": {
+        "simulated": (
+            "教学模拟项目",
+            "想先学习、测试电脑或比较 sorter",
+            "选择探针场景；系统生成原始电压、探针、行为、TTL 与 ground truth",
+            "数据与项目",
+            "可以",
+            "唯一已知真实 spike 的入口，可定量计算 sorting 的准确率、召回率和 F1。",
+        ),
+        "binary": (
+            "我的通用二进制",
+            "手里有交错存储的 .bin/.dat 原始电压",
+            "选择文件并填写采样率、通道数、dtype、μV/bit；可同时选择事件 CSV",
+            "数据与项目",
+            "可以",
+            "适用于自定义采集程序；参数填错会改变数据重排或时间换算。",
+        ),
+        "device": (
+            "我的记录系统文件",
+            "手里有 Intan、Open Ephys、SpikeGLX、Blackrock、Plexon、TDT 或 NWB 原始记录",
+            "选择记录系统和对应文件/文件夹；NeuroFlow 调用 SpikeInterface 读取器",
+            "数据与项目",
+            "有原始电压时可以",
+            "保留源文件只读，建立统一缓存后进入质控、预处理和 sorting。",
+        ),
+        "ibl_alf": (
+            "公开数据验证",
+            "想复现 IBL 或 Buzsáki 公开会话，或验证下游分析",
+            "选择 IBL ALF/BWM，或带 Units、行为/事件的 DANDI/NWB 文件",
+            "Unit/行为检查",
+            "通常不可以",
+            "公开文件多为已排序数据；可运行 Unit QC、同步检查、PSTH、统计与解码。",
+        ),
+        "kilosort": (
+            "已有 sorting 结果",
+            "已经在 Kilosort/Phy 或其他工具中完成了 sorting",
+            "选择含 spike_times.npy 与 cluster 分配的结果文件夹，并填写原采样率",
+            "Unit 质控",
+            "无需重跑",
+            "统一为秒制 Unit/spike 接口，可与本项目其他 sorter 结果并列比较。",
+        ),
+    },
+    "en_US": {
+        "simulated": (
+            "Guided simulation",
+            "Learn the workflow, test the computer, or compare sorters",
+            "Choose a probe scenario; NeuroFlow creates raw voltage, probe, behavior, TTL, and ground truth",
+            "Data and project",
+            "Yes",
+            "The only entry with known spikes, enabling precision, recall, and F1 validation.",
+        ),
+        "binary": (
+            "My generic binary",
+            "You have interleaved .bin/.dat raw voltage",
+            "Choose the file and specify rate, channels, dtype, and μV/bit; events CSV is optional",
+            "Data and project",
+            "Yes",
+            "Use for custom acquisition; wrong metadata changes reshaping or the time base.",
+        ),
+        "device": (
+            "My acquisition files",
+            "You have Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, or raw NWB",
+            "Choose the acquisition system and its file/folder; SpikeInterface reads the source",
+            "Data and project",
+            "With raw voltage",
+            "Sources remain read-only and enter QC, preprocessing, and sorting through a normalized cache.",
+        ),
+        "ibl_alf": (
+            "Public validation data",
+            "Reproduce an IBL or Buzsáki session, or validate downstream analysis",
+            "Choose IBL ALF/BWM or DANDI/NWB containing Units and behavior/events",
+            "Unit/behavior checks",
+            "Usually no",
+            "Most public files are already sorted; continue with QC, PSTH, statistics, and decoding.",
+        ),
+        "kilosort": (
+            "Existing sorting results",
+            "Sorting was completed in Kilosort/Phy or another tool",
+            "Choose a folder with spike_times and cluster assignments and specify the original rate",
+            "Unit QC",
+            "No rerun needed",
+            "Normalize to the seconds-based Unit/spike interface and compare with other sorter results.",
+        ),
+    },
 }
 
 STATISTICAL_METHODS = (
@@ -835,29 +926,44 @@ class ImportDialog(QDialog):
         page = QWidget()
         form = QFormLayout(page)
         english = self.language == "en_US"
+        self.public_kind = QComboBox()
+        self.public_kind.addItem(
+            "IBL ALF session (spikes + trials)"
+            if english
+            else "IBL ALF 会话（spikes + trials）",
+            "ibl_alf",
+        )
+        self.public_kind.addItem(
+            "IBL BWM aggregate trials (behavior only)"
+            if english
+            else "IBL BWM 汇总 trials（仅行为）",
+            "ibl_trials",
+        )
+        self.public_kind.addItem(
+            "DANDI / Buzsáki NWB (Units + behavior)"
+            if english
+            else "DANDI / Buzsáki NWB（Units + 行为）",
+            "nwb_units",
+        )
+        self.public_kind.currentIndexChanged.connect(self._public_kind_changed)
         holder = QWidget()
         row = QHBoxLayout(holder)
         row.setContentsMargins(0, 0, 0, 0)
         self.alf_path = QLineEdit()
         folder_button = QPushButton("ALF folder…" if english else "ALF 文件夹…")
         file_button = QPushButton("Aggregate .pqt…")
+        nwb_button = QPushButton("NWB file…" if english else "NWB 文件…")
         folder_button.clicked.connect(
-            lambda: self.alf_path.setText(
-                QFileDialog.getExistingDirectory(self, "选择 IBL ALF 文件夹")
-            )
+            lambda: self._choose_public_source("ibl_alf")
         )
         file_button.clicked.connect(
-            lambda: self.alf_path.setText(
-                QFileDialog.getOpenFileName(
-                    self,
-                    "选择 IBL trials aggregate",
-                    filter="Parquet (*.pqt *.parquet)",
-                )[0]
-            )
+            lambda: self._choose_public_source("ibl_trials")
         )
+        nwb_button.clicked.connect(lambda: self._choose_public_source("nwb_units"))
         row.addWidget(self.alf_path, 1)
         row.addWidget(folder_button)
         row.addWidget(file_button)
+        row.addWidget(nwb_button)
         download_button = QPushButton(
             "Download official example" if english else "下载官方示例"
         )
@@ -868,7 +974,11 @@ class ImportDialog(QDialog):
             if english
             else "留空时自动选择一个 BWM session"
         )
-        form.addRow("IBL data" if english else "IBL 数据", holder)
+        form.addRow(
+            "Public-data structure" if english else "公开数据结构",
+            self.public_kind,
+        )
+        form.addRow("Data path" if english else "数据路径", holder)
         form.addRow(
             "Session eID (optional for aggregate)"
             if english
@@ -878,19 +988,64 @@ class ImportDialog(QDialog):
         form.addRow(download_button)
         text = QLabel(
             (
-                "Read trials.table.pqt or trials.*.npy plus spikes.times and "
-                "spikes.clusters under a probe. Continue with unit QC, behavior, PSTH, "
-                "statistics, and decoding."
+                "<b>IBL ALF</b> reads trials plus spikes.times/spikes.clusters. "
+                "<b>BWM aggregate</b> contains behavior only. "
+                "<b>DANDI/NWB</b> reads a Units table and available reward, position, "
+                "state, or ripple objects. These processed entries start after sorting; "
+                "use acquisition-system NWB when raw ElectricalSeries must be sorted."
             )
             if english
             else (
-                "读取 trials.table.pqt 或 trials.*.npy，以及 probe 下的 spikes.times、"
-                "spikes.clusters。导入后可直接运行 Unit 质控、行为图、PSTH、统计和解码。"
+                "<b>IBL ALF</b> 读取 trials 与 spikes.times/spikes.clusters；"
+                "<b>BWM aggregate</b> 只有行为汇总；<b>DANDI/NWB</b> 读取 Units 表，"
+                "并接入可用的奖励、位置、状态或 ripple 对象。它们是处理后入口，从 "
+                "sorting 之后继续；若 NWB 内含待排序的原始 ElectricalSeries，应从"
+                "“记录系统文件”入口导入。"
             )
         )
         text.setWordWrap(True)
         form.addRow(text)
+        self._public_kind_changed(0)
         return page
+
+    def _public_kind_changed(self, _index: int) -> None:
+        kind = self.public_kind.currentData()
+        placeholders = {
+            "ibl_alf": "Select an IBL ALF session/probe folder"
+            if self.language == "en_US"
+            else "选择包含 trials 和 probe/spikes 的 IBL ALF 文件夹",
+            "ibl_trials": "Select aggregate_trials.pqt"
+            if self.language == "en_US"
+            else "选择 IBL BWM aggregate_trials.pqt",
+            "nwb_units": "Select a .nwb file containing a Units table"
+            if self.language == "en_US"
+            else "选择包含 Units 表的 .nwb 文件",
+        }
+        self.alf_path.setPlaceholderText(placeholders[str(kind)])
+        self.ibl_eid.setEnabled(kind == "ibl_trials")
+
+    def _choose_public_source(self, kind: str) -> None:
+        index = self.public_kind.findData(kind)
+        if index >= 0:
+            self.public_kind.setCurrentIndex(index)
+        if kind == "ibl_alf":
+            selected = QFileDialog.getExistingDirectory(
+                self, "选择 IBL ALF 文件夹"
+            )
+        elif kind == "ibl_trials":
+            selected = QFileDialog.getOpenFileName(
+                self,
+                "选择 IBL trials aggregate",
+                filter="Parquet (*.pqt *.parquet)",
+            )[0]
+        else:
+            selected = QFileDialog.getOpenFileName(
+                self,
+                "选择含 Units 与行为的 NWB",
+                filter="Neurodata Without Borders (*.nwb)",
+            )[0]
+        if selected:
+            self.alf_path.setText(selected)
 
     def _download_ibl_aggregate(self) -> None:
         try:
@@ -1027,14 +1182,28 @@ class ImportDialog(QDialog):
                 )
             elif key == "ibl_alf":
                 source = Path(self.alf_path.text())
-                if source.is_dir():
+                public_kind = self.public_kind.currentData()
+                if public_kind == "ibl_alf" and source.is_dir():
                     self.state = import_ibl_alf(root, source)
-                elif source.is_file() and source.suffix.lower() in {".pqt", ".parquet"}:
+                elif (
+                    public_kind == "ibl_trials"
+                    and source.is_file()
+                    and source.suffix.lower() in {".pqt", ".parquet"}
+                ):
                     self.state = import_ibl_trials_aggregate(
                         root, source, self.ibl_eid.text().strip() or None
                     )
+                elif (
+                    public_kind == "nwb_units"
+                    and source.is_file()
+                    and source.suffix.lower() == ".nwb"
+                ):
+                    self.state = import_nwb_units(root, source)
                 else:
-                    raise ValueError("请选择 IBL ALF 文件夹或 aggregate trials.pqt")
+                    raise ValueError(
+                        "所选文件与公开数据结构不匹配：请按上方类型选择 "
+                        "ALF 文件夹、aggregate .pqt 或含 Units 的 .nwb"
+                    )
             else:
                 source = Path(self.ks_path.text())
                 if not source.is_dir():
@@ -1066,7 +1235,18 @@ class TutorialDialog(QDialog):
         self.browser = QTextBrowser()
         self.browser.setOpenExternalLinks(True)
         layout.addWidget(self.list)
-        layout.addWidget(self.browser, 1)
+        right = QWidget()
+        right_layout = QVBoxLayout(right)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.addWidget(self.browser, 1)
+        full_manual = QPushButton(
+            "在浏览器打开详细操作手册"
+            if language == "zh_CN"
+            else "Open the detailed operation manual"
+        )
+        full_manual.clicked.connect(self._open_full_manual)
+        right_layout.addWidget(full_manual)
+        layout.addWidget(right, 1)
         for chapter in TUTORIALS:
             self.list.addItem(tutorial_value(chapter, "title", language))
         self.list.currentRowChanged.connect(self._show)
@@ -1121,6 +1301,11 @@ class TutorialDialog(QDialog):
                 else "<p><b>原则：</b>教程解释决策依据，最终参数仍由用户确认并记录。</p>"
             )
         )
+
+    def _open_full_manual(self) -> None:
+        manual = _documentation_index().with_name("manual.html")
+        if manual.exists():
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(manual)))
 
 
 class BehaviorSyncDialog(QDialog):
@@ -1621,30 +1806,50 @@ class NeuroFlowWindow(QMainWindow):
         self.cap_title = QLabel("数据入口与接入位置")
         self.cap_title.setStyleSheet("font-size: 17px; font-weight: 700;")
         cap_layout.addWidget(self.cap_title)
-        self.input_table = QTableWidget(len(SUPPORTED_FORMATS), 4)
+        self.cap_intro = QLabel(
+            "下面五行不是五种算法，而是五条进入 NeuroFlow 的路径。"
+            "先按“我手里有什么”选择入口；流程起点和能否重新 sorting 由文件中是否包含原始电压决定。"
+        )
+        self.cap_intro.setWordWrap(True)
+        self.cap_intro.setObjectName("Muted")
+        cap_layout.addWidget(self.cap_intro)
+        self.input_table = QTableWidget(len(SUPPORTED_FORMATS), 6)
         self.input_table.setHorizontalHeaderLabels(
-            ["来源", "可读内容", "原始电压", "可从 sorting 后接入"]
+            ["入口", "什么时候选它", "实际要选择什么", "流程起点", "能否 sorting", "导入后会发生什么"]
         )
         self.input_table.verticalHeader().setVisible(False)
         self.input_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.input_table.setSelectionMode(QTableWidget.NoSelection)
+        self.input_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.input_table.setSelectionMode(QTableWidget.SingleSelection)
+        self.input_table.setWordWrap(True)
+        self.input_table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         for row_index, item in enumerate(SUPPORTED_FORMATS):
-            values = [
-                item.name,
-                item.description,
-                "是" if item.raw_signal else "否",
-                "是" if item.sorting_result else "否",
-            ]
+            values = ENTRY_ROUTE_TEXT["zh_CN"][item.key]
             for column, value in enumerate(values):
-                self.input_table.setItem(row_index, column, QTableWidgetItem(value))
+                cell = QTableWidgetItem(value)
+                cell.setData(Qt.UserRole, item.key)
+                self.input_table.setItem(row_index, column, cell)
         header = self.input_table.horizontalHeader()
         header.setMinimumSectionSize(88)
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.Stretch)
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
         header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        self.input_table.setFixedHeight(180)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.Stretch)
+        self._resize_input_route_table()
+        self.input_table.cellDoubleClicked.connect(
+            lambda row, _column: self._show_import(
+                str(self.input_table.item(row, 0).data(Qt.UserRole))
+            )
+        )
         cap_layout.addWidget(self.input_table)
+        self.entry_hint = QLabel(
+            "操作：双击任意一行会打开相应的导入向导；公开数据和已有 sorting 结果不会伪装成原始电压。"
+        )
+        self.entry_hint.setWordWrap(True)
+        self.entry_hint.setObjectName("Muted")
+        cap_layout.addWidget(self.entry_hint)
         layout.addWidget(capability)
 
         flow = QFrame()
@@ -1665,6 +1870,21 @@ class NeuroFlowWindow(QMainWindow):
         scroll.setWidget(body)
         outer.addWidget(scroll, 1)
         return page
+
+    def _resize_input_route_table(self) -> None:
+        self.input_table.resizeRowsToContents()
+        for row in range(self.input_table.rowCount()):
+            self.input_table.setRowHeight(row, max(self.input_table.rowHeight(row), 66))
+        height = (
+            self.input_table.horizontalHeader().sizeHint().height()
+            + sum(
+                self.input_table.rowHeight(row)
+                for row in range(self.input_table.rowCount())
+            )
+            + self.input_table.frameWidth() * 2
+            + 6
+        )
+        self.input_table.setFixedHeight(height)
 
     def _workspace_page(self) -> QWidget:
         page = QWidget()
@@ -2106,29 +2326,46 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.cap_title.setText(tr("verified_inputs", language))
         self.flow_title.setText(tr("full_chain", language))
-        self.input_table.setHorizontalHeaderLabels(
-            ["来源", "可读内容", "原始电压", "可从 sorting 后接入"]
+        self.cap_intro.setText(
+            (
+                "下面五行不是五种算法，而是五条进入 NeuroFlow 的路径。"
+                "先按“我手里有什么”选择入口；流程起点和能否重新 sorting 由文件中是否包含原始电压决定。"
+            )
             if language == "zh_CN"
-            else ["Source", "Readable content", "Raw voltage", "Downstream entry"]
+            else (
+                "These are five entry routes, not five algorithms. Choose by what "
+                "you actually have; raw voltage determines the starting stage and "
+                "whether sorting can run."
+            )
+        )
+        self.input_table.setHorizontalHeaderLabels(
+            ["入口", "什么时候选它", "实际要选择什么", "流程起点", "能否 sorting", "导入后会发生什么"]
+            if language == "zh_CN"
+            else [
+                "Entry",
+                "Choose it when",
+                "What to select",
+                "Starts at",
+                "Can sort?",
+                "What happens next",
+            ]
         )
         for row, item in enumerate(SUPPORTED_FORMATS):
-            name, description = (
-                FORMAT_TEXT_EN[item.key]
-                if language == "en_US"
-                else (item.name, item.description)
+            values = ENTRY_ROUTE_TEXT[language][item.key]
+            for column, value in enumerate(values):
+                self.input_table.item(row, column).setText(value)
+        self._resize_input_route_table()
+        self.entry_hint.setText(
+            (
+                "操作：双击任意一行会打开相应的导入向导；公开数据和已有 sorting 结果"
+                "不会伪装成原始电压。"
             )
-            self.input_table.item(row, 0).setText(name)
-            self.input_table.item(row, 1).setText(description)
-            self.input_table.item(row, 2).setText(
-                ("是" if item.raw_signal else "否")
-                if language == "zh_CN"
-                else ("Yes" if item.raw_signal else "No")
+            if language == "zh_CN"
+            else (
+                "Double-click a row to open that import route. Public processed data "
+                "and existing sorting results are never presented as raw voltage."
             )
-            self.input_table.item(row, 3).setText(
-                ("是" if item.sorting_result else "否")
-                if language == "zh_CN"
-                else ("Yes" if item.sorting_result else "No")
-            )
+        )
         self.flow_text.setText(
             "数据与项目  →  原始质控  →  预处理  →  Spike sorting  →  Unit 质控  →  "
             "事件同步  →  行为分析  →  Raster/PSTH  →  统计检验  →  神经解码  →  论文与复现"
@@ -2255,31 +2492,15 @@ class NeuroFlowWindow(QMainWindow):
 
     def _on_plot_press(self, event) -> None:
         if event.dblclick and event.inaxes is not None:
-            AxisEditorDialog(event.inaxes, self.language, self).exec()
+            FigureStudioDialog(
+                self.canvas.figure,
+                self.language,
+                self,
+                initial_axis=event.inaxes,
+            ).exec()
 
     def _open_figure_settings(self) -> None:
-        axes = [axis for axis in self.canvas.figure.axes if axis.get_visible()]
-        if not axes:
-            return
-        if len(axes) == 1:
-            axis = axes[0]
-        else:
-            names = [
-                f"{index + 1}. {axis.get_title() or axis.get_xlabel() or 'Axis'}"
-                for index, axis in enumerate(axes)
-            ]
-            selected, accepted = QInputDialog.getItem(
-                self,
-                tr("plot_settings", self.language),
-                "选择坐标轴" if self.language == "zh_CN" else "Select an axis",
-                names,
-                0,
-                False,
-            )
-            if not accepted:
-                return
-            axis = axes[names.index(selected)]
-        AxisEditorDialog(axis, self.language, self).exec()
+        FigureStudioDialog(self.canvas.figure, self.language, self).exec()
 
     def _figure_panel_axes(self) -> list:
         return [
@@ -2380,7 +2601,12 @@ class NeuroFlowWindow(QMainWindow):
     def _edit_selected_panel(self) -> None:
         axis = self._selected_panel_axis()
         if axis is not None:
-            AxisEditorDialog(axis, self.language, self).exec()
+            FigureStudioDialog(
+                self.canvas.figure,
+                self.language,
+                self,
+                initial_axis=axis,
+            ).exec()
 
     def _save_selected_panel(self) -> None:
         axis = self._selected_panel_axis()
@@ -2472,8 +2698,12 @@ class NeuroFlowWindow(QMainWindow):
                     color_index += 1
         self.canvas.draw_idle()
 
-    def _show_import(self) -> None:
+    def _show_import(self, source_key: str | None = None) -> None:
         dialog = ImportDialog(self.workspace, self, self.language)
+        if source_key:
+            index = dialog.source_combo.findData(source_key)
+            if index >= 0:
+                dialog.source_combo.setCurrentIndex(index)
         if dialog.exec() == QDialog.Accepted and dialog.state:
             self._load_state(dialog.state)
 

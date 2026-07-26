@@ -15,6 +15,7 @@ from neuroflow.data_import import (
     import_ibl_alf,
     import_ibl_trials_aggregate,
     import_kilosort_results,
+    import_nwb_units,
 )
 from neuroflow.decoding import run_decoding_suite
 from neuroflow.project import load_project, save_project
@@ -136,3 +137,52 @@ def test_ibl_aggregate_import(tmp_path: Path):
     assert state.metadata["eid"] == "session-a"
     assert len(state.trials) == 4
     assert {event["condition"] for event in state.events} == {"left", "right"}
+
+
+def test_nwb_units_behavior_and_intervals_import(tmp_path: Path):
+    import h5py
+
+    source = tmp_path / "session.nwb"
+    with h5py.File(source, "w") as handle:
+        units = handle.create_group("units")
+        units.create_dataset("id", data=np.array([10, 20]))
+        units.create_dataset(
+            "spike_times", data=np.array([0.1, 0.2, 1.1, 1.2, 1.4])
+        )
+        units.create_dataset("spike_times_index", data=np.array([2, 5]))
+        reward = handle.create_group(
+            "processing/behavior/RewardEventsEightMazeTrack"
+        )
+        reward.create_dataset("data", data=np.array([0, 1, 0, 1]))
+        reward.create_dataset("timestamps", data=np.array([2.0, 3.0, 4.0, 5.0]))
+        states = handle.create_group("processing/behavior/SleepStates")
+        states.create_dataset("start_time", data=np.array([0.0, 1.0]))
+        states.create_dataset("stop_time", data=np.array([1.0, 2.0]))
+        states.create_dataset("label", data=np.array([b"WAKE", b"NREM"]))
+        ripples = handle.create_group("processing/ecephys/Ripples")
+        ripples.create_dataset("start_time", data=np.array([0.4]))
+        ripples.create_dataset("stop_time", data=np.array([0.5]))
+    state = import_nwb_units(tmp_path / "project", source)
+    assert set(state.sorted_spikes) == {10, 20}
+    assert len(state.sorted_spikes[20]) == 3
+    assert {event["condition"] for event in state.events} == {
+        "reward-0",
+        "reward-1",
+    }
+    assert len(state.metadata["intervals"]["sleep_states"]) == 2
+    assert len(state.metadata["intervals"]["ripples"]) == 1
+
+
+def test_statistics_marks_identical_condition_values(tmp_path: Path):
+    state = generate_demo_recording(
+        tmp_path / "constant_project",
+        duration_seconds=6.0,
+        channel_count=8,
+        sampling_rate=10_000,
+    )
+    state.sorted_spikes = {0: np.array([])}
+    event_aligned_analysis(state)
+    result = run_statistical_suite(state)
+    assert result["rows"][0]["condition_test_status"] == (
+        "not_testable_all_values_identical"
+    )

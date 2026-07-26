@@ -385,6 +385,131 @@ pre {
   margin-bottom: 10px;
 }
 
+.control-table td:first-child,
+.parameter-table td:first-child {
+  width: 18%;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.control-table td:nth-child(2) {
+  width: 28%;
+}
+
+.parameter-table td:nth-child(2) {
+  width: 20%;
+}
+
+.step-list {
+  padding-left: 0;
+  counter-reset: procedure;
+  list-style: none;
+}
+
+.step-list li {
+  position: relative;
+  min-height: 42px;
+  margin: 0 0 12px;
+  padding: 8px 12px 8px 52px;
+  border-left: 2px solid #b9cec5;
+  background: #fafcfb;
+}
+
+.step-list li::before {
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green);
+  color: white;
+  content: counter(procedure);
+  counter-increment: procedure;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.checklist {
+  padding-left: 0;
+  list-style: none;
+}
+
+.checklist li {
+  margin: 7px 0;
+  padding-left: 26px;
+}
+
+.checklist li::before {
+  display: inline-block;
+  width: 20px;
+  margin-left: -26px;
+  color: var(--green);
+  content: "□";
+  font-size: 18px;
+  font-weight: 750;
+}
+
+details {
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper);
+}
+
+summary {
+  padding: 11px 14px;
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+details > div {
+  padding: 0 14px 14px;
+}
+
+.route {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border-left: 4px solid var(--gold);
+  background: #fbf6e9;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 13px;
+}
+
+.evidence {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 0;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.evidence dt,
+.evidence dd {
+  margin: 0;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.evidence dt {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.evidence dt:last-of-type,
+.evidence dt:last-of-type + dd {
+  border-bottom: 0;
+}
+
+.warning {
+  color: #8b321f;
+  font-weight: 700;
+}
+
 .footer {
   padding-top: 26px;
   color: var(--muted);
@@ -396,6 +521,31 @@ pre {
 }
 
 @media (max-width: 900px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .topbar {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .brand {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .brand small {
+    display: none;
+  }
+
+  .language-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
   .search {
     display: none;
   }
@@ -417,8 +567,31 @@ pre {
 
   .content {
     grid-column: 1;
+    min-width: 0;
     width: 100%;
     padding: 32px 20px 70px;
+  }
+
+  .content section,
+  .page-intro {
+    min-width: 0;
+  }
+
+  .content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .content th,
+  .content td {
+    min-width: 150px;
+  }
+
+  .content th:first-child,
+  .content td:first-child {
+    min-width: 110px;
   }
 
   .grid-3,
@@ -438,7 +611,12 @@ pre {
     padding-top: 2px;
   }
 
+  .evidence {
+    grid-template-columns: 1fr;
+  }
+
   h1 {
     font-size: 36px;
+    overflow-wrap: anywhere;
   }
 }

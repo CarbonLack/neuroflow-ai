@@ -12,6 +12,7 @@ from neuroflow.analysis import (
     run_raw_qc,
 )
 from neuroflow.ephys_toolkit import run_neural_toolkit
+from neuroflow.figure_studio import FigureStudioDialog
 from neuroflow.simulation import generate_demo_recording
 from neuroflow.sorting_results import (
     activate_sorting_result,
@@ -133,6 +134,10 @@ def main() -> int:
     window._refresh_figure()
     window._refresh_table()
     _capture(window, output / "neuroflow-analysis.png")
+    studio = FigureStudioDialog(window.canvas.figure, "en_US", window)
+    studio.show()
+    _capture(studio, output / "neuroflow-figure-studio.png")
+    studio.close()
     window.close()
     app.processEvents()
     return 0

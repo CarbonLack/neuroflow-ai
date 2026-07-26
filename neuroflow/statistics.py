@@ -98,6 +98,19 @@ def permutation_paired(
     return float((np.count_nonzero(null >= observed) + 1) / (n_permutations + 1))
 
 
+def _safe_test(test, *samples, **kwargs) -> tuple[float, float]:
+    """Return NaN evidence instead of aborting a full suite on undefined tests."""
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            result = test(*samples, **kwargs)
+        statistic = float(result.statistic)
+        p_value = float(result.pvalue)
+        return statistic, p_value
+    except (ValueError, FloatingPointError, ZeroDivisionError):
+        return float("nan"), float("nan")
+
+
 def run_statistical_suite(state: ProjectState) -> dict:
     if not state.analysis:
         raise RuntimeError("请先运行事件对齐分析")
@@ -132,8 +145,18 @@ def run_statistical_suite(state: ProjectState) -> dict:
             if 3 <= len(delta) <= 5000 and not np.allclose(delta, delta[0])
             else 1.0
         )
-        pearson_r, pearson_p = stats.pearsonr(np.arange(len(response)), response)
-        spearman_r, spearman_p = stats.spearmanr(np.arange(len(response)), response)
+        if len(response) < 2 or np.allclose(response, response[0]):
+            pearson_r = spearman_r = 0.0
+            pearson_p = spearman_p = 1.0
+            trend_status = "not_testable_constant_response"
+        else:
+            pearson_r, pearson_p = _safe_test(
+                stats.pearsonr, np.arange(len(response)), response
+            )
+            spearman_r, spearman_p = _safe_test(
+                stats.spearmanr, np.arange(len(response)), response
+            )
+            trend_status = "tested"
         condition_results = {
             "condition_welch_t": np.nan,
             "condition_welch_p": np.nan,
@@ -143,26 +166,48 @@ def run_statistical_suite(state: ProjectState) -> dict:
             "condition_anova_p": np.nan,
             "condition_kruskal_p": np.nan,
             "condition_hedges_g": np.nan,
+            "condition_test_status": "not_tested",
         }
         if len(usable_labels) == 2 and len(conditions) == len(response):
             first = response[conditions == usable_labels[0]]
             second = response[conditions == usable_labels[1]]
             if len(first) >= 2 and len(second) >= 2:
-                welch = stats.ttest_ind(second, first, equal_var=False)
-                mannwhitney = stats.mannwhitneyu(second, first, alternative="two-sided")
-                levene = stats.levene(first, second, center="median")
-                anova = stats.f_oneway(first, second)
-                kruskal = stats.kruskal(first, second)
+                all_identical = np.allclose(
+                    np.concatenate((first, second)),
+                    np.concatenate((first, second))[0],
+                )
+                if all_identical:
+                    welch = mannwhitney = levene = anova = kruskal = (0.0, 1.0)
+                    condition_status = "not_testable_all_values_identical"
+                else:
+                    welch = _safe_test(
+                        stats.ttest_ind, second, first, equal_var=False
+                    )
+                    mannwhitney = _safe_test(
+                        stats.mannwhitneyu,
+                        second,
+                        first,
+                        alternative="two-sided",
+                    )
+                    levene = _safe_test(stats.levene, first, second, center="median")
+                    anova = _safe_test(stats.f_oneway, first, second)
+                    kruskal = _safe_test(stats.kruskal, first, second)
+                    condition_status = (
+                        "tested"
+                        if all(np.isfinite(item[1]) for item in (welch, mannwhitney, kruskal))
+                        else "partly_undefined_zero_variance_or_ties"
+                    )
                 independent = independent_effect(first, second)
                 condition_results = {
-                    "condition_welch_t": float(welch.statistic),
-                    "condition_welch_p": float(welch.pvalue),
-                    "condition_mannwhitney_u": float(mannwhitney.statistic),
-                    "condition_mannwhitney_p": float(mannwhitney.pvalue),
-                    "condition_levene_p": float(levene.pvalue),
-                    "condition_anova_p": float(anova.pvalue),
-                    "condition_kruskal_p": float(kruskal.pvalue),
+                    "condition_welch_t": float(welch[0]),
+                    "condition_welch_p": float(welch[1]),
+                    "condition_mannwhitney_u": float(mannwhitney[0]),
+                    "condition_mannwhitney_p": float(mannwhitney[1]),
+                    "condition_levene_p": float(levene[1]),
+                    "condition_anova_p": float(anova[1]),
+                    "condition_kruskal_p": float(kruskal[1]),
                     "condition_hedges_g": independent["hedges_g"],
+                    "condition_test_status": condition_status,
                 }
         for trial_index, value in enumerate(delta):
             mixed_records.append(
@@ -194,6 +239,7 @@ def run_statistical_suite(state: ProjectState) -> dict:
                 "pearson_trial_p": float(pearson_p),
                 "spearman_trial_r": float(spearman_r),
                 "spearman_trial_p": float(spearman_p),
+                "trend_test_status": trend_status,
                 "ci95_low_hz": ci_low,
                 "ci95_high_hz": ci_high,
                 **condition_results,
