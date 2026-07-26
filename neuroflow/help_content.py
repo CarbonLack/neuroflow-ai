@@ -56,10 +56,44 @@ REFERENCES = (
         "name": "Plexon Offline Sorter feature reference",
         "url": "https://plexon.com/products/offline-sorter/",
     },
+    {
+        "name": "GraphPad Prism: ways to change a graph",
+        "url": "https://www.graphpad.com/guides/prism/latest/user-guide/how_to_change_a_graph.htm",
+    },
+    {
+        "name": "GraphPad Prism: frame and axes",
+        "url": "https://www.graphpad.com/guides/prism/latest/user-guide/frame_and_axes.htm",
+    },
+    {
+        "name": "GraphPad Prism: grid lines",
+        "url": "https://www.graphpad.com/guides/prism/latest/user-guide/grid_lines_revised.htm",
+    },
+    {
+        "name": "GraphPad Prism: graph shape and exact size",
+        "url": "https://www.graphpad.com/guides/prism/latest/user-guide/graph_shape_and_size.htm",
+    },
+    {
+        "name": "GraphPad Prism: major and minor ticks",
+        "url": "https://www.graphpad.com/guides/prism/latest/user-guide/major_and_minor_ticks.htm",
+    },
 )
 
 
 CONTROL_HELP = {
+    "home.new_project": {
+        "zh_CN": (
+            "新建空白项目",
+            "先选择项目名称和保存位置，只建立项目清单、参数区、结果区和审计记录。"
+            "不会生成模拟数据，也不会复制原始文件。项目打开后在“数据与项目”页"
+            "明确导入自己的电生理数据。",
+        ),
+        "en_US": (
+            "Create empty project",
+            "Choose a project name and location. NeuroFlow creates only the manifest, "
+            "parameter, result, and audit structure; it does not generate simulated "
+            "data or copy raw files. Import your recording explicitly afterward.",
+        ),
+    },
     "home.demo": {
         "zh_CN": (
             "打开示例数据",
@@ -77,14 +111,29 @@ CONTROL_HELP = {
     "home.import": {
         "zh_CN": (
             "导入自己的数据",
-            "进入格式向导。先选择“通用二进制、记录系统原始文件、IBL/ALF "
-            "或 Kilosort/Phy 结果”，再填写该格式必需的信息；不会修改源文件。",
+            "新建项目并进入自己的数据向导。选择“通用二进制、记录系统原始文件"
+            "或 Kilosort/Phy 结果”，再填写该格式必需的信息；这里不提供模拟数据，"
+            "也不会修改源文件。",
         ),
         "en_US": (
             "Import your own data",
             "Open the format wizard. Choose generic binary, acquisition-system data, "
-            "IBL/ALF, or Kilosort/Phy output, then provide the required metadata. "
-            "Source files remain unchanged.",
+            "or Kilosort/Phy output, then provide the required metadata. Simulation "
+            "is not offered in this route, and source files remain unchanged.",
+        ),
+    },
+    "home.public": {
+        "zh_CN": (
+            "打开已验证公开项目",
+            "打开两套固定版本的公开验证项目：IBL Brain-Wide Map 的指定 eID/PID，"
+            "以及 Buzsáki/DANDI 000552 的指定 asset。双击一行即可打开；未下载时"
+            "软件会先显示来源、大小和下载确认，不会让用户自行猜测文件结构。",
+        ),
+        "en_US": (
+            "Open verified public project",
+            "Open one of two version-locked projects: the specified IBL Brain-Wide "
+            "Map eID/PID or the specified Buzsáki/DANDI 000552 asset. Double-click "
+            "a row to open it; NeuroFlow confirms any required download first.",
         ),
     },
     "home.restore": {
@@ -126,25 +175,31 @@ CONTROL_HELP = {
         "zh_CN": (
             "运行完整流程",
             "按左侧顺序执行所有可运行节点。高成本的 sorting 会使用 sorting 页当前"
-            "选定的工具和参数；缺少原始电压的节点会被明确跳过。",
+            "选定的工具和参数；缺少原始电压的节点会被明确跳过。开始前弹窗列出"
+            "即将运行的节点和 sorter，结束后弹窗汇总完成情况；全过程同时写入右侧审计记录。",
         ),
         "en_US": (
             "Run full workflow",
             "Execute runnable stages in sidebar order. Sorting uses the tool and "
             "parameters currently selected on the sorting page; stages that require "
-            "missing raw voltage are explicitly skipped.",
+            "missing raw voltage are explicitly skipped. A confirmation dialog lists "
+            "the planned stages and sorter; completion is summarized in another dialog "
+            "while the persistent audit log records the full run.",
         ),
     },
     "global.run_step": {
         "zh_CN": (
             "运行当前节点",
             "只执行当前页对应的计算。运行前会校验输入；成功后保存结果并更新状态，"
-            "失败时保留此前已完成的数据。",
+            "失败时保留此前已完成的数据。运行前确认、成功汇总和失败原因都会弹窗提示，"
+            "详细过程仍保留在右侧审计记录中。",
         ),
         "en_US": (
             "Run current stage",
             "Execute only the current page. Inputs are validated first; successful "
-            "results are saved and earlier results remain intact on failure.",
+            "results are saved and earlier results remain intact on failure. Confirmation, "
+            "completion, and failure dialogs provide immediate feedback while details "
+            "remain in the audit log.",
         ),
     },
     "plot.style": {
@@ -162,16 +217,17 @@ CONTROL_HELP = {
         "zh_CN": (
             "Figure Studio 图形工作室",
             "打开对象级编辑器。左侧可选择整图、坐标轴、曲线、散点、柱/填充区域、"
-            "热图、文字和图例；右侧按对象提供尺寸、DPI、标题、单位、范围、颜色、"
-            "透明度、粗细、线型、marker、色图、刻度、边框和图例设置。修改只影响"
-            "当前呈现，不重新计算数据。",
+            "热图、文字和图例；右侧按对象提供精确宽高、DPI、标题、单位、范围、颜色、"
+            "透明度、粗细、线型、marker、色图、主次刻度、四边坐标轴、主次网格、"
+            "参考线和图例设置。修改只影响当前呈现，不重新计算数据。",
         ),
         "en_US": (
             "Figure Studio",
             "Open the object-level editor for the whole figure, axes, lines, scatters, "
-            "patches, images, text, and legends. Controls include size, DPI, labels, "
-            "limits, colors, alpha, widths, styles, markers, colormaps, ticks, spines, "
-            "and legends. Presentation changes do not recompute data.",
+            "patches, images, text, and legends. Controls include exact size, DPI, labels, "
+            "limits, colors, alpha, widths, styles, markers, colormaps, major/minor ticks, "
+            "four independent spines, major/minor grids, reference lines, and legends. "
+            "Presentation changes do not recompute data.",
         ),
     },
     "plot.panel": {

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Public data validation · NeuroFlow</title>
-    <link rel="stylesheet" href="styles.css?v=0.6.0">
+    <link rel="stylesheet" href="styles.css?v=0.6.1">
   </head>
   <body data-language="zh">
     <header class="topbar">
@@ -143,7 +143,7 @@
             <tbody>
               <tr><td>Kruskal 对全相同数值抛异常</td><td>模拟 trial 响应有连续变化</td><td>统计检验增加常量、零方差、ties 和未定义结果保护</td><td>状态为 not_testable，而不是全页崩溃或伪显著</td></tr>
               <tr><td>NWB Units 为 ragged 数组</td><td>模拟数据直接是 Python 字典</td><td>按 spike_times_index 恢复每 Unit 边界并验证 id 数量</td><td>56 Unit / 3,184,221 spikes 可核对</td></tr>
-              <tr><td>公开文件可同时有 reward、position、state、ripple</td><td>旧入口只写“IBL 公开数据”</td><td>公开入口拆分 ALF、BWM behavior、NWB Units+behavior</td><td>用户先选数据结构，再选匹配的文件</td></tr>
+              <tr><td>公开文件可同时有 reward、position、state、ripple</td><td>旧入口只写“IBL 公开数据”</td><td>建立两套固定版本的验证项目，并锁定数据编号、来源与本地缓存</td><td>双击 IBL 或 Buzsáki 项目即可直接打开，不再让用户猜文件结构</td></tr>
               <tr><td>processed data 没有 raw voltage</td><td>模拟项目从 raw 开始</td><td>入口和项目元数据明确 raw_signal_available=false</td><td>raw QC/sorting 不会展示伪造的原始图或偷偷使用模拟结果</td></tr>
             </tbody>
           </table>
@@ -153,10 +153,10 @@
           <h2 data-lang="zh">如何重新运行这项验证</h2>
           <h2 data-lang="en">How to rerun this validation</h2>
           <ol class="step-list">
-            <li>通过官方 ONE API 下载指定 IBL eID/PID 的 ALF trials 与 probe spike-sorting datasets。</li>
-            <li>从 DANDI 000552 的固定版本下载指定 asset；不要用 draft 或未记录版本替换。</li>
-            <li>在首页双击“公开数据验证”，选择 IBL ALF 或 DANDI/Buzsáki NWB 结构。</li>
-            <li>导入后核对 Unit、spike、trial、event、state 和 ripple 数量。</li>
+            <li>在首页点击“打开已验证公开项目”，进入只包含下述两套固定项目的资料库。</li>
+            <li>双击 IBL 行时，软件检查固定 eID/PID 的 ALF trials 与 probe sorting 缓存；未下载时会明确询问是否下载。</li>
+            <li>双击 Buzsáki 行时，软件检查 DANDI 000552 固定版本和固定 asset；不会用 draft 或其他会话替换。</li>
+            <li>项目打开后核对 Unit、spike、trial、event、state 和 ripple 数量；项目路径与数据来源显示在顶部和审计区。</li>
             <li>运行行为、事件分析、统计和机器学习；正式复现时增加置换次数并按论文筛选。</li>
             <li>导出项目、统计表、图、版本和引用；将结果与本页数量及原论文代码逐项对照。</li>
           </ol>

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Figure Studio · NeuroFlow</title>
-    <link rel="stylesheet" href="styles.css?v=0.6.0">
+    <link rel="stylesheet" href="styles.css?v=0.6.1">
   </head>
   <body data-language="zh">
     <header class="topbar">
@@ -47,6 +47,8 @@
           </p>
           <img class="product-shot" src="assets/neuroflow-figure-studio.png"
                alt="NeuroFlow Figure Studio object editor with an embedded live figure preview">
+          <img class="product-shot" src="assets/neuroflow-figure-studio-axes.png"
+               alt="NeuroFlow Figure Studio axis, tick, grid, and reference-line controls">
         </div>
 
         <section id="interaction" data-searchable>
@@ -107,6 +109,11 @@
 
         <section id="axis" data-searchable>
           <h2>坐标轴 / Axis</h2>
+          <div class="callout method">
+            本次增强参考 GraphPad Prism 官方手册中“数据对象与坐标轴分开编辑”的交互原则，
+            包括精确轴长、独立轴线、主次刻度和网格；NeuroFlow 使用自己的 PySide/Matplotlib
+            实现、界面结构和文字，没有复制 Prism 代码、截图或界面。
+          </div>
           <h3>标题、标签、尺度与范围</h3>
           <table class="parameter-table">
             <thead><tr><th>控件</th><th>改变对象</th><th>科学含义与注意事项</th><th>错误信号</th></tr></thead>
@@ -116,23 +123,55 @@
               <tr><td>linear/log/symlog/logit</td><td>坐标变换</td><td>改变视觉距离但不改变原数据；零/负数不能直接上 log</td><td>点消失、范围报错或对差异产生夸大视觉</td></tr>
               <tr><td>最小/最大值</td><td>显示范围</td><td>用于聚焦，不应裁掉不利结果而不说明</td><td>误差线、离群值或基线被截断</td></tr>
               <tr><td>标题/标签字号</td><td>文字物理大小</td><td>最终排版尺寸下仍需可读</td><td>应用中很大，缩到论文尺寸后不可读</td></tr>
+              <tr><td>标题对齐、字重、颜色</td><td>图标题文字对象</td><td>用于建立 panel 层级，不改变数据</td><td>标题颜色被误解为条件编码</td></tr>
+              <tr><td>X/Y 标题独立字号与间距</td><td>axis label 与 labelpad</td><td>解决单位、长标签和版面挤压</td><td>标题与刻度数字重叠</td></tr>
               <tr><td>绘图区背景</td><td>axes face color</td><td>不等于整图背景</td><td>热图/散点与背景对比不足</td></tr>
             </tbody>
           </table>
-          <h3>网格、spine 与 tick</h3>
+          <h3>绘图区位置与 X/Y 轴实际长度</h3>
+          <table class="parameter-table">
+            <thead><tr><th>控件</th><th>单位</th><th>实际改变</th><th>检查</th></tr></thead>
+            <tbody>
+              <tr><td>X 轴实际长度</td><td>英寸</td><td>绘图区在整张 figure 中的物理宽度，不缩放字体和点</td><td>不能超过画布剩余宽度</td></tr>
+              <tr><td>Y 轴实际长度</td><td>英寸</td><td>绘图区物理高度</td><td>多 panel 比较时保持一致</td></tr>
+              <tr><td>左/下位置</td><td>画布百分比</td><td>移动绘图区，为长标题、图例或刻度留空间</td><td>位置加长度不得越出 100%</td></tr>
+              <tr><td>数据纵横比</td><td>auto/equal</td><td>equal 让 X/Y 的一个数据单位显示为同样长度</td><td>空间轨迹适合 equal，普通 PSTH 通常用 auto</td></tr>
+            </tbody>
+          </table>
+          <h3>四条轴线、主次刻度与数字</h3>
           <table class="parameter-table">
             <thead><tr><th>控件</th><th>作用</th><th>建议</th><th>注意</th></tr></thead>
             <tbody>
-              <tr><td>网格显示/颜色/透明度/粗细/线型</td><td>帮助读取数值</td><td>弱于数据线，优先浅灰或低 alpha</td><td>粗重网格会抢夺视觉层级</td></tr>
-              <tr><td>四周边框</td><td>统一显示或隐藏 spine</td><td>统计图可只保留左/下；当前版本为四周统一开关</td><td>隐藏后仍需明确坐标范围</td></tr>
-              <tr><td>刻度字号/颜色/旋转</td><td>tick labels</td><td>长类别可旋转，但应避免相互遮挡</td><td>标签重叠或被窗口裁切</td></tr>
-              <tr><td>刻度线长度/粗细</td><td>tick marks</td><td>与 spine 粗细协调</td><td>过粗产生视觉噪声</td></tr>
+              <tr><td>下 X、左 Y、上、右</td><td>每条 spine 独立显示、颜色、线宽与外移距离</td><td>统计图常保留下/左，矩阵图可显示完整框</td><td>不要用白色假装隐藏，直接关闭可见性</td></tr>
+              <tr><td>X/Y 主刻度间隔</td><td>明确数值标签间距；留空自动</td><td>跨 panel 比较时固定相同间隔</td><td>间隔过密造成标签重叠</td></tr>
+              <tr><td>X/Y 次刻度分区</td><td>在相邻主刻度间建立细分</td><td>只在读数需要时显示</td><td>次刻度不应比主刻度更长或更粗</td></tr>
+              <tr><td>主/次刻度长度与线宽</td><td>分别控制 tick mark</td><td>与轴线线宽建立清晰层级</td><td>过粗会与短误差线混淆</td></tr>
+              <tr><td>in/out/inout</td><td>刻度指向绘图区内、外或跨轴</td><td>同一图组保持一致</td><td>向内刻度可能遮挡靠近边界的数据</td></tr>
+              <tr><td>数字格式</td><td>自动、整数、小数位或科学计数</td><td>按测量精度选择，不制造虚假有效位数</td><td>强制小数位可能暗示不存在的精度</td></tr>
+            </tbody>
+          </table>
+          <h3>X/Y 独立网格与自定义参考线</h3>
+          <table class="parameter-table">
+            <thead><tr><th>控件</th><th>作用</th><th>建议</th><th>注意</th></tr></thead>
+            <tbody>
+              <tr><td>X/Y 主网格</td><td>分别沿 X 或 Y 主刻度绘线</td><td>只显示帮助读数的方向</td><td>不必默认四向全开</td></tr>
+              <tr><td>X/Y 次网格</td><td>按 minor locator 绘制更细网格</td><td>线宽、alpha 均低于主网格</td><td>密集网格会淹没 raster/散点</td></tr>
+              <tr><td>网格图层</td><td>数据下方或上方</td><td>多数科研图放在数据下方</td><td>热图上方网格可能有意用于定位像素</td></tr>
+              <tr><td>垂直/水平参考线</td><td>在指定 X/Y 值增加可追踪 Line 对象</td><td>用于事件 0 点、阈值或机会水平，并在图注解释</td><td>参考线不是统计显著性证据</td></tr>
             </tbody>
           </table>
           <h3>图例</h3>
           <p>
-            坐标轴节点可以控制图例显示、位置、列数、字号与边框。只有设置了有效 label 的元素才进入图例。
+            坐标轴节点可以控制图例显示、标题、位置、列数、字号、背景、边框颜色、边框线宽与透明度。
+            只有设置了有效 label 的元素才进入图例。
             改 Line/Scatter 的“图例名称”后，再到坐标轴应用图例设置以更新显示。
+          </p>
+          <p>
+            相关交互依据可查阅 GraphPad 官方的
+            <a href="https://www.graphpad.com/guides/prism/latest/user-guide/graph_shape_and_size.htm">axis length and graph size</a>、
+            <a href="https://www.graphpad.com/guides/prism/latest/user-guide/major_and_minor_ticks.htm">major/minor ticks</a>、
+            <a href="https://www.graphpad.com/guides/prism/latest/user-guide/grid_lines_revised.htm">grid lines</a>
+            和 <a href="https://www.graphpad.com/guides/prism/latest/user-guide/frame_and_axes.htm">frame and axes</a>。
           </p>
         </section>
 

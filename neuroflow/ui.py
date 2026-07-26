@@ -83,6 +83,7 @@ from .ephys_toolkit import (
     run_spike_field_suite,
     run_spike_train_suite,
 )
+from .figure_studio import FigureStudioDialog
 from .figures import (
     behavior_figure,
     decoding_figure,
@@ -98,12 +99,18 @@ from .figures import (
     synchronization_figure,
     unit_metrics_figure,
 )
-from .figure_studio import FigureStudioDialog
 from .help_content import REFERENCES, control_help, page_controls
 from .i18n import LANGUAGES, step_text, tr
 from .ibl import download_bwm_trials_aggregate
 from .models import ProjectState, WorkflowStep
 from .project import MANIFEST_NAME, load_project, save_project
+from .public_examples import (
+    PUBLIC_EXAMPLES,
+    download_public_example,
+    open_or_create_public_example,
+    public_example_status,
+    public_validation_root,
+)
 from .simulation import (
     DEMO_PROFILES,
     demo_profile_catalog,
@@ -199,12 +206,12 @@ ENTRY_ROUTE_TEXT = {
             "保留源文件只读，建立统一缓存后进入质控、预处理和 sorting。",
         ),
         "ibl_alf": (
-            "公开数据验证",
-            "想复现 IBL 或 Buzsáki 公开会话，或验证下游分析",
-            "选择 IBL ALF/BWM，或带 Units、行为/事件的 DANDI/NWB 文件",
+            "已验证公开项目（2 套）",
+            "直接打开 NeuroFlow 已实际跑通的固定公开会话",
+            "IBL BWM EID 4ecb… 与 Buzsáki DANDI 000552；双击查看下载状态并打开",
             "Unit/行为检查",
             "通常不可以",
-            "公开文件多为已排序数据；可运行 Unit QC、同步检查、PSTH、统计与解码。",
+            "锁定来源编号、固定版本和本地缓存；可运行 Unit QC、事件分析、统计与解码。",
         ),
         "kilosort": (
             "已有 sorting 结果",
@@ -241,12 +248,12 @@ ENTRY_ROUTE_TEXT = {
             "Sources remain read-only and enter QC, preprocessing, and sorting through a normalized cache.",
         ),
         "ibl_alf": (
-            "Public validation data",
-            "Reproduce an IBL or Buzsáki session, or validate downstream analysis",
-            "Choose IBL ALF/BWM or DANDI/NWB containing Units and behavior/events",
+            "Verified public projects (2)",
+            "Open fixed public sessions already exercised by NeuroFlow",
+            "IBL BWM EID 4ecb… and Buzsáki DANDI 000552; double-click to inspect and open",
             "Unit/behavior checks",
             "Usually no",
-            "Most public files are already sorted; continue with QC, PSTH, statistics, and decoding.",
+            "Locks identifiers, versions, and local cache; continue with QC, event analysis, statistics, and decoding.",
         ),
         "kilosort": (
             "Existing sorting results",
@@ -653,7 +660,7 @@ class DemoLibraryDialog(QDialog):
         self.accept()
 
 
-class ImportDialog(QDialog):
+class NewProjectDialog(QDialog):
     def __init__(
         self,
         workspace: Path,
@@ -663,6 +670,240 @@ class ImportDialog(QDialog):
         super().__init__(parent)
         self.workspace = workspace
         self.language = language
+        self.state: ProjectState | None = None
+        english = language == "en_US"
+        self.setWindowTitle("Create project" if english else "新建 NeuroFlow 项目")
+        self.resize(700, 330)
+        layout = QVBoxLayout(self)
+        title = QLabel(
+            "Create an empty project first" if english else "先创建项目，再导入数据"
+        )
+        title.setStyleSheet("font-size: 21px; font-weight: 700;")
+        layout.addWidget(title)
+        summary = QLabel(
+            (
+                "A project stores source links, parameters, intermediate results, "
+                "figures, and provenance. Creating it does not generate simulated data."
+            )
+            if english
+            else (
+                "项目用于保存数据来源索引、参数、中间结果、图和审计记录。"
+                "新建项目不会自动生成模拟数据。"
+            )
+        )
+        summary.setWordWrap(True)
+        summary.setObjectName("Muted")
+        layout.addWidget(summary)
+        form = QFormLayout()
+        self.name_edit = QLineEdit(
+            "My electrophysiology project" if english else "我的电生理项目"
+        )
+        folder_holder = QWidget()
+        folder_row = QHBoxLayout(folder_holder)
+        folder_row.setContentsMargins(0, 0, 0, 0)
+        self.folder_edit = QLineEdit(str(workspace / "projects"))
+        browse = QPushButton("Browse…" if english else "选择位置…")
+        browse.clicked.connect(self._choose_folder)
+        folder_row.addWidget(self.folder_edit, 1)
+        folder_row.addWidget(browse)
+        form.addRow("Project name" if english else "项目名称", self.name_edit)
+        form.addRow("Save under" if english else "保存到", folder_holder)
+        layout.addLayout(form)
+        next_note = QLabel(
+            (
+                "After opening the empty project, use “Import my data” on the Data "
+                "and project page. You can choose generic binary, an acquisition-system "
+                "file, or an existing sorting result."
+            )
+            if english
+            else (
+                "创建后会进入“数据与项目”页面。点击“导入我的数据”，再选择通用二进制、"
+                "记录系统文件或已有 sorting 结果。"
+            )
+        )
+        next_note.setObjectName("InsetPanel")
+        next_note.setWordWrap(True)
+        next_note.setContentsMargins(12, 9, 12, 9)
+        layout.addWidget(next_note)
+        buttons = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        buttons.button(QDialogButtonBox.Ok).setText(
+            "Create project" if english else "创建项目"
+        )
+        buttons.accepted.connect(self._create)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _choose_folder(self) -> None:
+        selected = QFileDialog.getExistingDirectory(
+            self,
+            "Choose project parent folder"
+            if self.language == "en_US"
+            else "选择项目上级文件夹",
+            self.folder_edit.text(),
+        )
+        if selected:
+            self.folder_edit.setText(selected)
+
+    def _create(self) -> None:
+        name = self.name_edit.text().strip()
+        if not name:
+            QMessageBox.warning(
+                self,
+                self.windowTitle(),
+                "Enter a project name"
+                if self.language == "en_US"
+                else "请输入项目名称",
+            )
+            return
+        parent = Path(self.folder_edit.text()).expanduser()
+        parent.mkdir(parents=True, exist_ok=True)
+        slug = re.sub(r"[^A-Za-z0-9_\-\u4e00-\u9fff]+", "_", name).strip("_")
+        stamp = datetime.now(timezone.utc).astimezone()
+        root = parent / f"{slug or 'NeuroFlow_project'}_{stamp:%Y%m%d_%H%M%S}"
+        self.state = ProjectState(
+            root=root,
+            name=name,
+            source_type="unconfigured",
+            metadata={
+                "language": self.language,
+                "data_imported": False,
+                "project_created_without_data": True,
+            },
+            workflow_status={step.key: "pending" for step in STEPS},
+        )
+        self.state.log("Empty project created; waiting for data import")
+        save_project(self.state)
+        self.accept()
+
+
+class PublicExampleDialog(QDialog):
+    def __init__(
+        self,
+        workspace: Path,
+        parent: QWidget | None = None,
+        language: str = "zh_CN",
+    ):
+        super().__init__(parent)
+        self.workspace = workspace
+        self.language = language
+        self.example_key = PUBLIC_EXAMPLES[0].key
+        english = language == "en_US"
+        self.setWindowTitle(
+            "Verified public projects" if english else "已验证公开数据项目"
+        )
+        self.resize(1060, 500)
+        layout = QVBoxLayout(self)
+        title = QLabel(
+            "Two fixed, versioned validation projects"
+            if english
+            else "两套固定版本、已经过 NeuroFlow 验证的公开项目"
+        )
+        title.setStyleSheet("font-size: 21px; font-weight: 700;")
+        layout.addWidget(title)
+        summary = QLabel(
+            (
+                "These entries are not generic public-data importers. Each row locks "
+                "the dataset identifier, local cache path, and expected content. "
+                "Double-click a downloaded row to open it directly."
+            )
+            if english
+            else (
+                "这里不是泛泛的“公开数据”导入器。每一行都锁定数据编号、本地缓存路径"
+                "和预期内容；已下载的数据可双击直接建立或打开验证项目。"
+            )
+        )
+        summary.setWordWrap(True)
+        summary.setObjectName("Muted")
+        layout.addWidget(summary)
+        self.table = QTableWidget(len(PUBLIC_EXAMPLES), 6)
+        self.table.setHorizontalHeaderLabels(
+            ["Project", "Official source", "Fixed identifier", "Contents", "Downloaded", "Project cache"]
+            if english
+            else ["验证项目", "官方来源", "固定编号", "实际内容", "数据已下载", "项目缓存"]
+        )
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.setSelectionMode(QTableWidget.SingleSelection)
+        self.table.verticalHeader().setVisible(False)
+        for row, example in enumerate(PUBLIC_EXAMPLES):
+            status = public_example_status(workspace, example.key)
+            values = [
+                example.name_en if english else example.name_zh,
+                example.source_en if english else example.source_zh,
+                example.identifier,
+                example.contents_en if english else example.contents_zh,
+                (
+                    "Yes"
+                    if status["downloaded"] and english
+                    else "是"
+                    if status["downloaded"]
+                    else "No"
+                    if english
+                    else "否"
+                ),
+                (
+                    "Ready"
+                    if status["project_ready"] and english
+                    else "已建立"
+                    if status["project_ready"]
+                    else "Create on first open"
+                    if english
+                    else "首次打开时建立"
+                ),
+            ]
+            for column, value in enumerate(values):
+                cell = QTableWidgetItem(str(value))
+                cell.setData(Qt.UserRole, example.key)
+                self.table.setItem(row, column, cell)
+        header = self.table.horizontalHeader()
+        for column in range(6):
+            header.setSectionResizeMode(
+                column,
+                QHeaderView.Stretch
+                if column in {0, 2, 3}
+                else QHeaderView.ResizeToContents,
+            )
+        self.table.selectRow(0)
+        self.table.cellDoubleClicked.connect(lambda _row, _column: self._accept())
+        layout.addWidget(self.table, 1)
+        local_path = QLabel(
+            f"Local library: {public_validation_root(workspace)}"
+            if english
+            else f"本地公开数据资料库：{public_validation_root(workspace)}"
+        )
+        local_path.setWordWrap(True)
+        local_path.setObjectName("InsetPanel")
+        local_path.setContentsMargins(12, 9, 12, 9)
+        layout.addWidget(local_path)
+        buttons = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        buttons.button(QDialogButtonBox.Ok).setText(
+            "Open selected project" if english else "打开所选验证项目"
+        )
+        buttons.accepted.connect(self._accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _accept(self) -> None:
+        row = self.table.currentRow()
+        if row >= 0:
+            self.example_key = str(self.table.item(row, 0).data(Qt.UserRole))
+        self.accept()
+
+
+class ImportDialog(QDialog):
+    def __init__(
+        self,
+        workspace: Path,
+        parent: QWidget | None = None,
+        language: str = "zh_CN",
+        project_root: Path | None = None,
+        project_name: str | None = None,
+        own_data_only: bool = False,
+    ):
+        super().__init__(parent)
+        self.workspace = workspace
+        self.language = language
+        self.target_project_root = project_root
         self.state: ProjectState | None = None
         english = language == "en_US"
         self.setWindowTitle(
@@ -690,12 +931,17 @@ class ImportDialog(QDialog):
             if english
             else "选择与你手头文件相匹配的读取适配器；不会修改源文件。"
         )
-        self.import_formats = list(SUPPORTED_FORMATS)
+        self.import_formats = [
+            item
+            for item in SUPPORTED_FORMATS
+            if not own_data_only or item.key in {"binary", "device", "kilosort"}
+        ]
         for item in self.import_formats:
             name = FORMAT_TEXT_EN[item.key][0] if english else item.name
             self.source_combo.addItem(name, item.key)
         source_form.addRow("Data source" if english else "数据来源", self.source_combo)
-        self.project_name = QLineEdit("NeuroFlow project")
+        self.project_name = QLineEdit(project_name or "NeuroFlow project")
+        self.project_name.setReadOnly(project_root is not None)
         self.project_name.setToolTip(
             "Names the NeuroFlow project folder; source files are not renamed."
             if english
@@ -744,10 +990,17 @@ class ImportDialog(QDialog):
         layout.addWidget(buttons)
 
     def _source_changed(self, index: int) -> None:
-        self.pages.setCurrentIndex(max(index, 0))
         if index < 0 or index >= len(self.import_formats):
             return
         item = self.import_formats[index]
+        page_index = {
+            "simulated": 0,
+            "binary": 1,
+            "device": 2,
+            "ibl_alf": 3,
+            "kilosort": 4,
+        }[item.key]
+        self.pages.setCurrentIndex(page_index)
         english = self.language == "en_US"
         raw_text = "includes raw voltage" if item.raw_signal else "processed data only"
         route_text = (
@@ -1136,6 +1389,8 @@ class ImportDialog(QDialog):
         return page
 
     def _project_root(self) -> Path:
+        if self.target_project_root is not None:
+            return self.target_project_root
         slug = re.sub(r"[^A-Za-z0-9_-]+", "_", self.project_name.text()).strip("_")
         slug = slug or "project"
         stamp = datetime.now(timezone.utc).astimezone()
@@ -1712,6 +1967,8 @@ class NeuroFlowWindow(QMainWindow):
         self.preview: dict | None = None
         self.matches: list[dict] = []
         self.worker: PipelineWorker | None = None
+        self.active_run_keys: list[str] = []
+        self.active_run_started: datetime | None = None
         self.current_step = "import"
         self.step_buttons: dict[str, QPushButton] = {}
         self.figure_cursor = None
@@ -1775,30 +2032,49 @@ class NeuroFlowWindow(QMainWindow):
         self.hero_subtitle.setStyleSheet("font-size: 15px;")
         layout.addWidget(self.hero_subtitle)
 
-        actions = QHBoxLayout()
-        actions.setSpacing(12)
-        self.sample_button = QPushButton("打开示例数据")
-        self.sample_button.setObjectName("Primary")
-        self.sample_button.setMinimumHeight(48)
-        self.sample_button.setMinimumWidth(210)
-        self.sample_button.setProperty("neuroflow_help_key", "home.demo")
-        self.sample_button.clicked.connect(self._open_sample)
+        primary_actions = QHBoxLayout()
+        primary_actions.setSpacing(12)
+        self.new_project_button = QPushButton("新建空白项目")
+        self.new_project_button.setObjectName("Primary")
+        self.new_project_button.setMinimumHeight(48)
+        self.new_project_button.setMinimumWidth(210)
+        self.new_project_button.setProperty(
+            "neuroflow_help_key", "home.new_project"
+        )
+        self.new_project_button.clicked.connect(self._create_blank_project)
         self.import_button = QPushButton("导入自己的数据")
         self.import_button.setMinimumHeight(48)
         self.import_button.setMinimumWidth(210)
         self.import_button.setProperty("neuroflow_help_key", "home.import")
-        self.import_button.clicked.connect(self._show_import)
+        self.import_button.clicked.connect(
+            lambda: self._show_import("binary", own_data_only=True)
+        )
         self.project_button = QPushButton("恢复 NeuroFlow 项目")
         self.project_button.setProperty("neuroflow_help_key", "home.restore")
         self.project_button.clicked.connect(self._open_project)
-        actions.addWidget(self.sample_button)
-        actions.addWidget(self.import_button)
-        actions.addWidget(self.project_button)
+        primary_actions.addWidget(self.new_project_button)
+        primary_actions.addWidget(self.import_button)
+        primary_actions.addWidget(self.project_button)
+        primary_actions.addStretch()
+        layout.addLayout(primary_actions)
+
+        secondary_actions = QHBoxLayout()
+        secondary_actions.setSpacing(12)
+        self.public_button = QPushButton("打开已验证公开项目")
+        self.public_button.setMinimumHeight(42)
+        self.public_button.setProperty("neuroflow_help_key", "home.public")
+        self.public_button.clicked.connect(self._open_public_examples)
+        self.sample_button = QPushButton("生成教学模拟项目")
+        self.sample_button.setMinimumHeight(42)
+        self.sample_button.setProperty("neuroflow_help_key", "home.demo")
+        self.sample_button.clicked.connect(self._open_sample)
         self.demo_folder_button = QPushButton("查看示例数据文件夹")
         self.demo_folder_button.clicked.connect(self._open_demo_folder)
-        actions.addWidget(self.demo_folder_button)
-        actions.addStretch()
-        layout.addLayout(actions)
+        secondary_actions.addWidget(self.public_button)
+        secondary_actions.addWidget(self.sample_button)
+        secondary_actions.addWidget(self.demo_folder_button)
+        secondary_actions.addStretch()
+        layout.addLayout(secondary_actions)
 
         capability = QFrame()
         capability.setObjectName("Card")
@@ -1839,13 +2115,14 @@ class NeuroFlowWindow(QMainWindow):
         header.setSectionResizeMode(5, QHeaderView.Stretch)
         self._resize_input_route_table()
         self.input_table.cellDoubleClicked.connect(
-            lambda row, _column: self._show_import(
+            lambda row, _column: self._activate_entry_route(
                 str(self.input_table.item(row, 0).data(Qt.UserRole))
             )
         )
         cap_layout.addWidget(self.input_table)
         self.entry_hint = QLabel(
-            "操作：双击任意一行会打开相应的导入向导；公开数据和已有 sorting 结果不会伪装成原始电压。"
+            "操作：双击公开数据行会打开两套固定验证项目；双击模拟行会打开模拟资料库；"
+            "其他行进入对应的数据导入器。"
         )
         self.entry_hint.setWordWrap(True)
         self.entry_hint.setObjectName("Muted")
@@ -1959,6 +2236,7 @@ class NeuroFlowWindow(QMainWindow):
         self.run_button.setObjectName("Primary")
         self.run_button.setProperty("neuroflow_help_key", "global.run_all")
         self.run_button.clicked.connect(self._run_full_pipeline)
+        self.run_button.setEnabled(False)
         layout.addWidget(self.workspace_language_combo)
         layout.addWidget(self.sorter_manager_button)
         layout.addWidget(self.save_button)
@@ -2031,8 +2309,48 @@ class NeuroFlowWindow(QMainWindow):
         self.run_step_button = QPushButton("运行此节点")
         self.run_step_button.setProperty("neuroflow_help_key", "global.run_step")
         self.run_step_button.clicked.connect(self._run_current_step)
+        self.run_step_button.setEnabled(False)
         title_row.addWidget(self.run_step_button)
         layout.addLayout(title_row)
+
+        self.project_data_panel = QFrame()
+        self.project_data_panel.setObjectName("SortingWorkbench")
+        project_data_layout = QVBoxLayout(self.project_data_panel)
+        project_data_layout.setContentsMargins(14, 12, 14, 12)
+        project_data_heading = QHBoxLayout()
+        self.project_data_title = QLabel("项目数据")
+        self.project_data_title.setObjectName("PanelTitle")
+        project_data_heading.addWidget(self.project_data_title)
+        project_data_heading.addStretch()
+        project_data_layout.addLayout(project_data_heading)
+        self.project_data_summary = QLabel()
+        self.project_data_summary.setWordWrap(True)
+        self.project_data_summary.setObjectName("InsetPanel")
+        self.project_data_summary.setContentsMargins(12, 9, 12, 9)
+        project_data_layout.addWidget(self.project_data_summary)
+        project_data_actions = QHBoxLayout()
+        self.project_import_button = QPushButton("导入我的电生理数据")
+        self.project_import_button.setObjectName("Primary")
+        self.project_import_button.setProperty(
+            "neuroflow_help_key", "home.import"
+        )
+        self.project_import_button.clicked.connect(self._import_into_current_project)
+        self.project_public_button = QPushButton("打开已验证公开项目")
+        self.project_public_button.setProperty(
+            "neuroflow_help_key", "home.public"
+        )
+        self.project_public_button.clicked.connect(self._open_public_examples)
+        self.project_simulation_button = QPushButton("生成教学模拟项目")
+        self.project_simulation_button.clicked.connect(self._open_sample)
+        self.project_source_folder_button = QPushButton("打开项目文件夹")
+        self.project_source_folder_button.clicked.connect(self._open_current_project_folder)
+        project_data_actions.addWidget(self.project_import_button)
+        project_data_actions.addWidget(self.project_public_button)
+        project_data_actions.addWidget(self.project_simulation_button)
+        project_data_actions.addWidget(self.project_source_folder_button)
+        project_data_actions.addStretch()
+        project_data_layout.addLayout(project_data_actions)
+        layout.addWidget(self.project_data_panel)
 
         self.sorting_workbench = SortingWorkbench(self.language)
         self.sorting_workbench.selection_changed.connect(self._on_sorter_selected)
@@ -2224,8 +2542,10 @@ class NeuroFlowWindow(QMainWindow):
         icon = self.style().standardIcon
         standard = QStyle.StandardPixmap
         for button, icon_name in (
+            (self.new_project_button, standard.SP_FileIcon),
             (self.sample_button, standard.SP_MediaPlay),
             (self.import_button, standard.SP_DialogOpenButton),
+            (self.public_button, standard.SP_DriveNetIcon),
             (self.project_button, standard.SP_DialogOpenButton),
             (self.demo_folder_button, standard.SP_DirOpenIcon),
             (self.home_button, standard.SP_DirHomeIcon),
@@ -2236,6 +2556,10 @@ class NeuroFlowWindow(QMainWindow):
             (self.run_button, standard.SP_MediaPlay),
             (self.run_step_button, standard.SP_MediaPlay),
             (self.figure_settings_button, standard.SP_FileDialogDetailedView),
+            (self.project_import_button, standard.SP_DialogOpenButton),
+            (self.project_public_button, standard.SP_DriveNetIcon),
+            (self.project_simulation_button, standard.SP_MediaPlay),
+            (self.project_source_folder_button, standard.SP_DirOpenIcon),
             (self.panel_focus_button, standard.SP_TitleBarMaxButton),
             (self.panel_edit_button, standard.SP_FileDialogDetailedView),
             (self.panel_save_button, standard.SP_DialogSaveButton),
@@ -2318,8 +2642,22 @@ class NeuroFlowWindow(QMainWindow):
         self.home_tutorial_button.setText(tr("tutorial", language))
         self.hero_label.setText(tr("hero", language))
         self.hero_subtitle.setText(tr("hero_subtitle", language))
-        self.import_button.setText(tr("import_data", language))
-        self.sample_button.setText(tr("sample", language))
+        self.new_project_button.setText(
+            "Create empty project" if language == "en_US" else "新建空白项目"
+        )
+        self.import_button.setText(
+            "Import my data" if language == "en_US" else "导入自己的数据"
+        )
+        self.public_button.setText(
+            "Open verified public project"
+            if language == "en_US"
+            else "打开已验证公开项目"
+        )
+        self.sample_button.setText(
+            "Generate teaching simulation"
+            if language == "en_US"
+            else "生成教学模拟项目"
+        )
         self.project_button.setText(tr("restore", language))
         self.demo_folder_button.setText(
             "Open demo data folder" if language == "en_US" else "查看示例数据文件夹"
@@ -2357,13 +2695,14 @@ class NeuroFlowWindow(QMainWindow):
         self._resize_input_route_table()
         self.entry_hint.setText(
             (
-                "操作：双击任意一行会打开相应的导入向导；公开数据和已有 sorting 结果"
-                "不会伪装成原始电压。"
+                "操作：双击公开数据行会打开两套固定验证项目；双击模拟行会打开"
+                "模拟资料库；其他行进入对应的数据导入器。"
             )
             if language == "zh_CN"
             else (
-                "Double-click a row to open that import route. Public processed data "
-                "and existing sorting results are never presented as raw voltage."
+                "Double-click Public validation to open the two fixed verified projects; "
+                "double-click Simulation for the teaching library; other rows open "
+                "their matching data importer."
             )
         )
         self.flow_text.setText(
@@ -2392,6 +2731,27 @@ class NeuroFlowWindow(QMainWindow):
                 tutorial_value(chapter, "why", language)
             )
         self.run_step_button.setText(tr("run_step", language))
+        self.project_data_title.setText(
+            "Project data" if language == "en_US" else "项目数据"
+        )
+        self.project_import_button.setText(
+            "Import my electrophysiology data"
+            if language == "en_US"
+            else "导入我的电生理数据"
+        )
+        self.project_public_button.setText(
+            "Open verified public project"
+            if language == "en_US"
+            else "打开已验证公开项目"
+        )
+        self.project_simulation_button.setText(
+            "Generate teaching simulation"
+            if language == "en_US"
+            else "生成教学模拟项目"
+        )
+        self.project_source_folder_button.setText(
+            "Open project folder" if language == "en_US" else "打开项目文件夹"
+        )
         self.plot_help_label.setText(tr("plot_help", language))
         self.figure_settings_button.setText(tr("plot_settings", language))
         self._update_panel_control_text()
@@ -2444,6 +2804,7 @@ class NeuroFlowWindow(QMainWindow):
             )
         )
         self._update_control_tooltips()
+        self._update_project_data_panel()
         self._refresh_environment()
         if not self.state:
             self.project_label.setText(tr("no_project", language))
@@ -2698,14 +3059,179 @@ class NeuroFlowWindow(QMainWindow):
                     color_index += 1
         self.canvas.draw_idle()
 
-    def _show_import(self, source_key: str | None = None) -> None:
-        dialog = ImportDialog(self.workspace, self, self.language)
+    def _activate_entry_route(self, source_key: str) -> None:
+        if source_key == "simulated":
+            self._open_sample()
+        elif source_key == "ibl_alf":
+            self._open_public_examples()
+        else:
+            self._show_import(
+                source_key,
+                own_data_only=source_key in {"binary", "device", "kilosort"},
+            )
+
+    def _create_blank_project(self) -> None:
+        dialog = NewProjectDialog(self.workspace, self, self.language)
+        if dialog.exec() == QDialog.Accepted and dialog.state:
+            self._load_state(dialog.state)
+
+    def _show_import(
+        self,
+        source_key: str | None = None,
+        *,
+        own_data_only: bool = False,
+        project_root: Path | None = None,
+        project_name: str | None = None,
+    ) -> None:
+        dialog = ImportDialog(
+            self.workspace,
+            self,
+            self.language,
+            project_root=project_root,
+            project_name=project_name,
+            own_data_only=own_data_only,
+        )
         if source_key:
             index = dialog.source_combo.findData(source_key)
             if index >= 0:
                 dialog.source_combo.setCurrentIndex(index)
         if dialog.exec() == QDialog.Accepted and dialog.state:
             self._load_state(dialog.state)
+
+    def _import_into_current_project(self) -> None:
+        if not self.state:
+            self._create_blank_project()
+            return
+        has_data = self.state.source_type not in {"unknown", "unconfigured"}
+        if has_data:
+            answer = QMessageBox.question(
+                self,
+                "Replace project data"
+                if self.language == "en_US"
+                else "替换项目数据",
+                (
+                    "This project already has a data source. Importing another source "
+                    "will replace the project manifest while keeping the original files "
+                    "read-only. Continue?"
+                    if self.language == "en_US"
+                    else (
+                        "当前项目已经关联数据。继续导入会替换项目清单中的数据来源，"
+                        "原始文件仍保持只读。是否继续？"
+                    )
+                ),
+            )
+            if answer != QMessageBox.Yes:
+                return
+        self._show_import(
+            "binary",
+            own_data_only=True,
+            project_root=self.state.root,
+            project_name=self.state.name,
+        )
+
+    def _open_public_examples(self) -> None:
+        dialog = PublicExampleDialog(self.workspace, self, self.language)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        key = dialog.example_key
+        status = public_example_status(self.workspace, key)
+        if not status["downloaded"]:
+            answer = QMessageBox.question(
+                self,
+                "Download public example"
+                if self.language == "en_US"
+                else "下载公开验证数据",
+                (
+                    "The fixed source is not in the local NeuroFlow library. Download "
+                    "the official version now and open it after validation?"
+                    if self.language == "en_US"
+                    else (
+                        "本机 NeuroFlow 资料库中还没有这套固定数据。是否立即从官方来源"
+                        "下载，完成文件检查后打开？"
+                    )
+                ),
+            )
+            if answer != QMessageBox.Yes:
+                return
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            if not status["downloaded"]:
+                download_public_example(
+                    self.workspace,
+                    key,
+                    progress=lambda text: self.status_label.setText(text),
+                )
+            self.status_label.setText(
+                "Preparing verified project…"
+                if self.language == "en_US"
+                else "正在建立已验证公开项目…"
+            )
+            QApplication.processEvents()
+            state = open_or_create_public_example(self.workspace, key)
+            state.metadata["language"] = self.language
+            save_project(state)
+            self._load_state(state)
+        except Exception as exc:  # noqa: BLE001 - download/import errors are user-facing
+            QMessageBox.warning(
+                self,
+                "Public project unavailable"
+                if self.language == "en_US"
+                else "公开验证项目不可用",
+                str(exc),
+            )
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    def _open_current_project_folder(self) -> None:
+        if not self.state:
+            return
+        self.state.root.mkdir(parents=True, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.state.root)))
+
+    def _update_project_data_panel(self) -> None:
+        if not hasattr(self, "project_data_summary"):
+            return
+        if not self.state:
+            self.project_data_summary.setText(
+                "No project is open."
+                if self.language == "en_US"
+                else "尚未打开项目。"
+            )
+            self.project_import_button.setEnabled(False)
+            self.project_source_folder_button.setEnabled(False)
+            return
+        self.project_import_button.setEnabled(True)
+        self.project_source_folder_button.setEnabled(True)
+        configured = self.state.source_type not in {"unknown", "unconfigured"}
+        source = str(self.state.source_path or self.state.recording_path or "—")
+        if self.language == "en_US":
+            self.project_data_summary.setText(
+                f"<b>{self.state.name}</b><br>No data have been imported yet. "
+                "Choose <b>Import my electrophysiology data</b> to select generic "
+                "binary, acquisition-system files, or an existing sorting result."
+                if not configured
+                else (
+                    f"<b>{self.state.name}</b><br>Source type: "
+                    f"{self.state.source_type}<br>Read-only source: {source}<br>"
+                    f"Channels: {self.state.channel_count or '—'} · "
+                    f"Duration: {self.state.duration_seconds:.2f} s · "
+                    f"Units: {len(self.state.sorted_spikes)}"
+                )
+            )
+        else:
+            self.project_data_summary.setText(
+                f"<b>{self.state.name}</b><br>当前是空白项目，尚未导入任何数据。"
+                "点击<b>导入我的电生理数据</b>，选择通用二进制、记录系统文件或"
+                "已有 sorting 结果。"
+                if not configured
+                else (
+                    f"<b>{self.state.name}</b><br>数据类型："
+                    f"{self.state.source_type}<br>只读来源：{source}<br>"
+                    f"通道：{self.state.channel_count or '—'} · "
+                    f"时长：{self.state.duration_seconds:.2f} 秒 · "
+                    f"Unit：{len(self.state.sorted_spikes)}"
+                )
+            )
 
     def _import_behavior_sync(self) -> None:
         if not self.state:
@@ -2868,10 +3394,21 @@ class NeuroFlowWindow(QMainWindow):
         self.pages.setCurrentWidget(self.workspace_page)
         self._apply_language()
         self._select_step("import")
+        configured = state.source_type not in {"unknown", "unconfigured"}
+        self.run_button.setEnabled(configured)
+        self.run_step_button.setEnabled(configured)
         self.status_label.setText(
-            "Project opened; run one step or the full workflow"
-            if self.language == "en_US"
-            else "项目已打开；可逐节点运行，也可执行完整流程"
+            (
+                "Empty project opened; import your data on this page"
+                if self.language == "en_US"
+                else "空白项目已建立；请在本页点击“导入我的电生理数据”"
+            )
+            if not configured
+            else (
+                "Project opened; run one step or the full workflow"
+                if self.language == "en_US"
+                else "项目已打开；可逐节点运行，也可执行完整流程"
+            )
         )
         self._refresh_warnings()
 
@@ -3053,6 +3590,8 @@ class NeuroFlowWindow(QMainWindow):
                 self.option_combo.setCurrentIndex(previous_index)
         self.sorting_workbench.setVisible(key == "sorting")
         self.sync_workbench.setVisible(key == "sync")
+        self.project_data_panel.setVisible(key == "import")
+        self._update_project_data_panel()
         self._refresh_sync_inventory()
         for metric in (
             self.metric_source,
@@ -3493,6 +4032,23 @@ class NeuroFlowWindow(QMainWindow):
         if not self.state:
             QMessageBox.information(self, "没有项目", "请先从首页导入或生成数据。")
             return
+        if self.state.source_type in {"unknown", "unconfigured"}:
+            QMessageBox.information(
+                self,
+                "Import data first"
+                if self.language == "en_US"
+                else "请先导入数据",
+                (
+                    "This is an empty project. Open the Data and project page and "
+                    "choose Import my electrophysiology data."
+                    if self.language == "en_US"
+                    else (
+                        "当前是空白项目。请在“数据与项目”页面点击"
+                        "“导入我的电生理数据”。"
+                    )
+                ),
+            )
+            return
         if self.worker and self.worker.isRunning():
             return
         sorter_name = self.sorting_workbench.selected_sorter()
@@ -3505,6 +4061,44 @@ class NeuroFlowWindow(QMainWindow):
             if self.current_step == "analysis"
             else ""
         )
+        step_names = [
+            step_text(key, self.language)[0]
+            for key in keys
+        ]
+        details = "\n".join(f"• {name}" for name in step_names)
+        expensive_note = ""
+        if "sorting" in keys:
+            expensive_note += (
+                f"\n\nSorter: {sorter_name}"
+                if self.language == "en_US"
+                else f"\n\nSorter：{sorter_name}"
+            )
+        if "decoding" in keys:
+            expensive_note += (
+                f"\nModel: {model_name}"
+                if self.language == "en_US"
+                else f"\n模型：{model_name}"
+            )
+        answer = QMessageBox.question(
+            self,
+            "Confirm analysis run"
+            if self.language == "en_US"
+            else "确认运行分析",
+            (
+                f"Project: {self.state.name}\nThe following steps will run:\n"
+                f"{details}{expensive_note}\n\nExisting results remain in the audit "
+                "record; new results will be saved to this project. Continue?"
+                if self.language == "en_US"
+                else (
+                    f"项目：{self.state.name}\n即将运行：\n{details}{expensive_note}\n\n"
+                    "已有结果会保留在审计记录中，新结果将保存到当前项目。是否继续？"
+                )
+            ),
+        )
+        if answer != QMessageBox.Yes:
+            return
+        self.active_run_keys = list(keys)
+        self.active_run_started = datetime.now(timezone.utc).astimezone()
         self.run_button.setEnabled(False)
         self.run_step_button.setEnabled(False)
         self.progress_bar.setFormat(
@@ -3579,6 +4173,8 @@ class NeuroFlowWindow(QMainWindow):
                 "详细信息已写入运行记录，已完成结果不会被删除。"
             ),
         )
+        self.active_run_keys = []
+        self.active_run_started = None
 
     def _on_succeeded(self) -> None:
         self.run_button.setEnabled(True)
@@ -3594,6 +4190,35 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_figure()
         self._refresh_table()
         self._refresh_warnings()
+        elapsed = 0.0
+        if self.active_run_started is not None:
+            elapsed = (
+                datetime.now(timezone.utc).astimezone() - self.active_run_started
+            ).total_seconds()
+        completed_names = [
+            step_text(key, self.language)[0] for key in self.active_run_keys
+        ]
+        completed_text = "\n".join(f"• {name}" for name in completed_names)
+        QMessageBox.information(
+            self,
+            "Analysis completed"
+            if self.language == "en_US"
+            else "分析运行完成",
+            (
+                f"Project: {self.state.name if self.state else '—'}\n"
+                f"Completed:\n{completed_text}\n\nElapsed: {elapsed:.1f} s\n"
+                "Results, parameters, and the audit log were saved. Select each "
+                "completed step to inspect its figures and tables."
+                if self.language == "en_US"
+                else (
+                    f"项目：{self.state.name if self.state else '—'}\n"
+                    f"已完成：\n{completed_text}\n\n用时：{elapsed:.1f} 秒\n"
+                    "结果、参数和审计记录已经保存。请点击各已完成节点查看图和表。"
+                )
+            ),
+        )
+        self.active_run_keys = []
+        self.active_run_started = None
 
     def _open_context_tutorial(self) -> None:
         TutorialDialog(

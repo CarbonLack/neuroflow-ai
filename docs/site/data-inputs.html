@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Data inputs · NeuroFlow</title>
-    <link rel="stylesheet" href="styles.css?v=0.6.0">
+    <link rel="stylesheet" href="styles.css?v=0.6.1">
   </head>
   <body data-language="zh">
     <header class="topbar">
@@ -25,7 +25,8 @@
         <a href="methods.html">Methods / 方法</a>
         <a href="sources.html">Sources / 来源</a>
         <div class="sidebar-label">On this page</div>
-        <a href="#decision">先做哪项选择</a>
+        <a href="#project-first">先创建项目</a>
+        <a href="#decision">再选择数据入口</a>
         <a href="#simulation">教学模拟项目</a>
         <a href="#binary">通用二进制</a>
         <a href="#device">记录系统文件</a>
@@ -36,10 +37,11 @@
       <main class="content">
         <div class="page-intro" data-searchable>
           <p class="eyebrow">Choose by what you actually have</p>
-          <h1 data-lang="zh">五项不是五种算法，而是五条数据入口</h1>
-          <h1 data-lang="en">Five entry routes, not five algorithms</h1>
+          <h1 data-lang="zh">先创建项目，再明确导入自己的数据</h1>
+          <h1 data-lang="en">Create a project, then import data explicitly</h1>
           <p class="lead" data-lang="zh">
-            首页的每一行回答的是“你手里有什么文件、NeuroFlow 应从哪一步开始”。
+            首页把“新建项目”“导入自己的数据”“教学模拟”和“公开验证项目”分开。
+            数据入口表回答的是“你手里有什么文件、NeuroFlow 应从哪一步开始”。
             是否能运行 spike sorting 取决于原始宽带电压是否存在，而不是取决于文件名听起来是否专业。
           </p>
           <p class="lead" data-lang="en">
@@ -47,6 +49,31 @@
             Spike sorting requires raw broadband voltage; a processed file name does not replace it.
           </p>
         </div>
+
+        <section id="project-first" data-searchable>
+          <h2>项目与数据是两个动作 / Project first, data second</h2>
+          <p data-lang="zh">
+            “新建空白项目”只建立项目目录、manifest、日志和派生结果位置，不会偷偷生成模拟数据。
+            打开空白项目后，01 数据与项目页面会明确显示“尚未导入任何数据”，并提供
+            “导入我的电生理数据”“打开已验证公开项目”和“生成教学模拟项目”三个按钮。
+          </p>
+          <p data-lang="en">
+            Creating an empty project only creates its directory, manifest, audit log,
+            and derived-data location. It never generates simulation silently. The Data
+            and project page then presents explicit import, verified-public, and simulation actions.
+          </p>
+          <img class="product-shot" src="assets/neuroflow-new-project.png" alt="NeuroFlow empty-project dialog">
+          <table class="control-table">
+            <thead><tr><th>首页按钮</th><th>执行结果</th><th>适用场景</th><th>不会发生什么</th></tr></thead>
+            <tbody>
+              <tr><td>新建空白项目</td><td>先保存项目名和位置，再进入空白数据页</td><td>准备处理自己的新实验</td><td>不生成模拟电压，不自动选择 sorter</td></tr>
+              <tr><td>导入自己的数据</td><td>一次完成项目创建和数据适配</td><td>已经知道要导入的文件</td><td>不把公开数据或模拟数据混入列表</td></tr>
+              <tr><td>打开已验证公开项目</td><td>显示两套固定编号、固定版本和下载状态</td><td>检查真实数据兼容性</td><td>不要求手动寻找 ALF/NWB 文件</td></tr>
+              <tr><td>生成教学模拟项目</td><td>选择 Neuropixels/tetrode/微丝场景并生成完整教学数据</td><td>学习、演示、比较 sorter</td><td>不宣称模拟结果是真实生物学发现</td></tr>
+              <tr><td>恢复 NeuroFlow 项目</td><td>选择 neuroflow_project.json 继续</td><td>恢复先前项目</td><td>不重跑已完成节点</td></tr>
+            </tbody>
+          </table>
+        </section>
 
         <section id="decision" data-searchable>
           <h2 data-lang="zh">先判断：你的文件处于流程哪一层</h2>
@@ -57,7 +84,7 @@
               <tr><td>尚无数据，只想学习或测试</td><td>教学模拟项目</td><td>原始数据</td><td>可以，且有 ground truth</td></tr>
               <tr><td>自定义采集程序输出的 .bin/.dat</td><td>我的通用二进制</td><td>原始数据</td><td>可以</td></tr>
               <tr><td>Intan/Open Ephys/SpikeGLX 等设备目录</td><td>我的记录系统文件</td><td>原始数据</td><td>原始 AP/宽带流存在时可以</td></tr>
-              <tr><td>IBL ALF、BWM 表或 DANDI/NWB Units</td><td>公开数据验证</td><td>行为或 Unit</td><td>通常不可以，因为多为处理后数据</td></tr>
+              <tr><td>NeuroFlow 已下载的 IBL/Buzsáki 固定会话</td><td>已验证公开项目（2 套）</td><td>行为或 Unit</td><td>通常不可以，因为多为处理后数据</td></tr>
               <tr><td>spike_times.npy 与 cluster 分配</td><td>已有 sorting 结果</td><td>Unit 质控</td><td>无需重跑；可导入并比较</td></tr>
             </tbody>
           </table>
@@ -157,19 +184,20 @@ import_config.json      # exact values required by the binary importer</code></p
         </section>
 
         <section id="public" data-searchable>
-          <h2>4. 公开数据验证 / Public validation data</h2>
+          <h2>4. 两套已验证公开项目 / Two fixed verified projects</h2>
           <p data-lang="zh">
-            公开入口用于复现真实会话和验证下游功能，不等价于原始数据入口。导入界面先选择结构，
-            再选择对应文件；结构与路径不匹配时会拒绝导入。
+            主页的公开入口明确锁定下列两套数据。双击后会显示本机下载状态和项目缓存状态；
+            已下载时可直接建立或打开项目，不需要再次寻找目录。通用 ALF/NWB 导入仍保留在高级导入器中，
+            但不与这两个已验证项目混淆。
           </p>
           <table class="control-table">
-            <thead><tr><th>结构</th><th>必须存在</th><th>可选内容</th><th>可继续的阶段</th></tr></thead>
+            <thead><tr><th>验证项目</th><th>固定编号</th><th>本机数据内容</th><th>可继续的阶段</th></tr></thead>
             <tbody>
-              <tr><td>IBL ALF 会话</td><td>spikes.times.npy、spikes.clusters.npy；trials 对象用于行为</td><td>cluster metrics、channels、probe metadata</td><td>Unit QC、行为、PSTH、统计、解码</td></tr>
-              <tr><td>IBL BWM aggregate</td><td>trials Parquet 与 eid</td><td>bwm_include、reaction time 等字段</td><td>行为分析；无神经数据时不能生成 PSTH</td></tr>
-              <tr><td>DANDI/Buzsáki NWB</td><td>Units/id、spike_times、spike_times_index</td><td>奖励、位置、睡眠状态、ripple</td><td>Unit QC、事件/状态分析、统计、解码</td></tr>
+              <tr><td>IBL Brain-Wide Map · Neuropixels</td><td>EID 4ecb5d24…；PID da8dfec1…</td><td>775 Units、20,096,205 spikes、529 trials</td><td>Unit QC、行为、PSTH、统计、解码</td></tr>
+              <tr><td>Buzsáki Lab · DANDI 000552</td><td>0.230630.2304；asset f36a3ffe…</td><td>56 Units、奖励事件、睡眠状态、1,483 ripple</td><td>Unit QC、事件/状态分析、统计、解码</td></tr>
             </tbody>
           </table>
+          <img class="product-shot" src="assets/neuroflow-public-projects.png" alt="NeuroFlow fixed public validation projects">
           <p>
             IBL ALF 字段参照
             <a href="https://docs.internationalbrainlab.org/notebooks_external/loading_spikesorting_data.html">IBL spike-sorting data guide</a>；

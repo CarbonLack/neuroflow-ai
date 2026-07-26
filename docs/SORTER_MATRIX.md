@@ -33,7 +33,7 @@ Every sorter is converted to the same `neuroflow.sorting.v1` contract:
 Native files remain intact. The normalized view is what downstream Unit QC,
 event alignment, statistics, and plotting consume.
 
-The v0.6.0 release self-test runs SpyKING CIRCUS 2, Tridesclous2, Simple, and
+The v0.6.1 release self-test runs SpyKING CIRCUS 2, Tridesclous2, Simple, and
 Lupin independently on the same raw recording. Kilosort4 and MountainSort5 have
 separate packaged self-tests because they exercise GPU and compiled-package
 paths. A sorter selected before execution shows only its own input contract and

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Operation manual · NeuroFlow</title>
-    <link rel="stylesheet" href="styles.css?v=0.6.0">
+    <link rel="stylesheet" href="styles.css?v=0.6.1">
   </head>
   <body data-language="zh">
     <header class="topbar">
@@ -67,6 +67,9 @@
               <tr><td>产品文档</td><td>在浏览器打开本网站</td><td>需要完整参数表、来源和故障排查时</td><td>不会上传数据</td></tr>
               <tr><td>运行完整流程</td><td>按左侧顺序运行所有可运行节点</td><td>参数已逐项确认后的批量执行</td><td>缺少输入的步骤会明确跳过，不会伪造结果</td></tr>
               <tr><td>运行此节点</td><td>只计算当前页面，并保存该节点结果</td><td>逐步学习、试参数、重跑单步</td><td>不会自动重跑后续节点；下游旧结果需重新检查</td></tr>
+              <tr><td>运行前确认弹窗</td><td>列出项目、将运行的节点、sorter 或模型</td><td>每次正式运行前核对</td><td>点击取消不会启动后台任务</td></tr>
+              <tr><td>运行完成弹窗</td><td>列出完成节点、耗时和保存结果</td><td>确认任务已经结束并转入结果检查</td><td>“完成”不等于结果自动具有科学意义</td></tr>
+              <tr><td>运行失败弹窗</td><td>显示首要错误、日志位置和结果保留策略</td><td>节点异常时</td><td>不会删除此前已完成节点</td></tr>
               <tr><td>底部进度条</td><td>固定显示当前任务进度与成功/失败状态</td><td>长时间 sorting 或分析</td><td>进度完成不代表 Unit 自动通过人工 QC</td></tr>
               <tr><td>右侧引导与证据</td><td>显示本页目的、当前输入检查和审计日志</td><td>每次运行前后核对</td><td>当前为规则和教程，不是假装成大模型推理</td></tr>
             </tbody>
@@ -91,6 +94,10 @@
           <table class="control-table">
             <thead><tr><th>页面元素</th><th>代表什么</th><th>操作</th><th>通过标准</th></tr></thead>
             <tbody>
+              <tr><td>新建空白项目</td><td>只有项目目录、manifest 与日志</td><td>在首页设置名称和位置</td><td>页面明确显示“尚未导入数据”</td></tr>
+              <tr><td>导入我的电生理数据</td><td>通用二进制、记录系统文件或已有 sorting</td><td>在空白项目的数据面板点击</td><td>源文件保持只读，项目开始显示真实来源</td></tr>
+              <tr><td>打开已验证公开项目</td><td>固定 IBL BWM 与 Buzsáki/DANDI 项目</td><td>查看下载/缓存状态后双击</td><td>数据 ID、版本和实际数量与验证报告一致</td></tr>
+              <tr><td>生成教学模拟项目</td><td>模拟原始电压、行为、TTL 与 ground truth</td><td>选择探针和行为场景</td><td>来源明确显示 simulated，不与真实数据混淆</td></tr>
               <tr><td>数据源</td><td>simulated、binary、device、IBL/NWB 或 sorting output</td><td>核对来源，不依赖项目名字判断</td><td>与实际文件层级一致</td></tr>
               <tr><td>通道</td><td>原始连续记录的并行通道数</td><td>与设备/探针元数据核对</td><td>波形没有周期错位或异常重复</td></tr>
               <tr><td>时长</td><td>样本数 ÷ 采样率，或 processed spikes 的最大时间</td><td>与实验日志核对</td><td>数量级和 session 时长一致</td></tr>
@@ -373,8 +380,9 @@
           </table>
           <h3>Figure Studio</h3>
           <p>
-            图形设置已扩展为对象级编辑：尺寸、DPI、轴、网格、刻度、spine、线、点、柱、
-            heatmap、文字和图例均可单独调整。完整控件和导出建议见
+            图形设置已扩展为对象级编辑：尺寸、DPI、X/Y 轴实际长度和位置、四条独立轴线、
+            主次刻度、X/Y 独立网格、自定义参考线、线、点、柱、heatmap、文字和图例均可单独调整。
+            完整控件和导出建议见
             <a href="figure-studio.html">Figure Studio 指南</a>。
           </p>
           <div class="callout method">

@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.6.1
+
+- Separated empty-project creation from data import. An empty project now opens
+  a dedicated Data and project panel with explicit own-data, public-project, and
+  teaching-simulation actions.
+- Replaced the generic public-data home action with two fixed, versioned,
+  locally discoverable IBL and Buzsáki validation projects that open from a
+  status-aware project library.
+- Extended Figure Studio with exact X/Y axis lengths, plot position, independent
+  spines, major/minor ticks, number formatting, independent X/Y grids, custom
+  reference lines, and detailed legend-frame controls.
+- Added run confirmation, completion-summary, and failure dialogs while
+  retaining the persistent audit log and fixed progress footer.
+- Expanded the data-entry and Figure Studio manuals with the new controls and
+  official GraphPad Prism interaction references without copying its code or UI.
+
 ## v0.6.0
 
 - Replaced the opaque home data list with five task-oriented entry routes that

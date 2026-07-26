@@ -19,6 +19,11 @@ from neuroflow.data_import import (
 )
 from neuroflow.decoding import run_decoding_suite
 from neuroflow.project import load_project, save_project
+from neuroflow.public_examples import (
+    IBL_EID,
+    open_or_create_public_example,
+    public_example_status,
+)
 from neuroflow.simulation import generate_demo_recording
 from neuroflow.statistics import adjust_pvalues, run_statistical_suite
 
@@ -186,3 +191,33 @@ def test_statistics_marks_identical_condition_values(tmp_path: Path):
     assert result["rows"][0]["condition_test_status"] == (
         "not_testable_all_values_identical"
     )
+
+
+def test_fixed_ibl_public_example_opens_as_cached_project(tmp_path: Path):
+    alf = (
+        tmp_path
+        / "PublicValidation"
+        / "IBL"
+        / "lab"
+        / "Subjects"
+        / "mouse"
+        / "session"
+        / "alf"
+    )
+    probe = alf / "probe00"
+    probe.mkdir(parents=True)
+    np.save(probe / "spikes.times.npy", np.array([0.1, 0.2, 1.1, 1.2]))
+    np.save(probe / "spikes.clusters.npy", np.array([0, 1, 0, 1]))
+    np.save(alf / "_ibl_trials.stimOn_times.npy", np.array([0.5, 1.5]))
+    np.save(alf / "_ibl_trials.contrastLeft.npy", np.array([0.5, np.nan]))
+    np.save(alf / "_ibl_trials.contrastRight.npy", np.array([np.nan, 0.5]))
+    status = public_example_status(tmp_path, "ibl_bwm")
+    assert status["downloaded"] is True
+    assert status["project_ready"] is False
+    state = open_or_create_public_example(tmp_path, "ibl_bwm")
+    assert state.metadata["eid"] == IBL_EID
+    assert state.metadata["public_example_key"] == "ibl_bwm"
+    assert len(state.sorted_spikes) == 2
+    restored = open_or_create_public_example(tmp_path, "ibl_bwm")
+    assert restored.root == state.root
+    assert public_example_status(tmp_path, "ibl_bwm")["project_ready"] is True

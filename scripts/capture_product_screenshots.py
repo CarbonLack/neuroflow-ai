@@ -21,7 +21,12 @@ from neuroflow.sorting_results import (
 )
 from neuroflow.statistics import run_statistical_suite
 from neuroflow.synchronization import synchronize_existing_events
-from neuroflow.ui import DemoLibraryDialog, NeuroFlowWindow
+from neuroflow.ui import (
+    DemoLibraryDialog,
+    NeuroFlowWindow,
+    NewProjectDialog,
+    PublicExampleDialog,
+)
 
 
 def _capture(window, path: Path) -> None:
@@ -44,6 +49,18 @@ def main() -> int:
     window._set_language("en_US")
     window.show()
     _capture(window, output / "neuroflow-home.png")
+    new_project = NewProjectDialog(workspace, window, "en_US")
+    new_project.show()
+    _capture(new_project, output / "neuroflow-new-project.png")
+    new_project.close()
+    public_examples = PublicExampleDialog(
+        Path.home() / "Documents" / "NeuroFlow",
+        window,
+        "en_US",
+    )
+    public_examples.show()
+    _capture(public_examples, output / "neuroflow-public-projects.png")
+    public_examples.close()
     library = DemoLibraryDialog(window, "en_US")
     library.show()
     _capture(library, output / "neuroflow-demo-library.png")
@@ -135,8 +152,14 @@ def main() -> int:
     window._refresh_table()
     _capture(window, output / "neuroflow-analysis.png")
     studio = FigureStudioDialog(window.canvas.figure, "en_US", window)
+    if studio.tree.topLevelItemCount() > 1:
+        studio.tree.setCurrentItem(studio.tree.topLevelItem(1))
     studio.show()
     _capture(studio, output / "neuroflow-figure-studio.png")
+    studio.editor_scroll.verticalScrollBar().setValue(
+        int(studio.editor_scroll.verticalScrollBar().maximum() * 0.78)
+    )
+    _capture(studio, output / "neuroflow-figure-studio-axes.png")
     studio.close()
     window.close()
     app.processEvents()

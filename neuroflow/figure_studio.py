@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from io import BytesIO
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from io import BytesIO
+from typing import Any
 
 import numpy as np
 from matplotlib import colors as mpl_colors
@@ -12,6 +13,13 @@ from matplotlib.legend import Legend
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.text import Text
+from matplotlib.ticker import (
+    AutoMinorLocator,
+    FuncFormatter,
+    MultipleLocator,
+    NullLocator,
+    ScalarFormatter,
+)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtWidgets import (
@@ -403,77 +411,131 @@ class FigureStudioDialog(QDialog):
         self.bindings.append(Binding(apply))
 
     def _build_axis_editor(self, axis) -> None:
-        self._section("标题与范围", "Titles and ranges")
+        self._section("标题、字体与范围", "Titles, type, and ranges")
         title = QLineEdit(axis.get_title())
         xlabel = QLineEdit(axis.get_xlabel())
         ylabel = QLineEdit(axis.get_ylabel())
+        title_align = self._combo(["left", "center", "right"], "left")
+        title_size = self._double(axis.title.get_fontsize(), 1, 100, 1, 1)
+        title_weight = self._combo(
+            ["normal", "bold", "medium", "semibold"], axis.title.get_fontweight()
+        )
+        title_color = ColorButton(axis.title.get_color(), self)
+        xlabel_size = self._double(axis.xaxis.label.get_fontsize(), 1, 100, 1, 1)
+        ylabel_size = self._double(axis.yaxis.label.get_fontsize(), 1, 100, 1, 1)
+        xlabel_pad = self._double(axis.xaxis.labelpad, -50, 100, 1, 1)
+        ylabel_pad = self._double(axis.yaxis.labelpad, -50, 100, 1, 1)
+        label_color = ColorButton(axis.xaxis.label.get_color(), self)
         xscale = self._combo(["linear", "log", "symlog", "logit"], axis.get_xscale())
         yscale = self._combo(["linear", "log", "symlog", "logit"], axis.get_yscale())
-        xmin = self._double(axis.get_xlim()[0])
-        xmax = self._double(axis.get_xlim()[1])
-        ymin = self._double(axis.get_ylim()[0])
-        ymax = self._double(axis.get_ylim()[1])
-        title_size = self._double(axis.title.get_fontsize(), 1, 100, 1, 1)
-        label_size = self._double(axis.xaxis.label.get_fontsize(), 1, 100, 1, 1)
+        xmin = self._double(min(axis.get_xlim()))
+        xmax = self._double(max(axis.get_xlim()))
+        ymin = self._double(min(axis.get_ylim()))
+        ymax = self._double(max(axis.get_ylim()))
+        invert_x = QCheckBox(
+            "从大到小显示" if self.language == "zh_CN" else "Reverse direction"
+        )
+        invert_x.setChecked(bool(axis.xaxis_inverted()))
+        invert_y = QCheckBox(
+            "从大到小显示" if self.language == "zh_CN" else "Reverse direction"
+        )
+        invert_y.setChecked(bool(axis.yaxis_inverted()))
         face = ColorButton(axis.get_facecolor(), self)
-        self._row("标题", "Title", title)
-        self._row("X 轴标题", "X label", xlabel)
-        self._row("Y 轴标题", "Y label", ylabel)
+        self._row("图标题", "Graph title", title)
+        self._row("标题对齐", "Title alignment", title_align)
+        self._row("标题字号", "Title font size", title_size)
+        self._row("标题字重", "Title weight", title_weight)
+        self._row("标题颜色", "Title color", title_color)
+        self._row("X 轴标题", "X-axis title", xlabel)
+        self._row("Y 轴标题", "Y-axis title", ylabel)
+        self._row("X 标题字号", "X-title font size", xlabel_size)
+        self._row("Y 标题字号", "Y-title font size", ylabel_size)
+        self._row("X 标题间距", "X-title padding", xlabel_pad)
+        self._row("Y 标题间距", "Y-title padding", ylabel_pad)
+        self._row("轴标题颜色", "Axis-title color", label_color)
         self._row("X 轴尺度", "X scale", xscale)
         self._row("Y 轴尺度", "Y scale", yscale)
         self._row("X 最小值", "X minimum", xmin)
         self._row("X 最大值", "X maximum", xmax)
+        self._row("X 方向", "X direction", invert_x)
         self._row("Y 最小值", "Y minimum", ymin)
         self._row("Y 最大值", "Y maximum", ymax)
-        self._row("标题字号", "Title font size", title_size)
-        self._row("坐标轴标题字号", "Axis-label font size", label_size)
-        self._row("绘图区背景", "Axes background", face)
+        self._row("Y 方向", "Y direction", invert_y)
+        self._row("绘图区背景", "Plot-area background", face)
 
-        self._section("网格、边框与刻度", "Grid, spines, and ticks")
-        grid = QCheckBox("显示主网格" if self.language == "zh_CN" else "Show major grid")
-        grid.setChecked(any(line.get_visible() for line in axis.get_xgridlines()))
-        grid_color = ColorButton(
-            axis.get_xgridlines()[0].get_color()
-            if axis.get_xgridlines()
-            else "#d8e0dc"
+        self._section("绘图区位置与轴长", "Plot position and axis lengths")
+        figure_width, figure_height = self.figure.get_size_inches()
+        left, bottom, width_fraction, height_fraction = axis.get_position().bounds
+        plot_width = self._double(
+            width_fraction * figure_width, 0.2, 30.0, 3, 0.1
         )
-        grid_alpha = self._double(
-            axis.get_xgridlines()[0].get_alpha() or 0.7
-            if axis.get_xgridlines()
-            else 0.7,
-            0,
-            1,
-            2,
-            0.05,
+        plot_height = self._double(
+            height_fraction * figure_height, 0.2, 30.0, 3, 0.1
         )
-        grid_width = self._double(
-            axis.get_xgridlines()[0].get_linewidth()
-            if axis.get_xgridlines()
-            else 0.8,
-            0,
-            10,
-            2,
-            0.1,
+        left_percent = self._double(left * 100.0, 0, 95, 2, 0.5)
+        bottom_percent = self._double(bottom * 100.0, 0, 95, 2, 0.5)
+        aspect = self._combo(
+            ["auto", "equal"],
+            "auto" if axis.get_aspect() == "auto" else "equal",
         )
-        grid_style = self._combo(["-", "--", "-.", ":"], "--")
-        spines = QCheckBox(
-            "显示四周边框" if self.language == "zh_CN" else "Show all spines"
+        self._row("X 轴实际长度（英寸）", "X-axis length (inches)", plot_width)
+        self._row("Y 轴实际长度（英寸）", "Y-axis length (inches)", plot_height)
+        self._row("绘图区左边距（%）", "Plot left position (%)", left_percent)
+        self._row("绘图区下边距（%）", "Plot bottom position (%)", bottom_percent)
+        self._row("数据纵横比", "Data aspect", aspect)
+
+        self._section("四条坐标轴线", "Individual axis lines")
+        spine_controls: dict[str, tuple[QCheckBox, ColorButton, QDoubleSpinBox, QDoubleSpinBox]] = {}
+        names = {
+            "bottom": ("下方 X 轴", "Bottom X axis"),
+            "left": ("左侧 Y 轴", "Left Y axis"),
+            "top": ("上方边框", "Top frame"),
+            "right": ("右侧边框", "Right frame"),
+        }
+        for spine_name in ("bottom", "left", "top", "right"):
+            spine = axis.spines[spine_name]
+            visible = QCheckBox(
+                "显示" if self.language == "zh_CN" else "Visible"
+            )
+            visible.setChecked(spine.get_visible())
+            color = ColorButton(spine.get_edgecolor(), self)
+            width = self._double(spine.get_linewidth(), 0, 15, 2, 0.1)
+            position = spine.get_position()
+            offset_value = (
+                float(position[1])
+                if isinstance(position, tuple) and position[0] == "outward"
+                else 0.0
+            )
+            offset = self._double(offset_value, -100, 100, 1, 1)
+            holder = QWidget()
+            holder_layout = QHBoxLayout(holder)
+            holder_layout.setContentsMargins(0, 0, 0, 0)
+            holder_layout.addWidget(visible)
+            holder_layout.addWidget(QLabel("Color" if self.language == "en_US" else "颜色"))
+            holder_layout.addWidget(color)
+            holder_layout.addWidget(QLabel("Width" if self.language == "en_US" else "线宽"))
+            holder_layout.addWidget(width)
+            holder_layout.addWidget(QLabel("Offset" if self.language == "en_US" else "外移"))
+            holder_layout.addWidget(offset)
+            self._row(names[spine_name][0], names[spine_name][1], holder)
+            spine_controls[spine_name] = (visible, color, width, offset)
+
+        self._section("主刻度、次刻度与数字", "Major/minor ticks and numbering")
+        x_major_interval = QLineEdit()
+        y_major_interval = QLineEdit()
+        x_major_interval.setPlaceholderText(
+            "自动" if self.language == "zh_CN" else "Automatic"
         )
-        spines.setChecked(any(item.get_visible() for item in axis.spines.values()))
-        spine_color = ColorButton(
-            next(iter(axis.spines.values())).get_edgecolor()
-            if axis.spines
-            else "#333333"
+        y_major_interval.setPlaceholderText(
+            "自动" if self.language == "zh_CN" else "Automatic"
         )
-        spine_width = self._double(
-            next(iter(axis.spines.values())).get_linewidth()
-            if axis.spines
-            else 0.8,
-            0,
-            10,
-            2,
-            0.1,
-        )
+        x_minor_divisions = self._spin(0, 0, 20)
+        y_minor_divisions = self._spin(0, 0, 20)
+        tick_direction = self._combo(["out", "in", "inout"], "out")
+        major_length = self._double(4.0, 0, 40, 1, 0.5)
+        major_width = self._double(0.8, 0, 12, 2, 0.1)
+        minor_length = self._double(2.5, 0, 40, 1, 0.5)
+        minor_width = self._double(0.6, 0, 12, 2, 0.1)
         tick_size = self._double(
             axis.get_xticklabels()[0].get_fontsize()
             if axis.get_xticklabels()
@@ -488,7 +550,7 @@ class FigureStudioDialog(QDialog):
             if axis.get_xticklabels()
             else "#333333"
         )
-        tick_rotation = self._double(
+        x_tick_rotation = self._double(
             axis.get_xticklabels()[0].get_rotation()
             if axis.get_xticklabels()
             else 0,
@@ -497,21 +559,105 @@ class FigureStudioDialog(QDialog):
             1,
             5,
         )
-        tick_length = self._double(3.5, 0, 30, 1, 0.5)
-        tick_width = self._double(0.8, 0, 10, 2, 0.1)
-        self._row("主网格", "Major grid", grid)
+        y_tick_rotation = self._double(
+            axis.get_yticklabels()[0].get_rotation()
+            if axis.get_yticklabels()
+            else 0,
+            -360,
+            360,
+            1,
+            5,
+        )
+        tick_pad = self._double(3.5, -20, 80, 1, 0.5)
+        show_top_ticks = QCheckBox(
+            "显示上方刻度" if self.language == "zh_CN" else "Show top ticks"
+        )
+        show_right_ticks = QCheckBox(
+            "显示右侧刻度" if self.language == "zh_CN" else "Show right ticks"
+        )
+        x_number_format = self._combo(
+            ["automatic", "integer", "1 decimal", "2 decimals", "3 decimals", "scientific"],
+            "automatic",
+        )
+        y_number_format = self._combo(
+            ["automatic", "integer", "1 decimal", "2 decimals", "3 decimals", "scientific"],
+            "automatic",
+        )
+        self._row("X 主刻度间隔", "X major interval", x_major_interval)
+        self._row("Y 主刻度间隔", "Y major interval", y_major_interval)
+        self._row("X 主刻度间分区数", "X minor divisions", x_minor_divisions)
+        self._row("Y 主刻度间分区数", "Y minor divisions", y_minor_divisions)
+        self._row("刻度方向", "Tick direction", tick_direction)
+        self._row("主刻度长度", "Major tick length", major_length)
+        self._row("主刻度线宽", "Major tick width", major_width)
+        self._row("次刻度长度", "Minor tick length", minor_length)
+        self._row("次刻度线宽", "Minor tick width", minor_width)
+        self._row("刻度数字字号", "Tick-label font size", tick_size)
+        self._row("刻度与数字颜色", "Tick and number color", tick_color)
+        self._row("X 数字旋转角", "X-label rotation", x_tick_rotation)
+        self._row("Y 数字旋转角", "Y-label rotation", y_tick_rotation)
+        self._row("数字离轴距离", "Tick-label padding", tick_pad)
+        self._row("上方刻度", "Top ticks", show_top_ticks)
+        self._row("右侧刻度", "Right ticks", show_right_ticks)
+        self._row("X 数字格式", "X number format", x_number_format)
+        self._row("Y 数字格式", "Y number format", y_number_format)
+
+        self._section("X/Y 独立网格线", "Independent X/Y grid lines")
+        x_grid_major = QCheckBox(
+            "显示" if self.language == "zh_CN" else "Visible"
+        )
+        y_grid_major = QCheckBox(
+            "显示" if self.language == "zh_CN" else "Visible"
+        )
+        current_grid = any(line.get_visible() for line in axis.get_xgridlines())
+        x_grid_major.setChecked(current_grid)
+        y_grid_major.setChecked(
+            any(line.get_visible() for line in axis.get_ygridlines())
+        )
+        x_grid_minor = QCheckBox(
+            "显示" if self.language == "zh_CN" else "Visible"
+        )
+        y_grid_minor = QCheckBox(
+            "显示" if self.language == "zh_CN" else "Visible"
+        )
+        grid_color = ColorButton(
+            axis.get_xgridlines()[0].get_color()
+            if axis.get_xgridlines()
+            else "#d8e0dc"
+        )
+        grid_alpha = self._double(0.65, 0, 1, 2, 0.05)
+        major_grid_width = self._double(0.8, 0, 10, 2, 0.1)
+        minor_grid_width = self._double(0.5, 0, 10, 2, 0.1)
+        major_grid_style = self._combo(["-", "--", "-.", ":"], "--")
+        minor_grid_style = self._combo(["-", "--", "-.", ":"], ":")
+        grid_layer = self._combo(["below data", "above data"], "below data")
+        self._row("X 主网格", "X major grid", x_grid_major)
+        self._row("Y 主网格", "Y major grid", y_grid_major)
+        self._row("X 次网格", "X minor grid", x_grid_minor)
+        self._row("Y 次网格", "Y minor grid", y_grid_minor)
         self._row("网格颜色", "Grid color", grid_color)
         self._row("网格透明度", "Grid alpha", grid_alpha)
-        self._row("网格线宽", "Grid width", grid_width)
-        self._row("网格线型", "Grid line style", grid_style)
-        self._row("边框", "Spines", spines)
-        self._row("边框颜色", "Spine color", spine_color)
-        self._row("边框线宽", "Spine width", spine_width)
-        self._row("刻度字号", "Tick font size", tick_size)
-        self._row("刻度颜色", "Tick color", tick_color)
-        self._row("X 刻度旋转角", "X tick rotation", tick_rotation)
-        self._row("刻度线长度", "Tick length", tick_length)
-        self._row("刻度线宽", "Tick width", tick_width)
+        self._row("主网格线宽", "Major grid width", major_grid_width)
+        self._row("次网格线宽", "Minor grid width", minor_grid_width)
+        self._row("主网格线型", "Major grid style", major_grid_style)
+        self._row("次网格线型", "Minor grid style", minor_grid_style)
+        self._row("网格图层", "Grid layer", grid_layer)
+
+        self._section("自定义参考线", "Custom reference lines")
+        x_reference = QLineEdit()
+        y_reference = QLineEdit()
+        x_reference.setPlaceholderText("0, 1.5, 3" if self.language == "en_US" else "例如：0, 1.5, 3")
+        y_reference.setPlaceholderText("0, 50" if self.language == "en_US" else "例如：0, 50")
+        reference_color = ColorButton("#b34f36", self)
+        reference_style = self._combo(["-", "--", "-.", ":"], "--")
+        reference_width = self._double(1.0, 0, 10, 2, 0.1)
+        reference_alpha = self._double(0.8, 0, 1, 2, 0.05)
+        self._row("垂直参考线 X 值", "Vertical lines at X", x_reference)
+        self._row("水平参考线 Y 值", "Horizontal lines at Y", y_reference)
+        self._row("参考线颜色", "Reference-line color", reference_color)
+        self._row("参考线线型", "Reference-line style", reference_style)
+        self._row("参考线线宽", "Reference-line width", reference_width)
+        self._row("参考线透明度", "Reference-line alpha", reference_alpha)
 
         self._section("图例", "Legend")
         legend = axis.get_legend()
@@ -519,6 +665,7 @@ class FigureStudioDialog(QDialog):
             "显示图例" if self.language == "zh_CN" else "Show legend"
         )
         legend_visible.setChecked(legend is not None and legend.get_visible())
+        legend_title = QLineEdit(legend.get_title().get_text() if legend else "")
         legend_location = self._combo(
             [
                 "best",
@@ -547,16 +694,74 @@ class FigureStudioDialog(QDialog):
             1,
         )
         legend_frame = QCheckBox(
-            "显示图例边框" if self.language == "zh_CN" else "Show legend frame"
+            "显示边框" if self.language == "zh_CN" else "Show frame"
         )
-        legend_frame.setChecked(
-            legend.get_frame_on() if legend is not None else False
+        legend_frame.setChecked(legend.get_frame_on() if legend is not None else False)
+        legend_face = ColorButton(
+            legend.get_frame().get_facecolor() if legend is not None else "#ffffff",
+            self,
+        )
+        legend_edge = ColorButton(
+            legend.get_frame().get_edgecolor() if legend is not None else "#333333",
+            self,
+        )
+        legend_frame_width = self._double(
+            legend.get_frame().get_linewidth() if legend is not None else 0.8,
+            0,
+            10,
+            2,
+            0.1,
+        )
+        legend_frame_alpha = self._double(
+            legend.get_frame().get_alpha()
+            if legend is not None and legend.get_frame().get_alpha() is not None
+            else 0.8,
+            0,
+            1,
+            2,
+            0.05,
         )
         self._row("图例显示", "Legend visibility", legend_visible)
+        self._row("图例标题", "Legend title", legend_title)
         self._row("图例位置", "Legend location", legend_location)
         self._row("图例列数", "Legend columns", legend_columns)
         self._row("图例字号", "Legend font size", legend_font)
         self._row("图例边框", "Legend frame", legend_frame)
+        self._row("图例背景", "Legend background", legend_face)
+        self._row("图例边框颜色", "Legend edge color", legend_edge)
+        self._row("图例边框线宽", "Legend edge width", legend_frame_width)
+        self._row("图例背景透明度", "Legend background alpha", legend_frame_alpha)
+
+        def _parse_interval(control: QLineEdit, label: str) -> float | None:
+            text = control.text().strip()
+            if not text:
+                return None
+            value = float(text)
+            if value <= 0:
+                raise ValueError(f"{label} must be greater than zero")
+            return value
+
+        def _parse_reference_values(control: QLineEdit) -> list[float]:
+            text = control.text().strip()
+            if not text:
+                return []
+            return [float(value.strip()) for value in text.split(",") if value.strip()]
+
+        def _formatter(name: str):
+            if name == "automatic":
+                return ScalarFormatter()
+            if name == "scientific":
+                formatter = ScalarFormatter(useMathText=True)
+                formatter.set_scientific(True)
+                formatter.set_powerlimits((-3, 4))
+                return formatter
+            decimals = {
+                "integer": 0,
+                "1 decimal": 1,
+                "2 decimals": 2,
+                "3 decimals": 3,
+            }[name]
+            return FuncFormatter(lambda value, _position: f"{value:.{decimals}f}")
 
         def apply() -> None:
             if xmin.value() >= xmax.value() or ymin.value() >= ymax.value():
@@ -565,44 +770,163 @@ class FigureStudioDialog(QDialog):
                     if self.language == "zh_CN"
                     else "Axis minimum must be smaller than maximum"
                 )
-            axis.set_title(title.text(), loc="left", fontsize=title_size.value())
-            axis.set_xlabel(xlabel.text(), fontsize=label_size.value())
-            axis.set_ylabel(ylabel.text(), fontsize=label_size.value())
+            figure_width_value, figure_height_value = self.figure.get_size_inches()
+            width_fraction_value = plot_width.value() / figure_width_value
+            height_fraction_value = plot_height.value() / figure_height_value
+            left_value = left_percent.value() / 100.0
+            bottom_value = bottom_percent.value() / 100.0
+            if (
+                left_value + width_fraction_value > 1.0
+                or bottom_value + height_fraction_value > 1.0
+            ):
+                raise ValueError(
+                    "绘图区位置与轴长超出画布；请减小轴长或左/下边距"
+                    if self.language == "zh_CN"
+                    else "Plot position and axis lengths extend beyond the canvas"
+                )
+            axis.set_position(
+                [left_value, bottom_value, width_fraction_value, height_fraction_value]
+            )
+            axis.set_aspect(aspect.currentText(), adjustable="box")
+            axis.set_title(
+                title.text(),
+                loc=title_align.currentText(),
+                fontsize=title_size.value(),
+                fontweight=title_weight.currentText(),
+                color=title_color.color(),
+            )
+            axis.set_xlabel(
+                xlabel.text(),
+                fontsize=xlabel_size.value(),
+                labelpad=xlabel_pad.value(),
+                color=label_color.color(),
+            )
+            axis.set_ylabel(
+                ylabel.text(),
+                fontsize=ylabel_size.value(),
+                labelpad=ylabel_pad.value(),
+                color=label_color.color(),
+            )
             axis.set_xscale(xscale.currentText())
             axis.set_yscale(yscale.currentText())
             axis.set_xlim(xmin.value(), xmax.value())
             axis.set_ylim(ymin.value(), ymax.value())
+            axis.xaxis.set_inverted(invert_x.isChecked())
+            axis.yaxis.set_inverted(invert_y.isChecked())
             axis.set_facecolor(face.color())
-            axis.grid(
-                grid.isChecked(),
-                color=grid_color.color(),
-                alpha=grid_alpha.value(),
-                linewidth=grid_width.value(),
-                linestyle=grid_style.currentText(),
-            )
-            for spine in axis.spines.values():
-                spine.set_visible(spines.isChecked())
-                spine.set_color(spine_color.color())
-                spine.set_linewidth(spine_width.value())
+
+            for spine_name, controls in spine_controls.items():
+                visible, color, width, offset = controls
+                spine = axis.spines[spine_name]
+                spine.set_visible(visible.isChecked())
+                spine.set_color(color.color())
+                spine.set_linewidth(width.value())
+                spine.set_position(("outward", offset.value()))
+
+            x_interval = _parse_interval(x_major_interval, "X major interval")
+            y_interval = _parse_interval(y_major_interval, "Y major interval")
+            if x_interval is not None:
+                axis.xaxis.set_major_locator(MultipleLocator(x_interval))
+            if y_interval is not None:
+                axis.yaxis.set_major_locator(MultipleLocator(y_interval))
+            if x_minor_divisions.value() > 0:
+                axis.xaxis.set_minor_locator(
+                    AutoMinorLocator(x_minor_divisions.value())
+                )
+            else:
+                axis.xaxis.set_minor_locator(NullLocator())
+            if y_minor_divisions.value() > 0:
+                axis.yaxis.set_minor_locator(
+                    AutoMinorLocator(y_minor_divisions.value())
+                )
+            else:
+                axis.yaxis.set_minor_locator(NullLocator())
             axis.tick_params(
                 axis="both",
+                which="major",
+                direction=tick_direction.currentText(),
                 colors=tick_color.color(),
                 labelsize=tick_size.value(),
-                length=tick_length.value(),
-                width=tick_width.value(),
+                length=major_length.value(),
+                width=major_width.value(),
+                pad=tick_pad.value(),
+                top=show_top_ticks.isChecked(),
+                right=show_right_ticks.isChecked(),
             )
-            axis.tick_params(axis="x", labelrotation=tick_rotation.value())
+            axis.tick_params(
+                axis="both",
+                which="minor",
+                direction=tick_direction.currentText(),
+                colors=tick_color.color(),
+                length=minor_length.value(),
+                width=minor_width.value(),
+                top=show_top_ticks.isChecked(),
+                right=show_right_ticks.isChecked(),
+            )
+            axis.tick_params(axis="x", labelrotation=x_tick_rotation.value())
+            axis.tick_params(axis="y", labelrotation=y_tick_rotation.value())
+            axis.xaxis.set_major_formatter(_formatter(x_number_format.currentText()))
+            axis.yaxis.set_major_formatter(_formatter(y_number_format.currentText()))
+
+            axis.set_axisbelow(grid_layer.currentText() == "below data")
+            for grid_axis, which, enabled, width, style in (
+                ("x", "major", x_grid_major, major_grid_width, major_grid_style),
+                ("y", "major", y_grid_major, major_grid_width, major_grid_style),
+                ("x", "minor", x_grid_minor, minor_grid_width, minor_grid_style),
+                ("y", "minor", y_grid_minor, minor_grid_width, minor_grid_style),
+            ):
+                axis.grid(
+                    enabled.isChecked(),
+                    axis=grid_axis,
+                    which=which,
+                    color=grid_color.color(),
+                    alpha=grid_alpha.value(),
+                    linewidth=width.value(),
+                    linestyle=style.currentText(),
+                )
+
+            for line in tuple(axis.lines):
+                gid = line.get_gid()
+                if gid and str(gid).startswith("neuroflow-reference-grid:"):
+                    line.remove()
+            for value in _parse_reference_values(x_reference):
+                line = axis.axvline(
+                    value,
+                    color=reference_color.color(),
+                    linestyle=reference_style.currentText(),
+                    linewidth=reference_width.value(),
+                    alpha=reference_alpha.value(),
+                    zorder=1.5,
+                )
+                line.set_gid(f"neuroflow-reference-grid:x:{value}")
+            for value in _parse_reference_values(y_reference):
+                line = axis.axhline(
+                    value,
+                    color=reference_color.color(),
+                    linestyle=reference_style.currentText(),
+                    linewidth=reference_width.value(),
+                    alpha=reference_alpha.value(),
+                    zorder=1.5,
+                )
+                line.set_gid(f"neuroflow-reference-grid:y:{value}")
+
             if legend_visible.isChecked():
                 handles, labels = axis.get_legend_handles_labels()
                 if handles:
-                    axis.legend(
+                    updated_legend = axis.legend(
                         handles,
                         labels,
+                        title=legend_title.text(),
                         loc=legend_location.currentText(),
                         ncols=legend_columns.value(),
                         fontsize=legend_font.value(),
                         frameon=legend_frame.isChecked(),
                     )
+                    frame = updated_legend.get_frame()
+                    frame.set_facecolor(legend_face.color())
+                    frame.set_edgecolor(legend_edge.color())
+                    frame.set_linewidth(legend_frame_width.value())
+                    frame.set_alpha(legend_frame_alpha.value())
             elif axis.get_legend() is not None:
                 axis.get_legend().set_visible(False)
 
@@ -894,13 +1218,40 @@ class FigureStudioDialog(QDialog):
         if target in self.figure.axes:
             return {
                 "title": target.get_title(),
+                "title_color": target.title.get_color(),
+                "title_size": target.title.get_fontsize(),
+                "title_weight": target.title.get_fontweight(),
                 "xlabel": target.get_xlabel(),
                 "ylabel": target.get_ylabel(),
+                "xlabel_size": target.xaxis.label.get_fontsize(),
+                "ylabel_size": target.yaxis.label.get_fontsize(),
+                "xlabel_color": target.xaxis.label.get_color(),
+                "ylabel_color": target.yaxis.label.get_color(),
+                "xlabel_pad": target.xaxis.labelpad,
+                "ylabel_pad": target.yaxis.labelpad,
                 "xlim": target.get_xlim(),
                 "ylim": target.get_ylim(),
                 "xscale": target.get_xscale(),
                 "yscale": target.get_yscale(),
                 "facecolor": target.get_facecolor(),
+                "position": target.get_position().bounds,
+                "aspect": target.get_aspect(),
+                "axisbelow": target.get_axisbelow(),
+                "xmajor_locator": target.xaxis.get_major_locator(),
+                "ymajor_locator": target.yaxis.get_major_locator(),
+                "xminor_locator": target.xaxis.get_minor_locator(),
+                "yminor_locator": target.yaxis.get_minor_locator(),
+                "xmajor_formatter": target.xaxis.get_major_formatter(),
+                "ymajor_formatter": target.yaxis.get_major_formatter(),
+                "spines": {
+                    name: {
+                        "visible": spine.get_visible(),
+                        "color": spine.get_edgecolor(),
+                        "width": spine.get_linewidth(),
+                        "position": spine.get_position(),
+                    }
+                    for name, spine in target.spines.items()
+                },
             }
         base = {
             "visible": target.get_visible(),
@@ -981,14 +1332,49 @@ class FigureStudioDialog(QDialog):
             target.set_dpi(snapshot["dpi"])
             target.set_facecolor(snapshot["facecolor"])
         elif target in self.figure.axes:
-            target.set_title(snapshot["title"], loc="left")
-            target.set_xlabel(snapshot["xlabel"])
-            target.set_ylabel(snapshot["ylabel"])
+            target.set_title(
+                snapshot["title"],
+                loc="left",
+                color=snapshot["title_color"],
+                fontsize=snapshot["title_size"],
+                fontweight=snapshot["title_weight"],
+            )
+            target.set_xlabel(
+                snapshot["xlabel"],
+                fontsize=snapshot["xlabel_size"],
+                color=snapshot["xlabel_color"],
+                labelpad=snapshot["xlabel_pad"],
+            )
+            target.set_ylabel(
+                snapshot["ylabel"],
+                fontsize=snapshot["ylabel_size"],
+                color=snapshot["ylabel_color"],
+                labelpad=snapshot["ylabel_pad"],
+            )
             target.set_xscale(snapshot["xscale"])
             target.set_yscale(snapshot["yscale"])
             target.set_xlim(*snapshot["xlim"])
             target.set_ylim(*snapshot["ylim"])
             target.set_facecolor(snapshot["facecolor"])
+            target.set_position(snapshot["position"])
+            target.set_aspect(snapshot["aspect"], adjustable="box")
+            target.set_axisbelow(snapshot["axisbelow"])
+            target.xaxis.set_major_locator(snapshot["xmajor_locator"])
+            target.yaxis.set_major_locator(snapshot["ymajor_locator"])
+            target.xaxis.set_minor_locator(snapshot["xminor_locator"])
+            target.yaxis.set_minor_locator(snapshot["yminor_locator"])
+            target.xaxis.set_major_formatter(snapshot["xmajor_formatter"])
+            target.yaxis.set_major_formatter(snapshot["ymajor_formatter"])
+            for name, values in snapshot["spines"].items():
+                spine = target.spines[name]
+                spine.set_visible(values["visible"])
+                spine.set_color(values["color"])
+                spine.set_linewidth(values["width"])
+                spine.set_position(values["position"])
+            for line in tuple(target.lines):
+                gid = line.get_gid()
+                if gid and str(gid).startswith("neuroflow-reference-grid:"):
+                    line.remove()
         else:
             target.set_visible(snapshot.get("visible", True))
             target.set_alpha(snapshot.get("alpha"))
