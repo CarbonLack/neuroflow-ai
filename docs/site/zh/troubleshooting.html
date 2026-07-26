@@ -38,7 +38,7 @@
           <h1>故障排查</h1>
           <p class="lead">先判断失败来自数据结构、缺失输入、环境、资源还是分析假设；绝不能用无关旧结果掩盖运行失败。</p>
         </div>
-        
+
 <section data-searchable>
   <table><thead><tr><th>现象</th><th>可能原因</th><th>处理方法</th></tr></thead>
   <tbody><tr><td><b>波形重复或出现斜纹</b></td><td>文件总通道数或 dtype 错误。</td><td>返回数据页，核对采集配置后重新导入。</td></tr><tr><td><b>所选 sorter 无法运行</b></td><td>后端/依赖未安装、硬件不兼容或环境检测失败。</td><td>打开 Sorter 管理查看该后端的具体诊断。若改用其他 sorter，必须作为新的明确选择。</td></tr><tr><td><b>运行后出现另一个 sorter 的结果</b></td><td>所选结果未激活或运行已失败。</td><td>检查 active sorter、运行日志、原生输出目录和时间戳；软件应显示待运行/失败，不能替换。</td></tr><tr><td><b>无法做事件对齐分析</b></td><td>没有事件、时间单位错误或尚未同步。</td><td>导入行为/TTL，核对数量和残差，再单独运行所选事件分析。</td></tr><tr><td><b>已完成阶段恢复后没有图</b></td><td>项目由旧 schema 保存，或只读源路径已失效。</td><td>查看审计日志并核对源路径，只重跑缺失的派生阶段。</td></tr><tr><td><b>关闭软件出现保存提示</b></td><td>项目存在未保存的页面、参数、决定或日志。</td><td>选择保存更新 neuroflow_project.json；放弃则不保存这些修改；取消返回程序。</td></tr></tbody></table>

@@ -82,7 +82,7 @@ def _layout(
     search = "Search this page" if language == "en_US" else "搜索本页"
     menu = "Open navigation" if language == "en_US" else "打开目录"
     intro = eyebrow or ("NeuroFlow operation manual" if language == "en_US" else "NeuroFlow 操作手册")
-    return f"""<!doctype html>
+    document = f"""<!doctype html>
 <html lang="{page_lang}">
   <head>
     <meta charset="utf-8">
@@ -117,6 +117,7 @@ def _layout(
   </body>
 </html>
 """
+    return "\n".join(line.rstrip() for line in document.splitlines()) + "\n"
 
 
 def _chapter_card(chapter: dict[str, str], language: str) -> str:
