@@ -13,6 +13,23 @@ hiddenimports = [
     "matplotlib.backends.backend_pdf",
     "matplotlib.backends.backend_svg",
 ]
+
+
+def runtime_submodule(name):
+    """Keep runtime modules while excluding bundled tests and optional GUIs."""
+    blocked_parts = (
+        ".test",
+        ".tests",
+        ".conftest",
+        ".benchmark",
+        ".bench",
+        "._build_utils",
+        "mountainsort5.quip",
+        "kilosort.gui",
+    )
+    return not any(part in name for part in blocked_parts)
+
+
 for package in (
     "kilosort",
     "mountainsort5",
@@ -25,7 +42,18 @@ for package in (
     "one",
     "sklearn",
 ):
-    package_datas, package_binaries, package_hidden = collect_all(package)
+    package_datas, package_binaries, package_hidden = collect_all(
+        package,
+        include_py_files=False,
+        filter_submodules=runtime_submodule,
+        exclude_datas=[
+            "**/test/**",
+            "**/tests/**",
+            "**/bench/**",
+            "**/benchmark/**",
+            "**/__pycache__/**",
+        ],
+    )
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hidden

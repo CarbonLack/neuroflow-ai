@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>故障排查 · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/troubleshooting.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a class="active" href="troubleshooting.html">故障排查</a>
+<a href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <h1>故障排查</h1>
+          <p class="lead">先判断失败来自数据结构、缺失输入、环境、资源还是分析假设；绝不能用无关旧结果掩盖运行失败。</p>
+        </div>
+        
+<section data-searchable>
+  <table><thead><tr><th>现象</th><th>可能原因</th><th>处理方法</th></tr></thead>
+  <tbody><tr><td><b>波形重复或出现斜纹</b></td><td>文件总通道数或 dtype 错误。</td><td>返回数据页，核对采集配置后重新导入。</td></tr><tr><td><b>所选 sorter 无法运行</b></td><td>后端/依赖未安装、硬件不兼容或环境检测失败。</td><td>打开 Sorter 管理查看该后端的具体诊断。若改用其他 sorter，必须作为新的明确选择。</td></tr><tr><td><b>运行后出现另一个 sorter 的结果</b></td><td>所选结果未激活或运行已失败。</td><td>检查 active sorter、运行日志、原生输出目录和时间戳；软件应显示待运行/失败，不能替换。</td></tr><tr><td><b>无法做事件对齐分析</b></td><td>没有事件、时间单位错误或尚未同步。</td><td>导入行为/TTL，核对数量和残差，再单独运行所选事件分析。</td></tr><tr><td><b>已完成阶段恢复后没有图</b></td><td>项目由旧 schema 保存，或只读源路径已失效。</td><td>查看审计日志并核对源路径，只重跑缺失的派生阶段。</td></tr><tr><td><b>关闭软件出现保存提示</b></td><td>项目存在未保存的页面、参数、决定或日志。</td><td>选择保存更新 neuroflow_project.json；放弃则不保存这些修改；取消返回程序。</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>反馈问题时需要提供</h2>
+  <ul><li>NeuroFlow 版本和操作系统</li><li>隐去敏感路径后的项目清单</li><li>当前阶段、具体选项和参数</li><li>第一行真实错误与审计日志末尾</li><li>sorter 名称、后端版本和 GPU/CPU 状态</li><li>教学模拟项目能否复现</li></ul>
+</section>
+
+        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-# NeuroFlow v0.6.1
+# NeuroFlow v0.7.0
 
 NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 它不重新实现成熟 sorter，而是把数据导入、质量控制、Kilosort4、Unit 质控、

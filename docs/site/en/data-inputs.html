@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Import your own data · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="zh" href="../zh/data-inputs.html">Chinese</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Getting started</div>
+<a href="index.html">Overview</a>
+<a href="installation.html">Installation and runtime</a>
+<a href="gui-guide.html">Interface and basic operation</a>
+<div class="sidebar-label">Tutorials</div>
+<a href="tutorials.html">Complete step-by-step tutorial</a>
+<a class="active" href="data-inputs.html">Import your own data</a>
+<div class="sidebar-label">Guides</div>
+<a href="sorting.html">Spike sorting guide</a>
+<a href="parameters.html">Parameter reference</a>
+<a href="figure-studio.html">Figure editing and export</a>
+<div class="sidebar-label">Reference</div>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="sources.html">Methods and sources</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow operation manual</p>
+          <h1>Import your own data</h1>
+          <p class="lead">Create a project first, then choose the route that matches the files you actually have. Raw voltage and processed unit data enter at different workflow stages.</p>
+        </div>
+        
+<section data-searchable>
+  <h2>Choose by what you have</h2>
+  <table><thead><tr><th>Route</th><th>Required files</th><th>Workflow starts at</th><th>Can run sorting?</th></tr></thead>
+  <tbody><tr><td><b>Generic binary</b></td><td>.bin/.dat/.raw plus rate, total channels, dtype, µV/bit, and optional events CSV.</td><td>Raw QC</td><td>Yes</td></tr><tr><td><b>Acquisition system</b></td><td>Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, or NWB ElectricalSeries.</td><td>Raw QC</td><td>Yes</td></tr><tr><td><b>Existing sorting</b></td><td>Kilosort/Phy output with spike_times and cluster assignments.</td><td>Unit QC</td><td>No, unless raw voltage is also supplied</td></tr><tr><td><b>IBL ALF / BWM</b></td><td>Processed spikes and trials, or a behavior aggregate.</td><td>Unit/behavior</td><td>No</td></tr><tr><td><b>NWB Units</b></td><td>Units table and available behavior/state objects.</td><td>Unit/behavior</td><td>Only if a raw ElectricalSeries is imported separately</td></tr><tr><td><b>Teaching simulation</b></td><td>Neuropixels-like, tetrode, or microwire-style deterministic recording with behavior and ground truth.</td><td>Raw QC</td><td>Yes</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>Generic binary checklist</h2>
+  <ol class="steps"><li>Source path remains readable.</li><li>File size, duration, channels, and dtype are internally consistent.</li><li>Probe geometry and channel groups match the recording.</li><li>Event units and clocks are explicit.</li><li>Decide whether to link or copy the raw source.</li></ol>
+  <div class="callout warning">A file that opens is not necessarily interpreted correctly. A wrong channel count or dtype can produce plausible-looking but invalid traces.</div>
+</section>
+<section data-searchable>
+  <h2>Behavior CSV example</h2>
+  <pre><code>trial,time_seconds,event_type,condition,choice,reaction_time
+1,12.450,stimulus_onset,A,left,0.620
+1,13.070,response,A,left,0.620</code></pre>
+  <p>A separate TTL CSV may contain ephys-clock pulse times. NeuroFlow pairs the pulse sequence and reports offset, drift, residuals, and missing events.</p>
+</section>
+
+        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

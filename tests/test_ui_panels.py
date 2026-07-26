@@ -5,9 +5,10 @@ import numpy as np
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication, QFileDialog, QScrollArea
+from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox, QScrollArea
 
 from neuroflow.models import ProjectState
+from neuroflow.project import MANIFEST_NAME, load_project
 from neuroflow.sorting_results import (
     compare_sorting_results,
     register_sorting_result,
@@ -48,6 +49,7 @@ def test_scrollable_workspace_and_independent_panel_export(
 
     assert isinstance(window.main_scroll, QScrollArea)
     assert not window.main_scroll.widget().isAncestorOf(window.progress_bar)
+    assert not window.main_scroll.widget().isAncestorOf(window.run_step_button)
     assert window.figure_host.minimumHeight() >= 600
     assert window.panel_combo.count() == 3
     assert "performance" in window.panel_combo.itemText(0).lower()
@@ -69,6 +71,82 @@ def test_scrollable_workspace_and_independent_panel_export(
 
     window._toggle_panel_focus()
     assert sum(axis.get_visible() for axis in window.canvas.figure.axes) == visible_before
+    window.close()
+    app.processEvents()
+
+
+def test_saved_project_reopens_at_the_last_stage(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    window = NeuroFlowWindow(tmp_path / "workspace")
+    state = ProjectState(
+        root=tmp_path / "project",
+        name="Saved project",
+        source_type="binary",
+        recording_path=tmp_path / "recording.bin",
+        channel_count=8,
+        sampling_rate=1_000.0,
+        duration_seconds=0.1,
+    )
+    state.recording_path.write_bytes(b"\0" * (100 * 8 * 2))
+    state.workflow_status = {
+        "import": "completed",
+        "qc": "completed",
+        "preprocess": "completed",
+    }
+    state.metadata["last_open_step"] = "preprocess"
+
+    window._load_state(state)
+    assert window._save(notify=False)
+    restored = load_project(state.root)
+    window._load_state(restored)
+
+    assert window.current_step == "preprocess"
+    assert window.state.recording_path == state.recording_path
+    assert window.state.workflow_status["qc"] == "completed"
+    assert window.project_dirty is False
+    window.close()
+    app.processEvents()
+
+
+def test_unsaved_close_save_choice_persists_project(
+    tmp_path: Path, monkeypatch
+):
+    app = QApplication.instance() or QApplication([])
+    window = NeuroFlowWindow(tmp_path / "workspace")
+    state = ProjectState(
+        root=tmp_path / "project",
+        name="Unsaved project",
+        source_type="binary",
+        recording_path=tmp_path / "recording.bin",
+        channel_count=4,
+        sampling_rate=1_000.0,
+        duration_seconds=0.1,
+    )
+    state.recording_path.write_bytes(b"\0" * (100 * 4 * 2))
+    window._load_state(state)
+    state.workflow_status["qc"] = "completed"
+    window._mark_project_dirty()
+
+    monkeypatch.setattr(QMessageBox, "exec", lambda _dialog: QMessageBox.Save)
+
+    class CloseEvent:
+        accepted = False
+        ignored = False
+
+        def accept(self):
+            self.accepted = True
+
+        def ignore(self):
+            self.ignored = True
+
+    event = CloseEvent()
+    window.closeEvent(event)
+
+    assert event.accepted is True
+    assert event.ignored is False
+    assert (state.root / MANIFEST_NAME).is_file()
+    assert load_project(state.root).workflow_status["qc"] == "completed"
+    assert window.project_dirty is False
     window.close()
     app.processEvents()
 

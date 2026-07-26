@@ -1,35 +1,23 @@
-const body = document.body;
-const savedLanguage = localStorage.getItem("neuroflow-docs-language");
-body.dataset.language = savedLanguage === "en" ? "en" : "zh";
-
-const languageButton = document.querySelector("[data-language-toggle]");
-if (languageButton) {
-  const updateLabel = () => {
-    languageButton.textContent = body.dataset.language === "zh" ? "EN" : "中文";
-  };
-  languageButton.addEventListener("click", () => {
-    body.dataset.language = body.dataset.language === "zh" ? "en" : "zh";
-    localStorage.setItem("neuroflow-docs-language", body.dataset.language);
-    updateLabel();
+document.querySelectorAll("[data-language-link]").forEach((link) => {
+  link.addEventListener("click", () => {
+    localStorage.setItem("neuroflow-docs-language", link.dataset.languageLink);
   });
-  updateLabel();
-}
+});
 
 const menuButton = document.querySelector("[data-menu-toggle]");
 if (menuButton) {
   menuButton.addEventListener("click", () => {
-    body.classList.toggle("sidebar-open");
+    document.body.classList.toggle("sidebar-open");
   });
 }
 
 const searchInput = document.querySelector("[data-doc-search]");
 if (searchInput) {
   searchInput.addEventListener("input", () => {
-    const query = searchInput.value.trim().toLowerCase();
+    const query = searchInput.value.trim().toLocaleLowerCase();
     document.querySelectorAll("[data-searchable]").forEach((element) => {
-      const matches = !query || element.textContent.toLowerCase().includes(query);
-      element.classList.toggle("search-hidden", !matches);
+      const text = element.textContent.toLocaleLowerCase();
+      element.classList.toggle("search-hidden", Boolean(query) && !text.includes(query));
     });
   });
 }
-

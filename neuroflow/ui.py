@@ -4,6 +4,7 @@ import re
 import sys
 import traceback
 from datetime import datetime, timezone
+from html import escape
 from pathlib import Path
 
 import mplcursors
@@ -128,6 +129,7 @@ from .sorting_workbench import SortingWorkbench
 from .statistics import run_statistical_suite
 from .synchronization import import_behavior_events, synchronize_existing_events
 from .trace_controls import TraceControls
+from .tutorial_details import TUTORIAL_DETAILS, localized, localized_rows
 from .tutorials import TUTORIALS, tutorial_value
 
 STEPS = [
@@ -290,6 +292,11 @@ def _documentation_index() -> Path:
         bundle_root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
         return bundle_root / "neuroflow_docs" / "index.html"
     return Path(__file__).resolve().parents[1] / "docs" / "site" / "index.html"
+
+
+def _documentation_page(language: str, page: str = "index.html") -> Path:
+    language_folder = "en" if language == "en_US" else "zh"
+    return _documentation_index().parent / language_folder / page
 
 
 APP_STYLE = """
@@ -1483,12 +1490,32 @@ class TutorialDialog(QDialog):
         super().__init__(parent)
         self.language = language
         self.setWindowTitle(tr("tutorial", language))
-        self.resize(940, 650)
+        self.resize(1280, 820)
         layout = QHBoxLayout(self)
         self.list = QListWidget()
-        self.list.setFixedWidth(250)
+        self.list.setFixedWidth(360)
         self.browser = QTextBrowser()
         self.browser.setOpenExternalLinks(True)
+        self.browser.document().setDefaultStyleSheet(
+            """
+            body { color: #17211e; font-family: "Microsoft YaHei", "Segoe UI";
+                   font-size: 14px; line-height: 1.65; }
+            h1 { font-size: 27px; margin: 0 0 12px 0; }
+            h2 { font-size: 19px; margin: 24px 0 8px 0; color: #185f4d; }
+            h3 { font-size: 16px; margin: 14px 0 5px 0; }
+            p { margin: 6px 0 10px 0; }
+            table { border-collapse: collapse; width: 100%; margin: 8px 0 14px 0; }
+            th { background: #edf3f0; text-align: left; }
+            th, td { border: 1px solid #cfd9d4; padding: 8px; vertical-align: top; }
+            .intro { background: #f1f6f4; border-left: 4px solid #1f7a63;
+                     padding: 12px 14px; }
+            .warning { background: #fff7ed; border-left: 4px solid #c06b34;
+                       padding: 10px 14px; }
+            .next { background: #eef5ff; border-left: 4px solid #4a77a8;
+                    padding: 10px 14px; }
+            code { background: #f1f3f2; padding: 1px 4px; }
+            """
+        )
         layout.addWidget(self.list)
         right = QWidget()
         right_layout = QVBoxLayout(right)
@@ -1503,7 +1530,9 @@ class TutorialDialog(QDialog):
         right_layout.addWidget(full_manual)
         layout.addWidget(right, 1)
         for chapter in TUTORIALS:
-            self.list.addItem(tutorial_value(chapter, "title", language))
+            title = tutorial_value(chapter, "title", language)
+            self.list.addItem(title)
+            self.list.item(self.list.count() - 1).setToolTip(title)
         self.list.currentRowChanged.connect(self._show)
         index = next(
             (
@@ -1519,46 +1548,135 @@ class TutorialDialog(QDialog):
         if index < 0:
             return
         item = TUTORIALS[index]
+        detail = TUTORIAL_DETAILS[item["key"]]
         english = self.language == "en_US"
         controls = page_controls(item["key"], self.language)
+        operations = localized_rows(detail, "operations", self.language)
+        parameters = localized_rows(detail, "parameters", self.language)
+        recommended = localized(detail, "recommended", self.language)
+        pitfalls = localized(detail, "pitfalls", self.language)
         controls_html = "".join(
             (
                 "<tr>"
-                f"<td style='padding:8px;vertical-align:top'><b>{name}</b></td>"
-                f"<td style='padding:8px'>{description}</td>"
+                f"<td><b>{escape(name)}</b></td>"
+                f"<td>{escape(description)}</td>"
                 "</tr>"
             )
             for name, description in controls
         )
+        operations_html = "".join(
+            (
+                "<tr>"
+                f"<td><b>{escape(row['name'])}</b></td>"
+                f"<td>{escape(row['action'])}</td>"
+                f"<td>{escape(row['purpose'])}</td>"
+                f"<td>{escape(row['result'])}</td>"
+                "</tr>"
+            )
+            for row in operations
+        )
+        parameters_html = "".join(
+            (
+                "<tr>"
+                f"<td><b><code>{escape(row['name'])}</code></b></td>"
+                f"<td>{escape(row['meaning'])}</td>"
+                f"<td>{escape(row['default'])}</td>"
+                f"<td>{escape(row['recommended'])}</td>"
+                f"<td>{escape(row['effect'])}</td>"
+                "</tr>"
+            )
+            for row in parameters
+        )
+        recommended_html = "".join(
+            f"<li>{escape(text)}</li>" for text in recommended
+        )
+        pitfalls_html = "".join(
+            f"<li>{escape(text)}</li>" for text in pitfalls
+        )
         references_html = "".join(
-            f"<li><a href='{reference['url']}'>{reference['name']}</a></li>"
+            f"<li><a href='{escape(reference['url'])}'>{escape(reference['name'])}</a></li>"
             for reference in REFERENCES
+        )
+        headings = (
+            {
+                "problem": "What this stage is solving",
+                "before": "Before you begin",
+                "operations": "Operations: what to do and why",
+                "op_headers": ("Operation", "What you do", "Purpose", "Result"),
+                "parameters": "Parameter reference",
+                "param_headers": (
+                    "Parameter",
+                    "Meaning",
+                    "Default",
+                    "Recommendation",
+                    "Effect of changing it",
+                ),
+                "controls": "Every control on this page",
+                "recommended": "Recommended path",
+                "pitfalls": "Common mistakes",
+                "io": "Inputs and outputs",
+                "checks": "Acceptance checks",
+                "sources": "Methods and sources",
+                "next": "What happens next",
+            }
+            if english
+            else {
+                "problem": "这一阶段在解决什么问题",
+                "before": "开始前要准备什么",
+                "operations": "可以做哪些操作，为什么这样做",
+                "op_headers": ("操作", "你要做什么", "目的", "运行后得到什么"),
+                "parameters": "参数逐项说明",
+                "param_headers": (
+                    "参数",
+                    "含义",
+                    "默认值",
+                    "推荐设置",
+                    "改变参数会发生什么",
+                ),
+                "controls": "本页每个控件的作用",
+                "recommended": "推荐操作顺序",
+                "pitfalls": "常见错误",
+                "io": "输入与输出",
+                "checks": "完成本阶段前必须检查",
+                "sources": "方法与资料来源",
+                "next": "下一步",
+            }
+        )
+        op_headers = "".join(f"<th>{text}</th>" for text in headings["op_headers"])
+        param_headers = "".join(
+            f"<th>{text}</th>" for text in headings["param_headers"]
         )
         self.browser.setHtml(
             f"<h1>{tutorial_value(item, 'title', self.language)}</h1>"
-            f"<h3>{'Why' if english else '为什么做'}</h3>"
-            f"<p>{tutorial_value(item, 'why', self.language)}</p>"
-            f"<h3>{'Input' if english else '输入'}</h3>"
-            f"<p>{tutorial_value(item, 'input', self.language)}</p>"
-            f"<h3>{'Output' if english else '输出'}</h3>"
-            f"<p>{tutorial_value(item, 'output', self.language)}</p>"
-            f"<h3>{'What to check' if english else '必须检查'}</h3>"
-            f"<p>{tutorial_value(item, 'checks', self.language)}</p>"
-            f"<h3>{'Controls and consequences' if english else '页面控件与操作后果'}</h3>"
-            "<table style='border-collapse:collapse;width:100%' border='1' "
-            f"cellpadding='0'>{controls_html}</table>"
-            f"<h3>{'Methods and sources' if english else '方法来源'}</h3>"
-            f"<p>{item['reference']}</p>"
+            f"<h2>{headings['problem']}</h2>"
+            f"<div class='intro'>{escape(localized(detail, 'narrative', self.language))}</div>"
+            f"<h2>{headings['before']}</h2>"
+            f"<p>{escape(localized(detail, 'before', self.language))}</p>"
+            f"<h2>{headings['operations']}</h2>"
+            f"<table><thead><tr>{op_headers}</tr></thead><tbody>{operations_html}</tbody></table>"
+            f"<h2>{headings['parameters']}</h2>"
+            f"<table><thead><tr>{param_headers}</tr></thead><tbody>{parameters_html}</tbody></table>"
+            f"<h2>{headings['controls']}</h2>"
+            f"<table><tbody>{controls_html}</tbody></table>"
+            f"<h2>{headings['recommended']}</h2><ol>{recommended_html}</ol>"
+            f"<h2>{headings['pitfalls']}</h2><div class='warning'><ul>{pitfalls_html}</ul></div>"
+            f"<h2>{headings['io']}</h2>"
+            f"<p><b>{'Input' if english else '输入'}：</b>"
+            f"{escape(tutorial_value(item, 'input', self.language))}</p>"
+            f"<p><b>{'Output' if english else '输出'}：</b>"
+            f"{escape(tutorial_value(item, 'output', self.language))}</p>"
+            f"<h2>{headings['checks']}</h2>"
+            f"<p>{escape(tutorial_value(item, 'checks', self.language))}</p>"
+            f"<h2>{headings['sources']}</h2>"
+            f"<p>{escape(item['reference'])}</p>"
             f"<ul>{references_html}</ul>"
-            + (
-                "<p><b>Principle:</b> tutorials explain decisions; the user confirms and records final parameters.</p>"
-                if english
-                else "<p><b>原则：</b>教程解释决策依据，最终参数仍由用户确认并记录。</p>"
-            )
+            f"<h2>{headings['next']}</h2>"
+            f"<div class='next'>{escape(localized(detail, 'next', self.language))}</div>"
         )
+        self.browser.verticalScrollBar().setValue(0)
 
     def _open_full_manual(self) -> None:
-        manual = _documentation_index().with_name("manual.html")
+        manual = _documentation_page(self.language, "tutorials.html")
         if manual.exists():
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(manual)))
 
@@ -1787,9 +1905,11 @@ class PipelineWorker(QThread):
                         )
                 elif key == "preprocess":
                     if self.state.ready:
+                        preview = preprocessing_preview(self.state)
+                        self.state.preprocessing = preview
                         self._emit(
                             key,
-                            preprocessing_preview(self.state),
+                            preview,
                             self._message(
                                 "预处理预览完成", "Preprocessing preview completed"
                             ),
@@ -1970,9 +2090,11 @@ class NeuroFlowWindow(QMainWindow):
         self.active_run_keys: list[str] = []
         self.active_run_started: datetime | None = None
         self.current_step = "import"
+        self.project_dirty = False
+        self._restoring_project = False
         self.step_buttons: dict[str, QPushButton] = {}
         self.figure_cursor = None
-        self.setWindowTitle(tr("app_title", self.language))
+        self._update_window_title()
         self.resize(1500, 920)
         self.setMinimumSize(1180, 720)
         self.pages = QStackedWidget()
@@ -2248,7 +2370,7 @@ class NeuroFlowWindow(QMainWindow):
     def _sidebar(self) -> QWidget:
         sidebar = QWidget()
         sidebar.setObjectName("Sidebar")
-        sidebar.setFixedWidth(310)
+        sidebar.setFixedWidth(340)
         layout = QVBoxLayout(sidebar)
         layout.setContentsMargins(0, 10, 0, 10)
         self.workflow_label = QLabel("  分析流程")
@@ -2306,11 +2428,6 @@ class NeuroFlowWindow(QMainWindow):
         self.option_combo.setProperty("neuroflow_help_key", "page.option")
         self.option_combo.currentIndexChanged.connect(self._on_option_changed)
         title_row.addWidget(self.option_combo)
-        self.run_step_button = QPushButton("运行此节点")
-        self.run_step_button.setProperty("neuroflow_help_key", "global.run_step")
-        self.run_step_button.clicked.connect(self._run_current_step)
-        self.run_step_button.setEnabled(False)
-        title_row.addWidget(self.run_step_button)
         layout.addLayout(title_row)
 
         self.project_data_panel = QFrame()
@@ -2478,17 +2595,31 @@ class NeuroFlowWindow(QMainWindow):
     def _run_footer(self) -> QWidget:
         footer = QFrame()
         footer.setObjectName("RunFooter")
-        footer.setFixedHeight(58)
+        footer.setFixedHeight(72)
         layout = QHBoxLayout(footer)
-        layout.setContentsMargins(16, 7, 16, 7)
+        layout.setContentsMargins(16, 8, 16, 8)
         self.status_label = QLabel("请从首页打开或创建项目")
         self.status_label.setObjectName("Muted")
-        self.status_label.setMinimumWidth(280)
+        self.status_label.setMinimumWidth(220)
         layout.addWidget(self.status_label, 1)
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, len(STEPS))
-        self.progress_bar.setMinimumWidth(320)
-        layout.addWidget(self.progress_bar, 2)
+        self.progress_bar.setMinimumWidth(260)
+        layout.addWidget(self.progress_bar, 1)
+        run_box = QVBoxLayout()
+        run_box.setContentsMargins(8, 0, 0, 0)
+        run_box.setSpacing(2)
+        self.run_context_label = QLabel("当前：尚未选择分析")
+        self.run_context_label.setObjectName("Muted")
+        run_box.addWidget(self.run_context_label)
+        layout.addLayout(run_box)
+        self.run_step_button = QPushButton("运行当前所选分析")
+        self.run_step_button.setObjectName("Primary")
+        self.run_step_button.setMinimumWidth(210)
+        self.run_step_button.setProperty("neuroflow_help_key", "global.run_step")
+        self.run_step_button.clicked.connect(self._run_current_step)
+        self.run_step_button.setEnabled(False)
+        layout.addWidget(self.run_step_button)
         return footer
 
     def _assistant(self) -> QWidget:
@@ -2622,17 +2753,32 @@ class NeuroFlowWindow(QMainWindow):
         self.help_title.setText(title)
         self.help_text.setText(description)
 
+    def _update_window_title(self) -> None:
+        suffix = " *" if self.project_dirty else ""
+        self.setWindowTitle(f"{tr('app_title', self.language)}{suffix}")
+
+    def _mark_project_dirty(self) -> None:
+        if not self.state or self._restoring_project:
+            return
+        self.project_dirty = True
+        self._update_window_title()
+
+    def _set_project_clean(self) -> None:
+        self.project_dirty = False
+        self._update_window_title()
+
     def _set_language(self, language: str | None) -> None:
         if language not in LANGUAGES or language == self.language:
             return
         self.language = language
         if self.state:
             self.state.metadata["language"] = language
+            self._mark_project_dirty()
         self._apply_language()
 
     def _apply_language(self) -> None:
         language = self.language
-        self.setWindowTitle(tr("app_title", language))
+        self._update_window_title()
         for combo in (self.home_language_combo, self.workspace_language_combo):
             combo.blockSignals(True)
             index = combo.findData(language)
@@ -2731,6 +2877,7 @@ class NeuroFlowWindow(QMainWindow):
                 tutorial_value(chapter, "why", language)
             )
         self.run_step_button.setText(tr("run_step", language))
+        self._update_run_context()
         self.project_data_title.setText(
             "Project data" if language == "en_US" else "项目数据"
         )
@@ -3240,6 +3387,9 @@ class NeuroFlowWindow(QMainWindow):
         if dialog.exec() == QDialog.Accepted and dialog.result:
             self._set_step_status("sync", "completed")
             self._set_step_status("behavior", "pending")
+            self.state.metadata["last_open_step"] = "sync"
+            save_project(self.state)
+            self._set_project_clean()
             self._refresh_sync_inventory()
             self._refresh_figure()
             self._refresh_warnings()
@@ -3333,7 +3483,7 @@ class NeuroFlowWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(library_root)))
 
     def _open_documentation(self) -> None:
-        index = _documentation_index()
+        index = _documentation_page(self.language)
         if not index.exists():
             QMessageBox.warning(
                 self,
@@ -3360,12 +3510,13 @@ class NeuroFlowWindow(QMainWindow):
             QMessageBox.warning(self, "无法打开项目", str(exc))
 
     def _load_state(self, state: ProjectState) -> None:
+        self._restoring_project = True
         self.state = state
         stored_language = state.metadata.get("language")
         if stored_language in LANGUAGES:
             self.language = stored_language
         state.metadata["language"] = self.language
-        self.preview = None
+        self.preview = state.preprocessing or None
         self.matches = []
         self.project_label.setText(f"{state.name}  ·  {state.root}")
         self.metric_source.value_label.setText(state.source_type.upper())
@@ -3391,9 +3542,20 @@ class NeuroFlowWindow(QMainWindow):
                     state.ground_truth,
                     state.sorted_spikes,
                 )
+        restored_step = str(state.metadata.get("last_open_step", "import"))
+        if restored_step not in self.step_buttons:
+            restored_step = next(
+                (
+                    step.key
+                    for step in reversed(STEPS)
+                    if state.workflow_status.get(step.key) == "completed"
+                ),
+                "import",
+            )
+        self.current_step = restored_step
         self.pages.setCurrentWidget(self.workspace_page)
         self._apply_language()
-        self._select_step("import")
+        self._select_step(restored_step)
         configured = state.source_type not in {"unknown", "unconfigured"}
         self.run_button.setEnabled(configured)
         self.run_step_button.setEnabled(configured)
@@ -3411,11 +3573,98 @@ class NeuroFlowWindow(QMainWindow):
             )
         )
         self._refresh_warnings()
+        self._restoring_project = False
+        self._set_project_clean()
 
-    def _save(self) -> None:
-        if self.state:
+    def _save(self, _checked: bool = False, *, notify: bool = True) -> bool:
+        if not self.state:
+            return True
+        try:
+            self.state.metadata["last_open_step"] = self.current_step
+            self.state.metadata["last_saved_at"] = (
+                datetime.now(timezone.utc).astimezone().isoformat()
+            )
             path = save_project(self.state)
-            self.status_label.setText(f"项目已保存：{path.name}")
+            self._set_project_clean()
+            self.status_label.setText(
+                f"Project saved: {path.name}"
+                if self.language == "en_US"
+                else f"项目已保存：{path.name}"
+            )
+            if notify:
+                QMessageBox.information(
+                    self,
+                    "Project saved" if self.language == "en_US" else "项目已保存",
+                    (
+                        f"Project manifest:\n{path}\n\nThe project can be reopened "
+                        "from the home page to resume at the last saved stage."
+                        if self.language == "en_US"
+                        else (
+                            f"项目清单：\n{path}\n\n之后可从首页重新打开该文件，"
+                            "从上次保存的阶段继续。"
+                        )
+                    ),
+                )
+            return True
+        except Exception as exc:  # noqa: BLE001 - save failures are user-facing
+            QMessageBox.critical(
+                self,
+                "Project save failed"
+                if self.language == "en_US"
+                else "项目保存失败",
+                str(exc),
+            )
+            return False
+
+    def closeEvent(self, event) -> None:
+        if self.worker and self.worker.isRunning():
+            QMessageBox.warning(
+                self,
+                "Analysis is running"
+                if self.language == "en_US"
+                else "分析仍在运行",
+                (
+                    "Wait for the current analysis to finish before closing NeuroFlow. "
+                    "Completed results will then be saved to the project."
+                    if self.language == "en_US"
+                    else "请等待当前分析完成后再关闭 NeuroFlow；完成结果会自动保存到项目。"
+                ),
+            )
+            event.ignore()
+            return
+        if not self.state or not self.project_dirty:
+            event.accept()
+            return
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Warning)
+        dialog.setWindowTitle(
+            "Unsaved project" if self.language == "en_US" else "项目尚未保存"
+        )
+        dialog.setText(
+            f'"{self.state.name}" has changes that have not been saved.'
+            if self.language == "en_US"
+            else f"当前项目“{self.state.name}”还有未保存的修改。"
+        )
+        dialog.setInformativeText(
+            "Save before closing so the data source, workflow stage, parameters, "
+            "results, and audit log can be restored next time."
+            if self.language == "en_US"
+            else (
+                "建议保存后再退出，以便下次恢复数据来源、当前阶段、参数、"
+                "已有结果和审计记录。"
+            )
+        )
+        dialog.setStandardButtons(
+            QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel
+        )
+        dialog.setDefaultButton(QMessageBox.Save)
+        choice = dialog.exec()
+        if choice == QMessageBox.Save:
+            event.accept() if self._save(notify=False) else event.ignore()
+        elif choice == QMessageBox.Discard:
+            event.accept()
+        else:
+            event.ignore()
 
     def _refresh_environment(self) -> None:
         env = kilosort_environment()
@@ -3618,16 +3867,39 @@ class NeuroFlowWindow(QMainWindow):
             else tr("run_step", self.language)
         )
         self.option_combo.blockSignals(False)
+        self._update_run_context()
         self._update_page_option_help()
         self._refresh_figure()
         self._refresh_table()
         self._refresh_warnings()
 
     def _on_option_changed(self) -> None:
+        self._update_run_context()
         self._update_page_option_help()
         self._refresh_figure()
 
+    def _update_run_context(self) -> None:
+        if not hasattr(self, "run_context_label"):
+            return
+        title = step_text(self.current_step, self.language)[0]
+        if self.current_step == "sorting" and hasattr(self, "sorting_workbench"):
+            selection = self.sorting_workbench.selected_sorter()
+        else:
+            selection = (
+                self.option_combo.currentText()
+                if hasattr(self, "option_combo") and self.option_combo.isVisible()
+                else ""
+            )
+        separator = " · " if selection else ""
+        prefix = "Current" if self.language == "en_US" else "当前"
+        self.run_context_label.setText(
+            f"{prefix}：{title}{separator}{selection}"
+            if self.language == "zh_CN"
+            else f"{prefix}: {title}{separator}{selection}"
+        )
+
     def _on_sorter_selected(self, sorter_key: str) -> None:
+        self._update_run_context()
         self.help_title.setText(
             f"{sorter_key} · "
             + (
@@ -3666,6 +3938,7 @@ class NeuroFlowWindow(QMainWindow):
             self.state.active_sorter_key,
         )
         save_project(self.state)
+        self._set_project_clean()
         self._refresh_figure()
         self._refresh_table()
         self._refresh_warnings()
@@ -4021,6 +4294,7 @@ class NeuroFlowWindow(QMainWindow):
         button.style().polish(button)
         if self.state:
             self.state.workflow_status[key] = status
+            self._mark_project_dirty()
 
     def _run_full_pipeline(self) -> None:
         self._start_worker([step.key for step in STEPS])
@@ -4144,7 +4418,9 @@ class NeuroFlowWindow(QMainWindow):
                     self.state.active_sorter_key,
                 )
         if self.state:
+            self.state.metadata["last_open_step"] = key
             save_project(self.state)
+            self._set_project_clean()
         self._select_step(key)
 
     def _on_failed(self, key: str, details: str) -> None:
@@ -4161,6 +4437,7 @@ class NeuroFlowWindow(QMainWindow):
                 if self.language == "en_US"
                 else f"{key} 失败：{details.splitlines()[0]}"
             )
+            self._mark_project_dirty()
         self._refresh_warnings()
         QMessageBox.critical(
             self,

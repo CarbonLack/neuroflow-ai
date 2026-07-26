@@ -58,7 +58,7 @@ def save_project(state: ProjectState) -> Path:
         sorting_archives[sorter_key] = str(sorting_path.relative_to(state.root))
 
     payload = {
-        "schema_version": 3,
+        "schema_version": 4,
         "name": state.name,
         "source_type": state.source_type,
         "source_path": str(state.source_path) if state.source_path else None,
@@ -77,8 +77,10 @@ def save_project(state: ProjectState) -> Path:
         "active_sorter_key": state.active_sorter_key,
         "sorting_comparison": _jsonable(state.sorting_comparison),
         "qc": _jsonable(state.qc),
+        "preprocessing": _jsonable(state.preprocessing),
         "unit_metrics": _jsonable(state.unit_metrics),
         "unit_diagnostics": _jsonable(state.unit_diagnostics),
+        "analysis": _jsonable(state.analysis),
         "spike_train_analysis": _jsonable(state.spike_train_analysis),
         "lfp_analysis": _jsonable(state.lfp_analysis),
         "spike_field_analysis": _jsonable(state.spike_field_analysis),
@@ -158,11 +160,13 @@ def load_project(path: Path) -> ProjectState:
         active_sorter_key=active_sorter_key,
         sorting_comparison=payload.get("sorting_comparison", {}),
         qc=payload.get("qc", {}),
+        preprocessing=payload.get("preprocessing", {}),
         unit_metrics=payload.get("unit_metrics", []),
         unit_diagnostics={
             int(key): value
             for key, value in payload.get("unit_diagnostics", {}).items()
         },
+        analysis=payload.get("analysis", {}),
         spike_train_analysis=payload.get("spike_train_analysis", {}),
         lfp_analysis=payload.get("lfp_analysis", {}),
         spike_field_analysis=payload.get("spike_field_analysis", {}),

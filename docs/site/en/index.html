@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>A visible, replaceable, and restorable electrophysiology workflow · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="zh" href="../zh/index.html">Chinese</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Getting started</div>
+<a class="active" href="index.html">Overview</a>
+<a href="installation.html">Installation and runtime</a>
+<a href="gui-guide.html">Interface and basic operation</a>
+<div class="sidebar-label">Tutorials</div>
+<a href="tutorials.html">Complete step-by-step tutorial</a>
+<a href="data-inputs.html">Import your own data</a>
+<div class="sidebar-label">Guides</div>
+<a href="sorting.html">Spike sorting guide</a>
+<a href="parameters.html">Parameter reference</a>
+<a href="figure-studio.html">Figure editing and export</a>
+<div class="sidebar-label">Reference</div>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="sources.html">Methods and sources</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow operation manual</p>
+          <h1>A visible, replaceable, and restorable electrophysiology workflow</h1>
+          <p class="lead">NeuroFlow connects raw multichannel recordings, replaceable spike sorters, behavior, neural analyses, statistics, machine learning, and publication export in one local-first project.</p>
+        </div>
+        
+<section data-searchable>
+  <h2>Product principles</h2>
+  <div class="grid-3">
+    <article class="panel"><h3>Visible</h3><p>Every stage exposes input, parameters, method, evidence, and limitations.</p></article><article class="panel"><h3>Replaceable</h3><p>Sorters and stage outputs can be changed without hiding native files.</p></article><article class="panel"><h3>Restorable</h3><p>The project manifest restores sources, completed stages, results, and audit history.</p></article>
+  </div>
+</section>
+<section data-searchable>
+  <h2>Start in five minutes</h2>
+  <ol class="steps"><li>Create an empty project and import your own data, or open a teaching simulation.</li><li>Verify data structure and raw traces before preprocessing.</li><li>Run each selected analysis from the fixed bottom action bar.</li><li>Inspect figures, tables, parameters, and the audit log after every run.</li><li>Save the project and reopen neuroflow_project.json to resume.</li></ol>
+  <div class="callout method">AI is optional. Manual and guided workflows remain fully usable without a local model.</div>
+</section>
+<section data-searchable>
+  <h2>The complete workflow</h2>
+  <div class="stage-list">
+<article class="stage-card" data-searchable>
+  <div class="stage-number">01</div>
+  <div>
+    <h3><a href="tutorials.html#import">Start with the data structure</a></h3>
+    <p>This page does more than select a file. NeuroFlow must know how each sample is stored, how many values form one time point, how probe contacts are arranged, and which device clock timestamps behavior. Those facts give filtering, sorting, and event alignment their correct physical units. Import keeps the source read-only and stores only links, caches, and derived results in the project.</p>
+    <p><b>Recommended first action：</b> Create a project first, then choose the entry that matches the files you actually have.</p>
+    <p class="muted"><b>Then：</b> After confirming structure, continue to Raw QC; processed spikes begin at Unit QC.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">02</div>
+  <div>
+    <h3><a href="tutorials.html#qc">Raw-signal quality control</a></h3>
+    <p>QC does not automatically delete channels. It builds evidence about where an anomaly occurs in channel, time, and frequency and whether it can affect referencing or spike detection. Locate problems globally, verify them in zoomed traces, and only then label candidate bad channels.</p>
+    <p><b>Recommended first action：</b> Run summary and timeline first, then verify every candidate in traces and spectra.</p>
+    <p class="muted"><b>Then：</b> Carry confirmed bad channels and artifact intervals into separate AP and LFP preprocessing branches.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">03</div>
+  <div>
+    <h3><a href="tutorials.html#preprocess">Preprocessing is not a fixed recipe</a></h3>
+    <p>More preprocessing is not automatically better. Every operation changes the signal, so its purpose, order, and duplication inside the sorter must be explicit. NeuroFlow previews a short segment first and compares traces and spectra before parameters are committed to the workflow.</p>
+    <p><b>Recommended first action：</b> Create separate AP and LFP branches rather than reusing one recipe.</p>
+    <p class="muted"><b>Then：</b> Send the AP branch to Spike sorting and retain the LFP branch for neural analyses.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">04</div>
+  <div>
+    <h3><a href="tutorials.html#sorting">Spike sorting and tool selection</a></h3>
+    <p>Spike sorting assigns candidate events in multichannel voltage to units. NeuroFlow preserves each sorter&#x27;s native files, parameters, and logs while normalizing shared outputs into units, spike times in seconds, and channel/template descriptions for downstream comparison.</p>
+    <p><b>Recommended first action：</b> Run a representative segment with defaults to validate input and resources before the full session.</p>
+    <p class="muted"><b>Then：</b> Select an active sorting result and continue to Unit QC; return here when sorter comparison is needed.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">05</div>
+  <div>
+    <h3><a href="tutorials.html#unit_qc">Unit QC and manual review</a></h3>
+    <p>Sorter output contains candidate clusters. Unit QC combines firing rate, refractory-period evidence, SNR, waveforms, amplitude over time, and ACGs so the researcher can assign traceable keep, MUA, noise, or uncertain labels. No single threshold replaces review.</p>
+    <p><b>Recommended first action：</b> Inspect population distributions first, then review boundary and high-impact units.</p>
+    <p class="muted"><b>Then：</b> After selecting downstream units, import behavior and TTL data and establish a common timeline.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">06</div>
+  <div>
+    <h3><a href="tutorials.html#sync">TTL, behavior, and a common timeline</a></h3>
+    <p>Behavior computers, cameras, and electrophysiology systems often have independent clocks. The synchronization page fits offset + slope × behavior_time from paired TTL pulses and uses residuals to detect missing pulses, mismatches, or nonlinear drift. Without matching TTLs, NeuroFlow can only assume a shared clock and labels that assumption explicitly.</p>
+    <p><b>Recommended first action：</b> Inspect event/TTL counts and intervals before fitting.</p>
+    <p class="muted"><b>Then：</b> Use the synchronized trial table to inspect behavior before event-aligned neural analysis.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">07</div>
+  <div>
+    <h3><a href="tutorials.html#behavior">Behavior quality precedes neural interpretation</a></h3>
+    <p>Behavior analysis first asks whether the experiment ran as designed: trial counts per condition, choice balance, reaction times, missing values, and exclusions. Neural responses and machine-learning labels become interpretable only after behavior structure is reliable.</p>
+    <p><b>Recommended first action：</b> Generate and save behavior figures before neural figures.</p>
+    <p class="muted"><b>Then：</b> After locking valid trials and condition labels, continue to event response, spike-train, LFP, or joint analyses.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">08</div>
+  <div>
+    <h3><a href="tutorials.html#analysis">Neural activity analysis workbench</a></h3>
+    <p>The neural page is not a single fixed PSTH. It contains independently runnable event-response, spike-train, LFP spectral/time-frequency, and spike-field coupling analyses. Every sub-analysis has its own inputs, settings, figures, and tables; before execution it shows an input preview, never fabricated results.</p>
+    <p><b>Recommended first action：</b> Run one clearly defined sub-analysis at a time and review its input/settings summary first.</p>
+    <p class="muted"><b>Then：</b> Send trial-level neural metrics to Statistics or build a trial-by-feature matrix for Machine Learning.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">09</div>
+  <div>
+    <h3><a href="tutorials.html#statistics">From figures to statistical evidence</a></h3>
+    <p>Statistics begins with the sampling unit, not a test name. Trials are nested in sessions and units in animals; pairing, repeated measures, and hierarchy determine valid comparisons. The page reports effects, confidence intervals, and multiplicity handling rather than treating p-values as the only result.</p>
+    <p><b>Recommended first action：</b> Create a statistical-design card before enabling test selection.</p>
+    <p class="muted"><b>Then：</b> Statistical results can go to publication export; prediction questions continue to Machine Learning.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">10</div>
+  <div>
+    <h3><a href="tutorials.html#decoding">Machine learning, clustering, and leakage</a></h3>
+    <p>Machine Learning converts neural activity to a trial-by-feature matrix and places preprocessing, feature selection, and the model inside cross-validation. The goal is not the highest score but a leakage-free evaluation against a shuffle baseline with session/animal generalization.</p>
+    <p><b>Recommended first action：</b> Establish a linear baseline before comparing complex models.</p>
+    <p class="muted"><b>Then：</b> Send model configuration, validation splits, score tables, and figures to Publication and Reproducibility.</p>
+  </div>
+</article>
+
+<article class="stage-card" data-searchable>
+  <div class="stage-number">11</div>
+  <div>
+    <h3><a href="tutorials.html#export">Publication figures and reproducible export</a></h3>
+    <p>Export binds figures to plotted data, statistical tables, Methods, the software environment, and the workflow. Visual edits never rewrite analysis data; recomputation and styling have separate audit trails. A saved neuroflow_project.json restores completed stages and the active result.</p>
+    <p><b>Recommended first action：</b> Save vector output, plotted data, statistical tables, and generation settings for every publication figure.</p>
+    <p class="muted"><b>Then：</b> After the reproducibility bundle, the researcher remains responsible for interpretation, manuscript structure, and data-sharing decisions.</p>
+  </div>
+</article>
+</div>
+</section>
+
+        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

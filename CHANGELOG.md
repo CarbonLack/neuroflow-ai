@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.7.0
+
+- Rebuilt the in-app tutorial center around 11 detailed, bilingual chapters. Each
+  chapter now explains its scientific purpose, prerequisites, operations,
+  parameter meanings, defaults, recommended starting points, parameter effects,
+  common mistakes, acceptance checks, sources, and the next stage.
+- Reorganized the product manual into separate Chinese and English sites with a
+  Kilosort-inspired information architecture: introduction, installation, GUI
+  guide, complete tutorials, data inputs, sorting, parameters, Figure Studio,
+  troubleshooting, and sources.
+- Moved the selected-analysis action into the fixed progress footer so it remains
+  available while scrolling through long figures, tables, and sorter diagnostics.
+- Added a Save/Discard/Cancel close guard for unsaved projects and blocked closing
+  during an active analysis to protect partially completed work.
+- Upgraded the project schema to persist preprocessing and analysis results in
+  addition to source paths, sorting archives, QC, statistics, decoding,
+  workflow status, and audit logs.
+- Restored the last saved workflow stage when reopening a project, allowing
+  researchers to continue from the previous checkpoint rather than restart.
+- Added regression tests for project resume, unsaved-close saving, fixed run
+  controls, detailed tutorial coverage, and monolingual English parameters.
+
 ## v0.6.1
 
 - Separated empty-project creation from data import. An empty project now opens

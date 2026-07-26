@@ -4,138 +4,26 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>NeuroFlow Documentation</title>
-    <link rel="stylesheet" href="styles.css?v=0.6.1">
+    <link rel="stylesheet" href="styles.css?v=0.7.0">
   </head>
-  <body data-language="zh">
-    <header class="topbar">
-      <button class="icon-button" type="button" data-menu-toggle aria-label="Menu">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
-      <input class="search" data-doc-search type="search" placeholder="Search this page / 搜索本页">
-      <div class="topbar-actions">
-        <button class="language-button" type="button" data-language-toggle>EN</button>
+  <body class="language-gateway">
+    <main class="gateway-panel">
+      <p class="eyebrow">NeuroFlow Documentation</p>
+      <h1>选择操作手册语言</h1>
+      <p class="lead">每套手册只显示一种语言；专有软件名和参数名保持原名。</p>
+      <div class="gateway-actions">
+        <a class="gateway-button primary" data-language-link="zh" href="zh/index.html">中文</a>
+        <a class="gateway-button" data-language-link="en" href="en/index.html">English</a>
       </div>
-    </header>
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="sidebar-label">NeuroFlow</div>
-        <a class="active" href="index.html">Overview / 概览</a>
-        <a href="manual.html">Manual / 操作手册</a>
-        <a href="data-inputs.html">Data inputs / 数据入口</a>
-        <a href="workflow.html">Workflow / 全流程</a>
-        <a href="figure-studio.html">Figure Studio / 图形工作室</a>
-        <a href="public-validation.html">Public validation / 公开验证</a>
-        <a href="methods.html">Methods / 方法</a>
-        <a href="sources.html">Sources / 来源</a>
-        <div class="sidebar-label">On this page</div>
-        <a href="#principles">Product principles</a>
-        <a href="#start">Quick start</a>
-        <a href="#boundaries">Capability boundary</a>
-      </aside>
-      <main class="content">
-        <div class="page-intro" data-searchable>
-          <p class="eyebrow">Local-first electrophysiology workbench</p>
-          <h1>NeuroFlow</h1>
-          <p class="lead" data-lang="zh">
-            将原始多通道记录、Kilosort 与可替换 sorter、行为事件、Neo/Elephant
-            分析、统计和论文导出组织在一个可拆解、可检查、可复现的桌面工作流中。
-          </p>
-          <p class="lead" data-lang="en">
-            A local desktop workflow that connects raw multichannel recordings,
-            Kilosort and replaceable sorters, behavior, Neo/Elephant analyses,
-            statistics, and reproducible publication output.
-          </p>
-          <img class="product-shot" src="assets/neuroflow-home.png" alt="NeuroFlow desktop application home screen">
-        </div>
-
-        <section id="principles" data-searchable>
-          <h2 data-lang="zh">产品原则</h2>
-          <h2 data-lang="en">Product principles</h2>
-          <div class="grid-3">
-            <article class="panel">
-              <h3 data-lang="zh">看得见</h3><h3 data-lang="en">Visible</h3>
-              <p data-lang="zh">每一步显示输入、参数、方法、结果与风险，不把分析压缩成一个黑箱按钮。</p>
-              <p data-lang="en">Every stage exposes inputs, parameters, methods, results, and risks instead of hiding analysis behind one button.</p>
-            </article>
-            <article class="panel">
-              <h3 data-lang="zh">换得掉</h3><h3 data-lang="en">Replaceable</h3>
-              <p data-lang="zh">同一阶段可以更换 sorter 或从外部结果继续，AP、LFP 和行为模块不被强绑定。</p>
-              <p data-lang="en">Swap sorters or resume from external results without binding AP, LFP, and behavior modules together.</p>
-            </article>
-            <article class="panel">
-              <h3 data-lang="zh">追得回</h3><h3 data-lang="en">Traceable</h3>
-              <p data-lang="zh">项目保存来源、版本、参数、人工判断和导出文件，使图表能够回到分析证据。</p>
-              <p data-lang="en">Projects preserve sources, versions, parameters, decisions, and exports so figures remain linked to evidence.</p>
-            </article>
-          </div>
-        </section>
-
-        <section id="documentation" data-searchable>
-          <h2 data-lang="zh">从哪里查具体问题</h2>
-          <h2 data-lang="en">Find the right level of detail</h2>
-          <div class="grid-2">
-            <article class="panel">
-              <h3><a href="manual.html">逐页操作手册</a></h3>
-              <p data-lang="zh">11 个节点的目的、每个按钮、参数含义、输出、检查和失败处理。</p>
-              <p data-lang="en">Purpose, controls, parameters, outputs, checks, and failures for all 11 stages.</p>
-            </article>
-            <article class="panel">
-              <h3><a href="data-inputs.html">项目与数据入口</a></h3>
-              <p data-lang="zh">先建立空项目，再明确选择自己的原始数据、已有 sorting、固定公开项目或教学模拟。</p>
-              <p data-lang="en">Create an empty project first, then explicitly choose raw data, existing sorting, fixed public projects, or teaching simulation.</p>
-            </article>
-            <article class="panel">
-              <h3><a href="figure-studio.html">Figure Studio</a></h3>
-              <p data-lang="zh">逐个修改线、点、柱、热图、文字、坐标轴、刻度、网格、图例和精确出版尺寸。</p>
-              <p data-lang="en">Object-level editing for lines, points, patches, images, text, axes, ticks, grids, legends, and exact publication size.</p>
-            </article>
-            <article class="panel">
-              <h3><a href="public-validation.html">真实公开数据验证</a></h3>
-              <p data-lang="zh">准确列出 IBL 与 Buzsáki/DANDI 会话、运行结果、失败修复和能力边界。</p>
-              <p data-lang="en">Exact IBL and Buzsáki/DANDI sessions, results, fixes, and bounded claims.</p>
-            </article>
-          </div>
-        </section>
-
-        <section id="start" data-searchable>
-          <h2 data-lang="zh">五分钟开始</h2>
-          <h2 data-lang="en">Start in five minutes</h2>
-          <ol data-lang="zh">
-            <li>打开 NeuroFlow，创建空项目，或选择“生成教学模拟”快速体验。</li>
-            <li>在“原始质控”中查看波形、功率图和质量时间线。</li>
-            <li>在“预处理”中分别检查 AP 与 LFP 分支。</li>
-            <li>在“Spike sorting”中选择 Kilosort4 或当前可运行 sorter。</li>
-            <li>运行后继续查看 Unit、行为、Elephant、统计和机器学习结果。</li>
-          </ol>
-          <ol data-lang="en">
-            <li>Open NeuroFlow and create an empty project, or generate a teaching simulation for a quick tour.</li>
-            <li>Inspect traces, channel-frequency power, and the quality timeline.</li>
-            <li>Review AP and LFP preprocessing branches separately.</li>
-            <li>Select Kilosort4 or another available sorter.</li>
-            <li>Continue through units, behavior, Elephant, statistics, and machine learning.</li>
-          </ol>
-          <pre><code>raw voltage → QC → AP/LFP branches → sorting → unit review
-→ synchronization → behavior → neural methods → statistics → ML → export</code></pre>
-        </section>
-
-        <section id="boundaries" data-searchable>
-          <h2 data-lang="zh">能力边界</h2>
-          <h2 data-lang="en">Capability boundary</h2>
-          <div class="callout method" data-lang="zh">
-            NeuroFlow 调用经过验证的开源库进行计算，但软件不会把候选 unit
-            自动宣布为可靠单神经元，也不会把统计差异自动写成生物学结论。
-          </div>
-          <div class="callout method" data-lang="en">
-            NeuroFlow delegates computation to established open-source libraries,
-            but it does not declare candidate units to be valid neurons or turn
-            statistical differences into biological conclusions automatically.
-          </div>
-          <p data-lang="zh">AI 是可选助手；完整手动与引导流程不依赖大模型。高级 Elephant 模式检测仍列为待验证目录，而不是虚假的“一键可用”。</p>
-          <p data-lang="en">AI is optional. Manual and guided workflows do not require an LLM. Advanced Elephant pattern detection remains catalogued until dedicated validation exists.</p>
-        </section>
-
-        <footer class="footer">NeuroFlow documentation · Original product text and interface · See Sources for attribution.</footer>
-      </main>
-    </div>
-    <script src="app.js"></script>
+    </main>
+    <script>
+      const preferred = localStorage.getItem("neuroflow-docs-language");
+      if (preferred === "zh" || preferred === "en") {
+        location.replace(`${preferred}/index.html`);
+      }
+      document.querySelectorAll("[data-language-link]").forEach((link) => {
+        link.addEventListener("click", () => localStorage.setItem("neuroflow-docs-language", link.dataset.languageLink));
+      });
+    </script>
   </body>
 </html>

@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Complete step-by-step tutorial · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="zh" href="../zh/tutorials.html">Chinese</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Getting started</div>
+<a href="index.html">Overview</a>
+<a href="installation.html">Installation and runtime</a>
+<a href="gui-guide.html">Interface and basic operation</a>
+<div class="sidebar-label">Tutorials</div>
+<a class="active" href="tutorials.html">Complete step-by-step tutorial</a>
+<a href="data-inputs.html">Import your own data</a>
+<div class="sidebar-label">Guides</div>
+<a href="sorting.html">Spike sorting guide</a>
+<a href="parameters.html">Parameter reference</a>
+<a href="figure-studio.html">Figure editing and export</a>
+<div class="sidebar-label">Reference</div>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="sources.html">Methods and sources</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow operation manual</p>
+          <h1>Complete step-by-step tutorial</h1>
+          <p class="lead">Follow all 11 stages from data structure to a restorable publication bundle. Each chapter explains purpose, operation, every exposed parameter, default, recommendation, consequence, and acceptance check.</p>
+        </div>
+        <section class="chapter-toc"><a class="toc-chip" href="#import">01 Start with the data structure</a><a class="toc-chip" href="#qc">02 Raw-signal quality control</a><a class="toc-chip" href="#preprocess">03 Preprocessing is not a fixed recipe</a><a class="toc-chip" href="#sorting">04 Spike sorting and tool selection</a><a class="toc-chip" href="#unit_qc">05 Unit QC and manual review</a><a class="toc-chip" href="#sync">06 TTL, behavior, and a common timeline</a><a class="toc-chip" href="#behavior">07 Behavior quality precedes neural interpretation</a><a class="toc-chip" href="#analysis">08 Neural activity analysis workbench</a><a class="toc-chip" href="#statistics">09 From figures to statistical evidence</a><a class="toc-chip" href="#decoding">10 Machine learning, clustering, and leakage</a><a class="toc-chip" href="#export">11 Publication figures and reproducible export</a></section>
+<section id="import" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">01</p>
+  <h2>Start with the data structure</h2>
+  <div class="callout method">This page does more than select a file. NeuroFlow must know how each sample is stored, how many values form one time point, how probe contacts are arranged, and which device clock timestamps behavior. Those facts give filtering, sorting, and event alignment their correct physical units. Import keeps the source read-only and stores only links, caches, and derived results in the project.</div>
+  <h3>Before you begin</h3>
+  <p>Have the acquisition notes, sampling rate, total channel count, dtype, gain or µV/bit, probe geometry, and optional event CSV ready. For a generic binary file, copy values from the acquisition configuration rather than guessing from the traces.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Create an empty project</b></td><td>Choose a project name and location, then import data inside it.</td><td>Separates source data from analysis products and creates a restore point.</td><td>Creates neuroflow_project.json plus derived, results, and exports folders.</td></tr><tr><td><b>Import generic binary</b></td><td>Select .bin/.dat/.raw and enter rate, channels, dtype, and µV/bit.</td><td>Reads interleaved recordings without self-describing metadata.</td><td>Validates file size against channels × bytes per sample and displays traces.</td></tr><tr><td><b>Import acquisition-system data</b></td><td>Choose Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, or NWB.</td><td>Uses a SpikeInterface extractor to read metadata and build a common cache.</td><td>Stores a normalized int16 cache while leaving source files unchanged.</td></tr><tr><td><b>Resume from existing sorting</b></td><td>Select Kilosort/Phy, IBL ALF, or an NWB file with Units.</td><td>Skips unavailable raw stages and continues with units and downstream analyses.</td><td>Produces normalized spike times in seconds, unit IDs, and provenance.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Sampling rate</code></td><td>Samples per second; converts sample indices to seconds.</td><td>Simulation: 30,000 Hz; device files: read from metadata</td><td>Use the acquisition value exactly; extracellular spike recordings commonly use 20–30 kHz.</td><td>A low value stretches time and lowers frequencies; a high value compresses time and raises frequencies.</td></tr><tr><td><code>Channel count</code></td><td>All channels stored per time point, including auxiliary channels in the file.</td><td>Defined by the simulation electrode template</td><td>Use the number physically written to the file, not merely the channels selected for sorting.</td><td>A wrong value reshapes the file and often creates repeated, shifted, or diagonal patterns.</td></tr><tr><td><code>dtype</code></td><td>Storage type of each sample on disk.</td><td>int16</td><td>Read it from device metadata or export settings; never interpret float32 as int16.</td><td>A wrong dtype changes frame length and numeric interpretation; the file may open with invalid traces.</td></tr><tr><td><code>µV / bit</code></td><td>Microvolts represented by one integer ADC step.</td><td>Generic import: 0.195; device import: read or normalize</td><td>Use the acquisition gain; if unknown, keep ADC counts and mark units as unknown.</td><td>Affects amplitude units and amplitude-dependent thresholds, not spike sample locations.</td></tr><tr><td><code>Copy source</code></td><td>Chooses a read-only link or a copied raw binary inside the project.</td><td>Off: read-only link</td><td>Use a link for stable storage; copy when the project must move or be archived independently.</td><td>Copying improves portability at a storage cost; links save space but fail if the source moves.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Data source</dt><dd>Selects the reader adapter. A wrong selection does not alter the file, but validation will fail.</dd><dt>Project name</dt><dd>Names the project folder and manifest; the original file name is unchanged.</dd><dt>Sampling rate</dt><dd>Converts samples to seconds. An incorrect value invalidates every time-based result.</dd><dt>Channel count</dt><dd>Controls binary reshaping. A wrong value commonly creates repeated or diagonal trace patterns.</dd><dt>dtype and µV/bit</dt><dd>Define byte interpretation and conversion from stored values to voltage.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Create a project first, then choose the entry that matches the files you actually have.</li><li>Inspect 50–100 ms of traces and verify channel count, amplitude units, and duration.</li><li>Save the project; reopening neuroflow_project.json should restore the page and workflow state.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Using 384 ephys channels as the file total when a sync channel is also stored.</li><li>Moving an external source and expecting a read-only link to discover its new location.</li><li>Expecting IBL ALF or Units-only NWB to provide raw voltage for re-sorting.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Raw acquisition files, probe information, and event logs</p>
+  <p><b>Output：</b>Read-only source links and a NeuroFlow project manifest</p>
+  <p><b>Check：</b>Check file size, rate, channel count, dtype, and whether events use seconds, milliseconds, or samples. Inspect traces immediately after import.</p>
+  <div class="callout next"><b>Next：</b> After confirming structure, continue to Raw QC; processed spikes begin at Unit QC.</div>
+</section>
+
+<section id="qc" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">02</p>
+  <h2>Raw-signal quality control</h2>
+  <div class="callout method">QC does not automatically delete channels. It builds evidence about where an anomaly occurs in channel, time, and frequency and whether it can affect referencing or spike detection. Locate problems globally, verify them in zoomed traces, and only then label candidate bad channels.</div>
+  <h3>Before you begin</h3>
+  <p>Verify sampling rate, channel count, units, and duration on the Data page.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Multichannel raw traces</b></td><td>Browse with time window, start time, channel range, and display gain.</td><td>Find clipping, jumps, motion artifacts, dead channels, and common noise.</td><td>Produces zoomable voltage snippets and RMS for the current window.</td></tr><tr><td><b>QC metric summary</b></td><td>Run the sub-analysis and inspect RMS, peak-to-peak, clipping, and line-noise ratios.</td><td>Screens channels using several metrics rather than one threshold.</td><td>Creates a candidate bad-channel table without automatic exclusion.</td></tr><tr><td><b>Channel-by-frequency power</b></td><td>Inspect the channel-by-frequency power map and zoom suspicious bands.</td><td>Distinguishes broadband noise, 50/60 Hz line noise, and local channel problems.</td><td>Produces channel spectra and line-frequency evidence.</td></tr><tr><td><b>Quality timeline</b></td><td>Compute amplitude, noise, and clipping metrics in time blocks.</td><td>Finds dropouts, drift, or artifacts limited to part of the session.</td><td>Produces suspect intervals for exclusion or repair during preprocessing.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Time start</code></td><td>Start of the displayed recording window.</td><td>0 s</td><td>Inspect the beginning, middle, end, and intervals around key task events.</td><td>Changes the view and local metrics without cropping the source.</td></tr><tr><td><code>Window</code></td><td>Duration displayed at once.</td><td>60 ms</td><td>Use 20–100 ms for spikes and 1–10 s for slow artifacts or rhythms.</td><td>Short windows reveal waveforms; long windows reveal trends but compress spikes.</td></tr><tr><td><code>Channel range</code></td><td>First channel and number shown together.</td><td>Ch 0–11</td><td>Inspect 8–16 channels at a time on dense probes and move along depth.</td><td>Too many channels reduce readability; too few can hide spatially shared patterns.</td></tr><tr><td><code>Display gain</code></td><td>Vertical display multiplier only.</td><td>1.0×</td><td>Start at 1.0×, decrease for overlap, and increase for small traces.</td><td>Does not alter data or QC values; it only changes the view.</td></tr><tr><td><code>Line frequency</code></td><td>Center frequency for narrowband mains-power measurement.</td><td>50 Hz in China and most regions</td><td>Choose 50 or 60 Hz for the recording location and inspect harmonics.</td><td>The wrong choice misses mains noise but does not alter the source.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Channel RMS</dt><dd>Click a bar to inspect channel number and RMS; flagged channels use the warning color.</dd><dt>50 Hz ratio</dt><dd>Compares line-frequency power with neighboring background frequencies; it is not an absolute noise amplitude.</dd><dt>Bad-channel candidates</dt><dd>These are suggestions only. Verify them against raw traces before exclusion.</dd><dt>Time/channel/gain controls</dt><dd>Locate suspicious segments without changing the recording.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Run summary and timeline first, then verify every candidate in traces and spectra.</li><li>Record evidence and the manual decision; do not delete channels directly on the QC page.</li><li>Save QC decisions before preprocessing so bad channels do not contaminate referencing.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Confusing a high-firing channel with a noisy channel.</li><li>Declaring the whole session good after inspecting only the first milliseconds.</li><li>Applying a notch immediately without checking grounding, reference, and harmonics.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Raw broadband voltage</p>
+  <p><b>Output：</b>Channel RMS, channel-frequency power, a quality timeline, line/clipping metrics, and candidate labels</p>
+  <p><b>Check：</b>Use the timeline to locate suspicious periods, then verify them in zoomable traces and spectra. Candidate bad channels require confirmation and are not removed automatically.</p>
+  <div class="callout next"><b>Next：</b> Carry confirmed bad channels and artifact intervals into separate AP and LFP preprocessing branches.</div>
+</section>
+
+<section id="preprocess" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">03</p>
+  <h2>Preprocessing is not a fixed recipe</h2>
+  <div class="callout method">More preprocessing is not automatically better. Every operation changes the signal, so its purpose, order, and duplication inside the sorter must be explicit. NeuroFlow previews a short segment first and compares traces and spectra before parameters are committed to the workflow.</div>
+  <h3>Before you begin</h3>
+  <p>Confirm bad channels and decide whether the target is AP/sorting, LFP, or both.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>AP / sorting preview</b></td><td>Choose high-pass/band-pass, reference, and preview segment.</td><td>Emphasizes fast action potentials and evaluates sorter input.</td><td>Shows before/after traces, spectra, and RMS changes.</td></tr><tr><td><b>LFP branch preview</b></td><td>Choose low-pass, downsampling, and line-noise handling.</td><td>Preserves low-frequency population activity and reduces later computation.</td><td>Creates an independent LFP chain without overwriting the AP branch.</td></tr><tr><td><b>Reference comparison</b></td><td>Compare none, common median, and common average.</td><td>Reduces common noise while checking whether bad-channel artifacts spread.</td><td>Displays common components and channel traces before and after referencing.</td></tr><tr><td><b>Commit processing chain</b></td><td>Save operation order and parameters after reviewing the preview.</td><td>Makes sorting, LFP, and reproducibility exports use the same traceable configuration.</td><td>Stores the processing chain while the source remains read-only.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>AP band</code></td><td>Passband used for spike detection or preview.</td><td>300–6000 Hz</td><td>Start with sorter/domain defaults and adjust only from sampling rate and spectral evidence.</td><td>A high lower cutoff suppresses broad spikes; a low one retains LFP drift. The upper cutoff must stay below Nyquist.</td></tr><tr><td><code>LFP low-pass</code></td><td>Highest retained LFP frequency.</td><td>300 Hz</td><td>Use 150–250 Hz for analyses below 100 Hz; retain a higher cutoff and sampling rate for high-frequency oscillations.</td><td>Lower cutoffs smooth transients; overly high cutoffs allow spike leakage into LFP.</td></tr><tr><td><code>LFP sampling rate</code></td><td>Samples per second retained after LFP filtering.</td><td>1,000 Hz</td><td>Keep at least twice the highest target frequency; 4–10× margin is common.</td><td>Too low causes aliasing or poor phase precision; too high increases memory and computation.</td></tr><tr><td><code>Reference</code></td><td>Common reference estimate subtracted from each channel.</td><td>Common median</td><td>Start with median for dense recordings; use probe groups and reference design for sparse tetrodes or microwires.</td><td>Average is more sensitive to outliers; median is robust, but both can remove genuine common activity.</td></tr><tr><td><code>Notch</code></td><td>Suppresses 50/60 Hz and optional harmonics.</td><td>Off</td><td>Enable only when QC shows narrowband contamination that cannot be corrected at acquisition.</td><td>Notching changes amplitude and phase around the target and can affect coupling analyses.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Before/after traces</dt><dd>Compare filtering and common-median referencing on the same time segment.</dd><dt>Preview stage</dt><dd>Computes a short preview only and never writes over the source recording.</dd><dt>Zoom tools</dt><dd>Inspect polarity, edge effects, clipping, and residual artifacts at sample-level detail.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Create separate AP and LFP branches rather than reusing one recipe.</li><li>Preview before committing and retain raw, processed, and difference/spectral evidence.</li><li>Check whether the sorter already filters, whitens, or corrects drift to avoid duplication.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Whitening both externally and inside Kilosort.</li><li>Applying a global reference before excluding bad channels.</li><li>Downsampling before low-pass filtering and causing aliasing.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Raw voltage and a bad-channel list</p>
+  <p><b>Output：</b>AP/sorting and LFP branch previews, a processing chain, and pre-run safeguards</p>
+  <p><b>Check：</b>Confirm bad channels before referencing, check Neuropixels inter-sample phase shift, avoid whitening both outside and inside the sorter, and remember that previews never overwrite raw data.</p>
+  <div class="callout next"><b>Next：</b> Send the AP branch to Spike sorting and retain the LFP branch for neural analyses.</div>
+</section>
+
+<section id="sorting" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">04</p>
+  <h2>Spike sorting and tool selection</h2>
+  <div class="callout method">Spike sorting assigns candidate events in multichannel voltage to units. NeuroFlow preserves each sorter&#x27;s native files, parameters, and logs while normalizing shared outputs into units, spike times in seconds, and channel/template descriptions for downstream comparison.</div>
+  <h3>Before you begin</h3>
+  <p>Confirm AP input, probe geometry, bad channels, hardware, output directory, and free disk space.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Select a sorter</b></td><td>Choose Kilosort4, MountainSort5, or another installed backend.</td><td>Chooses an algorithm by probe density, hardware, and scientific need, not only availability.</td><td>Loads that sorter&#x27;s real settings and shows input preview before a run.</td></tr><tr><td><b>Run selected sorter</b></td><td>Confirm data, sorter, parameters, and execution location in the dialog.</td><td>Prevents expensive runs on the wrong data or configuration.</td><td>Saves native output, normalized results, versions, settings, logs, and diagnostics.</td></tr><tr><td><b>Inspect run diagnostics</b></td><td>Switch among drift, spike depth-time, amplitudes, templates, similarity, and logs.</td><td>Assesses stability across time and probe depth.</td><td>Produces sorting evidence required before Unit QC.</td></tr><tr><td><b>Compare sorters</b></td><td>Activate different results and run unit matching and agreement comparison.</td><td>Identifies consensus units, splits, merges, and sorter-specific units.</td><td>Reports agreement on real data and accuracy only when simulation ground truth exists.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Sorter</code></td><td>Spike-sorting backend that will actually run.</td><td>Kilosort4</td><td>Evaluate Kilosort4 first for dense Neuropixels; compare CPU sorters for sparse/tetrode recordings.</td><td>Sorters differ in preprocessing, detection, clustering, and resources; they are not interchangeable parameter presets.</td></tr><tr><td><code>n_chan_bin</code></td><td>Total channels in the Kilosort binary, including channels not used for sorting.</td><td>Read from the project structure</td><td>Must match the physical file layout; Neuropixels 1.0 files commonly contain 385 channels.</td><td>A wrong value creates diagonal/repeated heatmaps and should stop the run immediately.</td></tr><tr><td><code>batch_size</code></td><td>Samples processed in each Kilosort batch.</td><td>60,000 (2 s at 30 kHz)</td><td>Start with the default; for ≤64 channels, a longer batch can improve drift estimation.</td><td>Larger batches need more memory; short batches contain fewer spikes for drift estimation.</td></tr><tr><td><code>nblocks</code></td><td>Number of depth blocks used for drift correction.</td><td>1 (rigid drift)</td><td>Start at 1 for a single-shank Neuropixels probe, try 5 for non-rigid drift, and consider 0 for ≤64 sparse channels around ≥50 µm spacing.</td><td>Zero disables correction; too many blocks make sparse estimates unstable.</td></tr><tr><td><code>Th_universal / Th_learned</code></td><td>Detection thresholds for universal and learned templates.</td><td>Current Kilosort4 default</td><td>Start with defaults; lower by only 1–2 at a time when spikes are missed or units disappear.</td><td>Lower thresholds detect more events but increase noise and computation.</td></tr><tr><td><code>tmin / tmax</code></td><td>Start and end times included in sorting.</td><td>Full recording</td><td>Crop only confirmed start/end artifacts and document the exclusion.</td><td>Short ranges speed testing but cannot establish full-session stability.</td></tr><tr><td><code>duplicate_spike_ms</code></td><td>Window for removing near-duplicate spikes within a unit.</td><td>Kilosort4 default</td><td>Adjust only for a supported duplicate peak around zero in the ACG; never exceed 0.5 ms.</td><td>Large values corrupt refractory-period and ACG/CCG estimates.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Sorter table</dt><dd>Lists every candidate, installation status, hardware needs, and suited recording types. Click a row to select.</dd><dt>Parameter preset</dt><dd>Maps recording type to auditable defaults while keeping every value editable.</dd><dt>Run current stage</dt><dd>Runs the selected sorter with current parameters and preserves its full log and result directory.</dd><dt>Diagnostic view</dt><dd>Inspect drift, amplitude stability, templates, similarity, contamination, and exported files.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Run a representative segment with defaults to validate input and resources before the full session.</li><li>Inspect Kilosort drift, depth-time, amplitude, template, and similarity views.</li><li>Preserve native sorter directories; normalized output enables interoperability but does not replace native evidence.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Showing an old result from a different sorter when the selected sorter was not run.</li><li>Calling cross-sorter agreement on real data accuracy.</li><li>Comparing only unit counts while ignoring drift, duplicates, amplitudes, and logs.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>High-rate multichannel recording, probe geometry, and sorter parameters</p>
+  <p><b>Output：</b>Native sorter files, normalized Unit/spike times in seconds, parameters, logs, and comparison evidence</p>
+  <p><b>Check：</b>Verify environment and probe suitability first. Kilosort4 targets dense probes; MountainSort5 is CPU/tetrode-oriented and offers Schemes 1/2/3. After multiple runs, inspect Hungarian matches, agreement, unique units, and consensus units; agreement on real data is not accuracy.</p>
+  <div class="callout next"><b>Next：</b> Select an active sorting result and continue to Unit QC; return here when sorter comparison is needed.</div>
+</section>
+
+<section id="unit_qc" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">05</p>
+  <h2>Unit QC and manual review</h2>
+  <div class="callout method">Sorter output contains candidate clusters. Unit QC combines firing rate, refractory-period evidence, SNR, waveforms, amplitude over time, and ACGs so the researcher can assign traceable keep, MUA, noise, or uncertain labels. No single threshold replaces review.</div>
+  <h3>Before you begin</h3>
+  <p>Confirm the active sorting result, run log, and drift diagnostics first.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Metric scatter and filters</b></td><td>Choose x/y metrics, thresholds, and labels; click a point to inspect a unit.</td><td>Reveals metric tradeoffs and locates suspicious units.</td><td>Produces a candidate subset without changing final labels automatically.</td></tr><tr><td><b>Waveforms and templates</b></td><td>Inspect mean waveforms and variation on the main and neighboring channels.</td><td>Assesses temporal stability, spatial plausibility, and noise.</td><td>Produces unit-level waveform evidence.</td></tr><tr><td><b>ACG and ISI</b></td><td>Zoom around 0 ms and inspect refractory violations and duplicate peaks.</td><td>Evaluates contamination, duplicate spikes, and multi-unit mixtures.</td><td>Produces temporal-structure evidence and refractory metrics.</td></tr><tr><td><b>Manual decision</b></td><td>Label units good, MUA, noise, or uncertain and add a note.</td><td>Preserves reviewer decisions and threshold versions for audit and revision.</td><td>Outputs a traceable review table and downstream unit set.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Firing rate</code></td><td>Spikes per second over valid recording time.</td><td>Report only; no automatic exclusion</td><td>Interpret with brain region, cell type, duration, and stability.</td><td>A higher minimum removes sparse units but can discard real low-rate cells.</td></tr><tr><td><code>ISI violation window</code></td><td>Window used to count refractory-period violations.</td><td>2 ms</td><td>Start around 1–2 ms and report the exact definition.</td><td>Larger windows count more violations; values are incomparable without the definition.</td></tr><tr><td><code>SNR</code></td><td>Waveform signal magnitude relative to background noise.</td><td>Report only</td><td>Use one method consistently and inspect waveforms; do not transfer thresholds blindly across tools.</td><td>Higher thresholds are conservative but penalize real low-amplitude units.</td></tr><tr><td><code>Amplitude stability</code></td><td>Change in spike amplitude over time.</td><td>Full-session timeline</td><td>Look for decay, jumps, or brief presence and compare with drift diagnostics.</td><td>Overly strict criteria reject real state changes; loose criteria retain drifting or disappearing units.</td></tr><tr><td><code>Contamination threshold</code></td><td>Allowed estimated contamination.</td><td>Not treated as ground truth</td><td>If 10% is shown as a guide, report the estimator and review it with ACG and waveforms.</td><td>Lower thresholds reduce unit count and increase conservatism, but the estimate is itself uncertain.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Unit table</dt><dd>Each row is one candidate unit. Click data points or rows to inspect its metrics.</dd><dt>ISI violation</dt><dd>Measures short refractory-period intervals; the acceptance threshold must be defined by the project.</dd><dt>SNR and waveform</dt><dd>Interpret together with spatial localization, stability, and raw traces; no single metric proves a good unit.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Inspect population distributions first, then review boundary and high-impact units.</li><li>Thresholds create candidate labels; final decisions should record reviewer, time, and notes.</li><li>Recompute QC after changing the active sorter; never reuse metrics from another result.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Declaring a good neuron from one SNR or ISI threshold.</li><li>Reporting unit count as yield without the screening process.</li><li>Changing labels manually without preserving an audit record.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Spike times, waveforms, templates, and duration</p>
+  <p><b>Output：</b>Firing rate, ISI violations, SNR, labels, and a review table</p>
+  <p><b>Check：</b>Click points to inspect unit metrics. Thresholds are screening rules, not biological truth. Preserve manual decisions.</p>
+  <div class="callout next"><b>Next：</b> After selecting downstream units, import behavior and TTL data and establish a common timeline.</div>
+</section>
+
+<section id="sync" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">06</p>
+  <h2>TTL, behavior, and a common timeline</h2>
+  <div class="callout method">Behavior computers, cameras, and electrophysiology systems often have independent clocks. The synchronization page fits offset + slope × behavior_time from paired TTL pulses and uses residuals to detect missing pulses, mismatches, or nonlinear drift. Without matching TTLs, NeuroFlow can only assume a shared clock and labels that assumption explicitly.</div>
+  <h3>Before you begin</h3>
+  <p>Prepare behavior-event and optional TTL CSV files and identify each column&#x27;s clock, unit, and event meaning.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Import behavior events</b></td><td>Select a CSV with time_seconds, trial, condition, and event_type.</td><td>Builds trial semantics and the event sequence in the behavior clock.</td><td>Stores the event table and source path in the project.</td></tr><tr><td><b>Import TTL pulses</b></td><td>Select a CSV containing ephys-clock pulses corresponding to behavior sync pulses.</td><td>Creates an estimable mapping between device clocks.</td><td>Shows matched counts, missing pulses, and duplicates.</td></tr><tr><td><b>Fit common timeline</b></td><td>Pair pulses in order and fit intercept and slope.</td><td>Corrects initial offset and linear clock drift.</td><td>Produces ephys-clock seconds, residuals, drift ppm, and a trial table.</td></tr><tr><td><b>Inspect synchronization evidence</b></td><td>Inspect residuals over time, event counts, and suspect pairs.</td><td>Determines whether a linear map is adequate or pairing/segmentation must change.</td><td>Preserves a synchronization report for every event-aligned analysis.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Behavior time column</code></td><td>Column containing behavior-device timestamps.</td><td>time_seconds</td><td>Convert to seconds while retaining the source column; frame indices require frame rate or per-frame timestamps.</td><td>A unit mistake creates 1000× or sampling-rate-scale errors.</td></tr><tr><td><code>TTL pairing</code></td><td>How behavior and ephys pulses are paired.</td><td>Pair one-to-one in order</td><td>Check counts and intervals first; locate missing pulses from interval patterns before pairing.</td><td>One missing pulse shifts all subsequent order-based pairs.</td></tr><tr><td><code>Clock model</code></td><td>Function mapping behavior time to ephys time.</td><td>offset + slope × time</td><td>Start linear; use segmented or nonlinear models only for curved residuals or clock jumps.</td><td>An overly complex model fits pulse jitter; an overly simple model leaves systematic drift.</td></tr><tr><td><code>Residual tolerance</code></td><td>Maximum allowed timing error after alignment.</td><td>Report the observed value without hiding it</td><td>Set from task timescale and device precision; millisecond spike responses require tighter limits.</td><td>Loose tolerance retains mismatches; strict tolerance rejects normal TTL jitter.</td></tr><tr><td><code>Shared-clock assumption</code></td><td>Whether behavior seconds are treated directly as ephys seconds without TTLs.</td><td>Enabled with a warning only when TTLs are absent</td><td>Use only with a shared hardware clock or externally completed synchronization.</td><td>Cannot detect offset or drift; the limitation must appear in the report.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Event count</dt><dd>Confirm that behavior, TTL, and neural events can be matched one-to-one.</dd><dt>Timing residual</dt><dd>Shows paired-event error; a systematic change over time suggests clock drift.</dd><dt>Trial table</dt><dd>Stores conditions, event times, and exclusion flags for downstream analyses.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Inspect event/TTL counts and intervals before fitting.</li><li>Residual plots must cover the full session, not only a mean error.</li><li>Save the mapping, source columns, units, and excluded pairs in the project.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Treating behavior milliseconds as seconds.</li><li>Forcing row-by-row pairing after a missing pulse.</li><li>Reporting precise synchronization error without TTL evidence.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Spike times in seconds, TTLs, behavioral events, and video frames</p>
+  <p><b>Output：</b>Common time base, matching residuals, and a trial table</p>
+  <p><b>Check：</b>Check event counts, order, residuals, drift, dropped frames, and duplicate pulses.</p>
+  <div class="callout next"><b>Next：</b> Use the synchronized trial table to inspect behavior before event-aligned neural analysis.</div>
+</section>
+
+<section id="behavior" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">07</p>
+  <h2>Behavior quality precedes neural interpretation</h2>
+  <div class="callout method">Behavior analysis first asks whether the experiment ran as designed: trial counts per condition, choice balance, reaction times, missing values, and exclusions. Neural responses and machine-learning labels become interpretable only after behavior structure is reliable.</div>
+  <h3>Before you begin</h3>
+  <p>The synchronization page has produced a common timeline and trial table with start, event, and end definitions.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Condition counts</b></td><td>Inspect trial counts by stimulus, choice, outcome, or group.</td><td>Finds class imbalance and missing design cells.</td><td>Outputs valid sample counts for statistics and decoding.</td></tr><tr><td><b>Reaction time</b></td><td>Plot distributions, condition comparisons, and outlier trials.</td><td>Identifies anticipatory responses, timeouts, and logging errors.</td><td>Produces reaction-time variables and exclusion candidates.</td></tr><tr><td><b>Psychometric curve</b></td><td>Compute choice probability and sample size by stimulus level.</td><td>Checks whether behavior varies systematically with task variables.</td><td>Outputs the curve, trial count per point, and fit parameters.</td></tr><tr><td><b>Trial exclusions</b></td><td>Flag missing, timeout, artifact, or outlier trials using predefined rules.</td><td>Applies exclusions before neural results are viewed to reduce outcome-driven filtering.</td><td>Retains every trial and an exclusion_reason rather than deleting rows.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Condition column</code></td><td>Trial field used for group comparisons.</td><td>condition</td><td>Use original task labels and maintain a data dictionary.</td><td>Recoding changes groups and counts; preserve the mapping.</td></tr><tr><td><code>Reaction-time start/end</code></td><td>Two events defining reaction time.</td><td>stimulus_onset → response</td><td>Define from the scientific question; movement onset, button press, and reward are not interchangeable.</td><td>Different endpoints change both values and neural interpretation.</td></tr><tr><td><code>Minimum trials</code></td><td>Minimum valid trials required for a condition.</td><td>Warning only; no automatic exclusion</td><td>Use power analysis based on effect, variance, and validation design rather than one universal count.</td><td>Higher thresholds improve stability but exclude more sessions.</td></tr><tr><td><code>Outlier rule</code></td><td>Rule defining outliers in reaction time or continuous behavior.</td><td>No deletion by default</td><td>Prefer task-defined limits or robust rules and report excluded counts.</td><td>Post-hoc limits can change condition effects and introduce bias.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Condition counts</dt><dd>Check class balance and whether every condition has enough trials.</dd><dt>Reaction time</dt><dd>Locate missing values, extremes, and condition-dependent changes.</dd><dt>Psychometric curve</dt><dd>Each point represents one stimulus level and should be interpreted with its trial count.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Generate and save behavior figures before neural figures.</li><li>Make every plotted point inspectable for stimulus level, count, and source trials.</li><li>Store exclusion rules as fields and logs without overwriting the original trial table.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Reporting ordinary accuracy despite severe class imbalance.</li><li>Changing behavioral exclusions after seeing neural differences.</li><li>Confusing trial, session, and animal sampling levels.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Trial table, conditions, choices, reaction time, and exclusion rules</p>
+  <p><b>Output：</b>Condition counts, psychometrics, reaction time, and valid trials</p>
+  <p><b>Check：</b>Click curve points to inspect stimulus level and sample size. Check missing data, reaction-time outliers, and imbalance.</p>
+  <div class="callout next"><b>Next：</b> After locking valid trials and condition labels, continue to event response, spike-train, LFP, or joint analyses.</div>
+</section>
+
+<section id="analysis" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">08</p>
+  <h2>Neural activity analysis workbench</h2>
+  <div class="callout method">The neural page is not a single fixed PSTH. It contains independently runnable event-response, spike-train, LFP spectral/time-frequency, and spike-field coupling analyses. Every sub-analysis has its own inputs, settings, figures, and tables; before execution it shows an input preview, never fabricated results.</div>
+  <h3>Before you begin</h3>
+  <p>Confirm active units, synchronized events, and valid trials; LFP and coupling also require voltage data.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Event-aligned Raster/PSTH</b></td><td>Choose event, window, bin, smoothing, baseline, and condition.</td><td>Describes unit or population responses around an event.</td><td>Outputs raster, PSTH, heatmap, response windows, and trial-level features.</td></tr><tr><td><b>Spike-train statistics</b></td><td>Choose CV2, Lv, Fano, ACG/CCH, STTC, or spike-train distances.</td><td>Quantifies regularity, variability, and temporal relationships between units.</td><td>Produces metrics with explicit units and correlograms.</td></tr><tr><td><b>LFP analysis</b></td><td>Run PSD, band power, coherence, or time-frequency analysis.</td><td>Describes oscillatory power, cross-channel relations, and event-related spectral changes.</td><td>Outputs spectra, time-frequency matrices, band summaries, and method settings.</td></tr><tr><td><b>Spike-field coupling</b></td><td>Choose phase band, reference channel, spike set, and surrogates.</td><td>Tests whether spikes prefer an LFP phase and evaluates chance level.</td><td>Outputs phase distributions, vector strength, Rayleigh/permutation evidence, and PAC/STA.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Alignment event</code></td><td>Time zero for every trial.</td><td>stimulus_onset (depends on the event table)</td><td>Choose from the hypothesis; stimulus, movement, choice, and reward answer different questions.</td><td>Changing the event changes temporal interpretation and must not be significance-driven.</td></tr><tr><td><code>Window</code></td><td>Time range extracted around the event.</td><td>-1 to +2 s</td><td>Cover baseline and expected response while avoiding neighboring trials or events.</td><td>Short windows miss slow responses; long windows increase overlap and multiplicity.</td></tr><tr><td><code>Bin size</code></td><td>Temporal bin width for PSTH or count features.</td><td>50 ms</td><td>Use 5–20 ms for fast sensory responses and 20–100 ms for behavioral/population trends, with sensitivity checks.</td><td>Small bins improve resolution but are noisy; large bins smooth responses and lower peaks.</td></tr><tr><td><code>Smoothing</code></td><td>Kernel and width applied to binned firing rates.</td><td>Minimal or off</td><td>Smoothing is acceptable for display; statistics should prefer unsmoothed trial features and report the kernel.</td><td>Stronger smoothing lowers peaks, broadens responses, and induces temporal dependence.</td></tr><tr><td><code>PSD method</code></td><td>Power-spectral estimator and segmentation settings.</td><td>Welch</td><td>Start with Welch for stationary segments and report window, overlap, resolution, and units.</td><td>Long windows improve frequency resolution but reduce temporal localization, and vice versa.</td></tr><tr><td><code>Surrogates</code></td><td>Number of time shifts or label shuffles used for a chance distribution.</td><td>200 (demonstration)</td><td>Use at least 1,000 for formal analysis and more for tail p-values; fix the random seed.</td><td>Fewer runs are faster but give coarse p-values; more runs are stable but expensive.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Unit selection</dt><dd>Selecting a unit updates its raster, PSTH, and summary together.</dd><dt>Raster</dt><dd>Each row is one trial and each tick one spike, preserving trial-to-trial variability.</dd><dt>PSTH</dt><dd>Bins spikes and averages across trials; bin width controls temporal smoothing.</dd><dt>Spike-train statistics</dt><dd>CV2, Lv, Fano, CCH, STTC, and distances address different variability, correlation, or similarity questions.</dd><dt>LFP</dt><dd>PSD, coherence, phase lag, and time-frequency maps use unit-aware Neo signals with Elephant/SciPy.</dd><dt>Spike-field</dt><dd>Phase locking must report the reference band, phase definition, spike count, and surrogate method.</dd><dt>Respiration case</dt><dd>Validates a paper-derived method structure on NeuroFlow simulation data without copying figures or numerical claims.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Run one clearly defined sub-analysis at a time and review its input/settings summary first.</li><li>Figures and statistics share trial, window, and condition definitions, while inference avoids display smoothing.</li><li>Retain the data table behind every panel for independent editing and export.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Showing an old figure from another analysis before the new selection runs.</li><li>Applying many pointwise t-tests directly to a smoothed PSTH.</li><li>Downsampling LFP without anti-aliasing or allowing spike leakage in same-electrode coupling.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Unit spike times, alignment events, raw/LFP voltage, windows, and conditions</p>
+  <p><b>Output：</b>Raster/PSTH, CV2/Lv/Fano, CCH/STTC/distances, PSD/coherence/time-frequency maps, phase locking, and PAC</p>
+  <p><b>Check：</b>Identify whether the current view is spike, LFP, or combined analysis. Verify bins, bands, windows, phase reference, and surrogate count. Case-study results validate method structure only.</p>
+  <div class="callout next"><b>Next：</b> Send trial-level neural metrics to Statistics or build a trial-by-feature matrix for Machine Learning.</div>
+</section>
+
+<section id="statistics" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">09</p>
+  <h2>From figures to statistical evidence</h2>
+  <div class="callout method">Statistics begins with the sampling unit, not a test name. Trials are nested in sessions and units in animals; pairing, repeated measures, and hierarchy determine valid comparisons. The page reports effects, confidence intervals, and multiplicity handling rather than treating p-values as the only result.</div>
+  <h3>Before you begin</h3>
+  <p>Prepare unsmoothed trial-level metrics, conditions, unit/session/animal IDs, and exclusions.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Design check</b></td><td>Specify sampling unit, pairing, hierarchy, and primary comparison.</td><td>Prevents pseudoreplication and treating nested samples as independent.</td><td>Produces an auditable statistical-design summary.</td></tr><tr><td><b>Parametric/nonparametric comparison</b></td><td>Choose t/Welch/ANOVA or Wilcoxon/Mann–Whitney/Kruskal from the design.</td><td>Compares conditions under explicit assumptions and data structure.</td><td>Outputs statistic, p-value, effect, confidence interval, and sample size.</td></tr><tr><td><b>Permutation/bootstrap</b></td><td>Shuffle labels or resample at the legal exchangeability unit.</td><td>Builds null distributions or intervals with fewer distributional assumptions.</td><td>Saves random seed, repetitions, and the complete chance distribution.</td></tr><tr><td><b>Mixed-effects model</b></td><td>Set fixed effects and animal/session/unit random effects.</td><td>Handles hierarchical, missing, and unbalanced repeated measures.</td><td>Outputs formula, coefficients, intervals, convergence, and diagnostics.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Sampling unit</code></td><td>Independent observational unit used for inference.</td><td>Must be confirmed by the user</td><td>Animal-level claims usually require animals as independent units, with units/sessions nested.</td><td>Too fine inflates n and significance; too coarse loses information.</td></tr><tr><td><code>Paired</code></td><td>Whether conditions come from the same or matched observational unit.</td><td>Defined by the study design</td><td>Use paired tests for repeated observations from the same unit/session/animal.</td><td>Incorrect pairing changes the error term and statistical power.</td></tr><tr><td><code>Alpha</code></td><td>Predefined type-I error threshold.</td><td>0.05</td><td>Set before analysis and report together with multiplicity correction.</td><td>Lower alpha is conservative but increases misses; never change it post hoc for significance.</td></tr><tr><td><code>Multiple comparison</code></td><td>Method controlling error across a family of tests.</td><td>FDR Benjamini–Hochberg</td><td>Use FDR for exploratory multi-unit/time tests and Holm for a few planned comparisons; define the family.</td><td>Stricter correction reduces false positives and power; correction is meaningless without a defined family.</td></tr><tr><td><code>Resamples</code></td><td>Number of permutation or bootstrap repetitions.</td><td>1,000</td><td>Use 200–1,000 for preview and often 5,000–10,000 for final estimates with a fixed seed.</td><td>Controls Monte Carlo stability of p-values/intervals and runtime.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Diagnostic view</dt><dd>Switch among effects, multiplicity, distribution assumptions, and mixed-model diagnostics.</dd><dt>Results table</dt><dd>Reports statistics, raw and corrected p values, effect sizes, and confidence intervals.</dd><dt>Sampling unit</dt><dd>Distinguish trials, units, sessions, and animals to avoid pseudoreplication.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Create a statistical-design card before enabling test selection.</li><li>Report raw observations, effect, confidence interval, p-value, and correction together.</li><li>Save the full statistical table separately from figure summaries.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Treating 300 units from three animals as n=300 independent observations.</li><li>Testing every PSTH bin without multiplicity control.</li><li>Reporting only p-values without direction, magnitude, or uncertainty.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Trial-level metrics, condition labels, and hierarchy</p>
+  <p><b>Output：</b>Sampling hierarchy, parametric/nonparametric and circular/surrogate tests, effects, CIs, mixed models, and corrected p-values</p>
+  <p><b>Check：</b>Inspect normality, pairing, variance, pseudoreplication, and multiplicity. Use circular statistics and circular-shift surrogates for phase data. Report effects and confidence intervals.</p>
+  <div class="callout next"><b>Next：</b> Statistical results can go to publication export; prediction questions continue to Machine Learning.</div>
+</section>
+
+<section id="decoding" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">10</p>
+  <h2>Machine learning, clustering, and leakage</h2>
+  <div class="callout method">Machine Learning converts neural activity to a trial-by-feature matrix and places preprocessing, feature selection, and the model inside cross-validation. The goal is not the highest score but a leakage-free evaluation against a shuffle baseline with session/animal generalization.</div>
+  <h3>Before you begin</h3>
+  <p>Define prediction target, feature window, grouping variable, class balance, and minimum sample size.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Classification</b></td><td>Choose Logistic regression, SVM, Random forest, XGBoost, or another model.</td><td>Predicts discrete stimulus, choice, or outcome labels.</td><td>Outputs balanced accuracy, F1, AUC, confusion matrix, and fold scores.</td></tr><tr><td><b>Regression</b></td><td>Choose linear, Ridge, random-forest, or another regressor.</td><td>Predicts position, speed, reaction time, or continuous stimulus values.</td><td>Outputs R², MAE, predicted-versus-observed plots, and residuals.</td></tr><tr><td><b>Time-resolved decoding</b></td><td>Repeat the complete cross-validation inside sliding time bins.</td><td>Estimates how predictive information changes around an event.</td><td>Outputs a time course, chance distribution, and multiplicity results.</td></tr><tr><td><b>PCA and clustering</b></td><td>Reduce population features or perform unsupervised grouping.</td><td>Explores population structure without treating visual separation as inference.</td><td>Outputs explained variance, loadings, projections, and clustering stability.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Feature window</code></td><td>Time range used to extract neural features for each trial.</td><td>0–0.5 s (task-dependent)</td><td>Predefine from causal timing; do not use post-behavior information to predict behavior.</td><td>Long windows contain more information but can include later events and movement.</td></tr><tr><td><code>Cross-validation</code></td><td>Train/validation split and repetition scheme.</td><td>5-fold stratified or grouped</td><td>Use GroupKFold or LeaveOneGroupOut when sessions or animals must not cross folds.</td><td>Random trial splits often score higher but may learn session identity.</td></tr><tr><td><code>Scaling</code></td><td>Feature standardization or normalization.</td><td>StandardScaler for linear/SVM models</td><td>Fit within every training fold and apply to its validation fold.</td><td>Scaling the full dataset first leaks validation means and variances.</td></tr><tr><td><code>Class weighting</code></td><td>Loss weights for imbalanced classes.</td><td>balanced (for imbalanced classes)</td><td>Report class counts first; weighting or resampling must occur inside training folds.</td><td>Changes decision boundaries and calibration; ordinary accuracy is insufficient.</td></tr><tr><td><code>Permutation count</code></td><td>Number of label shuffles with complete re-validation.</td><td>200 (demonstration)</td><td>Use at least 1,000 for final results while preserving group structure.</td><td>One shuffle is unstable; invalid shuffling destroys nesting.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Task and model</dt><dd>Choose classification or regression. Training starts only after Run is pressed.</dd><dt>Cross-validation</dt><dd>Fits preprocessing inside each training fold and reserves test folds for independent evaluation.</dd><dt>Permutation baseline</dt><dd>Shuffles labels to estimate performance under the null hypothesis.</dd><dt>PCA/clustering</dt><dd>Explores population structure; it does not establish a biological causal explanation.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Establish a linear baseline before comparing complex models.</li><li>Place the model, feature selection, scaling, and hyperparameter search inside validation.</li><li>Report fold scores, shuffle distribution, and cross-group generalization rather than one best score.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Putting adjacent trials from the same session into both train and test.</li><li>Selecting units on all data before cross-validation.</li><li>Showing only the best model after undisclosed model comparison.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Trial-by-feature matrix, labels, and grouping variables</p>
+  <p><b>Output：</b>Multi-model CV, AUC/F1, confusion matrix, permutation, PCA, and clustering</p>
+  <p><b>Check：</b>Fit preprocessing inside training folds, group by animal/session, compare against shuffle, and disclose model comparisons.</p>
+  <div class="callout next"><b>Next：</b> Send model configuration, validation splits, score tables, and figures to Publication and Reproducibility.</div>
+</section>
+
+<section id="export" class="manual-chapter" data-searchable>
+  <p class="chapter-kicker">11</p>
+  <h2>Publication figures and reproducible export</h2>
+  <div class="callout method">Export binds figures to plotted data, statistical tables, Methods, the software environment, and the workflow. Visual edits never rewrite analysis data; recomputation and styling have separate audit trails. A saved neuroflow_project.json restores completed stages and the active result.</div>
+  <h3>Before you begin</h3>
+  <p>Verify axes, units, sample sizes, error definitions, and annotations against saved results.</p>
+  <h3>Operations and purpose</h3>
+  <table><thead><tr><th>Operation</th><th>What you do</th><th>Purpose</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Edit current figure</b></td><td>Double-click an axis or open Figure Studio for object-level styling.</td><td>Creates publication styling without recomputing data.</td><td>Edits lines, markers, bars, images, text, axes, ticks, grids, and legends.</td></tr><tr><td><b>Save one panel</b></td><td>Select a panel, set exact dimensions, and export it.</td><td>Avoids screenshots with poor resolution and layout.</td><td>Exports PNG, SVG, or PDF with background and font settings.</td></tr><tr><td><b>Export data and statistics</b></td><td>Save x/y/group data behind the figure and the complete statistical output.</td><td>Links the figure back to values and enables external verification.</td><td>Exports CSV/JSON tables and a provenance index.</td></tr><tr><td><b>Save/restore project</b></td><td>Save the project, then reopen neuroflow_project.json from the home page.</td><td>Restores sources, workflow state, sorter results, analysis tables, and audit log.</td><td>Reopens at the last saved page with completed stages available for inspection.</td></tr></tbody></table>
+  <h3>Parameters</h3>
+  <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
+  <tbody><tr><td><code>Format</code></td><td>Figure file type.</td><td>PNG + SVG</td><td>Use PNG for preview and SVG/PDF for vector editing and publication.</td><td>Raster output depends on DPI; vector output preserves line and text objects.</td></tr><tr><td><code>Figure size</code></td><td>Output width and height.</td><td>Use the current figure</td><td>Set journal single/double-column dimensions in millimeters and inspect long labels.</td><td>Changing dimensions alters relative text size and panel spacing.</td></tr><tr><td><code>DPI</code></td><td>Pixels per inch for raster output.</td><td>300</td><td>Use 300–600 DPI for line art and follow journal/source resolution for images or heatmaps.</td><td>Higher DPI increases file size but cannot add source-data resolution.</td></tr><tr><td><code>Axis/grid/spine</code></td><td>Axis line width, extent, ticks, grid, and spine visibility.</td><td>NeuroFlow standard theme</td><td>Adjust by plot type and keep a figure consistent; do not let decorative grids obscure data.</td><td>Thick lines improve visibility but crowd small panels; strong grids compete with data.</td></tr><tr><td><code>Project source mode</code></td><td>Whether the project uses an external read-only link or an internal raw copy.</td><td>Defined by the import choice</td><td>Before archiving, verify external paths; copy raw data or use stable shared storage for portability.</td><td>The manifest remains readable, but raw-dependent stages cannot rerun if an external source is missing.</td></tr></tbody></table>
+  <h3>Every page control</h3>
+  <dl class="control-list"><dt>Figure settings</dt><dd>Edit the current figure title, axis names, limits, and grid.</dd><dt>SVG/PDF/PNG</dt><dd>SVG and PDF retain vector elements; PNG is suited to quick previews.</dd><dt>CSV and Methods</dt><dd>Export plotting data, statistical tables, parameters, versions, and a methods draft together.</dd><dt>Project manifest</dt><dd>Links every result back to source data, parameters, and execution state.</dd></dl>
+  <div class="grid-2">
+    <article class="panel"><h3>Recommended sequence</h3><ol><li>Save vector output, plotted data, statistical tables, and generation settings for every publication figure.</li><li>After saving, close and reopen once to verify restore position and key results.</li><li>Before sharing, check source paths, licenses, anonymization, and unpublished-data permissions.</li></ol></article>
+    <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Saving only screenshots without plotted data or statistical provenance.</li><li>Editing labels until units or sample counts no longer match results.</li><li>Treating a project linked to a personal temporary folder as a portable archive.</li></ul></article>
+  </div>
+  <h3>Inputs, outputs, and acceptance check</h3>
+  <p><b>Input：</b>Analysis objects, statistical results, and figure settings</p>
+  <p><b>Output：</b>PNG/SVG, plotted data, Methods, workflow, and provenance</p>
+  <p><b>Check：</b>Check axes and units, error definitions, accessible colors, and statistical annotations. Preserve SVG and CSV.</p>
+  <div class="callout next"><b>Next：</b> After the reproducibility bundle, the researcher remains responsible for interpretation, manuscript structure, and data-sharing decisions.</div>
+</section>
+
+        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

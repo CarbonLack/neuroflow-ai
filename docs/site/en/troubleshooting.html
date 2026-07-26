@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Troubleshooting · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="zh" href="../zh/troubleshooting.html">Chinese</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Getting started</div>
+<a href="index.html">Overview</a>
+<a href="installation.html">Installation and runtime</a>
+<a href="gui-guide.html">Interface and basic operation</a>
+<div class="sidebar-label">Tutorials</div>
+<a href="tutorials.html">Complete step-by-step tutorial</a>
+<a href="data-inputs.html">Import your own data</a>
+<div class="sidebar-label">Guides</div>
+<a href="sorting.html">Spike sorting guide</a>
+<a href="parameters.html">Parameter reference</a>
+<a href="figure-studio.html">Figure editing and export</a>
+<div class="sidebar-label">Reference</div>
+<a class="active" href="troubleshooting.html">Troubleshooting</a>
+<a href="sources.html">Methods and sources</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow operation manual</p>
+          <h1>Troubleshooting</h1>
+          <p class="lead">Identify whether a failure comes from data structure, missing input, environment, resource limits, or analysis assumptions. Never hide a failure by showing an unrelated saved result.</p>
+        </div>
+        
+<section data-searchable>
+  <table><thead><tr><th>Symptom</th><th>Likely cause</th><th>Action</th></tr></thead>
+  <tbody><tr><td><b>Diagonal/repeated traces</b></td><td>Wrong total channel count or dtype.</td><td>Return to Data, verify the acquisition configuration, and re-import.</td></tr><tr><td><b>Selected sorter cannot run</b></td><td>Backend or dependency is not installed, hardware is incompatible, or environment probing failed.</td><td>Open Sorter Manager and follow that backend&#x27;s exact diagnostic. Choose another sorter only as an explicit new decision.</td></tr><tr><td><b>A run shows another sorter&#x27;s result</b></td><td>The selected result was not activated or the run failed.</td><td>Check active sorter, run log, native output folder, and result timestamp. NeuroFlow must show pending/failed rather than substitute.</td></tr><tr><td><b>No event-aligned analysis</b></td><td>No events, wrong time units, or synchronization has not run.</td><td>Import behavior/TTL, verify counts and residuals, then rerun the selected event analysis.</td></tr><tr><td><b>Completed stage has no restored figure</b></td><td>The project was saved with an older schema or a linked source is missing.</td><td>Open the audit log, verify source paths, then rerun only the missing derived stage.</td></tr><tr><td><b>Application close warning</b></td><td>The project has unsaved navigation, parameters, decisions, or logs.</td><td>Choose Save to update neuroflow_project.json, Discard to close without those changes, or Cancel to return.</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>What to include in a bug report</h2>
+  <ul><li>NeuroFlow version and operating system</li><li>Project manifest with private paths redacted</li><li>Current stage, selection, and parameters</li><li>Exact first error line and audit-log tail</li><li>Sorter name, backend version, GPU/CPU status</li><li>Whether the issue reproduces on a teaching simulation</li></ul>
+</section>
+
+        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

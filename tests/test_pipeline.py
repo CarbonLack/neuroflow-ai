@@ -18,6 +18,7 @@ from neuroflow.data_import import (
     import_nwb_units,
 )
 from neuroflow.decoding import run_decoding_suite
+from neuroflow.models import ProjectState
 from neuroflow.project import load_project, save_project
 from neuroflow.public_examples import (
     IBL_EID,
@@ -78,6 +79,48 @@ def test_binary_import_and_project_roundtrip(tmp_path: Path):
     restored = load_project(save_project(state))
     assert restored.recording_path == source
     assert restored.channel_count == 4
+
+
+def test_project_roundtrip_restores_results_and_resume_stage(tmp_path: Path):
+    state = ProjectState(
+        root=tmp_path / "resumable_project",
+        name="Resumable recording",
+        source_type="binary",
+        source_path=tmp_path / "source.bin",
+        recording_path=tmp_path / "source.bin",
+        sampling_rate=30_000,
+        channel_count=4,
+        duration_seconds=1.0,
+    )
+    state.source_path.write_bytes(b"\0" * 64)
+    state.preprocessing = {
+        "start_seconds": 0.25,
+        "raw": np.array([[1.0, 2.0]]),
+        "processed": np.array([[0.5, 1.5]]),
+    }
+    state.analysis = {
+        "time": np.array([-0.1, 0.0, 0.1]),
+        "population_z": np.array([[0.0, 1.0, 0.5]]),
+    }
+    state.statistics = {"rows": [{"unit": 1, "p_value": 0.04}]}
+    state.workflow_status = {
+        "import": "completed",
+        "qc": "completed",
+        "preprocess": "completed",
+        "sorting": "completed",
+    }
+    state.metadata["last_open_step"] = "sorting"
+    state.run_log = ["Imported own binary recording", "Preprocessing completed"]
+
+    restored = load_project(save_project(state))
+
+    assert restored.metadata["last_open_step"] == "sorting"
+    assert restored.workflow_status["preprocess"] == "completed"
+    assert restored.preprocessing["start_seconds"] == 0.25
+    assert restored.preprocessing["processed"] == [[0.5, 1.5]]
+    assert restored.analysis["time"] == [-0.1, 0.0, 0.1]
+    assert restored.statistics["rows"][0]["p_value"] == 0.04
+    assert "Preprocessing completed" in restored.run_log
 
 
 def test_kilosort_and_ibl_alf_imports(tmp_path: Path):

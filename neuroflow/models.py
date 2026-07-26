@@ -38,6 +38,7 @@ class ProjectState:
     active_sorter_key: str | None = None
     sorting_comparison: dict[str, Any] = field(default_factory=dict)
     qc: dict[str, Any] = field(default_factory=dict)
+    preprocessing: dict[str, Any] = field(default_factory=dict)
     unit_metrics: list[dict[str, Any]] = field(default_factory=list)
     unit_diagnostics: dict[int, dict[str, Any]] = field(default_factory=dict)
     analysis: dict[str, Any] = field(default_factory=dict)

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>参数参考 · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/parameters.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a class="active" href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a href="troubleshooting.html">故障排查</a>
+<a href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <h1>参数参考</h1>
+          <p class="lead">默认值只是起点，不是通用真值。每次只改一个参数，记录原因，并比较修改前后的证据。</p>
+        </div>
+        <section id="import" data-searchable>
+<h2>01 从数据结构开始</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>采样率（Sampling rate）</code></td><td>每秒采样点数，用于样本索引与秒之间的换算。</td><td>模拟项目 30,000 Hz；设备文件读取元数据</td><td>必须使用采集系统记录值；常见细胞外 spike 记录为 20–30 kHz。</td><td>填小会把时间拉长、频率压低；填大会把时间压短、频率抬高。</td></tr><tr><td><code>总通道数（Channel count）</code></td><td>二进制每个时间点包含的全部通道，包括文件中的辅助通道。</td><td>模拟项目由电极模板决定</td><td>按文件实际写入通道数填写，不等同于用于 sorting 的电生理通道数。</td><td>错误值会重排整个文件，常出现重复、错位或斜纹波形。</td></tr><tr><td><code>数据类型（dtype）</code></td><td>每个样本在磁盘上的存储类型。</td><td>int16</td><td>优先从设备元数据或导出设置读取；不要把 float32 文件当作 int16。</td><td>错误 dtype 会改变帧长度和数值解释，可能仍能打开但波形完全错误。</td></tr><tr><td><code>µV / bit</code></td><td>一个整数 ADC 步长对应的微伏数。</td><td>通用导入 0.195；设备导入读取或标准化</td><td>使用设备增益换算；若不确定，先保留原始计数并标记单位未知。</td><td>只影响振幅单位和依赖振幅的阈值，不改变 spike 的样本位置。</td></tr><tr><td><code>复制源文件（Copy source）</code></td><td>决定项目保存只读路径还是把原始二进制复制到项目。</td><td>关闭：只读索引</td><td>数据位置稳定时用索引；需要移动或长期归档项目时开启复制。</td><td>复制提高可移植性但占用额外磁盘；索引节省空间但源路径失效后无法重读。</td></tr></tbody></table>
+</section><section id="qc" data-searchable>
+<h2>02 原始信号质控</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>起始时间（Time start）</code></td><td>当前预览窗口从记录的哪一秒开始。</td><td>0 s</td><td>先看开头，再抽查中段、结尾和任务关键事件附近。</td><td>只改变显示和局部指标，不裁剪原始数据。</td></tr><tr><td><code>时间窗（Window）</code></td><td>一次显示多少毫秒或秒。</td><td>60 ms</td><td>spike 波形用 20–100 ms；慢伪迹和节律可用 1–10 s。</td><td>短窗看波形细节，长窗看趋势，但过长会压缩尖峰。</td></tr><tr><td><code>通道范围（Channel range）</code></td><td>同时绘制的起始通道与数量。</td><td>Ch 0–11</td><td>密集探针每次看 8–16 通道，并沿深度移动。</td><td>通道过多会降低单通道可读性；过少可能看不到空间共同模式。</td></tr><tr><td><code>显示增益（Display gain）</code></td><td>仅控制各通道在图中的垂直放大倍数。</td><td>1.0×</td><td>从 1.0× 开始，波形重叠时调低，振幅过小时调高。</td><td>不改变数据和 QC 数值，只改变可视化。</td></tr><tr><td><code>工频（Line frequency）</code></td><td>用于计算窄带工频功率的中心频率。</td><td>50 Hz（中国与多数地区）</td><td>按实验所在地选择 50 或 60 Hz，并同时查看谐波。</td><td>选错频率会漏报工频，但不会改变原始信号。</td></tr></tbody></table>
+</section><section id="preprocess" data-searchable>
+<h2>03 预处理不是固定配方</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>AP 频段（AP band）</code></td><td>提供给 spike 检测或预览的通带。</td><td>300–6000 Hz</td><td>先使用 sorter 或领域常见默认；根据采样率和频谱证据调整。</td><td>高通太高会削弱宽波形；太低会保留 LFP 漂移。低通不能超过 Nyquist。</td></tr><tr><td><code>LFP 低通（LFP low-pass）</code></td><td>保留的最高 LFP 频率。</td><td>300 Hz</td><td>若只分析 &lt;100 Hz，可设 150–250 Hz；研究高频振荡需提高并保留足够采样率。</td><td>截止频率越低，尖锐瞬态越被平滑；过高会把 spike 泄漏带入 LFP。</td></tr><tr><td><code>降采样率（LFP sampling rate）</code></td><td>滤波后 LFP 每秒保存的样本数。</td><td>1,000 Hz</td><td>至少为目标最高频率的 2 倍，实际通常保留 4–10 倍余量。</td><td>过低会混叠或失去相位精度；过高增加内存和计算。</td></tr><tr><td><code>参考方式（Reference）</code></td><td>从每个通道减去共同参考估计。</td><td>Common median</td><td>密集多通道记录可从 median 开始；稀疏 tetrode/微丝需结合分组和参考电极。</td><td>average 更受极端通道影响；median 更稳健，但两者都可能移除真实共同活动。</td></tr><tr><td><code>陷波（Notch）</code></td><td>压制 50/60 Hz 及可选谐波。</td><td>默认关闭</td><td>只有质控证据显示窄带污染且无法从硬件修复时开启。</td><td>陷波会改变目标频率附近的振幅和相位，可能影响相位耦合分析。</td></tr></tbody></table>
+</section><section id="sorting" data-searchable>
+<h2>04 Spike sorting 与工具选择</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>Sorter</code></td><td>实际执行的 spike sorting 后端。</td><td>Kilosort4</td><td>高密度 Neuropixels 优先评估 Kilosort4；稀疏/tetrode 可比较 CPU sorter。</td><td>不同 sorter 的预处理、检测、聚类和资源需求不同，结果不可视为同一算法的参数变体。</td></tr><tr><td><code>n_chan_bin</code></td><td>Kilosort 二进制文件中的总通道数，包括未用于 sorting 的通道。</td><td>从项目结构读取</td><td>必须与文件物理布局一致；Neuropixels 1.0 常见文件总数为 385。</td><td>错误值会产生重复斜纹或错位热图，应在运行前立即停止。</td></tr><tr><td><code>batch_size</code></td><td>Kilosort 每个批次处理的样本数。</td><td>60,000（30 kHz 时 2 s）</td><td>先用默认；≤64 通道且漂移估计不稳时可增加批次包含的时间。</td><td>更大批次需要更多显存/内存；过短批次用于漂移估计的 spike 更少。</td></tr><tr><td><code>nblocks</code></td><td>漂移校正时沿探针深度分块的数量。</td><td>1（刚性漂移）</td><td>单 shank Neuropixels 可从 1 开始，非刚性漂移可试 5；≤64 通道或稀疏间距约 ≥50 µm 时考虑 0。</td><td>0 跳过漂移校正；分块过多会在 spike 稀少时产生不稳定估计。</td></tr><tr><td><code>Th_universal / Th_learned</code></td><td>通用模板和学习模板的 spike 检测阈值。</td><td>Kilosort4 当前默认</td><td>先用默认；漏检或 unit 时隐时现时每次只降低 1–2，并比较噪声和召回。</td><td>阈值降低会检出更多事件，也会增加噪声和计算量。</td></tr><tr><td><code>tmin / tmax</code></td><td>参与 sorting 的起止秒数。</td><td>整段记录</td><td>只有开头或结尾存在已确认伪迹时裁剪，并在审计记录写明。</td><td>缩短可加快测试，但短片段结果不能代替整段稳定性评估。</td></tr><tr><td><code>duplicate_spike_ms</code></td><td>同一 unit 中过近 spike 被判为重复并移除的窗口。</td><td>Kilosort4 默认</td><td>仅在 ACG 零点附近出现重复峰且波形证据支持时调整；不得超过 0.5 ms。</td><td>过大会破坏不应期和 ACG/CCG 估计。</td></tr></tbody></table>
+</section><section id="unit_qc" data-searchable>
+<h2>05 Unit 质控与人工复核</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>放电率（Firing rate）</code></td><td>unit 在有效记录时间内每秒的 spike 数。</td><td>仅报告，不默认剔除</td><td>结合脑区、细胞类型、记录时长和稳定性判断。</td><td>最低阈值升高会移除稀疏放电 unit，也可能丢失真实低频细胞。</td></tr><tr><td><code>ISI violation window</code></td><td>用于统计不应期违例的时间窗口。</td><td>2 ms</td><td>常从 1–2 ms 开始，并报告具体定义。</td><td>窗口越大违例越多；不同研究的数值不可脱离定义直接比较。</td></tr><tr><td><code>SNR</code></td><td>波形信号幅度相对背景噪声的指标。</td><td>仅报告</td><td>使用项目内一致算法并结合波形图；不要把跨软件阈值直接照搬。</td><td>阈值升高提高保守性，但会对小振幅真实 unit 不利。</td></tr><tr><td><code>Amplitude stability</code></td><td>振幅随时间的变化程度。</td><td>全记录时间线</td><td>检查是否单调衰减、突变或只在短时段存在，并与漂移图对应。</td><td>稳定性要求过严会排除真实状态变化；过松会保留漂移/丢失 unit。</td></tr><tr><td><code>Contamination threshold</code></td><td>允许的候选污染比例。</td><td>不自动设为真值</td><td>以 10% 作为可见参考线时必须说明估计方法，并与 ACG/波形共同判断。</td><td>降低阈值会减少 unit 数并提高保守性，但估计本身也有误差。</td></tr></tbody></table>
+</section><section id="sync" data-searchable>
+<h2>06 TTL、行为与统一时间轴</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>Behavior time column</code></td><td>行为设备时间戳所在列。</td><td>time_seconds</td><td>优先转换为秒并保留原始列；若为帧号需提供帧率或逐帧时间。</td><td>单位错误会产生 1000 倍或采样率倍的偏移。</td></tr><tr><td><code>TTL pairing</code></td><td>行为脉冲与电生理脉冲如何对应。</td><td>按顺序一一配对</td><td>先核对数量和间隔；有漏脉冲时用间隔序列定位后再配对。</td><td>一个漏脉冲会让后续全部按序配对错位。</td></tr><tr><td><code>Clock model</code></td><td>从行为时钟映射到电生理时钟的函数。</td><td>offset + slope × time</td><td>先用线性模型；残差呈弯曲或分段跳变时才考虑分段/非线性。</td><td>模型过于复杂会拟合脉冲噪声；过于简单会留下系统漂移。</td></tr><tr><td><code>Residual tolerance</code></td><td>匹配后允许的最大时间误差。</td><td>报告实际值，不自动隐藏</td><td>根据任务时间尺度和设备精度设定；毫秒级 spike 响应需更严格。</td><td>容差放宽会保留错配；过严会剔除正常 TTL 抖动。</td></tr><tr><td><code>Shared-clock assumption</code></td><td>无 TTL 时是否把行为秒时间直接当作电生理秒时间。</td><td>仅在未提供 TTL 时启用并警告</td><td>只有系统确实共享硬件时钟或已在外部完成同步时使用。</td><td>无法检测起始偏移和漂移，结论风险必须写入报告。</td></tr></tbody></table>
+</section><section id="behavior" data-searchable>
+<h2>07 行为质量先于神经解释</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>Condition column</code></td><td>用于分组比较的 trial 字段。</td><td>condition</td><td>使用实验程序原始标签并建立数据字典。</td><td>重新编码会改变分组和样本量，必须保留映射。</td></tr><tr><td><code>Reaction-time start/end</code></td><td>计算反应时所用的两个事件。</td><td>stimulus_onset → response</td><td>按科学问题明确；运动开始、按键和奖励不能混用。</td><td>终点事件不同会改变数值和神经对齐解释。</td></tr><tr><td><code>Minimum trials</code></td><td>一个条件进入统计或解码所需的最低有效 trial 数。</td><td>仅警告，不自动剔除</td><td>依据效应大小、变异和验证方案做功效评估；不要固定套用一个数。</td><td>阈值越高条件越稳定但可用 session 越少。</td></tr><tr><td><code>Outlier rule</code></td><td>反应时或连续行为变量的异常值定义。</td><td>不默认删除</td><td>优先使用任务定义边界或稳健规则，并报告剔除数量。</td><td>事后调整边界可能改变条件效应并引入偏差。</td></tr></tbody></table>
+</section><section id="analysis" data-searchable>
+<h2>08 神经活动分析工作台</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>Alignment event</code></td><td>所有 trial 的时间零点。</td><td>stimulus_onset（取决于事件表）</td><td>按假设选择；刺激、运动、选择和奖励回答不同问题。</td><td>更换事件会改变响应时间解释，不能只挑最显著者。</td></tr><tr><td><code>Window</code></td><td>事件前后截取的时间范围。</td><td>-1 到 +2 s</td><td>覆盖 baseline 和预期响应，同时避免相邻 trial/事件重叠。</td><td>过短漏掉慢响应；过长增加重叠和多重比较。</td></tr><tr><td><code>Bin size</code></td><td>PSTH 或计数特征的时间分箱宽度。</td><td>50 ms</td><td>快速感觉响应可用 5–20 ms；行为/群体趋势常用 20–100 ms，并做敏感性比较。</td><td>小 bin 提高时间分辨率但噪声大；大 bin 平滑响应并降低峰值。</td></tr><tr><td><code>Smoothing</code></td><td>对分箱放电率施加的平滑核与宽度。</td><td>默认最小或关闭</td><td>图示可平滑，统计优先使用未平滑 trial 特征；报告核和宽度。</td><td>平滑越强峰越低、响应越宽，可能制造相邻时间相关。</td></tr><tr><td><code>PSD method</code></td><td>功率谱估计方法和分段设置。</td><td>Welch</td><td>平稳片段从 Welch 开始；报告窗长、重叠、频率分辨率和单位。</td><td>长窗提高频率分辨率但降低时间局部性；短窗相反。</td></tr><tr><td><code>Surrogates</code></td><td>通过时间移位或标签打乱建立机会分布的次数。</td><td>200（演示）</td><td>正式分析通常至少 1,000，尾部 p 值需要更多；固定随机种子。</td><td>次数少运行快但 p 值分辨率低；次数多更稳定但耗时增加。</td></tr></tbody></table>
+</section><section id="statistics" data-searchable>
+<h2>09 从图到统计证据</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>Sampling unit</code></td><td>进入推断统计的独立观察单位。</td><td>必须由用户确认</td><td>动物层结论通常以动物为独立单位；unit/session 可作为嵌套层。</td><td>选得过细会虚增 n 和显著性；过粗会损失信息。</td></tr><tr><td><code>Paired</code></td><td>两个条件是否来自同一对象或匹配单元。</td><td>根据设计</td><td>同一 unit/session/animal 的前后比较使用配对；不同对象使用非配对。</td><td>配对指定错误会改变误差项和检验效能。</td></tr><tr><td><code>Alpha</code></td><td>预先定义的 I 类错误阈值。</td><td>0.05</td><td>在分析前设定，并与多重比较方法一起报告。</td><td>降低 alpha 更保守但增加漏检；不能为获得显著而事后调整。</td></tr><tr><td><code>Multiple comparison</code></td><td>一组相关检验的错误率控制方法。</td><td>FDR Benjamini–Hochberg</td><td>探索性多单元/多时间窗可用 FDR；少量预设比较可用 Holm；报告 family 定义。</td><td>更严格校正减少假阳性但降低功效；不定义检验族会使校正失去意义。</td></tr><tr><td><code>Resamples</code></td><td>置换或 bootstrap 重复次数。</td><td>1,000</td><td>快速预览 200–1,000；最终估计常用 5,000–10,000 并固定种子。</td><td>次数决定 p 值/区间的蒙特卡洛稳定性和运行时间。</td></tr></tbody></table>
+</section><section id="decoding" data-searchable>
+<h2>10 机器学习、聚类与数据泄漏</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>Feature window</code></td><td>每个 trial 提取神经特征的时间范围。</td><td>0–0.5 s（依任务而定）</td><td>根据因果时间关系预先定义；预测行为时避免使用行为发生后的信息。</td><td>更长窗口包含更多信息，也更容易混入后续事件和运动。</td></tr><tr><td><code>Cross-validation</code></td><td>训练/验证数据划分与重复方式。</td><td>5-fold stratified 或 grouped</td><td>同一 session/动物不能跨折泄漏时使用 GroupKFold/LeaveOneGroupOut。</td><td>随机 trial 划分通常分数更高，但可能只学到 session 身份。</td></tr><tr><td><code>Scaling</code></td><td>特征标准化或归一化。</td><td>线性/SVM 模型使用 StandardScaler</td><td>必须在每个训练折拟合，再应用到验证折。</td><td>全数据先标准化会泄漏验证集均值和方差。</td></tr><tr><td><code>Class weighting</code></td><td>对不平衡类别的损失权重。</td><td>balanced（不平衡时）</td><td>先报告类别数；使用权重或重采样时只能在训练折内完成。</td><td>会改变决策边界和概率校准，不能只报告普通准确率。</td></tr><tr><td><code>Permutation count</code></td><td>打乱标签并重跑完整验证的次数。</td><td>200（演示）</td><td>正式结果至少 1,000，并保持分组结构不被破坏。</td><td>只打乱一次不能形成稳定机会分布；错误打乱会破坏嵌套结构。</td></tr></tbody></table>
+</section><section id="export" data-searchable>
+<h2>11 论文图与可复现导出</h2>
+<table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
+<tbody><tr><td><code>Format</code></td><td>图像文件类型。</td><td>PNG + SVG</td><td>PNG 用于快速预览；SVG/PDF 用于矢量编辑和出版。</td><td>栅格格式受 DPI 限制；矢量格式保留线和文字对象。</td></tr><tr><td><code>Figure size</code></td><td>输出宽度和高度。</td><td>按当前图</td><td>按期刊单栏/双栏毫米尺寸设置，再检查最长标签是否溢出。</td><td>尺寸改变会影响文字相对大小和 panel 间距。</td></tr><tr><td><code>DPI</code></td><td>栅格输出每英寸像素数。</td><td>300</td><td>线图 300–600 DPI；显微/热图按期刊要求和原始分辨率。</td><td>DPI 越高文件越大，但不能增加原始数据分辨率。</td></tr><tr><td><code>Axis/grid/spine</code></td><td>坐标轴线宽、长度、刻度、网格和边框显示。</td><td>NeuroFlow 标准主题</td><td>按图类型调整并保持同一 Figure 内一致；不要用装饰网格掩盖数据。</td><td>粗线提高可见性但会压缩小 panel；网格过强会与数据竞争。</td></tr><tr><td><code>Project source mode</code></td><td>项目使用外部只读索引还是内部原始副本。</td><td>取决于导入选择</td><td>长期归档前检查所有外部路径；需要独立移动时复制原始数据或使用可访问共享路径。</td><td>清单始终可打开，但外部源丢失后依赖原始电压的步骤不能重跑。</td></tr></tbody></table>
+</section>
+        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

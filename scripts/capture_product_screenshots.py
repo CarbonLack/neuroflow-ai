@@ -26,6 +26,7 @@ from neuroflow.ui import (
     NeuroFlowWindow,
     NewProjectDialog,
     PublicExampleDialog,
+    TutorialDialog,
 )
 
 
@@ -144,6 +145,10 @@ def main() -> int:
     window._select_step("sync")
     window._refresh_figure()
     _capture(window, output / "neuroflow-synchronization.png")
+    tutorial = TutorialDialog("sync", window, "en_US")
+    tutorial.show()
+    _capture(tutorial, output / "neuroflow-tutorial.png")
+    tutorial.close()
 
     window._select_step("analysis")
     analysis_index = window.option_combo.findData("case:respiration")

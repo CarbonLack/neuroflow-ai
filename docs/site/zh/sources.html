@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>方法与来源 · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/sources.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a href="troubleshooting.html">故障排查</a>
+<a class="active" href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <h1>方法与来源</h1>
+          <p class="lead">NeuroFlow 复用成熟开源计算能力，自主编写界面、兼容、教程和审计层。以下内容为原创概括，不复制原文。</p>
+        </div>
+        
+<section data-searchable>
+  <h2>来源与借鉴范围</h2>
+  <table><thead><tr><th>来源</th><th>NeuroFlow 借鉴或调用的范围</th></tr></thead>
+  <tbody><tr><td><a href="https://kilosort.readthedocs.io/en/latest/">Kilosort4 documentation</a></td><td>文档层级、GUI 操作顺序、参数、导出文件、漂移检查和示例教程结构。</td></tr><tr><td><a href="https://kilosort.readthedocs.io/en/latest/gui_guide.html">Kilosort4 GUI guide</a></td><td>数据/探针选择、输入预览、通道数检查和运行顺序。</td></tr><tr><td><a href="https://kilosort.readthedocs.io/en/latest/parameters.html">Kilosort4 parameter guide</a></td><td>n_chan_bin、batch_size、nblocks、阈值、时间范围、几何和重复 spike 注意事项。</td></tr><tr><td><a href="https://spikeinterface.readthedocs.io/en/stable/">SpikeInterface</a></td><td>数据读取、预处理、sorter 适配、后处理、质量指标和比较接口。</td></tr><tr><td><a href="https://spikeinterface.readthedocs.io/en/stable/modules/sorters.html">SpikeInterface sorters</a></td><td>统一 sorter wrapper、原生依赖和容器执行机制。</td></tr><tr><td><a href="https://elephant.readthedocs.io/en/stable/modules.html">Elephant</a></td><td>基于 Neo 对象的 spike train 统计、频谱、相关、相位和信号分析 API。</td></tr><tr><td><a href="https://neo.readthedocs.io/en/stable/read_and_analyze.html">Neo</a></td><td>带单位的 SpikeTrain、AnalogSignal、Event、Epoch、Segment 和 Block 对象。</td></tr><tr><td><a href="https://phy.readthedocs.io/en/latest/quickstart/">Phy</a></td><td>spike sorting 输出的人工复核工作流。</td></tr><tr><td><a href="https://pypi.org/project/mountainsort5/">MountainSort5</a></td><td>面向 CPU 的 sorting scheme 和包接口。</td></tr><tr><td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10312056/">Respiration/PFC study</a></td><td>行为状态、呼吸、spike、LFP、相位和 surrogate 分析的方法结构。</td></tr><tr><td><a href="https://www.graphpad.com/guides/prism/latest/user-guide/how_to_change_a_graph.htm">GraphPad Prism graph controls</a></td><td>图元、坐标轴、网格、刻度和精确尺寸的可编辑交互预期。</td></tr><tr><td><a href="https://www.internationalbrainlab.com/brainwidemap">IBL Brain-Wide Map</a></td><td>公开神经与行为数据的验证背景。</td></tr><tr><td><a href="https://docs.dandiarchive.org/introduction/">DANDI Archive</a></td><td>版本化 NWB 公开数据访问与来源记录。</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>不直接抄袭原则</h2>
+  <div class="callout warning">NeuroFlow 不复制其他产品的原文、截图、论文图、数值结论或视觉识别；只把官方方法定义和文档组织方式作为参考，再自主编写产品文字、工作流、适配器和界面行为。</div>
+</section>
+
+        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

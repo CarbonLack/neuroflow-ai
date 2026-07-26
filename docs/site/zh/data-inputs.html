@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>导入自己的数据 · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/data-inputs.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a class="active" href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a href="troubleshooting.html">故障排查</a>
+<a href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <h1>导入自己的数据</h1>
+          <p class="lead">先创建项目，再按手中真实文件选择入口。含原始电压的数据与只有处理后 unit 的数据会从不同阶段进入工作流。</p>
+        </div>
+        
+<section data-searchable>
+  <h2>按手中数据选择入口</h2>
+  <table><thead><tr><th>入口</th><th>需要提供</th><th>从哪里开始</th><th>能否 sorting</th></tr></thead>
+  <tbody><tr><td><b>通用二进制</b></td><td>.bin/.dat/.raw，加采样率、总通道数、dtype、µV/bit 和可选事件 CSV。</td><td>原始质控</td><td>可以</td></tr><tr><td><b>记录系统文件</b></td><td>Intan、Open Ephys、SpikeGLX、Blackrock、Plexon、TDT 或 NWB ElectricalSeries。</td><td>原始质控</td><td>可以</td></tr><tr><td><b>已有 sorting</b></td><td>含 spike_times 和 cluster 分配的 Kilosort/Phy 输出。</td><td>Unit 质控</td><td>不可以，除非另有原始电压</td></tr><tr><td><b>IBL ALF / BWM</b></td><td>处理后 spike 与 trials，或行为汇总。</td><td>Unit/行为</td><td>不可以</td></tr><tr><td><b>NWB Units</b></td><td>Units 表和可用行为/状态对象。</td><td>Unit/行为</td><td>只有另行导入原始 ElectricalSeries 才可以</td></tr><tr><td><b>教学模拟</b></td><td>带行为和 ground truth 的 Neuropixels-like、tetrode 或微丝风格确定性记录。</td><td>原始质控</td><td>可以</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>通用二进制导入检查</h2>
+  <ol class="steps"><li>源路径保持可读取。</li><li>文件大小、时长、通道数和 dtype 相互一致。</li><li>探针几何和通道分组与记录匹配。</li><li>事件单位和设备时钟明确。</li><li>决定只索引还是把原始数据复制进项目。</li></ol>
+  <div class="callout warning">文件能够打开不等于解释正确；错误通道数或 dtype 可能产生看似有波形、实际完全错误的数据。</div>
+</section>
+<section data-searchable>
+  <h2>行为 CSV 示例结构</h2>
+  <pre><code>trial,time_seconds,event_type,condition,choice,reaction_time
+1,12.450,stimulus_onset,A,left,0.620
+1,13.070,response,A,left,0.620</code></pre>
+  <p>另一个 TTL CSV 可提供电生理时钟中的脉冲时间。NeuroFlow 会匹配脉冲序列，并报告起始偏移、漂移、残差和缺失事件。</p>
+</section>
+
+        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>安装与运行 · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/installation.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a class="active" href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a href="troubleshooting.html">故障排查</a>
+<a href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <h1>安装与运行</h1>
+          <p class="lead">桌面程序、科学计算环境、sorter 后端和项目数据彼此分离，单个工具安装失败不会阻止 NeuroFlow 打开。</p>
+        </div>
+        <section data-searchable><h2>系统要求</h2><ol class="steps"><li>界面支持 Windows 10/11、macOS 或 Linux。</li><li>磁盘需要同时容纳原始数据、标准缓存、sorter 输出和导出文件。</li><li>Kilosort4 推荐 NVIDIA GPU；CPU sorter 作为独立备选，不是假装执行 Kilosort。</li></ol></section><section data-searchable><h2>桌面软件安装</h2><ol class="steps"><li>安装或解压 NeuroFlow 发行版。</li><li>直接启动 NeuroFlow，不要求用户先打开 Python 终端。</li><li>在“Sorter 管理”中查看真实后端、版本、硬件要求和适用探针。</li></ol></section><section data-searchable><h2>项目存储</h2><ol class="steps"><li>原始数据保持只读；通用二进制可只建立索引，也可复制到项目。</li><li>项目包含 neuroflow_project.json、派生结果、sorter 原生目录、导出和审计记录。</li><li>使用索引时保持源路径稳定；需要独立归档时复制原始数据。</li></ol></section><section data-searchable><h2>外部 sorter 环境</h2><ol class="steps"><li>只有通过实际环境检测的 sorter 才显示“可运行”。</li><li>Kilosort4 使用其 Python/GPU 环境；其他 sorter 可使用 CPU、容器或独立环境。</li><li>NeuroFlow 保存真实错误，绝不静默换用另一个 sorter。</li></ol></section>
+        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.7.0"></script>
+  </body>
+</html>

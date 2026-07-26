@@ -42,6 +42,7 @@ from neuroflow.sorting_results import (
 )
 from neuroflow.statistics import run_statistical_suite
 from neuroflow.synchronization import synchronize_existing_events
+from neuroflow.tutorial_details import TUTORIAL_DETAILS, localized, localized_rows
 from neuroflow.tutorials import TUTORIALS, tutorial_value
 
 
@@ -76,6 +77,57 @@ def test_bilingual_help_covers_every_workflow_step():
     for help_item in CONTROL_HELP.values():
         assert help_item["zh_CN"][0] and help_item["zh_CN"][1]
         assert help_item["en_US"][0] and help_item["en_US"][1]
+
+
+def test_detailed_tutorials_cover_operations_parameters_and_both_languages():
+    assert set(TUTORIAL_DETAILS) == {
+        "import",
+        "qc",
+        "preprocess",
+        "sorting",
+        "unit_qc",
+        "sync",
+        "behavior",
+        "analysis",
+        "statistics",
+        "decoding",
+        "export",
+    }
+    for details in TUTORIAL_DETAILS.values():
+        for language in ("zh_CN", "en_US"):
+            assert localized(details, "narrative", language)
+            assert localized(details, "before", language)
+            assert localized(details, "recommended", language)
+            assert localized(details, "pitfalls", language)
+            assert localized(details, "next", language)
+            assert localized_rows(details, "operations", language)
+            assert localized_rows(details, "parameters", language)
+        english_parameters = localized_rows(details, "parameters", "en_US")
+        for parameter in english_parameters:
+            visible = f"{parameter['name']} {parameter['default']} {parameter['effect']}"
+            assert not any("\u4e00" <= char <= "\u9fff" for char in visible)
+
+
+def test_generated_documentation_is_complete_and_english_is_monolingual():
+    site = Path(__file__).resolve().parents[1] / "docs" / "site"
+    expected = {
+        "index.html",
+        "installation.html",
+        "gui-guide.html",
+        "tutorials.html",
+        "data-inputs.html",
+        "sorting.html",
+        "parameters.html",
+        "figure-studio.html",
+        "troubleshooting.html",
+        "sources.html",
+    }
+    assert {path.name for path in (site / "zh").glob("*.html")} == expected
+    assert {path.name for path in (site / "en").glob("*.html")} == expected
+    english = "\n".join(
+        path.read_text(encoding="utf-8") for path in (site / "en").glob("*.html")
+    )
+    assert not any("\u4e00" <= char <= "\u9fff" for char in english)
 
 
 def test_statistics_views_and_model_catalog(tmp_path: Path):
