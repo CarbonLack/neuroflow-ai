@@ -1,13 +1,25 @@
 # PyInstaller one-folder build. Scientific libraries remain inspectable and
 # the application does not need to unpack them on every launch.
+import os
+import sys
+from pathlib import Path
+
 from PyInstaller.utils.hooks import (
     collect_all,
     collect_data_files,
     collect_dynamic_libs,
 )
 
+python_dlls = Path(sys.base_prefix) / "DLLs"
+# PyInstaller resolves transitive DLLs through PATH. Prefer the OpenSSL build
+# shipped with this Python runtime over unrelated Conda installations.
+os.environ["PATH"] = f"{python_dlls}{os.pathsep}{os.environ.get('PATH', '')}"
+
 datas = []
-binaries = []
+binaries = [
+    (str(python_dlls / name), ".")
+    for name in ("libssl-3-x64.dll", "libcrypto-3-x64.dll")
+]
 hiddenimports = [
     "matplotlib.backends.backend_agg",
     "matplotlib.backends.backend_pdf",

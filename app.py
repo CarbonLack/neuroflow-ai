@@ -22,6 +22,10 @@ if __name__ == "__main__":
         from neuroflow.self_test import run_packaged_internal_sorters_self_test
 
         raise SystemExit(run_packaged_internal_sorters_self_test(workspace))
+    if "--self-test-ai" in sys.argv:
+        from neuroflow.self_test import run_packaged_ai_self_test
+
+        raise SystemExit(run_packaged_ai_self_test(workspace))
     from neuroflow.ui import run_app
 
     raise SystemExit(run_app(workspace))

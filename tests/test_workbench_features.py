@@ -117,6 +117,7 @@ def test_generated_documentation_is_complete_and_english_is_monolingual():
         "tutorials.html",
         "data-inputs.html",
         "sorting.html",
+        "ai-assistant.html",
         "parameters.html",
         "figure-studio.html",
         "troubleshooting.html",

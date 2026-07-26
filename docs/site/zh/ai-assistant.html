@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI 助手：提供建议，但不制造黑箱 · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/ai-assistant.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a class="active" href="ai-assistant.html">AI 助手</a>
+<a href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a href="troubleshooting.html">故障排查</a>
+<a href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <h1>AI 助手：提供建议，但不制造黑箱</h1>
+          <p class="lead">NeuroFlow 的可选云端助手可以解释当前阶段、审查不含路径的项目摘要、提出候选流程并解释警告；它不接收原始电压，也不会静默运行分析。</p>
+        </div>
+
+<section data-searchable>
+  <h2>配置云端 AI</h2>
+  <ol class="steps"><li>从首页、工作区顶部或右侧引导栏打开“AI 助手”。</li><li>打开“AI 设置”，选择 OpenAI Responses API 或 OpenAI 兼容 Chat API。</li><li>使用 OpenAI 时保留默认 HTTPS 地址并选择模型；Terra 是平衡型默认值，Luna 更节省成本。</li><li>粘贴 API 密钥。密钥只在本次 NeuroFlow 运行期间保存在内存，不写入项目或软件设置。</li><li>点击“预览云端发送内容”，先检查下一次请求会携带的完整结构化项目摘要。</li><li>选择一个明确任务，或输入自己的科学问题。</li></ol>
+  <div class="callout method">推荐初始配置：OpenAI Responses API、gpt-5.6-terra、medium 推理强度。请在代表性 NeuroFlow 问题上比较质量、延迟和成本后再改变模型。</div>
+  <img class="product-shot" src="../assets/neuroflow-ai-assistant.png" alt="NeuroFlow AI assistant">
+</section>
+<section data-searchable>
+  <h2>四个明确任务</h2>
+  <table><thead><tr><th>操作</th><th>会得到什么</th></tr></thead>
+  <tbody><tr><td><b>解释当前阶段</b></td><td>说明科学目的、所需输入、重要参数、应检查的证据和继续条件。</td></tr><tr><td><b>审查当前项目</b></td><td>区分已有证据、缺失前提、数据风险、环境风险和最稳妥的下一步。</td></tr><tr><td><b>生成候选流程</b></td><td>只使用 NeuroFlow 已注册的 11 个阶段返回结构化方案；每个阶段包含目的、前提和参数起点。</td></tr><tr><td><b>解释最近异常</b></td><td>解释当前可见警告或失败，但不会声称已经修复；已有结果保持不变。</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>哪些内容会离开当前电脑</h2>
+  <table><thead><tr><th>信息</th><th>处理方式</th></tr></thead>
+  <tbody><tr><td><b>原始电压</b></td><td>永不发送。</td></tr><tr><td><b>本地源文件和项目路径</b></td><td>在构造请求前删除。</td></tr><tr><td><b>项目和实验对象身份</b></td><td>不进入结构化摘要。</td></tr><tr><td><b>采样率、通道数、时长和探针类型</b></td><td>需要发送，因为它们会决定分析选择是否合法。</td></tr><tr><td><b>质控、sorting、统计和解码摘要</b></td><td>只发送压缩后的已计算数值。</td></tr><tr><td><b>最近审计日志</b></td><td>默认关闭；只有用户主动勾选后才发送 5 条经脱敏的消息。</td></tr><tr><td><b>用户问题和最近 AI 对话</b></td><td>为维持当前问题上下文而发送。</td></tr><tr><td><b>API 密钥</b></td><td>只用于 HTTPS 授权请求头，不保存到项目。</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>确认与审计边界</h2>
+  <ul class="checks"><li>模型不能查看未发送的原始数据，也不能补造缺失结果。</li><li>候选方案会明确标记为 advisory_not_executed，即“建议但尚未执行”。</li><li>应用方案只会保存到项目并跳转到建议阶段，不会运行该阶段。</li><li>所有真实分析仍须通过底部固定操作栏和运行确认弹窗执行。</li><li>AI 回答和已接受方案会进入项目审计历史，重新打开项目后仍可恢复。</li><li>AI 未配置或网络不可用时，手动模式和引导模式仍可完整使用。</li></ul>
+</section>
+<section data-searchable>
+  <h2>失败时怎么处理</h2>
+  <p>请求失败时，NeuroFlow 会弹窗并保持项目不变。请检查 HTTPS 地址、模型标识、API 密钥、网络和账户额度。若提示模型格式错误，说明服务没有返回 NeuroFlow 所需的结构化 JSON；请切换到 Responses API，或使用支持结构化 JSON 的兼容服务。</p>
+</section>
+<section data-searchable>
+  <h2>实现依据</h2>
+  <ul class="source-list">
+    <li><a href="https://developers.openai.com/api/docs/guides/text">OpenAI Responses API text generation</a></li>
+    <li><a href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a></li>
+    <li><a href="https://developers.openai.com/api/docs/models">OpenAI model catalog and selection guidance</a></li>
+  </ul>
+</section>
+
+        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.8.0"></script>
+  </body>
+</html>

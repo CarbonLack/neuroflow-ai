@@ -76,6 +76,18 @@ REFERENCES = (
         "name": "GraphPad Prism: major and minor ticks",
         "url": "https://www.graphpad.com/guides/prism/latest/user-guide/major_and_minor_ticks.htm",
     },
+    {
+        "name": "OpenAI Responses API text generation",
+        "url": "https://developers.openai.com/api/docs/guides/text",
+    },
+    {
+        "name": "OpenAI Structured Outputs",
+        "url": "https://developers.openai.com/api/docs/guides/structured-outputs",
+    },
+    {
+        "name": "OpenAI model catalog",
+        "url": "https://developers.openai.com/api/docs/models",
+    },
 )
 
 
@@ -169,6 +181,21 @@ CONTROL_HELP = {
             "Save project",
             "Write the manifest, step states, parameters, and result index without "
             "overwriting the source recording.",
+        ),
+    },
+    "global.ai": {
+        "zh_CN": (
+            "AI 助手",
+            "打开可选云端助手。AI 只接收可预览、去路径的项目摘要，用于解释当前"
+            "阶段、审查项目、生成候选流程和解释异常。原始电压不发送；候选流程"
+            "不会自动运行，应用前和实际运行时都需要用户确认。",
+        ),
+        "en_US": (
+            "AI assistant",
+            "Open the optional cloud assistant. It receives only a previewable, "
+            "path-free project summary to explain a stage, review the project, propose "
+            "a workflow, or explain a failure. Raw voltage is never sent; candidate "
+            "plans do not run automatically and remain subject to user confirmation.",
         ),
     },
     "global.run_all": {

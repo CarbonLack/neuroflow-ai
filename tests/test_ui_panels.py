@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -193,5 +194,63 @@ def test_selecting_an_unrun_sorter_refreshes_the_pending_view(tmp_path: Path):
     )
     assert "spykingcircus2" in visible_text.lower()
     assert "kilosort4" not in visible_text.lower()
+    window.close()
+    app.processEvents()
+
+
+def test_ai_assistant_is_discoverable_and_plan_never_auto_runs(
+    tmp_path: Path,
+    monkeypatch,
+):
+    app = QApplication.instance() or QApplication([])
+    window = NeuroFlowWindow(tmp_path / "workspace")
+    state = ProjectState(
+        root=tmp_path / "project",
+        name="AI review project",
+        source_type="binary",
+        recording_path=tmp_path / "recording.bin",
+        channel_count=8,
+        sampling_rate=30_000,
+        duration_seconds=1.0,
+    )
+    state.recording_path.write_bytes(b"\0" * (30_000 * 8 * 2))
+    state.workflow_status = {"import": "completed", "qc": "pending"}
+    window._load_state(state)
+    window.show()
+    app.processEvents()
+
+    assert window.ai_button.isVisible()
+    assert window.open_ai_button.isVisible()
+    window._open_ai_assistant()
+    app.processEvents()
+    assert window.ai_dialog is not None
+    assert window.ai_dialog.isVisible()
+    assert "recording.bin" not in json.dumps(window.ai_dialog._summary())
+
+    monkeypatch.setattr(
+        QMessageBox,
+        "question",
+        lambda *args, **kwargs: QMessageBox.Yes,
+    )
+    monkeypatch.setattr(
+        QMessageBox,
+        "information",
+        lambda *args, **kwargs: QMessageBox.Ok,
+    )
+    plan = [
+        {
+            "stage": "qc",
+            "reason": "Inspect noise first.",
+            "prerequisites": ["Readable raw voltage"],
+            "recommended_parameters": [],
+        }
+    ]
+    window._apply_ai_plan(plan, "qc")
+
+    assert state.metadata["ai_workflow_plan"]["status"] == "advisory_not_executed"
+    assert state.workflow_status["qc"] == "pending"
+    assert window.current_step == "qc"
+    window.ai_dialog.hide()
+    window._set_project_clean()
     window.close()
     app.processEvents()

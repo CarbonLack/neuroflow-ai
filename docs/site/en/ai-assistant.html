@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI assistant: advice without a black box · NeuroFlow</title>
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
+      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="zh" href="../zh/ai-assistant.html">Chinese</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Getting started</div>
+<a href="index.html">Overview</a>
+<a href="installation.html">Installation and runtime</a>
+<a href="gui-guide.html">Interface and basic operation</a>
+<div class="sidebar-label">Tutorials</div>
+<a href="tutorials.html">Complete step-by-step tutorial</a>
+<a href="data-inputs.html">Import your own data</a>
+<div class="sidebar-label">Guides</div>
+<a href="sorting.html">Spike sorting guide</a>
+<a class="active" href="ai-assistant.html">AI assistant</a>
+<a href="parameters.html">Parameter reference</a>
+<a href="figure-studio.html">Figure editing and export</a>
+<div class="sidebar-label">Reference</div>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="sources.html">Methods and sources</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroFlow operation manual</p>
+          <h1>AI assistant: advice without a black box</h1>
+          <p class="lead">NeuroFlow&#x27;s optional cloud assistant explains the current stage, reviews a path-free project summary, proposes a candidate workflow, and interprets warnings. It never receives raw voltage and never runs an analysis silently.</p>
+        </div>
+
+<section data-searchable>
+  <h2>Configure cloud AI</h2>
+  <ol class="steps"><li>Open AI assistant from the home page, workspace toolbar, or right guidance panel.</li><li>Open AI settings. Choose OpenAI Responses API or an OpenAI-compatible Chat API.</li><li>For OpenAI, keep the default HTTPS base URL and choose a model. Terra is the balanced default; Luna reduces cost.</li><li>Paste the API key. It remains in memory for this NeuroFlow session and is not written to project files or application settings.</li><li>Open Preview cloud data and inspect the complete structured project summary before asking.</li><li>Choose a defined task or enter your own scientific question.</li></ol>
+  <div class="callout method">Recommended initial configuration: OpenAI Responses API, gpt-5.6-terra, medium reasoning. Change the model only after comparing response quality, latency, and cost on representative NeuroFlow questions.</div>
+  <img class="product-shot" src="../assets/neuroflow-ai-assistant.png" alt="NeuroFlow AI assistant">
+</section>
+<section data-searchable>
+  <h2>Four defined tasks</h2>
+  <table><thead><tr><th>Action</th><th>What it produces</th></tr></thead>
+  <tbody><tr><td><b>Explain this stage</b></td><td>Explains scientific purpose, required inputs, important parameters, evidence to inspect, and the condition for continuing.</td></tr><tr><td><b>Review project</b></td><td>Separates completed evidence, missing prerequisites, data risks, environment risks, and the safest next action.</td></tr><tr><td><b>Propose workflow</b></td><td>Returns a structured plan using only NeuroFlow&#x27;s 11 registered stages. Each stage includes its reason, prerequisites, and parameter starting points.</td></tr><tr><td><b>Explain latest error</b></td><td>Interprets the available warning or failure without claiming that a repair has run. Existing results remain unchanged.</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>Exactly what leaves the computer</h2>
+  <table><thead><tr><th>Information</th><th>Handling</th></tr></thead>
+  <tbody><tr><td><b>Raw voltage</b></td><td>Never sent.</td></tr><tr><td><b>Local source and project paths</b></td><td>Removed before request construction.</td></tr><tr><td><b>Project and subject identity</b></td><td>Not included in the structured summary.</td></tr><tr><td><b>Sampling rate, channel count, duration, probe type</b></td><td>Sent because they determine valid analysis choices.</td></tr><tr><td><b>QC, sorting, statistics, and decoding summaries</b></td><td>Sent only as compact calculated values.</td></tr><tr><td><b>Recent audit log</b></td><td>Off by default; five redacted messages are sent only after explicit opt-in.</td></tr><tr><td><b>Question and recent AI conversation</b></td><td>Sent to provide the requested context.</td></tr><tr><td><b>API key</b></td><td>Used only in the HTTPS authorization header and never stored in the project.</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>Approval and audit boundaries</h2>
+  <ul class="checks"><li>The model cannot inspect hidden raw data or invent missing results.</li><li>A candidate plan is marked advisory_not_executed.</li><li>Applying a plan stores it in the project and navigates to a suggested stage; it does not run that stage.</li><li>Every real analysis still uses the fixed bottom action bar and its confirmation dialog.</li><li>AI answers and accepted plans enter the project audit history and can be restored after reopening.</li><li>Manual and guided modes remain fully available when AI is unconfigured or offline.</li></ul>
+</section>
+<section data-searchable>
+  <h2>Failure handling</h2>
+  <p>If a request fails, NeuroFlow shows a dialog and leaves the project unchanged. Check the HTTPS endpoint, model identifier, API key, network access, and account quota. A model-format error means the provider did not return NeuroFlow’s required structured JSON; switch to Responses API or a compatible service with structured JSON support.</p>
+</section>
+<section data-searchable>
+  <h2>Implementation sources</h2>
+  <ul class="source-list">
+    <li><a href="https://developers.openai.com/api/docs/guides/text">OpenAI Responses API text generation</a></li>
+    <li><a href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a></li>
+    <li><a href="https://developers.openai.com/api/docs/models">OpenAI model catalog and selection guidance</a></li>
+  </ul>
+</section>
+
+        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.8.0"></script>
+  </body>
+</html>

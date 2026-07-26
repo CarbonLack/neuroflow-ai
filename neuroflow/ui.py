@@ -49,6 +49,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .ai import STAGE_LABELS, AIResponse
+from .ai_ui import AIAssistantDialog
 from .analysis import (
     compute_unit_metrics,
     event_aligned_analysis,
@@ -2092,6 +2094,7 @@ class NeuroFlowWindow(QMainWindow):
         self.current_step = "import"
         self.project_dirty = False
         self._restoring_project = False
+        self.ai_dialog: AIAssistantDialog | None = None
         self.step_buttons: dict[str, QPushButton] = {}
         self.figure_cursor = None
         self._update_window_title()
@@ -2130,6 +2133,10 @@ class NeuroFlowWindow(QMainWindow):
             lambda: self._set_language(self.home_language_combo.currentData())
         )
         row.addWidget(self.home_language_combo)
+        self.home_ai_button = QPushButton("AI 助手")
+        self.home_ai_button.setProperty("neuroflow_help_key", "global.ai")
+        self.home_ai_button.clicked.connect(self._open_ai_assistant)
+        row.addWidget(self.home_ai_button)
         self.home_tutorial_button = QPushButton("教程中心")
         self.home_tutorial_button.clicked.connect(
             lambda: TutorialDialog(parent=self, language=self.language).exec()
@@ -2350,6 +2357,9 @@ class NeuroFlowWindow(QMainWindow):
         self.save_button = QPushButton("保存项目")
         self.save_button.setProperty("neuroflow_help_key", "global.save")
         self.save_button.clicked.connect(self._save)
+        self.ai_button = QPushButton("AI 助手")
+        self.ai_button.setProperty("neuroflow_help_key", "global.ai")
+        self.ai_button.clicked.connect(self._open_ai_assistant)
         self.tutorial_button = QPushButton("教程")
         self.tutorial_button.clicked.connect(self._open_context_tutorial)
         self.docs_button = QPushButton("产品文档")
@@ -2362,6 +2372,7 @@ class NeuroFlowWindow(QMainWindow):
         layout.addWidget(self.workspace_language_combo)
         layout.addWidget(self.sorter_manager_button)
         layout.addWidget(self.save_button)
+        layout.addWidget(self.ai_button)
         layout.addWidget(self.tutorial_button)
         layout.addWidget(self.docs_button)
         layout.addWidget(self.run_button)
@@ -2634,6 +2645,11 @@ class NeuroFlowWindow(QMainWindow):
         self.assistant_mode = QLabel("离线规则与教程 · 不依赖大模型")
         self.assistant_mode.setObjectName("Muted")
         layout.addWidget(self.assistant_mode)
+        self.open_ai_button = QPushButton("打开 AI 助手")
+        self.open_ai_button.setObjectName("Primary")
+        self.open_ai_button.setProperty("neuroflow_help_key", "global.ai")
+        self.open_ai_button.clicked.connect(self._open_ai_assistant)
+        layout.addWidget(self.open_ai_button)
         self.help_title = QLabel("先选择数据来源")
         self.help_title.setStyleSheet("font-weight: 700; color: #1f7a63;")
         layout.addWidget(self.help_title)
@@ -2680,8 +2696,10 @@ class NeuroFlowWindow(QMainWindow):
             (self.project_button, standard.SP_DialogOpenButton),
             (self.demo_folder_button, standard.SP_DirOpenIcon),
             (self.home_button, standard.SP_DirHomeIcon),
+            (self.home_ai_button, standard.SP_MessageBoxInformation),
             (self.sorter_manager_button, standard.SP_ComputerIcon),
             (self.save_button, standard.SP_DialogSaveButton),
+            (self.ai_button, standard.SP_MessageBoxInformation),
             (self.tutorial_button, standard.SP_DialogHelpButton),
             (self.docs_button, standard.SP_FileDialogInfoView),
             (self.run_button, standard.SP_MediaPlay),
@@ -2694,6 +2712,7 @@ class NeuroFlowWindow(QMainWindow):
             (self.panel_focus_button, standard.SP_TitleBarMaxButton),
             (self.panel_edit_button, standard.SP_FileDialogDetailedView),
             (self.panel_save_button, standard.SP_DialogSaveButton),
+            (self.open_ai_button, standard.SP_MessageBoxInformation),
         ):
             button.setIcon(icon(icon_name))
 
@@ -2785,6 +2804,9 @@ class NeuroFlowWindow(QMainWindow):
             if index >= 0:
                 combo.setCurrentIndex(index)
             combo.blockSignals(False)
+        self.home_ai_button.setText(
+            "AI assistant" if language == "en_US" else "AI 助手"
+        )
         self.home_tutorial_button.setText(tr("tutorial", language))
         self.hero_label.setText(tr("hero", language))
         self.hero_subtitle.setText(tr("hero_subtitle", language))
@@ -2860,6 +2882,9 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.home_button.setText(tr("home", language))
         self.save_button.setText(tr("save", language))
+        self.ai_button.setText(
+            "AI assistant" if language == "en_US" else "AI 助手"
+        )
         self.tutorial_button.setText(tr("tutorial", language))
         self.docs_button.setText(
             "Product docs" if language == "en_US" else "产品文档"
@@ -2916,7 +2941,16 @@ class NeuroFlowWindow(QMainWindow):
         self.metric_duration.label_widget.setText(tr("duration", language))
         self.metric_units.label_widget.setText(tr("units", language))
         self.assistant_title.setText(tr("assistant", language))
-        self.assistant_mode.setText(tr("assistant_mode", language))
+        self.assistant_mode.setText(
+
+                "Offline guidance + optional cloud AI · raw data stays local"
+                if language == "en_US"
+                else "离线引导 + 可选云端 AI · 原始数据留在本机"
+
+        )
+        self.open_ai_button.setText(
+            "Open AI assistant" if language == "en_US" else "打开 AI 助手"
+        )
         self.open_tutorial_button.setText(tr("open_chapter", language))
         self.warning_heading.setText(tr("current_checks", language))
         self.log_title.setText(tr("audit_log", language))
@@ -2953,6 +2987,8 @@ class NeuroFlowWindow(QMainWindow):
         self._update_control_tooltips()
         self._update_project_data_panel()
         self._refresh_environment()
+        if self.ai_dialog is not None:
+            self.ai_dialog.set_language(language)
         if not self.state:
             self.project_label.setText(tr("no_project", language))
             self.status_label.setText(tr("open_project_first", language))
@@ -3617,6 +3653,25 @@ class NeuroFlowWindow(QMainWindow):
             return False
 
     def closeEvent(self, event) -> None:
+        if (
+            self.ai_dialog is not None
+            and self.ai_dialog.worker is not None
+            and self.ai_dialog.worker.isRunning()
+        ):
+            QMessageBox.warning(
+                self,
+                "AI request is running"
+                if self.language == "en_US"
+                else "AI 请求仍在进行",
+                (
+                    "Wait for the current AI response before closing NeuroFlow. "
+                    "The AI request cannot modify analysis results."
+                    if self.language == "en_US"
+                    else "请等待当前 AI 回复完成后再关闭 NeuroFlow；AI 请求不会修改分析结果。"
+                ),
+            )
+            event.ignore()
+            return
         if self.worker and self.worker.isRunning():
             QMessageBox.warning(
                 self,
@@ -4496,6 +4551,144 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.active_run_keys = []
         self.active_run_started = None
+
+    def _open_ai_assistant(self) -> None:
+        if self.ai_dialog is None:
+            self.ai_dialog = AIAssistantDialog(
+                state_getter=lambda: self.state,
+                stage_getter=lambda: self.current_step,
+                language_getter=lambda: self.language,
+                response_handler=self._record_ai_response,
+                plan_handler=self._apply_ai_plan,
+                manual_handler=self._open_ai_documentation,
+                parent=self,
+            )
+        self.ai_dialog.set_language(self.language)
+        records = (
+            list(self.state.metadata.get("ai_history", []))
+            if self.state
+            else []
+        )
+        token = str(self.state.root) if self.state else "<no-project>"
+        self.ai_dialog.load_project_history(records, token)
+        self.ai_dialog.show()
+        self.ai_dialog.raise_()
+        self.ai_dialog.activateWindow()
+
+    def _open_ai_documentation(self) -> None:
+        page = _documentation_page(self.language, "ai-assistant.html")
+        if not page.exists():
+            QMessageBox.warning(
+                self,
+                "AI manual unavailable"
+                if self.language == "en_US"
+                else "AI 操作手册不可用",
+                str(page),
+            )
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(page)))
+
+    def _record_ai_response(
+        self,
+        response: AIResponse,
+        question: str,
+        task: str,
+    ) -> None:
+        if not self.state:
+            return
+        history = list(self.state.metadata.get("ai_history", []))
+        history.append(response.audit_record(question, task))
+        self.state.metadata["ai_history"] = history[-20:]
+        self.state.metadata["ai_last_model"] = response.model
+        self.state.metadata["ai_last_provider"] = response.provider
+        self.state.log(
+            f"AI advisory response recorded: {task} · "
+            f"{response.provider} · {response.model}"
+        )
+        self._mark_project_dirty()
+        self.status_label.setText(
+
+                "AI advice received; no analysis was executed or changed"
+                if self.language == "en_US"
+                else "已收到 AI 建议；没有自动执行或修改任何分析"
+
+        )
+        self._refresh_warnings()
+
+    def _apply_ai_plan(
+        self,
+        plan: list[dict],
+        suggested_next_stage: str,
+    ) -> None:
+        if not self.state:
+            QMessageBox.information(
+                self,
+                "Open a project first"
+                if self.language == "en_US"
+                else "请先打开项目",
+                (
+                    "A workflow plan can be discussed without a project, but it can "
+                    "only be stored after a NeuroFlow project is open."
+                    if self.language == "en_US"
+                    else "可以在没有项目时讨论流程，但只有打开项目后才能保存候选方案。"
+                ),
+            )
+            return
+        labels = STAGE_LABELS[self.language]
+        details = "\n".join(
+            f"• {labels.get(item['stage'], item['stage'])}: {item.get('reason', '')}"
+            for item in plan
+        )
+        answer = QMessageBox.question(
+            self,
+            "Apply AI plan"
+            if self.language == "en_US"
+            else "应用 AI 候选方案",
+            (
+                "This stores the following advisory plan in the project and moves "
+                f"the interface to {labels.get(suggested_next_stage, suggested_next_stage)}."
+                "\n\nNo analysis will run and no existing result will be replaced.\n\n"
+                f"{details}\n\nContinue?"
+                if self.language == "en_US"
+                else (
+                    "这会把以下候选方案保存到项目，并把界面跳转到"
+                    f"“{labels.get(suggested_next_stage, suggested_next_stage)}”。"
+                    "\n\n不会运行任何分析，也不会覆盖已有结果。\n\n"
+                    f"{details}\n\n是否继续？"
+                )
+            ),
+        )
+        if answer != QMessageBox.Yes:
+            return
+        self.state.metadata["ai_workflow_plan"] = {
+            "created_at": datetime.now(timezone.utc).astimezone().isoformat(),
+            "stages": plan,
+            "suggested_next_stage": suggested_next_stage,
+            "status": "advisory_not_executed",
+        }
+        self.state.log(
+            "AI candidate workflow accepted for review; no analysis executed"
+        )
+        self._mark_project_dirty()
+        if suggested_next_stage in self.step_buttons:
+            self._select_step(suggested_next_stage)
+        self.status_label.setText(
+
+                "AI plan stored for review; run steps manually after checking parameters"
+                if self.language == "en_US"
+                else "AI 候选方案已保存；请复核参数后手动运行各阶段"
+
+        )
+        QMessageBox.information(
+            self,
+            "Plan stored" if self.language == "en_US" else "候选方案已保存",
+            (
+                "The plan is now part of the project audit trail. It remains advisory "
+                "until you confirm and run each analysis stage."
+                if self.language == "en_US"
+                else "候选方案已进入项目审计记录；只有你确认并运行后，分析阶段才会执行。"
+            ),
+        )
 
     def _open_context_tutorial(self) -> None:
         TutorialDialog(

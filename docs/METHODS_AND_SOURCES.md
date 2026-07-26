@@ -29,6 +29,9 @@ application.
 | [Elephant module reference](https://elephant.readthedocs.io/en/stable/modules.html) | Spike-train, spectral, synchrony and spike-field APIs | Curated desktop analysis views, result storage, explanation and cross-stage validation |
 | [Folschweiller & Sauer, 2023](https://pmc.ncbi.nlm.nih.gov/articles/PMC10312056/) | Scientific example combining respiration, LFP, spikes, coherence, phase and PAC | Synthetic three-state validation case with different data and original figures; no numerical reproduction claim |
 | [IBL Brain-Wide Map](https://www.internationalbrainlab.com/brainwidemap) | Public-data organization and behavior/neural analysis examples | Local ALF import and method-to-panel mapping |
+| [OpenAI Responses API](https://developers.openai.com/api/docs/guides/text) | Optional cloud text generation and high-priority assistant instructions | Path-free project summary, provider abstraction, request audit, and non-execution boundaries |
+| [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs) | Schema-constrained JSON responses | NeuroFlow's 11-stage advisory-plan schema and local validation |
+| [OpenAI model catalog](https://developers.openai.com/api/docs/models) | Current model identifiers and documented quality/cost roles | User-configurable model selection with a balanced default |
 
 ## Secondary reading supplied by the project owner
 

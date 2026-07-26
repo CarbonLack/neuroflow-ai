@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.8.0
+
+- Added an optional cloud AI assistant without changing the manual or guided
+  analysis main line.
+- Added OpenAI Responses API and OpenAI-compatible Chat API providers with a
+  configurable endpoint, model, reasoning effort, and session-only API key.
+- Added four bounded AI tasks: explain the current stage, review project status,
+  propose a candidate workflow, and explain the latest error.
+- Added a path-free project summary, explicit cloud-data preview, raw-voltage
+  exclusion, sensitive-text redaction, and opt-in audit-log context.
+- Constrained structured workflow plans to NeuroFlow's 11 registered stages and
+  rejected unknown stages before they reach the interface.
+- Kept every AI plan advisory: applying a plan requires confirmation, stores it
+  as `advisory_not_executed`, and never runs or replaces an analysis result.
+- Persisted AI answers and accepted plans in the project audit history while
+  keeping API keys out of projects and application settings.
+- Added a bilingual AI manual covering setup, tasks, privacy fields, confirmation
+  boundaries, model choices, failure handling, and official API sources.
+- Added network-contract, redaction, project roundtrip, and UI non-execution tests.
+
 ## v0.7.0
 
 - Rebuilt the in-app tutorial center around 11 detailed, bilingual chapters. Each

@@ -25,6 +25,7 @@ PAGES = (
     ("tutorials.html", "完整逐步教程", "Complete step-by-step tutorial", "tutorials"),
     ("data-inputs.html", "导入自己的数据", "Import your own data", "tutorials"),
     ("sorting.html", "Spike sorting 指南", "Spike sorting guide", "guides"),
+    ("ai-assistant.html", "AI 助手", "AI assistant", "guides"),
     ("parameters.html", "参数参考", "Parameter reference", "guides"),
     ("figure-studio.html", "图形编辑与导出", "Figure editing and export", "guides"),
     ("troubleshooting.html", "故障排查", "Troubleshooting", "reference"),
@@ -88,7 +89,7 @@ def _layout(
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{e(title)} · NeuroFlow</title>
-    <link rel="stylesheet" href="../styles.css?v=0.7.0">
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
@@ -113,7 +114,7 @@ def _layout(
         <footer class="footer">NeuroFlow · {'Original explanatory text with cited method sources' if language == 'en_US' else '原创说明文字，方法来源逐项标注'}</footer>
       </main>
     </div>
-    <script src="../app.js?v=0.7.0"></script>
+    <script src="../app.js?v=0.8.0"></script>
   </body>
 </html>
 """
@@ -281,6 +282,172 @@ def build_gui_guide(language: str) -> str:
 </section>
 """
     return _layout(language, "gui-guide.html", title, lead, body)
+
+
+def build_ai_assistant(language: str) -> str:
+    english = language == "en_US"
+    title = "AI assistant: advice without a black box" if english else "AI 助手：提供建议，但不制造黑箱"
+    lead = (
+        "NeuroFlow's optional cloud assistant explains the current stage, reviews a "
+        "path-free project summary, proposes a candidate workflow, and interprets "
+        "warnings. It never receives raw voltage and never runs an analysis silently."
+        if english
+        else (
+            "NeuroFlow 的可选云端助手可以解释当前阶段、审查不含路径的项目摘要、"
+            "提出候选流程并解释警告；它不接收原始电压，也不会静默运行分析。"
+        )
+    )
+    tasks = (
+        [
+            (
+                "Explain this stage",
+                (
+                    "Explains scientific purpose, required inputs, important parameters, "
+                    "evidence to inspect, and the condition for continuing."
+                ),
+            ),
+            (
+                "Review project",
+                (
+                    "Separates completed evidence, missing prerequisites, data risks, "
+                    "environment risks, and the safest next action."
+                ),
+            ),
+            (
+                "Propose workflow",
+                (
+                    "Returns a structured plan using only NeuroFlow's 11 registered "
+                    "stages. Each stage includes its reason, prerequisites, and "
+                    "parameter starting points."
+                ),
+            ),
+            (
+                "Explain latest error",
+                (
+                    "Interprets the available warning or failure without claiming that "
+                    "a repair has run. Existing results remain unchanged."
+                ),
+            ),
+        ]
+        if english
+        else [
+            (
+                "解释当前阶段",
+                "说明科学目的、所需输入、重要参数、应检查的证据和继续条件。",
+            ),
+            (
+                "审查当前项目",
+                "区分已有证据、缺失前提、数据风险、环境风险和最稳妥的下一步。",
+            ),
+            (
+                "生成候选流程",
+                (
+                    "只使用 NeuroFlow 已注册的 11 个阶段返回结构化方案；"
+                    "每个阶段包含目的、前提和参数起点。"
+                ),
+            ),
+            (
+                "解释最近异常",
+                "解释当前可见警告或失败，但不会声称已经修复；已有结果保持不变。",
+            ),
+        ]
+    )
+    setup = (
+        [
+            "Open AI assistant from the home page, workspace toolbar, or right guidance panel.",
+            "Open AI settings. Choose OpenAI Responses API or an OpenAI-compatible Chat API.",
+            "For OpenAI, keep the default HTTPS base URL and choose a model. Terra is the balanced default; Luna reduces cost.",
+            "Paste the API key. It remains in memory for this NeuroFlow session and is not written to project files or application settings.",
+            "Open Preview cloud data and inspect the complete structured project summary before asking.",
+            "Choose a defined task or enter your own scientific question.",
+        ]
+        if english
+        else [
+            "从首页、工作区顶部或右侧引导栏打开“AI 助手”。",
+            "打开“AI 设置”，选择 OpenAI Responses API 或 OpenAI 兼容 Chat API。",
+            "使用 OpenAI 时保留默认 HTTPS 地址并选择模型；Terra 是平衡型默认值，Luna 更节省成本。",
+            "粘贴 API 密钥。密钥只在本次 NeuroFlow 运行期间保存在内存，不写入项目或软件设置。",
+            "点击“预览云端发送内容”，先检查下一次请求会携带的完整结构化项目摘要。",
+            "选择一个明确任务，或输入自己的科学问题。",
+        ]
+    )
+    privacy_rows = (
+        [
+            ("Raw voltage", "Never sent."),
+            ("Local source and project paths", "Removed before request construction."),
+            ("Project and subject identity", "Not included in the structured summary."),
+            ("Sampling rate, channel count, duration, probe type", "Sent because they determine valid analysis choices."),
+            ("QC, sorting, statistics, and decoding summaries", "Sent only as compact calculated values."),
+            ("Recent audit log", "Off by default; five redacted messages are sent only after explicit opt-in."),
+            ("Question and recent AI conversation", "Sent to provide the requested context."),
+            ("API key", "Used only in the HTTPS authorization header and never stored in the project."),
+        ]
+        if english
+        else [
+            ("原始电压", "永不发送。"),
+            ("本地源文件和项目路径", "在构造请求前删除。"),
+            ("项目和实验对象身份", "不进入结构化摘要。"),
+            ("采样率、通道数、时长和探针类型", "需要发送，因为它们会决定分析选择是否合法。"),
+            ("质控、sorting、统计和解码摘要", "只发送压缩后的已计算数值。"),
+            ("最近审计日志", "默认关闭；只有用户主动勾选后才发送 5 条经脱敏的消息。"),
+            ("用户问题和最近 AI 对话", "为维持当前问题上下文而发送。"),
+            ("API 密钥", "只用于 HTTPS 授权请求头，不保存到项目。"),
+        ]
+    )
+    boundaries = (
+        [
+            "The model cannot inspect hidden raw data or invent missing results.",
+            "A candidate plan is marked advisory_not_executed.",
+            "Applying a plan stores it in the project and navigates to a suggested stage; it does not run that stage.",
+            "Every real analysis still uses the fixed bottom action bar and its confirmation dialog.",
+            "AI answers and accepted plans enter the project audit history and can be restored after reopening.",
+            "Manual and guided modes remain fully available when AI is unconfigured or offline.",
+        ]
+        if english
+        else [
+            "模型不能查看未发送的原始数据，也不能补造缺失结果。",
+            "候选方案会明确标记为 advisory_not_executed，即“建议但尚未执行”。",
+            "应用方案只会保存到项目并跳转到建议阶段，不会运行该阶段。",
+            "所有真实分析仍须通过底部固定操作栏和运行确认弹窗执行。",
+            "AI 回答和已接受方案会进入项目审计历史，重新打开项目后仍可恢复。",
+            "AI 未配置或网络不可用时，手动模式和引导模式仍可完整使用。",
+        ]
+    )
+    body = f"""
+<section data-searchable>
+  <h2>{'Configure cloud AI' if english else '配置云端 AI'}</h2>
+  <ol class="steps">{''.join(f'<li>{e(item)}</li>' for item in setup)}</ol>
+  <div class="callout method">{'Recommended initial configuration: OpenAI Responses API, gpt-5.6-terra, medium reasoning. Change the model only after comparing response quality, latency, and cost on representative NeuroFlow questions.' if english else '推荐初始配置：OpenAI Responses API、gpt-5.6-terra、medium 推理强度。请在代表性 NeuroFlow 问题上比较质量、延迟和成本后再改变模型。'}</div>
+  <img class="product-shot" src="../assets/neuroflow-ai-assistant.png" alt="NeuroFlow AI assistant">
+</section>
+<section data-searchable>
+  <h2>{'Four defined tasks' if english else '四个明确任务'}</h2>
+  <table><thead><tr><th>{'Action' if english else '操作'}</th><th>{'What it produces' if english else '会得到什么'}</th></tr></thead>
+  <tbody>{''.join(f'<tr><td><b>{e(name)}</b></td><td>{e(text)}</td></tr>' for name,text in tasks)}</tbody></table>
+</section>
+<section data-searchable>
+  <h2>{'Exactly what leaves the computer' if english else '哪些内容会离开当前电脑'}</h2>
+  <table><thead><tr><th>{'Information' if english else '信息'}</th><th>{'Handling' if english else '处理方式'}</th></tr></thead>
+  <tbody>{''.join(f'<tr><td><b>{e(name)}</b></td><td>{e(text)}</td></tr>' for name,text in privacy_rows)}</tbody></table>
+</section>
+<section data-searchable>
+  <h2>{'Approval and audit boundaries' if english else '确认与审计边界'}</h2>
+  <ul class="checks">{''.join(f'<li>{e(item)}</li>' for item in boundaries)}</ul>
+</section>
+<section data-searchable>
+  <h2>{'Failure handling' if english else '失败时怎么处理'}</h2>
+  <p>{'If a request fails, NeuroFlow shows a dialog and leaves the project unchanged. Check the HTTPS endpoint, model identifier, API key, network access, and account quota. A model-format error means the provider did not return NeuroFlow’s required structured JSON; switch to Responses API or a compatible service with structured JSON support.' if english else '请求失败时，NeuroFlow 会弹窗并保持项目不变。请检查 HTTPS 地址、模型标识、API 密钥、网络和账户额度。若提示模型格式错误，说明服务没有返回 NeuroFlow 所需的结构化 JSON；请切换到 Responses API，或使用支持结构化 JSON 的兼容服务。'}</p>
+</section>
+<section data-searchable>
+  <h2>{'Implementation sources' if english else '实现依据'}</h2>
+  <ul class="source-list">
+    <li><a href="https://developers.openai.com/api/docs/guides/text">OpenAI Responses API text generation</a></li>
+    <li><a href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a></li>
+    <li><a href="https://developers.openai.com/api/docs/models">OpenAI model catalog and selection guidance</a></li>
+  </ul>
+</section>
+"""
+    return _layout(language, "ai-assistant.html", title, lead, body)
 
 
 def _tutorial_chapter(chapter: dict[str, str], language: str) -> str:
@@ -571,12 +738,15 @@ def build_sources(language: str) -> str:
         ("GraphPad Prism graph controls", "https://www.graphpad.com/guides/prism/latest/user-guide/how_to_change_a_graph.htm", "Interaction expectations for editable graph objects, axes, grids, ticks, and exact size."),
         ("IBL Brain-Wide Map", "https://www.internationalbrainlab.com/brainwidemap", "Public neural and behavioral validation context."),
         ("DANDI Archive", "https://docs.dandiarchive.org/introduction/", "Versioned NWB public-data access and provenance."),
+        ("OpenAI Responses API", "https://developers.openai.com/api/docs/guides/text", "Optional cloud text generation with high-priority instructions and local deterministic computation."),
+        ("OpenAI Structured Outputs", "https://developers.openai.com/api/docs/guides/structured-outputs", "Schema-constrained advisory answers and workflow plans."),
+        ("OpenAI model catalog", "https://developers.openai.com/api/docs/models", "Current model identifiers and documented quality, latency, and cost roles."),
     ]
     body = f"""
 <section data-searchable>
   <h2>{'Attribution table' if english else '来源与借鉴范围'}</h2>
   <table><thead><tr><th>{'Source' if english else '来源'}</th><th>{'How NeuroFlow uses it' if english else 'NeuroFlow 借鉴或调用的范围'}</th></tr></thead>
-  <tbody>{''.join(f'<tr><td><a href="{e(url)}">{e(name)}</a></td><td>{e(scope if english else {"Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial.":"文档层级、GUI 操作顺序、参数、导出文件、漂移检查和示例教程结构。","Data/probe selection, input preview, channel-count checks, run sequence.":"数据/探针选择、输入预览、通道数检查和运行顺序。","n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions.":"n_chan_bin、batch_size、nblocks、阈值、时间范围、几何和重复 spike 注意事项。","Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces.":"数据读取、预处理、sorter 适配、后处理、质量指标和比较接口。","Common sorter wrappers, native dependencies, and container execution.":"统一 sorter wrapper、原生依赖和容器执行机制。","Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects.":"基于 Neo 对象的 spike train 统计、频谱、相关、相位和信号分析 API。","Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects.":"带单位的 SpikeTrain、AnalogSignal、Event、Epoch、Segment 和 Block 对象。","Manual review of spike-sorting output.":"spike sorting 输出的人工复核工作流。","CPU-oriented sorting schemes and package interface.":"面向 CPU 的 sorting scheme 和包接口。","Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses.":"行为状态、呼吸、spike、LFP、相位和 surrogate 分析的方法结构。","Interaction expectations for editable graph objects, axes, grids, ticks, and exact size.":"图元、坐标轴、网格、刻度和精确尺寸的可编辑交互预期。","Public neural and behavioral validation context.":"公开神经与行为数据的验证背景。","Versioned NWB public-data access and provenance.":"版本化 NWB 公开数据访问与来源记录。"}[scope])}</td></tr>' for name,url,scope in sources)}</tbody></table>
+  <tbody>{''.join(f'<tr><td><a href="{e(url)}">{e(name)}</a></td><td>{e(scope if english else {"Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial.":"文档层级、GUI 操作顺序、参数、导出文件、漂移检查和示例教程结构。","Data/probe selection, input preview, channel-count checks, run sequence.":"数据/探针选择、输入预览、通道数检查和运行顺序。","n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions.":"n_chan_bin、batch_size、nblocks、阈值、时间范围、几何和重复 spike 注意事项。","Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces.":"数据读取、预处理、sorter 适配、后处理、质量指标和比较接口。","Common sorter wrappers, native dependencies, and container execution.":"统一 sorter wrapper、原生依赖和容器执行机制。","Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects.":"基于 Neo 对象的 spike train 统计、频谱、相关、相位和信号分析 API。","Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects.":"带单位的 SpikeTrain、AnalogSignal、Event、Epoch、Segment 和 Block 对象。","Manual review of spike-sorting output.":"spike sorting 输出的人工复核工作流。","CPU-oriented sorting schemes and package interface.":"面向 CPU 的 sorting scheme 和包接口。","Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses.":"行为状态、呼吸、spike、LFP、相位和 surrogate 分析的方法结构。","Interaction expectations for editable graph objects, axes, grids, ticks, and exact size.":"图元、坐标轴、网格、刻度和精确尺寸的可编辑交互预期。","Public neural and behavioral validation context.":"公开神经与行为数据的验证背景。","Versioned NWB public-data access and provenance.":"版本化 NWB 公开数据访问与来源记录。","Optional cloud text generation with high-priority instructions and local deterministic computation.":"可选云端文本生成、高优先级助手指令和本地确定性计算边界。","Schema-constrained advisory answers and workflow plans.":"受结构约束的辅助回答与候选工作流。","Current model identifiers and documented quality, latency, and cost roles.":"当前模型标识及官方说明的质量、延迟与成本定位。"}[scope])}</td></tr>' for name,url,scope in sources)}</tbody></table>
 </section>
 <section data-searchable>
   <h2>{'Non-copying rule' if english else '不直接抄袭原则'}</h2>
@@ -593,6 +763,7 @@ BUILDERS = {
     "tutorials.html": build_tutorials,
     "data-inputs.html": build_data_inputs,
     "sorting.html": build_sorting,
+    "ai-assistant.html": build_ai_assistant,
     "parameters.html": build_parameters,
     "figure-studio.html": build_figure_studio,
     "troubleshooting.html": build_troubleshooting,
@@ -613,7 +784,7 @@ def build() -> None:
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>NeuroFlow Documentation</title>
-    <link rel="stylesheet" href="styles.css?v=0.7.0">
+    <link rel="stylesheet" href="styles.css?v=0.8.0">
   </head>
   <body class="language-gateway">
     <main class="gateway-panel">

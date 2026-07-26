@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from PySide6.QtGui import QFont
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -45,6 +46,7 @@ def main() -> int:
     output = repository / "docs" / "site" / "assets"
     workspace = repository / "docs_capture_workspace"
     app = QApplication.instance() or QApplication([])
+    app.setFont(QFont("Microsoft YaHei", 10))
     window = NeuroFlowWindow(workspace)
     window.resize(1900, 1080)
     window._set_language("en_US")
@@ -149,6 +151,46 @@ def main() -> int:
     tutorial.show()
     _capture(tutorial, output / "neuroflow-tutorial.png")
     tutorial.close()
+
+    window._open_ai_assistant()
+    ai_dialog = window.ai_dialog
+    if ai_dialog is not None:
+        ai_dialog.settings.api_key = "documentation-preview-key"
+        ai_dialog.settings.model = "gpt-5.6-terra"
+        ai_dialog.question_edit.setPlainText(
+            "Review the current project and propose the safest next analysis stage."
+        )
+        ai_dialog._append_message(
+            "assistant",
+            "Raw QC and sorting evidence are available. Review Unit QC before "
+            "event-aligned interpretation; verify refractory violations, waveform "
+            "stability, and the active sorter result.",
+        )
+        ai_dialog.current_plan = [
+            {
+                "stage": "unit_qc",
+                "reason": "Confirm candidate-unit quality before event analysis.",
+                "prerequisites": ["Completed sorting result"],
+                "recommended_parameters": [
+                    {
+                        "name": "ISI review window",
+                        "value": "0-10 ms",
+                        "rationale": "Inspect the refractory region explicitly.",
+                    }
+                ],
+            },
+            {
+                "stage": "sync",
+                "reason": "Verify TTL and behavior clocks before alignment.",
+                "prerequisites": ["Behavior events and electrophysiology TTL"],
+                "recommended_parameters": [],
+            },
+        ]
+        ai_dialog.current_next_stage = "unit_qc"
+        ai_dialog._refresh_status()
+        ai_dialog._render_plan()
+        _capture(ai_dialog, output / "neuroflow-ai-assistant.png")
+        ai_dialog.hide()
 
     window._select_step("analysis")
     analysis_index = window.option_combo.findData("case:respiration")

@@ -10,6 +10,61 @@ from .simulation import generate_demo_recording
 from .sorting import kilosort_environment, refresh_sorter_catalog, run_sorter
 
 
+def run_packaged_ai_self_test(workspace: Path) -> int:
+    """Verify the packaged privacy summary and structured response path offline."""
+    workspace.mkdir(parents=True, exist_ok=True)
+    report_path = workspace / "packaged_ai_self_test.json"
+    try:
+        from .ai import AISettings, build_project_summary, normalize_ai_response
+
+        project_root = workspace / "self_test" / "ai"
+        state = generate_demo_recording(
+            project_root,
+            duration_seconds=2,
+            channel_count=4,
+            sampling_rate=30_000,
+        )
+        summary = build_project_summary(state, "qc")
+        serialized = json.dumps(summary, ensure_ascii=False)
+        if str(project_root) in serialized or "raw_path" in serialized:
+            raise RuntimeError("AI privacy summary exposed a local project path")
+        response = normalize_ai_response(
+            {
+                "answer": "Inspect raw QC evidence before preprocessing.",
+                "warnings": [],
+                "plan": [
+                    {
+                        "stage": "qc",
+                        "reason": "Establish signal quality.",
+                        "prerequisites": ["Imported recording"],
+                        "recommended_parameters": [],
+                    }
+                ],
+                "suggested_next_stage": "qc",
+                "requires_user_confirmation": True,
+            },
+            settings=AISettings(model="offline-self-test"),
+        )
+        report = {
+            "ok": True,
+            "summary_keys": sorted(summary),
+            "suggested_next_stage": response.suggested_next_stage,
+            "requires_user_confirmation": response.requires_user_confirmation,
+            "network_request_made": False,
+        }
+    except Exception as exc:  # noqa: BLE001 - persist the complete packaged failure
+        report = {
+            "ok": False,
+            "error": f"{type(exc).__name__}: {exc}",
+            "traceback": traceback.format_exc(),
+        }
+    report_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return 0 if report["ok"] else 1
+
+
 def run_packaged_figure_export_self_test(workspace: Path) -> int:
     workspace.mkdir(parents=True, exist_ok=True)
     report_path = workspace / "packaged_figure_export_self_test.json"
