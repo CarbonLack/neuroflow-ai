@@ -111,9 +111,21 @@ def _safe_test(test, *samples, **kwargs) -> tuple[float, float]:
         return float("nan"), float("nan")
 
 
-def run_statistical_suite(state: ProjectState) -> dict:
+def run_statistical_suite(
+    state: ProjectState,
+    *,
+    alpha: float = 0.05,
+    multiple_comparison: str = "bh_fdr",
+    requested_method: str = "permutation",
+) -> dict:
     if not state.analysis:
         raise RuntimeError("请先运行事件对齐分析")
+    if not 0 < float(alpha) < 1:
+        raise ValueError("alpha must be between 0 and 1")
+    if multiple_comparison not in {"none", "bh_fdr", "holm"}:
+        raise ValueError(
+            f"Unsupported multiple-comparison method: {multiple_comparison}"
+        )
     rows = []
     conditions = np.asarray(state.analysis.get("conditions", []), dtype=str)
     labels, label_counts = np.unique(conditions, return_counts=True)
@@ -253,7 +265,14 @@ def run_statistical_suite(state: ProjectState) -> dict:
         row["fdr_q"] = float(q_value)
         row["bonferroni_p"] = float(corrected)
         row["holm_p"] = float(holm_value)
-        row["significant_fdr"] = bool(q_value < 0.05)
+        row["significant_fdr"] = bool(q_value < alpha)
+        selected_p = {
+            "none": row["permutation_p"],
+            "bh_fdr": q_value,
+            "holm": holm_value,
+        }[multiple_comparison]
+        row["selected_adjusted_p"] = float(selected_p)
+        row["significant_selected"] = bool(selected_p < alpha)
     mixed_effects = {
         "available": False,
         "formula": "delta ~ C(condition), random intercept by unit",
@@ -296,10 +315,15 @@ def run_statistical_suite(state: ProjectState) -> dict:
         "rows": rows,
         "primary_test": "paired sign-flip permutation",
         "multiple_comparison": "Benjamini-Hochberg FDR",
-        "alpha": 0.05,
+        "alpha": float(alpha),
+        "requested_method": requested_method,
+        "selected_multiple_comparison": multiple_comparison,
         "condition_labels": usable_labels,
         "mixed_effects": mixed_effects,
         "significant_count": sum(row["significant_fdr"] for row in rows),
+        "selected_significant_count": sum(
+            row["significant_selected"] for row in rows
+        ),
         "available_tests": [
             "paired t-test",
             "Wilcoxon signed-rank",

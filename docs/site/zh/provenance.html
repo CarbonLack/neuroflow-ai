@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>中间产物与溯源 · NeuroEphys AI</title>
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroEphys AI <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/provenance.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a href="unit-curation.html">Unit 人工复核</a>
+<a href="ai-assistant.html">AI 助手</a>
+<a href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a class="active" href="provenance.html">中间产物与溯源</a>
+<a href="real-data-validation.html">真实数据验证</a>
+<a href="troubleshooting.html">故障排查</a>
+<a href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroEphys AI 操作手册</p>
+          <h1>中间产物与溯源</h1>
+          <p class="lead">每个完成阶段都会生成可读表格、图、结构化审计记录和可校验的产物链接；这些记录同时构成AI能够使用的项目证据。</p>
+        </div>
+
+<section data-searchable>
+  <h2>项目证据层</h2>
+  <table><thead><tr><th>输出</th><th>记录内容</th></tr></thead>
+  <tbody><tr><td><code>structured_runs.jsonl</code></td><td>每次运行一条记录：阶段、输入、通道、片段、工具/版本、参数、起止时间、状态、警告、错误、恢复方式和输出。</td></tr><tr><td><code>artifact_manifest.json</code></td><td>每个产物一条记录：ID、阶段、来源run、相对路径、类型、大小、校验值、参数和输入引用。</td></tr><tr><td><code>workflow.json</code></td><td>当前工作流节点、状态、所选工具和已保存参数。</td></tr><tr><td><code>provenance.json</code></td><td>环境、项目元数据、分析设置、结果摘要、警告和输出关系。</td></tr><tr><td><code>CSV表格</code></td><td>Unit指标、事件/trial、统计、解码、sorter比较和绘图数据。</td></tr><tr><td><code>PNG/SVG图</code></td><td>用于快速检查的位图和可编辑矢量图，共享同一阶段与参数来源。</td></tr><tr><td><code>sorter原生目录</code></td><td>原样保留sorter数组、日志、模板和诊断文件。</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>AI如何使用中间数据</h2>
+  <ol class="steps">
+    <li>本地分析先写入科学结果与来源记录。</li>
+    <li>上下文构造器选取指标、状态、警告、参数和artifact ID等紧凑字段。</li>
+    <li>路径、身份信息、原始数组和大型二进制内容会被移除。</li>
+    <li>用户查看在线请求的完整内容，并可删除可选字段。</li>
+    <li>AI回答引用项目中已有的run和artifact证据。</li>
+  </ol>
+</section>
+<section data-searchable>
+  <h2>恢复规则</h2>
+  <p>项目文件保存每个完成阶段的链接。重新打开后恢复当前页面、数据源、通道选择、sorter结果、人工决定、行为映射、统计、图表、AI对话、已批准工作流和审计历史。若外部数据源失效，只有依赖该数据源的阶段会被禁用。</p>
+</section>
+
+        <footer class="footer">NeuroEphys AI · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.8.0"></script>
+  </body>
+</html>

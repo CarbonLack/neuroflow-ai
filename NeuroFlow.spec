@@ -53,6 +53,7 @@ for package in (
     "hdbscan",
     "one",
     "sklearn",
+    "keyring",
 ):
     package_datas, package_binaries, package_hidden = collect_all(
         package,
@@ -92,7 +93,7 @@ exe = EXE(
     analysis.scripts,
     [],
     exclude_binaries=True,
-    name="NeuroFlow",
+    name="NeuroEphysAI",
     console=False,
 )
 collection = COLLECT(
@@ -101,5 +102,5 @@ collection = COLLECT(
     analysis.datas,
     strip=False,
     upx=False,
-    name="NeuroFlow",
+    name="NeuroEphysAI",
 )

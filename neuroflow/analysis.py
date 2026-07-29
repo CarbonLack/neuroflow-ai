@@ -9,6 +9,11 @@ from scipy import signal, stats
 
 from .models import ProjectState
 
+try:
+    from numba import njit
+except ImportError:  # The desktop core remains usable without the sorting stack.
+    njit = None
+
 
 def _json_ready(value):
     if isinstance(value, np.ndarray):
@@ -24,7 +29,31 @@ def _json_ready(value):
     return value
 
 
-def load_recording(state: ProjectState, mode: str = "r") -> np.memmap:
+def load_recording(state: ProjectState, mode: str = "r"):
+    if state.metadata.get("recording_adapter", {}).get("type") == "spikeinterface":
+        if mode != "r":
+            raise ValueError("Linked source recordings are read-only")
+        cache_path = (
+            state.root / "cache" / "sorting_input_selected_channels.bin"
+        )
+        sample_count = int(state.duration_seconds * state.sampling_rate)
+        dtype = np.dtype(state.dtype)
+        expected_bytes = (
+            sample_count * state.channel_count * dtype.itemsize
+        )
+        if (
+            cache_path.exists()
+            and cache_path.stat().st_size == expected_bytes
+        ):
+            return np.memmap(
+                cache_path,
+                dtype=dtype,
+                mode="r",
+                shape=(sample_count, state.channel_count),
+            )
+        from .recording_io import load_linked_recording
+
+        return load_linked_recording(state)
     if not state.ready:
         raise RuntimeError("尚未准备原始记录")
     sample_count = int(state.duration_seconds * state.sampling_rate)
@@ -43,6 +72,50 @@ def load_recording(state: ProjectState, mode: str = "r") -> np.memmap:
         mode=mode,
         shape=(sample_count, state.channel_count),
     )
+
+
+def _positive_lag_acg_kernel(
+    spikes: np.ndarray,
+    edges_seconds: np.ndarray,
+) -> np.ndarray:
+    """Count exact positive-lag pairs with a bounded two-pointer scan."""
+    counts = np.zeros(len(edges_seconds) - 1, dtype=np.int64)
+    if len(spikes) < 2 or len(counts) == 0:
+        return counts
+    max_lag = float(edges_seconds[-1])
+    for left in range(len(spikes) - 1):
+        right = left + 1
+        while right < len(spikes):
+            delta = spikes[right] - spikes[left]
+            if delta >= max_lag:
+                break
+            bin_index = np.searchsorted(edges_seconds, delta, side="right") - 1
+            if 0 <= bin_index < len(counts):
+                counts[bin_index] += 1
+            right += 1
+    return counts
+
+
+if njit is not None:
+    _positive_lag_acg_kernel_compiled = njit(cache=False)(
+        _positive_lag_acg_kernel
+    )
+    _ACG_BACKEND = "numba_exact_bounded_pair_count"
+else:
+    _positive_lag_acg_kernel_compiled = _positive_lag_acg_kernel
+    _ACG_BACKEND = "python_exact_bounded_pair_count"
+
+
+def _positive_lag_acg_counts(
+    spike_times: np.ndarray,
+    edges_ms: np.ndarray,
+) -> np.ndarray:
+    """Count exact forward spike pairs without allocating a pairwise matrix."""
+    spikes = np.asarray(spike_times, dtype=np.float64)
+    if spikes.size > 1 and np.any(np.diff(spikes) < 0):
+        spikes = np.sort(spikes)
+    edges_seconds = np.asarray(edges_ms, dtype=np.float64) / 1_000.0
+    return _positive_lag_acg_kernel_compiled(spikes, edges_seconds)
 
 
 def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
@@ -86,9 +159,27 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
         )
         rms_timeline.append(np.sqrt(np.mean(chunk**2, axis=0)))
     rms_timeline_array = np.asarray(rms_timeline, dtype=float)
+    preview_rms = rms.copy()
+    stable_rms = np.median(rms_timeline_array, axis=0)
+    median_rms = float(np.median(stable_rms))
+    bad_channels = np.flatnonzero(
+        stable_rms > median_rms * 2.6
+    ).astype(int).tolist()
+    temporal_peak_ratio = np.max(rms_timeline_array, axis=0) / np.maximum(
+        stable_rms,
+        1e-12,
+    )
+    transient_channels = np.flatnonzero(
+        temporal_peak_ratio > 2.0
+    ).astype(int).tolist()
+    rms = stable_rms
     clipping_fraction = saturated_by_channel / max(count, 1)
     quality_score = 100.0
     quality_score -= min(40.0, len(bad_channels) / max(state.channel_count, 1) * 100)
+    quality_score -= min(
+        10.0,
+        len(transient_channels) / max(state.channel_count, 1) * 25,
+    )
     quality_score -= min(25.0, max(line_noise_ratio - 1.0, 0.0) * 6.0)
     quality_score -= min(25.0, saturated / max(preview.size, 1) * 100_000.0)
     quality_score = float(np.clip(quality_score, 0.0, 100.0))
@@ -98,6 +189,8 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
             if channel in bad_channels
             else "clipped"
             if clipping_fraction[channel] > 0.001
+            else "transient_artifact"
+            if channel in transient_channels
             else "line_noise"
             if channel_line_ratios[channel] > 2.5
             else "candidate_good"
@@ -108,8 +201,11 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
 
     result = {
         "channel_rms": rms.tolist(),
+        "preview_channel_rms": preview_rms.tolist(),
         "median_rms": median_rms,
         "bad_channels": bad_channels,
+        "transient_channels": transient_channels,
+        "temporal_peak_ratio": temporal_peak_ratio.tolist(),
         "line_noise_ratio": line_noise_ratio,
         "channel_line_noise_ratio": channel_line_ratios.tolist(),
         "saturated_samples": saturated,
@@ -136,72 +232,141 @@ def preprocessing_preview(
     state: ProjectState,
     start_seconds: float = 2.0,
     duration_seconds: float = 2.0,
+    *,
+    highpass_hz: float = 300.0,
+    lowpass_hz: float | None = None,
+    reference: str = "common_median",
 ) -> dict[str, np.ndarray]:
     raw = load_recording(state)
     start = int(start_seconds * state.sampling_rate)
     count = int(duration_seconds * state.sampling_rate)
     traces = np.asarray(raw[start : start + count, :8], dtype=np.float32)
-    high_cutoff = min(6000.0, state.sampling_rate * 0.45)
-    if high_cutoff <= 300.0:
-        raise ValueError("Sampling rate is too low for the 300 Hz spike-band preview")
-    sos = signal.butter(
-        3,
-        [300.0, high_cutoff],
-        btype="bandpass",
-        fs=state.sampling_rate,
-        output="sos",
+    acquisition = state.metadata.get("acquisition_preprocessing", {})
+    low_cutoff = float(highpass_hz)
+    high_cutoff = min(
+        float(lowpass_hz) if lowpass_hz is not None else 6000.0,
+        state.sampling_rate * 0.45,
     )
-    filtered = signal.sosfiltfilt(sos, traces, axis=0)
-    referenced = filtered - np.median(filtered, axis=1, keepdims=True)
-    lfp_high = min(300.0, state.sampling_rate * 0.4)
-    lfp_sos = signal.butter(
-        3,
-        [1.0, lfp_high],
-        btype="bandpass",
-        fs=state.sampling_rate,
-        output="sos",
-    )
-    lfp = signal.sosfiltfilt(lfp_sos, traces, axis=0)
-    lfp_target_rate = min(1_000.0, state.sampling_rate)
-    divisor = max(round(state.sampling_rate / lfp_target_rate), 1)
-    lfp = signal.resample_poly(lfp, up=1, down=divisor, axis=0)
-    lfp_rate = state.sampling_rate / divisor
-    state.log(
-        "AP branch created (300-6000 Hz + common median reference) and "
-        "LFP branch created (1-300 Hz + 1 kHz preview)"
-    )
+    if low_cutoff <= 0 or high_cutoff <= low_cutoff:
+        raise ValueError(
+            "The AP preview requires 0 < high-pass < low-pass < Nyquist."
+        )
+    if reference not in {"none", "common_median", "common_average"}:
+        raise ValueError(f"Unsupported AP reference preview: {reference}")
+    if acquisition.get("ap_preprocessed"):
+        referenced = traces.copy()
+        ap_steps = [
+            {
+                "branch": "AP / sorting",
+                "step": "online_preprocessing_detected",
+                "parameters": {
+                    "filters": acquisition.get("online_filters", []),
+                    "reference": acquisition.get("online_reference"),
+                },
+                "status": "preserved",
+            }
+        ]
+        state.log(
+            "AP preprocessing skipped: online filtering/reference are already "
+            "present in the acquisition settings"
+        )
+    else:
+        if high_cutoff <= low_cutoff:
+            raise ValueError("Sampling rate is too low for the requested AP preview")
+        sos = signal.butter(
+            3,
+            [low_cutoff, high_cutoff],
+            btype="bandpass",
+            fs=state.sampling_rate,
+            output="sos",
+        )
+        filtered = signal.sosfiltfilt(sos, traces, axis=0)
+        if reference == "common_median":
+            referenced = filtered - np.median(
+                filtered,
+                axis=1,
+                keepdims=True,
+            )
+        elif reference == "common_average":
+            referenced = filtered - np.mean(
+                filtered,
+                axis=1,
+                keepdims=True,
+            )
+        else:
+            referenced = filtered
+        ap_steps = [
+            {
+                "branch": "AP / sorting",
+                "step": "bandpass_filter",
+                "parameters": {
+                    "freq_min": low_cutoff,
+                    "freq_max": high_cutoff,
+                },
+                "status": "previewed",
+            },
+            {
+                "branch": "AP / sorting",
+                "step": "reference",
+                "parameters": {
+                    "reference": "global" if reference != "none" else "none",
+                    "operator": reference,
+                },
+                "status": "previewed",
+            },
+        ]
+
+    lfp_available = bool(acquisition.get("lfp_available", True))
+    if lfp_available:
+        lfp_high = min(300.0, state.sampling_rate * 0.4)
+        lfp_sos = signal.butter(
+            3,
+            [1.0, lfp_high],
+            btype="bandpass",
+            fs=state.sampling_rate,
+            output="sos",
+        )
+        lfp = signal.sosfiltfilt(lfp_sos, traces, axis=0)
+        lfp_target_rate = min(1_000.0, state.sampling_rate)
+        divisor = max(round(state.sampling_rate / lfp_target_rate), 1)
+        lfp = signal.resample_poly(lfp, up=1, down=divisor, axis=0)
+        lfp_rate = state.sampling_rate / divisor
+        lfp_step = {
+            "branch": "LFP",
+            "step": "bandpass_and_downsample",
+            "parameters": {
+                "freq_min": 1.0,
+                "freq_max": lfp_high,
+                "target_rate_hz": lfp_rate,
+            },
+            "status": "previewed",
+        }
+    else:
+        lfp = np.empty((0, traces.shape[1]), dtype=np.float32)
+        lfp_rate = 0.0
+        lfp_step = {
+            "branch": "LFP",
+            "step": "unavailable",
+            "parameters": {},
+            "status": "blocked",
+            "reason": acquisition.get(
+                "lfp_unavailable_reason",
+                "The imported source does not contain a valid LFP band.",
+            ),
+        }
     return {
         "time_ms": np.arange(count) / state.sampling_rate * 1000.0,
         "raw": traces,
         "processed": referenced,
-        "lfp_time_s": np.arange(len(lfp)) / lfp_rate,
+        "lfp_time_s": (
+            np.arange(len(lfp)) / lfp_rate if lfp_rate else np.empty(0)
+        ),
         "lfp": lfp,
         "lfp_sampling_rate_hz": lfp_rate,
-        "bandpass_hz": (300.0, high_cutoff),
-        "pipeline": [
-            {
-                "branch": "AP / sorting",
-                "step": "bandpass_filter",
-                "parameters": {"freq_min": 300.0, "freq_max": high_cutoff},
-                "status": "previewed",
-            },
-            {
-                "branch": "AP / sorting",
-                "step": "common_median_reference",
-                "parameters": {"reference": "global", "operator": "median"},
-                "status": "previewed",
-            },
-            {
-                "branch": "LFP",
-                "step": "bandpass_and_downsample",
-                "parameters": {
-                    "freq_min": 1.0,
-                    "freq_max": lfp_high,
-                    "target_rate_hz": lfp_rate,
-                },
-                "status": "previewed",
-            },
-        ],
+        "bandpass_hz": (low_cutoff, high_cutoff),
+        "pipeline": [*ap_steps, lfp_step],
+        "source_already_preprocessed": bool(acquisition.get("ap_preprocessed")),
+        "lfp_available": lfp_available,
         "guardrails": [
             "Confirm bad-channel decisions before referencing.",
             "Do not whiten twice when the selected sorter already whitens internally.",
@@ -215,6 +380,8 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
     raw = load_recording(state) if state.ready else None
     metrics: list[dict] = []
     diagnostics: dict[int, dict] = {}
+    max_waveform_spikes = 300
+    max_isi_plot_values = 20_000
     for unit_id, spikes in sorted(state.sorted_spikes.items()):
         firing_rate = len(spikes) / max(state.duration_seconds, 1e-9)
         intervals = np.diff(spikes)
@@ -225,7 +392,13 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
                 (sample_indices >= 25) & (sample_indices < raw.shape[0] - 25)
             ]
         if raw is not None and sample_indices.size:
-            selected = sample_indices[: min(300, sample_indices.size)]
+            selected_positions = np.linspace(
+                0,
+                sample_indices.size - 1,
+                min(max_waveform_spikes, sample_indices.size),
+                dtype=int,
+            )
+            selected = sample_indices[selected_positions]
             snippets = np.stack(
                 [
                     np.asarray(raw[index - 20 : index + 21], dtype=np.float32)
@@ -255,23 +428,34 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
             local_waveform = np.empty((0, 0))
             selected_amplitudes = np.empty(0)
             selected_times = np.empty(0)
-        positive_lags = []
-        for spike_index, spike_time in enumerate(spikes):
-            later = spikes[spike_index + 1 :]
-            local = later[(later - spike_time) <= 0.05] - spike_time
-            if local.size:
-                positive_lags.extend(local.tolist())
-        acg_lags = np.asarray(positive_lags, dtype=float) * 1_000.0
         acg_edges = np.arange(0.0, 51.0, 1.0)
-        acg_counts, _ = np.histogram(acg_lags, bins=acg_edges)
+        acg_counts = _positive_lag_acg_counts(spikes, acg_edges)
         time_edges = np.arange(0.0, state.duration_seconds + 1.0, 1.0)
         if time_edges.size < 2:
             time_edges = np.array([0.0, max(state.duration_seconds, 1.0)])
         stability_counts, _ = np.histogram(spikes, bins=time_edges)
+        if intervals.size > max_isi_plot_values:
+            isi_plot_indices = np.linspace(
+                0,
+                intervals.size - 1,
+                max_isi_plot_values,
+                dtype=int,
+            )
+            isi_plot_values = intervals[isi_plot_indices]
+            isi_plot_sampled = True
+        else:
+            isi_plot_values = intervals
+            isi_plot_sampled = False
         diagnostics[int(unit_id)] = {
-            "isi_ms": (intervals * 1_000.0).tolist(),
+            "isi_ms": (isi_plot_values * 1_000.0).tolist(),
+            "isi_total_count": int(intervals.size),
+            "isi_plot_sampled": isi_plot_sampled,
+            "isi_plot_max_values": max_isi_plot_values,
             "acg_lags_ms": ((acg_edges[:-1] + acg_edges[1:]) / 2).tolist(),
             "acg_counts": acg_counts.tolist(),
+            "acg_backend": _ACG_BACKEND,
+            "acg_spike_count": int(len(spikes)),
+            "acg_sampling": "all_spikes",
             "stability_time_s": ((time_edges[:-1] + time_edges[1:]) / 2).tolist(),
             "stability_rate_hz": (
                 stability_counts / np.maximum(np.diff(time_edges), 1e-9)
@@ -285,6 +469,9 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
             "waveform_channels": list(range(first_channel, last_channel)),
             "amplitude_time_s": selected_times.tolist(),
             "amplitude_adc": selected_amplitudes.tolist(),
+            "waveform_spike_count_total": int(sample_indices.size),
+            "waveform_spike_count_sampled": int(selected_times.size),
+            "waveform_sampling": "evenly_spaced_across_recording",
         }
         label = (
             "候选单神经元"
@@ -305,6 +492,9 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
         )
     state.unit_metrics = metrics
     state.unit_diagnostics = diagnostics
+    if state.active_sorter_key:
+        state.unit_metrics_by_sorter[state.active_sorter_key] = metrics
+        state.unit_diagnostics_by_sorter[state.active_sorter_key] = diagnostics
     state.log(
         f"Unit QC completed: firing rate, ISI, waveform, stability, "
         f"and SNR computed for {len(metrics)} units"
@@ -346,18 +536,157 @@ def match_ground_truth(
     return matches
 
 
+def _condition_timing_diagnostics(
+    event_times: np.ndarray,
+    condition_values: np.ndarray,
+    *,
+    tolerance_seconds: float = 0.001,
+) -> dict:
+    labels = np.unique(condition_values).tolist()
+    counts = {
+        str(label): int(np.count_nonzero(condition_values == label))
+        for label in labels
+    }
+    pairwise = []
+    warnings = []
+    for first_index, first_label in enumerate(labels):
+        first_times = np.sort(event_times[condition_values == first_label])
+        for second_label in labels[first_index + 1 :]:
+            second_times = np.sort(event_times[condition_values == second_label])
+            if not len(first_times) or not len(second_times):
+                fraction = 0.0
+                matched = 0
+            else:
+                insertions = np.searchsorted(second_times, first_times)
+                nearest = np.full(len(first_times), np.inf)
+                right = insertions < len(second_times)
+                nearest[right] = np.minimum(
+                    nearest[right],
+                    np.abs(first_times[right] - second_times[insertions[right]]),
+                )
+                left = insertions > 0
+                nearest[left] = np.minimum(
+                    nearest[left],
+                    np.abs(
+                        first_times[left]
+                        - second_times[insertions[left] - 1]
+                    ),
+                )
+                matched = int(np.count_nonzero(nearest <= tolerance_seconds))
+                fraction = matched / max(min(len(first_times), len(second_times)), 1)
+            pairwise.append(
+                {
+                    "condition_a": str(first_label),
+                    "condition_b": str(second_label),
+                    "matched_timestamp_count": matched,
+                    "overlap_fraction": float(fraction),
+                    "tolerance_seconds": float(tolerance_seconds),
+                }
+            )
+            if fraction >= 0.8:
+                warnings.append(
+                    f"{first_label} and {second_label} share "
+                    f"{fraction:.1%} of event timestamps; they are not "
+                    "independent alignment conditions."
+                )
+    return {
+        "condition_counts": counts,
+        "pairwise_timestamp_overlap": pairwise,
+        "warnings": warnings,
+        "valid_for_condition_comparison": not warnings,
+    }
+
+
 def event_aligned_analysis(
     state: ProjectState,
     window: tuple[float, float] = (-0.5, 1.0),
     bin_size: float = 0.025,
+    event_codes: list[int] | tuple[int, ...] | None = None,
+    conditions: list[str] | tuple[str, ...] | None = None,
+    include_synchronization: bool = False,
+    baseline_window: tuple[float, float] = (-0.5, 0.0),
+    response_window: tuple[float, float] = (0.0, 0.5),
 ) -> dict:
     if not state.sorted_spikes:
         raise RuntimeError("尚无sorting结果")
-    events = np.asarray([float(event["time_seconds"]) for event in state.events])
-    conditions = np.asarray([str(event["condition"]) for event in state.events])
+    if window[0] >= window[1]:
+        raise ValueError("Event window start must be earlier than its end")
+    if bin_size <= 0:
+        raise ValueError("PSTH bin size must be positive")
+    for label, interval in (
+        ("baseline", baseline_window),
+        ("response", response_window),
+    ):
+        if interval[0] >= interval[1]:
+            raise ValueError(f"{label.title()} window start must precede its end")
+        if interval[0] < window[0] or interval[1] > window[1]:
+            raise ValueError(
+                f"{label.title()} window must stay inside the event window"
+            )
+
+    requested_codes = (
+        {int(value) for value in event_codes} if event_codes is not None else None
+    )
+    requested_conditions = (
+        {str(value) for value in conditions} if conditions is not None else None
+    )
+    selected_events: list[dict] = []
+    excluded = {
+        "synchronization": 0,
+        "outside_recording": 0,
+        "event_code_filter": 0,
+        "condition_filter": 0,
+        "explicitly_excluded": 0,
+    }
+    for event in state.events:
+        if event.get("exclude", False):
+            excluded["explicitly_excluded"] += 1
+            continue
+        if (
+            not include_synchronization
+            and event.get("analysis_role") == "synchronization"
+        ):
+            excluded["synchronization"] += 1
+            continue
+        event_time = float(event["time_seconds"])
+        if (
+            event_time + window[0] < 0
+            or event_time + window[1] > state.duration_seconds
+        ):
+            excluded["outside_recording"] += 1
+            continue
+        if (
+            requested_codes is not None
+            and int(event.get("event_code", -1)) not in requested_codes
+        ):
+            excluded["event_code_filter"] += 1
+            continue
+        condition = str(event.get("condition", "unknown"))
+        if requested_conditions is not None and condition not in requested_conditions:
+            excluded["condition_filter"] += 1
+            continue
+        selected_events.append(event)
+    if not selected_events:
+        raise ValueError(
+            "No events remain after synchronization, recording-boundary, and "
+            "user-selected event filters"
+        )
+
+    events = np.asarray(
+        [float(event["time_seconds"]) for event in selected_events],
+        dtype=float,
+    )
+    analysis_conditions = np.asarray(
+        [str(event.get("condition", "unknown")) for event in selected_events],
+        dtype=str,
+    )
+    condition_diagnostics = _condition_timing_diagnostics(
+        events,
+        analysis_conditions,
+    )
     bins = np.arange(window[0], window[1] + bin_size, bin_size)
     centers = (bins[:-1] + bins[1:]) / 2
-    condition_labels = np.unique(conditions).tolist()
+    condition_labels = np.unique(analysis_conditions).tolist()
     if len(condition_labels) < 2:
         condition_labels = [condition_labels[0] if condition_labels else "all", "other"]
 
@@ -372,8 +701,17 @@ def event_aligned_analysis(
             aligned.append(relative)
             counts[trial_index], _ = np.histogram(relative, bins=bins)
         rates = counts / bin_size
-        baseline_mask = (centers >= -0.5) & (centers < 0.0)
-        response_mask = (centers >= 0.0) & (centers < 0.5)
+        baseline_mask = (centers >= baseline_window[0]) & (
+            centers < baseline_window[1]
+        )
+        response_mask = (centers >= response_window[0]) & (
+            centers < response_window[1]
+        )
+        if not np.any(baseline_mask) or not np.any(response_mask):
+            raise ValueError(
+                "Bin size and analysis windows produced an empty baseline or "
+                "response interval"
+            )
         baseline_rates = rates[:, baseline_mask].mean(axis=1)
         response_rates = rates[:, response_mask].mean(axis=1)
         if np.allclose(baseline_rates, response_rates):
@@ -389,8 +727,14 @@ def event_aligned_analysis(
             "aligned_spikes": aligned,
             "rates": rates,
             "mean_rate": mean_rate,
-            "condition_a": rates[conditions == condition_labels[0]].mean(axis=0),
-            "condition_b": rates[conditions == condition_labels[1]].mean(axis=0),
+            "condition_a": rates[
+                analysis_conditions == condition_labels[0]
+            ].mean(axis=0),
+            "condition_b": (
+                rates[analysis_conditions == condition_labels[1]].mean(axis=0)
+                if np.any(analysis_conditions == condition_labels[1])
+                else np.full(rates.shape[1], np.nan)
+            ),
             "p_value": float(p_value),
             "statistic": float(statistic),
             "effect_hz": float(response_rates.mean() - baseline_rates.mean()),
@@ -409,17 +753,44 @@ def event_aligned_analysis(
 
     result = {
         "window": window,
+        "baseline_window": baseline_window,
+        "response_window": response_window,
         "bin_size": bin_size,
         "bin_centers": centers,
-        "conditions": conditions,
+        "event_times": events,
+        "conditions": analysis_conditions,
         "condition_labels": condition_labels[:2],
+        "condition_diagnostics": condition_diagnostics,
+        "selected_event_count": len(selected_events),
+        "selected_event_codes": sorted(
+            {
+                int(event["event_code"])
+                for event in selected_events
+                if event.get("event_code") is not None
+            }
+        ),
+        "selected_event_semantics": sorted(
+            {
+                str(event.get("event_semantics_status", "unspecified"))
+                for event in selected_events
+            }
+        ),
+        "event_filter": {
+            "requested_codes": sorted(requested_codes) if requested_codes else None,
+            "requested_conditions": (
+                sorted(requested_conditions) if requested_conditions else None
+            ),
+            "include_synchronization": bool(include_synchronization),
+            "excluded_counts": excluded,
+        },
         "units": unit_results,
         "population_z": np.asarray(response_matrix),
         "responsive_units": int(np.sum(adjusted < 0.05)),
     }
     state.analysis = result
     state.log(
-        f"Event analysis completed: {len(events)} trials, "
+        f"Event analysis completed: {len(events)} selected events, "
+        f"codes={result['selected_event_codes'] or 'not supplied'}, "
         f"{result['responsive_units']}/{len(unit_results)} units passed FDR correction"
     )
     return result
@@ -428,7 +799,7 @@ def event_aligned_analysis(
 def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     workflow = {
-        "project": "NeuroFlow AI Demo",
+        "project": "NeuroEphys AI Demo",
         "source": str(state.recording_path),
         "sampling_rate_hz": state.sampling_rate,
         "channel_count": state.channel_count,
@@ -548,7 +919,7 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         else ""
     )
     case_sentence = (
-        "A respiration-state workflow was demonstrated on NeuroFlow's own "
+        "A respiration-state workflow was demonstrated on NeuroEphys AI's own "
         "simulated reference signal; it is a method validation case and does not "
         "reproduce or claim the numerical findings of the cited biological study. "
         if state.case_studies.get("respiration")
@@ -617,8 +988,19 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         pd.DataFrame(state.statistics["rows"]).to_csv(
             tables_dir / "statistics.csv", index=False
         )
+    if state.events:
+        pd.DataFrame(state.events).to_csv(
+            tables_dir / "events.csv",
+            index=False,
+        )
+    elif (tables_dir / "events.csv").exists():
+        (tables_dir / "events.csv").unlink()
     if state.trials:
         pd.DataFrame(state.trials).to_csv(tables_dir / "trials.csv", index=False)
+    elif (tables_dir / "trials.csv").exists():
+        # A previous export may have treated event rows as trials. Never leave
+        # that stale table beside a project whose trial definition is absent.
+        (tables_dir / "trials.csv").unlink()
     if state.regression:
         pd.DataFrame(
             {

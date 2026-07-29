@@ -1,32 +1,36 @@
-# NeuroFlow v0.8.0
+# NeuroEphys AI v0.9.0
 
-NeuroFlow 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
-它不重新实现成熟 sorter，而是把数据导入、质量控制、Kilosort4、Unit 质控、
-行为对齐、Neo/Elephant 神经分析、统计、机器学习、论文图和复现记录组织成一条
-可以逐步检查的链路。
+NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
+平台调用经过验证的 sorter 和分析库，将数据导入、质量控制、sorting、人工 Unit
+复核、行为对齐、Neo/Elephant 神经分析、统计、机器学习、论文图和复现记录组织成
+可逐步检查、替换和恢复的工作流。
 
-## 可选云端 AI 助手
+## 受控AI助手
 
-NeuroFlow 现在包含真正可调用的云端 AI 助手，但分析主线仍不依赖大模型。AI
-可以解释当前阶段、审查项目状态、生成候选工作流、解释最近异常和回答参数问题。
-它只接收用户可提前预览的结构化摘要，不发送原始电压、本地路径、项目名称或实验
-对象身份；API 密钥只在本次软件运行期间保存在内存，不写入项目和软件设置。
+软件提供手动、助手和协作三种模式。DeepSeek兼容接口是第一阶段默认入口，同时
+支持OpenAI兼容服务、实验室私有服务和未来本地服务。Provider层支持流式回复、
+结构化输出、工具调用、超时、重试、取消和服务状态检测。
 
-默认接口为 OpenAI Responses API，推荐起点是 `gpt-5.6-terra` 与 `medium`
-推理强度；也支持 OpenAI 兼容 Chat API、私有服务器和自定义模型标识。模型输出
-被约束为 NeuroFlow 已注册的 11 个阶段。AI 候选方案标记为
-`advisory_not_executed`，应用时只保存到项目并跳转页面，不会自动运行 sorting、
-覆盖结果或作出科学结论。真正计算仍由底部固定操作栏、确定性本地模块和运行确认
-弹窗完成。详细设置、隐私字段和故障排查见双语手册中的 `AI 助手` 页面。
+在线模型只接收用户预览并确认的结构化摘要。原始电压、大型数组、本地路径和身份
+信息留在本机；API密钥保存在当前会话、环境变量或操作系统凭据区，不进入项目、
+日志、Git仓库和报告。
 
-## 这不是界面原型
+助手模式只提供解释和建议。协作模式允许模型提出白名单工具调用，本地规则会检查
+参数、依赖、输入完整性和工作流顺序，随后弹出确认窗口。Sorting、覆盖结果、批量
+运行、在线发送信息和长时间任务始终需要用户确认。AI服务不可用时，全部确定性
+分析功能继续运行。
+
+详细操作见[受控AI助手](docs/site/zh/ai-assistant.html)，中间产物和上下文关系见
+[中间产物与溯源](docs/site/zh/provenance.html)。
+
+## 可执行工作流
 
 首页把“新建空白项目”“导入自己的数据”“打开已验证公开项目”“教学模拟”和
 “恢复项目”明确分开。空白项目不会生成模拟数据，进入 01 数据与项目页面后才由
-用户选择通用二进制、记录系统文件或已有 sorting 结果。数据入口不是算法列表，而是
-决定从哪个流程阶段开始、是否还能运行 sorting、后续需要补充哪些元数据的适配路线。
+用户选择通用二进制、记录系统文件或已有 sorting 结果。数据入口会确定流程起点、
+sorting 可用性和后续必需的元数据。
 示例数据保存在
-`Documents/NeuroFlow/DemoData/NeuroFlow_demo`，包含二进制原始电压、事件表、
+`Documents/NeuroEphysAI/DemoData/NeuroFlow_demo`，包含二进制原始电压、事件表、
 元数据、ground truth、精确导入配置和数据说明。完整 Demo 会实际执行：
 
 1. 原始信号 RMS、坏通道、饱和与 50 Hz 检查；
@@ -44,13 +48,13 @@ NeuroFlow 现在包含真正可调用的云端 AI 助手，但分析主线仍不
 
 ## 原创性与来源
 
-NeuroFlow 不复制其他软件或文章的界面、文案、截图、图表和实现代码。项目只调用
+NeuroEphys AI 不复制其他软件或文章的界面、文案、截图、图表和实现代码。项目只调用
 开源库公开 API，并依据官方文档和原始论文核对数据结构、方法定义与能力边界；
-界面、适配器、规则、教程、示例数据和图形均由 NeuroFlow 独立设计。
+界面、适配器、规则、教程、示例数据和图形均由 NeuroEphys AI 独立设计。
 
 - 官方方法与 API 来源见 [`docs/METHODS_AND_SOURCES.md`](docs/METHODS_AND_SOURCES.md)；
 - 原创双语产品文档入口为 [`docs/site/index.html`](docs/site/index.html)；
-- 呼吸案例使用 NeuroFlow 自己的模拟数据，只演示方法结构，不宣称复现论文结果；
+- 呼吸案例使用 NeuroEphys AI 自己的模拟数据，只演示方法结构，不宣称复现论文结果；
 - 微信推文仅用于发现主题和追溯原文，不复制其内容。
 
 ## 交互与语言
@@ -79,7 +83,7 @@ NeuroFlow 不复制其他软件或文章的界面、文案、截图、图表和�
   DANDI 上公开的 Buzsáki Lab 会话；
 - 已有 Kilosort/Phy sorting 结果。
 
-公开验证入口锁定两套实际跑通的数据，而不是让用户重新寻找文件：
+公开验证入口锁定两套实际跑通的数据，用户可以直接建立或打开项目缓存：
 
 - IBL Brain-Wide Map `EID 4ecb5d24-f5cc-402c-be28-9d0f7cb14b3a`；
 - Buzsáki Lab DANDI `000552/0.230630.2304` 的固定 NWB asset。
@@ -91,14 +95,18 @@ NeuroFlow 不复制其他软件或文章的界面、文案、截图、图表和�
 
 ## Sorter
 
-- **Kilosort4**：原生 NeuroFlow 适配器，完整 Demo 的默认 sorter；
+- **Kilosort4**：原生 NeuroEphys AI 适配器，完整 Demo 的默认 sorter；
 - **SpyKING CIRCUS 2、Tridesclous2、Simple、Lupin**：SpikeInterface 原生
-  sorter，均已接入并完成可用性探测；本轮另外实跑验证了 Tridesclous2 和 Simple；
+  sorter，均已接入并完成可用性探测；
 - **MountainSort5**：通过 SpikeInterface 接入，Windows 发布环境会编译并封装
   `isosplit6`；适合 CPU、tetrode 和中低通道数流程；
 
-NeuroFlow 只逐项探测上述白名单 sorter，不再调用会枚举 HDSort、MATLAB 等所有
-后端的全局检测，因此无关后端的编码或编译错误不会导致主程序启动崩溃。
+授权的 30 分钟真实记录已分别实跑 Kilosort4、MountainSort5、SpyKING
+CIRCUS 2 和 Tridesclous2。不同算法产生的候选 Unit 数量差异较大；平台保留各自
+原生输出并转换成统一的秒级 spike 接口，结果需要结合质量指标和人工复核解释。
+
+NeuroEphys AI 逐项探测白名单 sorter，避免枚举 HDSort、MATLAB 等未配置后端。
+无关后端的编码或编译错误不会导致主程序启动崩溃。
 Kilosort4 运行后可检查流程耗时、完整日志、深度-时间图、振幅稳定性、模板波形、
 模板相似度、污染率、输出文件清单和模拟 ground truth 验证。
 
@@ -127,12 +135,12 @@ powershell -ExecutionPolicy Bypass -File scripts\setup_windows.ps1
 powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
 ```
 
-结果位于 `dist\NeuroFlow\NeuroFlow.exe`。选择 one-folder 是为了让大型科研依赖
+结果位于 `dist\NeuroEphysAI\NeuroEphysAI.exe`。选择 one-folder 是为了让大型科研依赖
 保持可检查，并避免每次启动都重新解压。
 
 ## 真实公开数据验证
 
-NeuroFlow 已用两条互补的真实公开数据入口完成集成验证：
+NeuroEphys AI 已用两条互补的真实公开数据入口完成集成验证：
 
 - IBL Brain-Wide Map 的 ALF session：
   `EID 4ecb5d24-f5cc-402c-be28-9d0f7cb14b3a`、`probe00`；
@@ -158,7 +166,7 @@ python scripts\validate_public_datasets.py
 ```
 
 完整数据 ID、实际导入数量、图、指标、运行限制和官方来源见
-[`docs/site/public-validation.html`](docs/site/public-validation.html)。这些结果用于证明
+[`docs/site/zh/real-data-validation.html`](docs/site/zh/real-data-validation.html)。这些结果用于证明
 导入、统一数据结构、事件分析、统计和解码链路能够运行，不等于复现原论文结论，
 也不把 20 次置换的 smoke test 当作正式显著性证据。
 
@@ -179,8 +187,8 @@ python -m pytest -q
 测试覆盖模拟原始记录、质控、通用二进制、Kilosort 输出、IBL ALF、NWB Units、
 Figure Studio 对象目录、常量数据统计容错、项目恢复、多统计视图、双语帮助、
 sorter 容错检测、机器学习解码、AI 隐私摘要、结构化云端协议、候选流程确认和
-AI 审计历史恢复。Kilosort4 GPU、
-Tridesclous2 和 Simple 的真实运行属于单独的集成验证。
+AI 审计历史恢复。Kilosort4、MountainSort5、SpyKING CIRCUS 2 和
+Tridesclous2 的真实运行属于单独的集成验证。
 
 ## 数据与仓库原则
 

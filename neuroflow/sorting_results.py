@@ -29,8 +29,23 @@ def register_sorting_result(
     *,
     activate: bool = True,
 ) -> dict[int, np.ndarray]:
-    """Store one sorter result behind NeuroFlow's stable, seconds-based interface."""
+    """Store a sorter result behind the stable seconds-based internal interface."""
     normalized = _normalized_spikes(spikes)
+    replacing_existing = sorter_key in state.sorting_results
+    replacing_active = replacing_existing and state.active_sorter_key == sorter_key
+    if replacing_existing:
+        # Unit QC is derived from the exact spike assignment. Reusing it after a
+        # sorter rerun can silently mix old metrics with a new cluster registry.
+        state.unit_metrics_by_sorter.pop(sorter_key, None)
+        state.unit_diagnostics_by_sorter.pop(sorter_key, None)
+        if replacing_active:
+            state.unit_metrics = []
+            state.unit_diagnostics = {}
+            state.analysis = {}
+            state.spike_train_analysis = {}
+            state.statistics = {}
+            state.decoding = {}
+            state.regression = {}
     details = {
         "schema": SORTING_SCHEMA,
         "time_unit": "seconds",
@@ -42,7 +57,7 @@ def register_sorting_result(
     }
     state.sorting_results[sorter_key] = normalized
     state.sorting_provenance[sorter_key] = details
-    if activate:
+    if activate or replacing_active:
         activate_sorting_result(state, sorter_key)
     return normalized
 
@@ -52,6 +67,12 @@ def activate_sorting_result(state: ProjectState, sorter_key: str) -> None:
         raise KeyError(f"No saved sorting result for {sorter_key}")
     state.active_sorter_key = sorter_key
     state.sorted_spikes = state.sorting_results[sorter_key]
+    state.unit_metrics = list(
+        state.unit_metrics_by_sorter.get(sorter_key, [])
+    )
+    state.unit_diagnostics = dict(
+        state.unit_diagnostics_by_sorter.get(sorter_key, {})
+    )
     state.metadata["sorting"] = dict(
         state.sorting_provenance.get(
             sorter_key,
@@ -72,6 +93,14 @@ def ensure_sorting_registry(
     if state.sorting_results:
         if state.active_sorter_key not in state.sorting_results:
             state.active_sorter_key = next(iter(state.sorting_results))
+        active_key = str(state.active_sorter_key)
+        if state.unit_metrics and active_key not in state.unit_metrics_by_sorter:
+            state.unit_metrics_by_sorter[active_key] = state.unit_metrics
+        if (
+            state.unit_diagnostics
+            and active_key not in state.unit_diagnostics_by_sorter
+        ):
+            state.unit_diagnostics_by_sorter[active_key] = state.unit_diagnostics
         activate_sorting_result(state, str(state.active_sorter_key))
         return
     if not state.sorted_spikes:

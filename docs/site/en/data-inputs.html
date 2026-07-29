@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Import your own data · NeuroFlow</title>
+    <title>Import your own data · NeuroEphys AI</title>
     <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
       <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <a class="brand" href="index.html">NeuroEphys AI <small>Documentation</small></a>
       <input class="search" data-doc-search type="search" placeholder="Search this page">
       <div class="topbar-actions">
         <a class="language-button language-link" data-language-link="zh" href="../zh/data-inputs.html">Chinese</a>
@@ -26,16 +26,19 @@
 <a class="active" href="data-inputs.html">Import your own data</a>
 <div class="sidebar-label">Guides</div>
 <a href="sorting.html">Spike sorting guide</a>
+<a href="unit-curation.html">Manual unit curation</a>
 <a href="ai-assistant.html">AI assistant</a>
 <a href="parameters.html">Parameter reference</a>
 <a href="figure-studio.html">Figure editing and export</a>
 <div class="sidebar-label">Reference</div>
+<a href="provenance.html">Artifacts and provenance</a>
+<a href="real-data-validation.html">Real-data validation</a>
 <a href="troubleshooting.html">Troubleshooting</a>
 <a href="sources.html">Methods and sources</a>
       </aside>
       <main class="content">
         <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroFlow operation manual</p>
+          <p class="eyebrow">NeuroEphys AI operation manual</p>
           <h1>Import your own data</h1>
           <p class="lead">Create a project first, then choose the route that matches the files you actually have. Raw voltage and processed unit data enter at different workflow stages.</p>
         </div>
@@ -55,10 +58,10 @@
   <pre><code>trial,time_seconds,event_type,condition,choice,reaction_time
 1,12.450,stimulus_onset,A,left,0.620
 1,13.070,response,A,left,0.620</code></pre>
-  <p>A separate TTL CSV may contain ephys-clock pulse times. NeuroFlow pairs the pulse sequence and reports offset, drift, residuals, and missing events.</p>
+  <p>A separate TTL CSV may contain ephys-clock pulse times. NeuroEphys AI pairs the pulse sequence and reports offset, drift, residuals, and missing events.</p>
 </section>
 
-        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+        <footer class="footer">NeuroEphys AI · Original explanatory text with cited method sources</footer>
       </main>
     </div>
     <script src="../app.js?v=0.8.0"></script>

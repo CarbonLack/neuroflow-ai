@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>看得见、换得掉、接得上、能恢复的电生理工作流 · NeuroFlow</title>
+    <title>看得见、换得掉、接得上、能恢复的电生理工作流 · NeuroEphys AI</title>
     <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
       <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <a class="brand" href="index.html">NeuroEphys AI <small>操作手册</small></a>
       <input class="search" data-doc-search type="search" placeholder="搜索本页">
       <div class="topbar-actions">
         <a class="language-button language-link" data-language-link="en" href="../en/index.html">英文</a>
@@ -26,18 +26,21 @@
 <a href="data-inputs.html">导入自己的数据</a>
 <div class="sidebar-label">专项指南</div>
 <a href="sorting.html">Spike sorting 指南</a>
+<a href="unit-curation.html">Unit 人工复核</a>
 <a href="ai-assistant.html">AI 助手</a>
 <a href="parameters.html">参数参考</a>
 <a href="figure-studio.html">图形编辑与导出</a>
 <div class="sidebar-label">参考资料</div>
+<a href="provenance.html">中间产物与溯源</a>
+<a href="real-data-validation.html">真实数据验证</a>
 <a href="troubleshooting.html">故障排查</a>
 <a href="sources.html">方法与来源</a>
       </aside>
       <main class="content">
         <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <p class="eyebrow">NeuroEphys AI 操作手册</p>
           <h1>看得见、换得掉、接得上、能恢复的电生理工作流</h1>
-          <p class="lead">NeuroFlow 把原始多通道记录、可替换的 spike sorter、行为、神经分析、统计、机器学习和论文导出组织在一个本地优先的项目中。</p>
+          <p class="lead">NeuroEphys AI 把原始多通道记录、可替换的 spike sorter、行为、神经分析、统计、机器学习和论文导出组织在一个本地优先的项目中。</p>
         </div>
 
 <section data-searchable>
@@ -58,7 +61,7 @@
   <div class="stage-number">01</div>
   <div>
     <h3><a href="tutorials.html#import">从数据结构开始</a></h3>
-    <p>这一页不是简单的“选文件”。NeuroFlow 必须先知道每个采样值怎样存储、多少个值组成一个时间点、探针通道怎样排列，以及行为事件使用哪一台设备的时钟。只有这些结构被确认，后面的滤波、sorting 和事件对齐才有正确的物理单位。导入过程保持原始数据只读，项目只保存索引、缓存和派生结果。</p>
+    <p>数据导入从结构确认开始。NeuroEphys AI 必须先知道每个采样值怎样存储、多少个值组成一个时间点、探针通道怎样排列，以及行为事件使用哪一台设备的时钟。只有这些结构被确认，后面的滤波、sorting 和事件对齐才有正确的物理单位。导入过程保持原始数据只读，项目只保存索引、缓存和派生结果。</p>
     <p><b>推荐先做：</b> 先创建项目，再选择与你手中真实文件相符的入口。</p>
     <p class="muted"><b>之后：</b> 确认结构后进入原始质控；如果只有处理后 spike，则直接进入 Unit 质控。</p>
   </div>
@@ -68,7 +71,7 @@
   <div class="stage-number">02</div>
   <div>
     <h3><a href="tutorials.html#qc">原始信号质控</a></h3>
-    <p>质控的目标不是自动删除通道，而是建立证据：异常发生在哪些通道、哪些时间、哪些频率，以及是否可能影响重参考和 spike 检测。先在整段记录上定位问题，再放大到原始波形核实，最后才给出坏通道候选。</p>
+    <p>质控用于建立异常证据：异常发生在哪些通道、哪些时间、哪些频率，以及是否可能影响重参考和 spike 检测。先在整段记录上定位问题，再放大到原始波形核实，最后才给出坏通道候选。</p>
     <p><b>推荐先做：</b> 先运行总览和时间线，再用原始波形、频谱对每个候选异常交叉验证。</p>
     <p class="muted"><b>之后：</b> 把确认的坏通道和异常时间段带入预处理，分别建立 AP 与 LFP 分支。</p>
   </div>
@@ -77,8 +80,8 @@
 <article class="stage-card" data-searchable>
   <div class="stage-number">03</div>
   <div>
-    <h3><a href="tutorials.html#preprocess">预处理不是固定配方</a></h3>
-    <p>预处理不是“越多越干净”。每个操作都改变信号，因此必须说明目标、顺序和是否会在 sorter 内再次执行。NeuroFlow 默认先做短片段预览，让用户比较处理前后波形和频谱；确认后才把参数写入工作流。</p>
+    <h3><a href="tutorials.html#preprocess">按分析目标配置预处理</a></h3>
+    <p>预处理操作会改变信号，处理数量增加并不必然提升质量。每个操作都要说明目标、顺序和是否会在 sorter 内再次执行。NeuroEphys AI 默认先做短片段预览，让用户比较处理前后波形和频谱；确认后才把参数写入工作流。</p>
     <p><b>推荐先做：</b> AP 和 LFP 建立独立分支，不把同一处理链机械复用。</p>
     <p class="muted"><b>之后：</b> AP 分支进入 Spike sorting；LFP 分支保留到神经活动分析页。</p>
   </div>
@@ -88,7 +91,7 @@
   <div class="stage-number">04</div>
   <div>
     <h3><a href="tutorials.html#sorting">Spike sorting 与工具选择</a></h3>
-    <p>Spike sorting 把多通道电压中的候选事件分配给 unit。NeuroFlow 不把不同 sorter 的原生输出强行抹平：它保留原始文件、参数和日志，同时把共同结果转换为统一的 unit、spike 秒时间和通道/模板描述，供下游比较。</p>
+    <p>Spike sorting 把多通道电压中的候选事件分配给 unit。NeuroEphys AI 不把不同 sorter 的原生输出强行抹平：它保留原始文件、参数和日志，同时把共同结果转换为统一的 unit、spike 秒时间和通道/模板描述，供下游比较。</p>
     <p><b>推荐先做：</b> 先用默认参数跑一段代表性数据检查输入和资源，再运行整段记录。</p>
     <p class="muted"><b>之后：</b> 选择一个 active sorting 结果，进入 Unit 质控；必要时再回到本页比较 sorter。</p>
   </div>
@@ -128,7 +131,7 @@
   <div class="stage-number">08</div>
   <div>
     <h3><a href="tutorials.html#analysis">神经活动分析工作台</a></h3>
-    <p>神经活动页不是一张固定 PSTH，而是四类可独立运行的分析入口：事件对齐响应、spike train 统计、LFP 频谱/时频，以及 spike-field 耦合。每个子分析都有自己的输入、参数、图和表；未运行时显示输入预览和运行目的，不伪造结果。</p>
+    <p>神经活动页提供四类可独立运行的分析入口：事件对齐响应、spike train 统计、LFP 频谱/时频，以及 spike-field 耦合。每个子分析都有自己的输入、参数、图和表；未运行时显示输入预览和运行目的，不伪造结果。</p>
     <p><b>推荐先做：</b> 每次只运行一个明确子分析，并在运行前阅读输入和参数摘要。</p>
     <p class="muted"><b>之后：</b> 将 trial 级神经指标送入统计页，或构建 trial × feature 矩阵进入机器学习。</p>
   </div>
@@ -138,7 +141,7 @@
   <div class="stage-number">09</div>
   <div>
     <h3><a href="tutorials.html#statistics">从图到统计证据</a></h3>
-    <p>统计页从“样本是什么”开始，而不是从检验名称开始。trial 嵌套于 session，unit 嵌套于动物；配对、重复测量和层级结构决定了哪些比较合法。页面同时报告效应量、置信区间和多重比较处理，不把 p 值作为唯一结论。</p>
+    <p>统计页先定义“样本是什么”，随后选择检验。trial 嵌套于 session，unit 嵌套于动物；配对、重复测量和层级结构决定了哪些比较合法。页面同时报告效应量、置信区间和多重比较处理，不把 p 值作为唯一结论。</p>
     <p><b>推荐先做：</b> 先生成统计设计卡，再允许选择检验。</p>
     <p class="muted"><b>之后：</b> 统计结果可直接进入论文导出；若问题是预测标签或连续变量，进入机器学习。</p>
   </div>
@@ -148,7 +151,7 @@
   <div class="stage-number">10</div>
   <div>
     <h3><a href="tutorials.html#decoding">机器学习、聚类与数据泄漏</a></h3>
-    <p>机器学习页把神经活动转换为 trial × feature 矩阵，并把预处理、特征选择和模型全部放入交叉验证内部。核心不是寻找最高分，而是建立没有数据泄漏、与 shuffle 基线比较、能跨 session/动物泛化的评估。</p>
+    <p>机器学习页把神经活动转换为 trial × feature 矩阵，并把预处理、特征选择和模型全部放入交叉验证内部。核心目标是建立没有数据泄漏、与 shuffle 基线比较、能跨 session/动物泛化的评估。</p>
     <p><b>推荐先做：</b> 先建立线性基线，再比较复杂模型。</p>
     <p class="muted"><b>之后：</b> 把模型配置、验证拆分、分数表和图送入论文与复现页。</p>
   </div>
@@ -166,7 +169,7 @@
 </div>
 </section>
 
-        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+        <footer class="footer">NeuroEphys AI · 原创说明文字，方法来源逐项标注</footer>
       </main>
     </div>
     <script src="../app.js?v=0.8.0"></script>

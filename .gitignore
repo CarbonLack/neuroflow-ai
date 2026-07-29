@@ -8,7 +8,7 @@ __pycache__/
 .venv/
 .venv*/
 
-# Generated NeuroFlow projects and results
+# Generated NeuroEphys AI projects and results
 demo_project/
 projects/
 DemoData/
@@ -18,12 +18,33 @@ packaged_*_self_test.*
 ibl_cache/
 results/
 exports/
+validation/
+validation_artifacts/
+local_projects/
+private_data/
+structured_runs.jsonl
 ui_*.png
 *.bin
 *.dat
 *.npy
 *.npz
 *.nwb
+*.continuous
+*.events
+*.rhd
+*.rhs
+*.rec
+*.plx
+*.pl2
+*.ns1
+*.ns2
+*.ns3
+*.ns4
+*.ns5
+*.ns6
+*.nev
+*.tev
+*.tsq
 docs_capture_workspace/
 docs/site/assets/font_test.png
 docs/site/assets/native_test.png
@@ -36,6 +57,14 @@ dist/
 .env
 *.key
 secrets.json
+
+# Authorized internal validation material stays local
+WANGSHUFEI_*.md
+OUTPUT_INDEX_ZH.md
+scripts/validate_wangshufei_*.py
+scripts/validate_subject101_*.py
+scripts/compare_real_data_sorters.py
+scripts/validate_ai_integration.py
 
 # Editor and OS files
 .idea/

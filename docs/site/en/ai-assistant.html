@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AI assistant: advice without a black box · NeuroFlow</title>
+    <title>Controlled AI assistant · NeuroEphys AI</title>
     <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
       <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <a class="brand" href="index.html">NeuroEphys AI <small>Documentation</small></a>
       <input class="search" data-doc-search type="search" placeholder="Search this page">
       <div class="topbar-actions">
         <a class="language-button language-link" data-language-link="zh" href="../zh/ai-assistant.html">Chinese</a>
@@ -26,54 +26,71 @@
 <a href="data-inputs.html">Import your own data</a>
 <div class="sidebar-label">Guides</div>
 <a href="sorting.html">Spike sorting guide</a>
+<a href="unit-curation.html">Manual unit curation</a>
 <a class="active" href="ai-assistant.html">AI assistant</a>
 <a href="parameters.html">Parameter reference</a>
 <a href="figure-studio.html">Figure editing and export</a>
 <div class="sidebar-label">Reference</div>
+<a href="provenance.html">Artifacts and provenance</a>
+<a href="real-data-validation.html">Real-data validation</a>
 <a href="troubleshooting.html">Troubleshooting</a>
 <a href="sources.html">Methods and sources</a>
       </aside>
       <main class="content">
         <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroFlow operation manual</p>
-          <h1>AI assistant: advice without a black box</h1>
-          <p class="lead">NeuroFlow&#x27;s optional cloud assistant explains the current stage, reviews a path-free project summary, proposes a candidate workflow, and interprets warnings. It never receives raw voltage and never runs an analysis silently.</p>
+          <p class="eyebrow">NeuroEphys AI operation manual</p>
+          <h1>Controlled AI assistant</h1>
+          <p class="lead">The assistant works from the active project&#x27;s structured evidence. It can explain, plan, and propose validated local tool calls while the deterministic analysis pipeline remains available at all times.</p>
         </div>
 
 <section data-searchable>
-  <h2>Configure cloud AI</h2>
-  <ol class="steps"><li>Open AI assistant from the home page, workspace toolbar, or right guidance panel.</li><li>Open AI settings. Choose OpenAI Responses API or an OpenAI-compatible Chat API.</li><li>For OpenAI, keep the default HTTPS base URL and choose a model. Terra is the balanced default; Luna reduces cost.</li><li>Paste the API key. It remains in memory for this NeuroFlow session and is not written to project files or application settings.</li><li>Open Preview cloud data and inspect the complete structured project summary before asking.</li><li>Choose a defined task or enter your own scientific question.</li></ol>
-  <div class="callout method">Recommended initial configuration: OpenAI Responses API, gpt-5.6-terra, medium reasoning. Change the model only after comparing response quality, latency, and cost on representative NeuroFlow questions.</div>
-  <img class="product-shot" src="../assets/neuroflow-ai-assistant.png" alt="NeuroFlow AI assistant">
+  <h2>Three operating modes</h2>
+  <table><thead><tr><th>Mode</th><th>Permission boundary</th></tr></thead>
+  <tbody><tr><td><b>Manual</b></td><td>Cloud AI is disabled. Data import, QC, sorting, curation, statistics, decoding, figure export, and project recovery remain available.</td></tr><tr><td><b>Assistant</b></td><td>The model explains the project, parameters, warnings, and candidate workflows. It cannot request execution.</td></tr><tr><td><b>Collaborative</b></td><td>The model may propose a whitelisted local tool call. NeuroEphys AI validates prerequisites and parameters, then shows a confirmation dialog before execution.</td></tr></tbody></table>
 </section>
 <section data-searchable>
-  <h2>Four defined tasks</h2>
-  <table><thead><tr><th>Action</th><th>What it produces</th></tr></thead>
-  <tbody><tr><td><b>Explain this stage</b></td><td>Explains scientific purpose, required inputs, important parameters, evidence to inspect, and the condition for continuing.</td></tr><tr><td><b>Review project</b></td><td>Separates completed evidence, missing prerequisites, data risks, environment risks, and the safest next action.</td></tr><tr><td><b>Propose workflow</b></td><td>Returns a structured plan using only NeuroFlow&#x27;s 11 registered stages. Each stage includes its reason, prerequisites, and parameter starting points.</td></tr><tr><td><b>Explain latest error</b></td><td>Interprets the available warning or failure without claiming that a repair has run. Existing results remain unchanged.</td></tr></tbody></table>
+  <h2>Provider setup</h2>
+  <ol class="steps"><li>Open the collapsible AI panel on the right side of the workspace.</li><li>Choose Manual, Assistant, or Collaborative mode.</li><li>Open AI settings. DeepSeek is the first configured provider; OpenAI-compatible, laboratory, and local-compatible endpoints are also accepted.</li><li>Enter the endpoint and model. The current DeepSeek defaults are https://api.deepseek.com and deepseek-v4-flash.</li><li>Store the API key for the session or in the operating-system credential store. Project files never contain the key.</li><li>Open Context preview. Remove any optional field that should not be sent.</li><li>Enter a question or request a candidate workflow. Review every proposed node and parameter.</li></ol>
+  <div class="callout method">Provider settings include streaming, timeout, retries, cancellation, and service health. A provider change does not modify project data or analysis code.</div>
+  <img class="product-shot" src="../assets/neuroflow-ai-assistant.png" alt="NeuroEphys AI assistant panel">
 </section>
 <section data-searchable>
-  <h2>Exactly what leaves the computer</h2>
+  <h2>Available assistance</h2>
+  <ul class="checks"><li>Explain recognized data and missing metadata after import.</li><li>Create an editable workflow from a scientific question using registered nodes only.</li><li>Compare compatible sorters while preserving their native requirements and outputs.</li><li>Detect duplicate filtering, missing events, invalid LFP requests, and leakage risks.</li><li>Read redacted errors and propose a recovery path.</li><li>Propose previews or analyses through the local tool whitelist in Collaborative mode.</li><li>Summarize figures with observed result, statistical evidence, interpretations, unsupported claims, limitations, and validation steps.</li><li>Generate Methods drafts, output indexes, and audit-oriented summaries from actual project evidence.</li></ul>
+</section>
+<section data-searchable>
+  <h2>Context sent to an online provider</h2>
   <table><thead><tr><th>Information</th><th>Handling</th></tr></thead>
-  <tbody><tr><td><b>Raw voltage</b></td><td>Never sent.</td></tr><tr><td><b>Local source and project paths</b></td><td>Removed before request construction.</td></tr><tr><td><b>Project and subject identity</b></td><td>Not included in the structured summary.</td></tr><tr><td><b>Sampling rate, channel count, duration, probe type</b></td><td>Sent because they determine valid analysis choices.</td></tr><tr><td><b>QC, sorting, statistics, and decoding summaries</b></td><td>Sent only as compact calculated values.</td></tr><tr><td><b>Recent audit log</b></td><td>Off by default; five redacted messages are sent only after explicit opt-in.</td></tr><tr><td><b>Question and recent AI conversation</b></td><td>Sent to provide the requested context.</td></tr><tr><td><b>API key</b></td><td>Used only in the HTTPS authorization header and never stored in the project.</td></tr></tbody></table>
+  <tbody><tr><td><b>Raw voltage and large arrays</b></td><td>Stay local and are excluded before request construction.</td></tr><tr><td><b>Local paths and identity fields</b></td><td>Removed from the online context.</td></tr><tr><td><b>Acquisition structure</b></td><td>Format, sample rate, channels, duration, units, probe, region, reference, and online filtering.</td></tr><tr><td><b>Derived evidence</b></td><td>QC metrics, sorter provenance, unit metrics, synchronization residuals, statistics, decoding, and warnings.</td></tr><tr><td><b>Workflow state</b></td><td>Completed, failed, skipped, pending stages, selected page, figure, sorter, and unit.</td></tr><tr><td><b>Intermediate artifacts</b></td><td>Only labels, stage, parameters, size, checksum, and artifact IDs; binary contents remain local.</td></tr><tr><td><b>API key</b></td><td>Used in the authorization header and stored only through the selected credential option.</td></tr></tbody></table>
 </section>
 <section data-searchable>
-  <h2>Approval and audit boundaries</h2>
-  <ul class="checks"><li>The model cannot inspect hidden raw data or invent missing results.</li><li>A candidate plan is marked advisory_not_executed.</li><li>Applying a plan stores it in the project and navigates to a suggested stage; it does not run that stage.</li><li>Every real analysis still uses the fixed bottom action bar and its confirmation dialog.</li><li>AI answers and accepted plans enter the project audit history and can be restored after reopening.</li><li>Manual and guided modes remain fully available when AI is unconfigured or offline.</li></ul>
+  <h2>Tool-call lifecycle</h2>
+  <ol class="steps">
+    <li>The provider returns a structured tool name and arguments.</li>
+    <li>The local registry rejects unknown tools, invalid fields, missing prerequisites, wrong workflow order, and unsafe segment lengths.</li>
+    <li>The confirmation dialog shows input, parameters, expected cost, data sent online, and output location.</li>
+    <li>The user accepts, edits, or cancels. Sorting and other long tasks always require confirmation.</li>
+    <li>Completed or failed calls are linked to run IDs and artifact IDs in the project audit history.</li>
+  </ol>
 </section>
 <section data-searchable>
-  <h2>Failure handling</h2>
-  <p>If a request fails, NeuroFlow shows a dialog and leaves the project unchanged. Check the HTTPS endpoint, model identifier, API key, network access, and account quota. A model-format error means the provider did not return NeuroFlow’s required structured JSON; switch to Responses API or a compatible service with structured JSON support.</p>
+  <h2>Scientific interpretation format</h2>
+  <p>Every result explanation is separated into observed result, statistical evidence, possible biological interpretations, unsupported conclusions, limitations, and recommended validation. Candidate units retain their candidate status until manual review.</p>
+</section>
+<section data-searchable>
+  <h2>Offline and failure behavior</h2>
+  <p>A provider failure stops the AI request, preserves the project, and leaves every manual analysis control active. Check the endpoint, model, key, network, quota, timeout, and provider response format. The failure record excludes the key and raw data.</p>
 </section>
 <section data-searchable>
   <h2>Implementation sources</h2>
   <ul class="source-list">
-    <li><a href="https://developers.openai.com/api/docs/guides/text">OpenAI Responses API text generation</a></li>
-    <li><a href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a></li>
-    <li><a href="https://developers.openai.com/api/docs/models">OpenAI model catalog and selection guidance</a></li>
+    <li><a href="https://api-docs.deepseek.com/api/create-chat-completion">DeepSeek chat completion API</a></li>
+    <li><a href="https://api-docs.deepseek.com/guides/function_calling/">DeepSeek function calling</a></li>
+    <li><a href="https://api-docs.deepseek.com/guides/tool_calls">DeepSeek tool calls</a></li>
   </ul>
 </section>
 
-        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+        <footer class="footer">NeuroEphys AI · Original explanatory text with cited method sources</footer>
       </main>
     </div>
     <script src="../app.js?v=0.8.0"></script>

@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>完整逐步教程 · NeuroFlow</title>
+    <title>完整逐步教程 · NeuroEphys AI</title>
     <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
       <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <a class="brand" href="index.html">NeuroEphys AI <small>操作手册</small></a>
       <input class="search" data-doc-search type="search" placeholder="搜索本页">
       <div class="topbar-actions">
         <a class="language-button language-link" data-language-link="en" href="../en/tutorials.html">英文</a>
@@ -26,26 +26,29 @@
 <a href="data-inputs.html">导入自己的数据</a>
 <div class="sidebar-label">专项指南</div>
 <a href="sorting.html">Spike sorting 指南</a>
+<a href="unit-curation.html">Unit 人工复核</a>
 <a href="ai-assistant.html">AI 助手</a>
 <a href="parameters.html">参数参考</a>
 <a href="figure-studio.html">图形编辑与导出</a>
 <div class="sidebar-label">参考资料</div>
+<a href="provenance.html">中间产物与溯源</a>
+<a href="real-data-validation.html">真实数据验证</a>
 <a href="troubleshooting.html">故障排查</a>
 <a href="sources.html">方法与来源</a>
       </aside>
       <main class="content">
         <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <p class="eyebrow">NeuroEphys AI 操作手册</p>
           <h1>完整逐步教程</h1>
           <p class="lead">沿 11 个阶段从数据结构走到可恢复的论文复现包；每章都解释目的、操作、页面参数、默认值、推荐设置、修改影响和验收检查。</p>
         </div>
-        <section class="chapter-toc"><a class="toc-chip" href="#import">01 从数据结构开始</a><a class="toc-chip" href="#qc">02 原始信号质控</a><a class="toc-chip" href="#preprocess">03 预处理不是固定配方</a><a class="toc-chip" href="#sorting">04 Spike sorting 与工具选择</a><a class="toc-chip" href="#unit_qc">05 Unit 质控与人工复核</a><a class="toc-chip" href="#sync">06 TTL、行为与统一时间轴</a><a class="toc-chip" href="#behavior">07 行为质量先于神经解释</a><a class="toc-chip" href="#analysis">08 神经活动分析工作台</a><a class="toc-chip" href="#statistics">09 从图到统计证据</a><a class="toc-chip" href="#decoding">10 机器学习、聚类与数据泄漏</a><a class="toc-chip" href="#export">11 论文图与可复现导出</a></section>
+        <section class="chapter-toc"><a class="toc-chip" href="#import">01 从数据结构开始</a><a class="toc-chip" href="#qc">02 原始信号质控</a><a class="toc-chip" href="#preprocess">03 按分析目标配置预处理</a><a class="toc-chip" href="#sorting">04 Spike sorting 与工具选择</a><a class="toc-chip" href="#unit_qc">05 Unit 质控与人工复核</a><a class="toc-chip" href="#sync">06 TTL、行为与统一时间轴</a><a class="toc-chip" href="#behavior">07 行为质量先于神经解释</a><a class="toc-chip" href="#analysis">08 神经活动分析工作台</a><a class="toc-chip" href="#statistics">09 从图到统计证据</a><a class="toc-chip" href="#decoding">10 机器学习、聚类与数据泄漏</a><a class="toc-chip" href="#export">11 论文图与可复现导出</a></section>
 <section id="import" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">01</p>
   <h2>从数据结构开始</h2>
-  <div class="callout method">这一页不是简单的“选文件”。NeuroFlow 必须先知道每个采样值怎样存储、多少个值组成一个时间点、探针通道怎样排列，以及行为事件使用哪一台设备的时钟。只有这些结构被确认，后面的滤波、sorting 和事件对齐才有正确的物理单位。导入过程保持原始数据只读，项目只保存索引、缓存和派生结果。</div>
+  <div class="callout method">数据导入从结构确认开始。NeuroEphys AI 必须先知道每个采样值怎样存储、多少个值组成一个时间点、探针通道怎样排列，以及行为事件使用哪一台设备的时钟。只有这些结构被确认，后面的滤波、sorting 和事件对齐才有正确的物理单位。导入过程保持原始数据只读，项目只保存索引、缓存和派生结果。</div>
   <h3>开始前准备</h3>
-  <p>准备记录系统说明、采样率、总通道数、数据类型、增益或 μV/bit、探针几何，以及可选的事件 CSV。若是通用二进制，必须从采集软件配置中核对，而不是凭波形猜参数。</p>
+  <p>准备记录系统说明、采样率、总通道数、数据类型、增益或 μV/bit、探针几何，以及可选的事件 CSV。若是通用二进制，必须从采集软件配置中核对，禁止根据波形猜参数。</p>
   <h3>可执行操作与目的</h3>
   <table><thead><tr><th>操作</th><th>怎么做</th><th>目的</th><th>结果</th></tr></thead>
   <tbody><tr><td><b>创建空项目</b></td><td>先指定项目名称和保存目录，再从项目内导入数据。</td><td>把原始数据与分析产物分开，并建立后续恢复入口。</td><td>生成 neuroflow_project.json、derived、results 和 exports 目录。</td></tr><tr><td><b>导入通用二进制</b></td><td>选择 .bin/.dat/.raw，填写采样率、通道数、dtype 和 μV/bit。</td><td>读取没有自描述元数据的交错通道记录。</td><td>验证文件大小能否被“通道数 × 每样本字节数”整除，并显示波形。</td></tr><tr><td><b>导入记录系统文件</b></td><td>选择 Intan、Open Ephys、SpikeGLX、Blackrock、Plexon、TDT 或 NWB。</td><td>利用 SpikeInterface extractor 读取设备元数据并建立统一缓存。</td><td>项目中保存标准 int16 缓存，源文件保持不变。</td></tr><tr><td><b>从已有 sorting 继续</b></td><td>选择 Kilosort/Phy、IBL ALF 或含 Units 的 NWB。</td><td>跳过无法重复的原始处理阶段，直接进入 Unit 和下游分析。</td><td>统一得到以秒表示的 spike times、unit ID 和来源记录。</td></tr></tbody></table>
@@ -60,7 +63,7 @@
   </div>
   <h3>输入、输出与验收检查</h3>
   <p><b>输入：</b>记录系统原始文件、探针信息、事件日志</p>
-  <p><b>输出：</b>只读数据源与 NeuroFlow 项目清单</p>
+  <p><b>输出：</b>只读数据源与 NeuroEphys AI 项目清单</p>
   <p><b>检查：</b>核对文件大小、采样率、通道数、数据类型，以及事件单位是秒、毫秒还是采样点。导入后先观察波形是否符合预期。</p>
   <div class="callout next"><b>下一步：</b> 确认结构后进入原始质控；如果只有处理后 spike，则直接进入 Unit 质控。</div>
 </section>
@@ -68,12 +71,12 @@
 <section id="qc" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">02</p>
   <h2>原始信号质控</h2>
-  <div class="callout method">质控的目标不是自动删除通道，而是建立证据：异常发生在哪些通道、哪些时间、哪些频率，以及是否可能影响重参考和 spike 检测。先在整段记录上定位问题，再放大到原始波形核实，最后才给出坏通道候选。</div>
+  <div class="callout method">质控用于建立异常证据：异常发生在哪些通道、哪些时间、哪些频率，以及是否可能影响重参考和 spike 检测。先在整段记录上定位问题，再放大到原始波形核实，最后才给出坏通道候选。</div>
   <h3>开始前准备</h3>
   <p>确保数据结构页的采样率、通道数、单位和记录时长已经核对。</p>
   <h3>可执行操作与目的</h3>
   <table><thead><tr><th>操作</th><th>怎么做</th><th>目的</th><th>结果</th></tr></thead>
-  <tbody><tr><td><b>多通道原始波形</b></td><td>用时间窗、起点、通道范围和显示增益逐段浏览。</td><td>识别饱和、跳变、运动伪迹、死通道和共同噪声。</td><td>得到可缩放的真实电压片段和当前窗口 RMS。</td></tr><tr><td><b>质控指标总览</b></td><td>运行该子分析，查看每通道 RMS、峰峰值、饱和比例和工频比值。</td><td>用多个指标共同筛选，而不是依赖单一阈值。</td><td>生成候选坏通道表；不会自动排除。</td></tr><tr><td><b>通道 × 频率功率</b></td><td>查看所有通道的功率谱热图并缩放可疑频带。</td><td>区分宽带噪声、50/60 Hz 工频和局部通道异常。</td><td>得到各通道频谱证据和工频峰值。</td></tr><tr><td><b>质量时间线</b></td><td>按时间块计算振幅、噪声和饱和指标。</td><td>发现只在部分记录中出现的掉线、漂移或伪迹。</td><td>得到异常时间段，供预处理中的排除或修复使用。</td></tr></tbody></table>
+  <tbody><tr><td><b>多通道原始波形</b></td><td>用时间窗、起点、通道范围和显示增益逐段浏览。</td><td>识别饱和、跳变、运动伪迹、死通道和共同噪声。</td><td>得到可缩放的真实电压片段和当前窗口 RMS。</td></tr><tr><td><b>质控指标总览</b></td><td>运行该子分析，查看每通道 RMS、峰峰值、饱和比例和工频比值。</td><td>用多个指标共同筛选，避免依赖单一阈值。</td><td>生成候选坏通道表；不会自动排除。</td></tr><tr><td><b>通道 × 频率功率</b></td><td>查看所有通道的功率谱热图并缩放可疑频带。</td><td>区分宽带噪声、50/60 Hz 工频和局部通道异常。</td><td>得到各通道频谱证据和工频峰值。</td></tr><tr><td><b>质量时间线</b></td><td>按时间块计算振幅、噪声和饱和指标。</td><td>发现只在部分记录中出现的掉线、漂移或伪迹。</td><td>得到异常时间段，供预处理中的排除或修复使用。</td></tr></tbody></table>
   <h3>参数说明</h3>
   <table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
   <tbody><tr><td><code>起始时间（Time start）</code></td><td>当前预览窗口从记录的哪一秒开始。</td><td>0 s</td><td>先看开头，再抽查中段、结尾和任务关键事件附近。</td><td>只改变显示和局部指标，不裁剪原始数据。</td></tr><tr><td><code>时间窗（Window）</code></td><td>一次显示多少毫秒或秒。</td><td>60 ms</td><td>spike 波形用 20–100 ms；慢伪迹和节律可用 1–10 s。</td><td>短窗看波形细节，长窗看趋势，但过长会压缩尖峰。</td></tr><tr><td><code>通道范围（Channel range）</code></td><td>同时绘制的起始通道与数量。</td><td>Ch 0–11</td><td>密集探针每次看 8–16 通道，并沿深度移动。</td><td>通道过多会降低单通道可读性；过少可能看不到空间共同模式。</td></tr><tr><td><code>显示增益（Display gain）</code></td><td>仅控制各通道在图中的垂直放大倍数。</td><td>1.0×</td><td>从 1.0× 开始，波形重叠时调低，振幅过小时调高。</td><td>不改变数据和 QC 数值，只改变可视化。</td></tr><tr><td><code>工频（Line frequency）</code></td><td>用于计算窄带工频功率的中心频率。</td><td>50 Hz（中国与多数地区）</td><td>按实验所在地选择 50 或 60 Hz，并同时查看谐波。</td><td>选错频率会漏报工频，但不会改变原始信号。</td></tr></tbody></table>
@@ -92,8 +95,8 @@
 
 <section id="preprocess" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">03</p>
-  <h2>预处理不是固定配方</h2>
-  <div class="callout method">预处理不是“越多越干净”。每个操作都改变信号，因此必须说明目标、顺序和是否会在 sorter 内再次执行。NeuroFlow 默认先做短片段预览，让用户比较处理前后波形和频谱；确认后才把参数写入工作流。</div>
+  <h2>按分析目标配置预处理</h2>
+  <div class="callout method">预处理操作会改变信号，处理数量增加并不必然提升质量。每个操作都要说明目标、顺序和是否会在 sorter 内再次执行。NeuroEphys AI 默认先做短片段预览，让用户比较处理前后波形和频谱；确认后才把参数写入工作流。</div>
   <h3>开始前准备</h3>
   <p>先完成坏通道确认；明确当前目标是 AP/spike sorting、LFP，还是两者。</p>
   <h3>可执行操作与目的</h3>
@@ -118,12 +121,12 @@
 <section id="sorting" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">04</p>
   <h2>Spike sorting 与工具选择</h2>
-  <div class="callout method">Spike sorting 把多通道电压中的候选事件分配给 unit。NeuroFlow 不把不同 sorter 的原生输出强行抹平：它保留原始文件、参数和日志，同时把共同结果转换为统一的 unit、spike 秒时间和通道/模板描述，供下游比较。</div>
+  <div class="callout method">Spike sorting 把多通道电压中的候选事件分配给 unit。NeuroEphys AI 不把不同 sorter 的原生输出强行抹平：它保留原始文件、参数和日志，同时把共同结果转换为统一的 unit、spike 秒时间和通道/模板描述，供下游比较。</div>
   <h3>开始前准备</h3>
   <p>确认 AP 输入、探针几何、坏通道、可用硬件、输出目录和预计磁盘空间。</p>
   <h3>可执行操作与目的</h3>
   <table><thead><tr><th>操作</th><th>怎么做</th><th>目的</th><th>结果</th></tr></thead>
-  <tbody><tr><td><b>选择 sorter</b></td><td>在表中选择 Kilosort4、MountainSort5 或其他已安装后端。</td><td>按探针密度、硬件和研究需求选择算法，而不是只按“能运行”。</td><td>参数区切换到该 sorter 的真实配置，未运行时显示输入预览。</td></tr><tr><td><b>运行所选 sorter</b></td><td>确认弹窗中的数据、sorter、参数和运行位置。</td><td>防止把耗时任务误运行在错误数据或错误配置上。</td><td>保存原生输出、统一结果、版本、参数、日志和诊断图。</td></tr><tr><td><b>查看运行诊断</b></td><td>切换 drift、spike 深度-时间、振幅、模板、相似度和运行日志。</td><td>判断算法是否在整段记录和整个探针上稳定工作。</td><td>得到进入 Unit QC 前的 sorting 证据。</td></tr><tr><td><b>比较 sorter</b></td><td>激活不同结果并运行 unit 匹配与一致度比较。</td><td>识别共识、拆分、合并和仅单一算法发现的 unit。</td><td>真实数据报告 agreement；有 ground truth 的模拟数据才报告 accuracy。</td></tr></tbody></table>
+  <tbody><tr><td><b>选择 sorter</b></td><td>在表中选择 Kilosort4、MountainSort5 或其他已安装后端。</td><td>按探针密度、硬件和研究需求选择算法，不能只看“能运行”。</td><td>参数区切换到该 sorter 的真实配置，未运行时显示输入预览。</td></tr><tr><td><b>运行所选 sorter</b></td><td>确认弹窗中的数据、sorter、参数和运行位置。</td><td>防止把耗时任务误运行在错误数据或错误配置上。</td><td>保存原生输出、统一结果、版本、参数、日志和诊断图。</td></tr><tr><td><b>查看运行诊断</b></td><td>切换 drift、spike 深度-时间、振幅、模板、相似度和运行日志。</td><td>判断算法是否在整段记录和整个探针上稳定工作。</td><td>得到进入 Unit QC 前的 sorting 证据。</td></tr><tr><td><b>比较 sorter</b></td><td>激活不同结果并运行 unit 匹配与一致度比较。</td><td>识别共识、拆分、合并和仅单一算法发现的 unit。</td><td>真实数据报告 agreement；有 ground truth 的模拟数据才报告 accuracy。</td></tr></tbody></table>
   <h3>参数说明</h3>
   <table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
   <tbody><tr><td><code>Sorter</code></td><td>实际执行的 spike sorting 后端。</td><td>Kilosort4</td><td>高密度 Neuropixels 优先评估 Kilosort4；稀疏/tetrode 可比较 CPU sorter。</td><td>不同 sorter 的预处理、检测、聚类和资源需求不同，结果不可视为同一算法的参数变体。</td></tr><tr><td><code>n_chan_bin</code></td><td>Kilosort 二进制文件中的总通道数，包括未用于 sorting 的通道。</td><td>从项目结构读取</td><td>必须与文件物理布局一致；Neuropixels 1.0 常见文件总数为 385。</td><td>错误值会产生重复斜纹或错位热图，应在运行前立即停止。</td></tr><tr><td><code>batch_size</code></td><td>Kilosort 每个批次处理的样本数。</td><td>60,000（30 kHz 时 2 s）</td><td>先用默认；≤64 通道且漂移估计不稳时可增加批次包含的时间。</td><td>更大批次需要更多显存/内存；过短批次用于漂移估计的 spike 更少。</td></tr><tr><td><code>nblocks</code></td><td>漂移校正时沿探针深度分块的数量。</td><td>1（刚性漂移）</td><td>单 shank Neuropixels 可从 1 开始，非刚性漂移可试 5；≤64 通道或稀疏间距约 ≥50 µm 时考虑 0。</td><td>0 跳过漂移校正；分块过多会在 spike 稀少时产生不稳定估计。</td></tr><tr><td><code>Th_universal / Th_learned</code></td><td>通用模板和学习模板的 spike 检测阈值。</td><td>Kilosort4 当前默认</td><td>先用默认；漏检或 unit 时隐时现时每次只降低 1–2，并比较噪声和召回。</td><td>阈值降低会检出更多事件，也会增加噪声和计算量。</td></tr><tr><td><code>tmin / tmax</code></td><td>参与 sorting 的起止秒数。</td><td>整段记录</td><td>只有开头或结尾存在已确认伪迹时裁剪，并在审计记录写明。</td><td>缩短可加快测试，但短片段结果不能代替整段稳定性评估。</td></tr><tr><td><code>duplicate_spike_ms</code></td><td>同一 unit 中过近 spike 被判为重复并移除的窗口。</td><td>Kilosort4 默认</td><td>仅在 ACG 零点附近出现重复峰且波形证据支持时调整；不得超过 0.5 ms。</td><td>过大会破坏不应期和 ACG/CCG 估计。</td></tr></tbody></table>
@@ -161,7 +164,7 @@
   <h3>输入、输出与验收检查</h3>
   <p><b>输入：</b>Spike times、波形、模板和记录时长</p>
   <p><b>输出：</b>放电率、ISI 违例、SNR、标签与复核表</p>
-  <p><b>检查：</b>点击散点查看 unit 指标；阈值是筛选规则，不是生物学真值；保留人工修改记录。</p>
+  <p><b>检查：</b>点击散点查看 unit 指标；阈值仅作为筛选规则；保留人工修改记录。</p>
   <div class="callout next"><b>下一步：</b> 确定下游 unit 集合后，导入行为与 TTL 并建立统一时间轴。</div>
 </section>
 
@@ -218,7 +221,7 @@
 <section id="analysis" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">08</p>
   <h2>神经活动分析工作台</h2>
-  <div class="callout method">神经活动页不是一张固定 PSTH，而是四类可独立运行的分析入口：事件对齐响应、spike train 统计、LFP 频谱/时频，以及 spike-field 耦合。每个子分析都有自己的输入、参数、图和表；未运行时显示输入预览和运行目的，不伪造结果。</div>
+  <div class="callout method">神经活动页提供四类可独立运行的分析入口：事件对齐响应、spike train 统计、LFP 频谱/时频，以及 spike-field 耦合。每个子分析都有自己的输入、参数、图和表；未运行时显示输入预览和运行目的，不伪造结果。</div>
   <h3>开始前准备</h3>
   <p>确认 active units、同步事件、有效 trial；LFP 或耦合分析还需要原始/LFP 电压。</p>
   <h3>可执行操作与目的</h3>
@@ -228,7 +231,7 @@
   <table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
   <tbody><tr><td><code>Alignment event</code></td><td>所有 trial 的时间零点。</td><td>stimulus_onset（取决于事件表）</td><td>按假设选择；刺激、运动、选择和奖励回答不同问题。</td><td>更换事件会改变响应时间解释，不能只挑最显著者。</td></tr><tr><td><code>Window</code></td><td>事件前后截取的时间范围。</td><td>-1 到 +2 s</td><td>覆盖 baseline 和预期响应，同时避免相邻 trial/事件重叠。</td><td>过短漏掉慢响应；过长增加重叠和多重比较。</td></tr><tr><td><code>Bin size</code></td><td>PSTH 或计数特征的时间分箱宽度。</td><td>50 ms</td><td>快速感觉响应可用 5–20 ms；行为/群体趋势常用 20–100 ms，并做敏感性比较。</td><td>小 bin 提高时间分辨率但噪声大；大 bin 平滑响应并降低峰值。</td></tr><tr><td><code>Smoothing</code></td><td>对分箱放电率施加的平滑核与宽度。</td><td>默认最小或关闭</td><td>图示可平滑，统计优先使用未平滑 trial 特征；报告核和宽度。</td><td>平滑越强峰越低、响应越宽，可能制造相邻时间相关。</td></tr><tr><td><code>PSD method</code></td><td>功率谱估计方法和分段设置。</td><td>Welch</td><td>平稳片段从 Welch 开始；报告窗长、重叠、频率分辨率和单位。</td><td>长窗提高频率分辨率但降低时间局部性；短窗相反。</td></tr><tr><td><code>Surrogates</code></td><td>通过时间移位或标签打乱建立机会分布的次数。</td><td>200（演示）</td><td>正式分析通常至少 1,000，尾部 p 值需要更多；固定随机种子。</td><td>次数少运行快但 p 值分辨率低；次数多更稳定但耗时增加。</td></tr></tbody></table>
   <h3>本页每个控件</h3>
-  <dl class="control-list"><dt>Unit 选择</dt><dd>选择一个 unit 后，Raster、PSTH 和摘要同步更新。</dd><dt>Raster</dt><dd>每行一个 trial，每个短线一个 spike，保留试次差异。</dd><dt>PSTH</dt><dd>对 spike 分箱并跨 trial 平均；分箱宽度影响平滑程度。</dd><dt>Spike train 统计</dt><dd>CV2、Lv、Fano、CCH、STTC 和距离回答不同的变异性、相关性或相似性问题。</dd><dt>LFP</dt><dd>PSD、coherence、相位延迟和时频图使用带单位的 Neo 信号与 Elephant/SciPy 计算。</dd><dt>Spike-field</dt><dd>相位锁定必须说明参考频段、相位定义、spike 数和 surrogate 方法。</dd><dt>呼吸案例</dt><dd>只在 NeuroFlow 模拟数据上验证论文方法结构，不复制原图或数值结论。</dd></dl>
+  <dl class="control-list"><dt>Unit 选择</dt><dd>选择一个 unit 后，Raster、PSTH 和摘要同步更新。</dd><dt>Raster</dt><dd>每行一个 trial，每个短线一个 spike，保留试次差异。</dd><dt>PSTH</dt><dd>对 spike 分箱并跨 trial 平均；分箱宽度影响平滑程度。</dd><dt>Spike train 统计</dt><dd>CV2、Lv、Fano、CCH、STTC 和距离回答不同的变异性、相关性或相似性问题。</dd><dt>LFP</dt><dd>PSD、coherence、相位延迟和时频图使用带单位的 Neo 信号与 Elephant/SciPy 计算。</dd><dt>Spike-field</dt><dd>相位锁定必须说明参考频段、相位定义、spike 数和 surrogate 方法。</dd><dt>呼吸案例</dt><dd>只在 NeuroEphys AI 模拟数据上验证论文方法结构，不复制原图或数值结论。</dd></dl>
   <div class="grid-2">
     <article class="panel"><h3>推荐顺序</h3><ol><li>每次只运行一个明确子分析，并在运行前阅读输入和参数摘要。</li><li>图和统计共享同一 trial、窗口和条件定义，但统计不依赖图形平滑。</li><li>保留每个子图对应的数据表，允许单独编辑和导出。</li></ol></article>
     <article class="panel warning-panel"><h3>常见错误</h3><ul><li>未运行新选项时仍显示其他分析的旧图。</li><li>用平滑后的 PSTH 每个时间点直接做大量 t 检验。</li><li>LFP 未抗混叠降采样或 spike-field 使用同一电极造成 spike 泄漏。</li></ul></article>
@@ -243,7 +246,7 @@
 <section id="statistics" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">09</p>
   <h2>从图到统计证据</h2>
-  <div class="callout method">统计页从“样本是什么”开始，而不是从检验名称开始。trial 嵌套于 session，unit 嵌套于动物；配对、重复测量和层级结构决定了哪些比较合法。页面同时报告效应量、置信区间和多重比较处理，不把 p 值作为唯一结论。</div>
+  <div class="callout method">统计页先定义“样本是什么”，随后选择检验。trial 嵌套于 session，unit 嵌套于动物；配对、重复测量和层级结构决定了哪些比较合法。页面同时报告效应量、置信区间和多重比较处理，不把 p 值作为唯一结论。</div>
   <h3>开始前准备</h3>
   <p>准备未平滑的 trial 级指标、条件、unit/session/animal 标识和排除规则。</p>
   <h3>可执行操作与目的</h3>
@@ -268,7 +271,7 @@
 <section id="decoding" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">10</p>
   <h2>机器学习、聚类与数据泄漏</h2>
-  <div class="callout method">机器学习页把神经活动转换为 trial × feature 矩阵，并把预处理、特征选择和模型全部放入交叉验证内部。核心不是寻找最高分，而是建立没有数据泄漏、与 shuffle 基线比较、能跨 session/动物泛化的评估。</div>
+  <div class="callout method">机器学习页把神经活动转换为 trial × feature 矩阵，并把预处理、特征选择和模型全部放入交叉验证内部。核心目标是建立没有数据泄漏、与 shuffle 基线比较、能跨 session/动物泛化的评估。</div>
   <h3>开始前准备</h3>
   <p>确定预测目标、特征时间窗、分组变量、类别平衡和最小样本量。</p>
   <h3>可执行操作与目的</h3>
@@ -280,7 +283,7 @@
   <h3>本页每个控件</h3>
   <dl class="control-list"><dt>任务与模型</dt><dd>选择分类或回归算法；选择后只有点击运行才会训练。</dd><dt>交叉验证</dt><dd>每折只用训练数据拟合预处理，测试折用于独立评价。</dd><dt>置换基线</dt><dd>打乱标签形成零假设分布，用于判断模型是否超过偶然水平。</dd><dt>PCA/聚类</dt><dd>用于探索群体结构，不自动提供科学因果解释。</dd></dl>
   <div class="grid-2">
-    <article class="panel"><h3>推荐顺序</h3><ol><li>先建立线性基线，再比较复杂模型。</li><li>模型、特征选择、缩放和超参数搜索全部封装在验证循环内。</li><li>报告每折分数、shuffle 分布和跨组泛化，而不是一个最高分。</li></ol></article>
+    <article class="panel"><h3>推荐顺序</h3><ol><li>先建立线性基线，再比较复杂模型。</li><li>模型、特征选择、缩放和超参数搜索全部封装在验证循环内。</li><li>报告每折分数、shuffle 分布和跨组泛化，避免只报告一个最高分。</li></ol></article>
     <article class="panel warning-panel"><h3>常见错误</h3><ul><li>同一 session 的相邻 trial 同时进入训练和测试。</li><li>用全数据选择神经元后再交叉验证。</li><li>比较多个模型后只展示最高结果，不披露选择过程。</li></ul></article>
   </div>
   <h3>输入、输出与验收检查</h3>
@@ -301,7 +304,7 @@
   <tbody><tr><td><b>编辑当前图</b></td><td>双击坐标轴或打开 Figure Studio，修改对象级样式。</td><td>在不重算数据的前提下完成论文版式。</td><td>修改线、点、柱、热图、文字、坐标、刻度、网格和图例。</td></tr><tr><td><b>单独保存子图</b></td><td>从图表面板选择子图，设置精确尺寸并导出。</td><td>避免整页截图造成分辨率和排版问题。</td><td>输出 PNG、SVG 或 PDF，并保留背景和字体设置。</td></tr><tr><td><b>导出数据与统计表</b></td><td>保存当前图背后的 x/y/分组数据和完整统计结果。</td><td>让读者能从图回到数值，并允许在外部软件复核。</td><td>输出 CSV/JSON 表和来源索引。</td></tr><tr><td><b>保存/恢复项目</b></td><td>点击保存项目，之后从首页打开 neuroflow_project.json。</td><td>恢复数据来源、工作流状态、sorter 结果、分析表和审计日志。</td><td>重新打开后定位到上次保存页面，已完成节点可直接查看。</td></tr></tbody></table>
   <h3>参数说明</h3>
   <table class="parameter-table"><thead><tr><th>参数</th><th>含义</th><th>默认值</th><th>推荐设置</th><th>改变后的影响</th></tr></thead>
-  <tbody><tr><td><code>Format</code></td><td>图像文件类型。</td><td>PNG + SVG</td><td>PNG 用于快速预览；SVG/PDF 用于矢量编辑和出版。</td><td>栅格格式受 DPI 限制；矢量格式保留线和文字对象。</td></tr><tr><td><code>Figure size</code></td><td>输出宽度和高度。</td><td>按当前图</td><td>按期刊单栏/双栏毫米尺寸设置，再检查最长标签是否溢出。</td><td>尺寸改变会影响文字相对大小和 panel 间距。</td></tr><tr><td><code>DPI</code></td><td>栅格输出每英寸像素数。</td><td>300</td><td>线图 300–600 DPI；显微/热图按期刊要求和原始分辨率。</td><td>DPI 越高文件越大，但不能增加原始数据分辨率。</td></tr><tr><td><code>Axis/grid/spine</code></td><td>坐标轴线宽、长度、刻度、网格和边框显示。</td><td>NeuroFlow 标准主题</td><td>按图类型调整并保持同一 Figure 内一致；不要用装饰网格掩盖数据。</td><td>粗线提高可见性但会压缩小 panel；网格过强会与数据竞争。</td></tr><tr><td><code>Project source mode</code></td><td>项目使用外部只读索引还是内部原始副本。</td><td>取决于导入选择</td><td>长期归档前检查所有外部路径；需要独立移动时复制原始数据或使用可访问共享路径。</td><td>清单始终可打开，但外部源丢失后依赖原始电压的步骤不能重跑。</td></tr></tbody></table>
+  <tbody><tr><td><code>Format</code></td><td>图像文件类型。</td><td>PNG + SVG</td><td>PNG 用于快速预览；SVG/PDF 用于矢量编辑和出版。</td><td>栅格格式受 DPI 限制；矢量格式保留线和文字对象。</td></tr><tr><td><code>Figure size</code></td><td>输出宽度和高度。</td><td>按当前图</td><td>按期刊单栏/双栏毫米尺寸设置，再检查最长标签是否溢出。</td><td>尺寸改变会影响文字相对大小和 panel 间距。</td></tr><tr><td><code>DPI</code></td><td>栅格输出每英寸像素数。</td><td>300</td><td>线图 300–600 DPI；显微/热图按期刊要求和原始分辨率。</td><td>DPI 越高文件越大，但不能增加原始数据分辨率。</td></tr><tr><td><code>Axis/grid/spine</code></td><td>坐标轴线宽、长度、刻度、网格和边框显示。</td><td>NeuroEphys AI 标准主题</td><td>按图类型调整并保持同一 Figure 内一致；不要用装饰网格掩盖数据。</td><td>粗线提高可见性但会压缩小 panel；网格过强会与数据竞争。</td></tr><tr><td><code>Project source mode</code></td><td>项目使用外部只读索引还是内部原始副本。</td><td>取决于导入选择</td><td>长期归档前检查所有外部路径；需要独立移动时复制原始数据或使用可访问共享路径。</td><td>清单始终可打开，但外部源丢失后依赖原始电压的步骤不能重跑。</td></tr></tbody></table>
   <h3>本页每个控件</h3>
   <dl class="control-list"><dt>图形设置</dt><dd>修改当前图的标题、坐标、范围和网格。</dd><dt>SVG/PDF/PNG</dt><dd>SVG/PDF 保留矢量元素；PNG 用于快速预览。</dd><dt>CSV 与 Methods</dt><dd>同时导出绘图数据、统计表、参数、版本和方法草稿。</dd><dt>项目清单</dt><dd>记录来源和执行状态，使结果能回到对应输入与参数。</dd></dl>
   <div class="grid-2">
@@ -315,7 +318,7 @@
   <div class="callout next"><b>下一步：</b> 完成复现包后仍由研究者负责科学解释、论文组织和最终数据共享决定。</div>
 </section>
 
-        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+        <footer class="footer">NeuroEphys AI · 原创说明文字，方法来源逐项标注</footer>
       </main>
     </div>
     <script src="../app.js?v=0.8.0"></script>

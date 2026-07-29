@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Unit 人工复核 · NeuroEphys AI</title>
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroEphys AI <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/unit-curation.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a class="active" href="unit-curation.html">Unit 人工复核</a>
+<a href="ai-assistant.html">AI 助手</a>
+<a href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a href="provenance.html">中间产物与溯源</a>
+<a href="real-data-validation.html">真实数据验证</a>
+<a href="troubleshooting.html">故障排查</a>
+<a href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroEphys AI 操作手册</p>
+          <h1>Unit 人工复核</h1>
+          <p class="lead">每个sorter输出的cluster均先视为候选。人工复核记录保留、排除或暂缓决定所依据的证据，同时保留sorter原始输出。</p>
+        </div>
+
+<section data-searchable>
+  <h2>为什么需要人工复核</h2>
+  <p>Kilosort4、MountainSort5、SpyKING CIRCUS 2等工具采用不同检测与聚类策略，候选unit数量可能不同。算法一致度反映可复现性，无法直接等同于生物学真值；人工复核负责按实验室规则审查证据。</p>
+</section>
+<section data-searchable>
+  <h2>复核步骤</h2>
+  <ol class="steps"><li>激活需要复核的sorter结果，然后进入“Unit质控”。</li><li>选择一个unit，查看波形、自相关图、ISI违例、放电率、SNR、振幅随时间变化和可用的sorter诊断。</li><li>检查波形在时间和通道上的一致性；突变、截断或不合理形状需要进一步核查。</li><li>检查不应期证据；单一阈值无法独立决定unit身份。</li><li>查看整段记录的振幅和放电率稳定性；短片段可能掩盖漂移或记录中断。</li><li>比较邻近或高度相似cluster，检查重复、错误拆分和错误合并。</li><li>选择标签，完成证据清单，填写专家备注并保存。</li><li>逐个复核需要保留的候选；导出包含复核人、时间、指标快照、sorter和来源run的决定表。</li></ol>
+  <img class="product-shot" src="../assets/neuroephys-ai-unit-curation.png" alt="NeuroEphys AI manual unit curation workspace">
+</section>
+<section data-searchable>
+  <h2>可选标签</h2>
+  <table><thead><tr><th>标签</th><th>使用条件</th></tr></thead>
+  <tbody><tr><td><b>候选单神经元</b></td><td>波形、不应期、稳定性与隔离证据支持单神经元使用；最终纳入仍应遵循研究方案。</td></tr><tr><td><b>多单元活动</b></td><td>存在生物放电，但与邻近神经元的分离证据不足。</td></tr><tr><td><b>噪声</b></td><td>cluster主要由伪迹、电噪声或无效波形结构构成。</td></tr><tr><td><b>不确定</b></td><td>证据不完整或相互冲突，保留该unit供后续继续检查。</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>通用证据与工具特有证据</h2>
+  <p>标签与证据清单对sorter通用。每个结果仍保留原生诊断：Kilosort模板、振幅、深度-时间图、漂移和污染字段持续可见；其他sorter保留各自原生文件。复杂的拆分/合并可以在Phy等专用工具中完成，再通过sorting结果适配器导回。</p>
+  <ul class="source-list">
+    <li><a href="https://kilosort.readthedocs.io/en/stable/README.html">Kilosort4: manual curation with Phy</a></li>
+    <li><a href="https://spikeinterface.readthedocs.io/en/stable/modules/metrics/quality_metrics.html">SpikeInterface quality metrics</a></li>
+    <li><a href="https://phy.readthedocs.io/en/latest/quickstart/">Phy manual clustering guide</a></li>
+  </ul>
+</section>
+
+        <footer class="footer">NeuroEphys AI · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.8.0"></script>
+  </body>
+</html>

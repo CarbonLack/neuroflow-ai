@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Real-data validation · NeuroEphys AI</title>
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
+      <a class="brand" href="index.html">NeuroEphys AI <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="zh" href="../zh/real-data-validation.html">Chinese</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Getting started</div>
+<a href="index.html">Overview</a>
+<a href="installation.html">Installation and runtime</a>
+<a href="gui-guide.html">Interface and basic operation</a>
+<div class="sidebar-label">Tutorials</div>
+<a href="tutorials.html">Complete step-by-step tutorial</a>
+<a href="data-inputs.html">Import your own data</a>
+<div class="sidebar-label">Guides</div>
+<a href="sorting.html">Spike sorting guide</a>
+<a href="unit-curation.html">Manual unit curation</a>
+<a href="ai-assistant.html">AI assistant</a>
+<a href="parameters.html">Parameter reference</a>
+<a href="figure-studio.html">Figure editing and export</a>
+<div class="sidebar-label">Reference</div>
+<a href="provenance.html">Artifacts and provenance</a>
+<a class="active" href="real-data-validation.html">Real-data validation</a>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="sources.html">Methods and sources</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroEphys AI operation manual</p>
+          <h1>Real-data validation</h1>
+          <p class="lead">A locally supplied 32-contact microwire recording was used to verify direct Open Ephys import, full-duration sorting recovery, behavior synchronization, downstream analysis, export, and project reload. The source data are not distributed.</p>
+        </div>
+
+<section data-searchable>
+  <h2>Verified chain</h2>
+  <table><thead><tr><th>Stage</th><th>Result</th></tr></thead>
+  <tbody><tr><td><b>Recording</b></td><td>32 independent microwires, 30 kHz, 7,497.489 s, externally referenced during acquisition.</td></tr><tr><td><b>Acquisition preprocessing</b></td><td>250–8,000 Hz online filtering. LFP, low-frequency spectra, and spike-field coupling are blocked.</td></tr><tr><td><b>Raw QC</b></td><td>99.21875/100. No channels were removed from the configured 1–32 selection.</td></tr><tr><td><b>Kilosort4</b></td><td>Version 4.1.7, nblocks=0, thresholds 9/8, 12 candidate units, 2,195,626 spikes. Internal runtime 1,870.35 s; wrapper runtime 2,096.54 s.</td></tr><tr><td><b>Behavior and synchronization</b></td><td>4,654 MED-PC events; 744/744 synchronization anchors matched. Action-start analysis used event codes 17 and 19, 168 events total.</td></tr><tr><td><b>Statistics and decoding</b></td><td>Outputs were generated as technical validation. The decoding result must not be interpreted as a biological claim.</td></tr><tr><td><b>Project recovery</b></td><td>Saved project was reloaded, existing Kilosort arrays were reused, downstream outputs and artifact indexes were regenerated.</td></tr><tr><td><b>Manual review status</b></td><td>All 12 clusters remain candidates until waveform, refractory, stability, duplication, and sorter evidence have been reviewed.</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>Sorter sensitivity and comparison</h2>
+  <p>A separate 30-minute Kilosort run produced four candidates at thresholds 9/8 and five candidates at 6/5. MountainSort5, SpyKING CIRCUS 2, and Tridesclous 2 produced different candidate counts on the same segment. These differences trigger manual review and sorter-agreement analysis; they do not establish the neuron count.</p>
+</section>
+<section data-searchable>
+  <h2>Scientific limits</h2>
+  <ul class="checks">
+    <li>The verbal report of eight cells is stored as an unverified external observation and cannot serve as ground truth.</li>
+    <li>Online high-pass filtering prevents recovery of true low-frequency activity.</li>
+    <li>Event codes 21 and 22 were coincident in this recording; codes 17 and 19 supplied the distinct action-start comparison.</li>
+    <li>Single-session decoding can reflect session structure and requires independent replication.</li>
+  </ul>
+</section>
+
+        <footer class="footer">NeuroEphys AI · Original explanatory text with cited method sources</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.8.0"></script>
+  </body>
+</html>

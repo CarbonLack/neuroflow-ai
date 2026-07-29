@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Intermediate artifacts and provenance · NeuroEphys AI</title>
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
+      <a class="brand" href="index.html">NeuroEphys AI <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="zh" href="../zh/provenance.html">Chinese</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Getting started</div>
+<a href="index.html">Overview</a>
+<a href="installation.html">Installation and runtime</a>
+<a href="gui-guide.html">Interface and basic operation</a>
+<div class="sidebar-label">Tutorials</div>
+<a href="tutorials.html">Complete step-by-step tutorial</a>
+<a href="data-inputs.html">Import your own data</a>
+<div class="sidebar-label">Guides</div>
+<a href="sorting.html">Spike sorting guide</a>
+<a href="unit-curation.html">Manual unit curation</a>
+<a href="ai-assistant.html">AI assistant</a>
+<a href="parameters.html">Parameter reference</a>
+<a href="figure-studio.html">Figure editing and export</a>
+<div class="sidebar-label">Reference</div>
+<a class="active" href="provenance.html">Artifacts and provenance</a>
+<a href="real-data-validation.html">Real-data validation</a>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="sources.html">Methods and sources</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroEphys AI operation manual</p>
+          <h1>Intermediate artifacts and provenance</h1>
+          <p class="lead">Each completed stage produces readable tables, figures, structured audit records, and machine-verifiable artifact links. These records also form the evidence available to AI.</p>
+        </div>
+
+<section data-searchable>
+  <h2>Project evidence layers</h2>
+  <table><thead><tr><th>Output</th><th>Recorded content</th></tr></thead>
+  <tbody><tr><td><code>structured_runs.jsonl</code></td><td>One record per run: stage, input, selected channels, segment, tool/version, parameters, start/end, status, warnings, error, recovery, and outputs.</td></tr><tr><td><code>artifact_manifest.json</code></td><td>One record per artifact: ID, stage, source run, relative path, type, size, checksum, parameters, and input references.</td></tr><tr><td><code>workflow.json</code></td><td>Current workflow nodes, state, selected tools, and saved parameters.</td></tr><tr><td><code>provenance.json</code></td><td>Environment, project metadata, analysis settings, results summary, warnings, and output relationships.</td></tr><tr><td><code>CSV tables</code></td><td>Unit metrics, event/trial tables, statistics, decoding, sorter comparisons, and plotted data.</td></tr><tr><td><code>PNG/SVG figures</code></td><td>Review image plus editable vector output, linked to the same stage and parameters.</td></tr><tr><td><code>native sorter folders</code></td><td>Unmodified sorter-native arrays, logs, templates, and diagnostics.</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>How AI uses intermediate data</h2>
+  <ol class="steps">
+    <li>Local analysis writes the scientific result and provenance first.</li>
+    <li>The context builder selects compact fields such as metrics, status, warnings, parameters, and artifact IDs.</li>
+    <li>Paths, identities, raw arrays, and large binary content are removed.</li>
+    <li>The user reviews the exact online payload and can remove optional fields.</li>
+    <li>An AI answer cites the run and artifact evidence available in the project.</li>
+  </ol>
+</section>
+<section data-searchable>
+  <h2>Recovery rule</h2>
+  <p>Project files store links to every completed stage. Reopening restores the active page, source links, channel selection, sorter results, curation decisions, behavior mapping, statistics, figures, AI conversation, approved workflow, and audit history. Missing linked source data disables only the stages that need that source.</p>
+</section>
+
+        <footer class="footer">NeuroEphys AI · Original explanatory text with cited method sources</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.8.0"></script>
+  </body>
+</html>

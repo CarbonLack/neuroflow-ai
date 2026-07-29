@@ -6,6 +6,7 @@ from PySide6.QtGui import QFont
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
+from neuroflow.ai_tools import AIMode
 from neuroflow.analysis import (
     compute_unit_metrics,
     match_ground_truth,
@@ -29,6 +30,7 @@ from neuroflow.ui import (
     PublicExampleDialog,
     TutorialDialog,
 )
+from neuroflow.unit_curation_ui import UnitCurationDialog
 
 
 def _capture(window, path: Path) -> None:
@@ -56,8 +58,15 @@ def main() -> int:
     new_project.show()
     _capture(new_project, output / "neuroflow-new-project.png")
     new_project.close()
+    documents = Path.home() / "Documents"
+    preferred_workspace = documents / "NeuroEphysAI"
+    legacy_workspace = documents / "NeuroFlow"
     public_examples = PublicExampleDialog(
-        Path.home() / "Documents" / "NeuroFlow",
+        (
+            preferred_workspace
+            if preferred_workspace.exists() or not legacy_workspace.exists()
+            else legacy_workspace
+        ),
         window,
         "en_US",
     )
@@ -90,7 +99,7 @@ def main() -> int:
         {
             "sorter": "Kilosort4",
             "version": "4.1.7",
-            "backend": "Native NeuroFlow adapter",
+            "backend": "Native NeuroEphys AI adapter",
         },
     )
     register_sorting_result(
@@ -112,6 +121,9 @@ def main() -> int:
     run_statistical_suite(state)
     synchronize_existing_events(state)
     window._load_state(state)
+    window.project_label.setText(
+        "NeuroEphys AI demonstration project  ·  local path hidden"
+    )
     window.preview = preview
     window.matches = match_ground_truth(state.ground_truth, state.sorted_spikes)
     window._select_step("sorting")
@@ -152,13 +164,24 @@ def main() -> int:
     _capture(tutorial, output / "neuroflow-tutorial.png")
     tutorial.close()
 
+    window._select_step("unit_qc")
+    curation = UnitCurationDialog(state, "en_US", parent=window)
+    curation.show()
+    _capture(curation, output / "neuroephys-ai-unit-curation.png")
+    curation.close()
+
     window._open_ai_assistant()
     ai_dialog = window.ai_dialog
     if ai_dialog is not None:
-        ai_dialog.settings.api_key = "documentation-preview-key"
-        ai_dialog.settings.model = "gpt-5.6-terra"
+        ai_dialog.settings.api_key = "preview-credential-not-saved"
+        ai_dialog.settings.provider = "deepseek"
+        ai_dialog.settings.base_url = "https://api.deepseek.com"
+        ai_dialog.settings.model = "deepseek-v4-flash"
+        ai_dialog.settings.mode = AIMode.COLLABORATIVE.value
+        mode_index = ai_dialog.mode_combo.findData(AIMode.COLLABORATIVE.value)
+        ai_dialog.mode_combo.setCurrentIndex(mode_index)
         ai_dialog.question_edit.setPlainText(
-            "Review the current project and propose the safest next analysis stage."
+            "Review the active sorter result and propose the next evidence-producing step."
         )
         ai_dialog._append_message(
             "assistant",
@@ -187,6 +210,13 @@ def main() -> int:
             },
         ]
         ai_dialog.current_next_stage = "unit_qc"
+        ai_dialog.current_tool_calls = [
+            {
+                "name": "compute_unit_qc",
+                "arguments": {},
+                "reason": "Refresh common metrics before manual curation.",
+            }
+        ]
         ai_dialog._refresh_status()
         ai_dialog._render_plan()
         _capture(ai_dialog, output / "neuroflow-ai-assistant.png")

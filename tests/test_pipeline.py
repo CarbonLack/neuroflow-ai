@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 
 from neuroflow.analysis import (
+    _positive_lag_acg_counts,
     compute_unit_metrics,
     event_aligned_analysis,
     match_ground_truth,
@@ -18,6 +19,7 @@ from neuroflow.data_import import (
     import_nwb_units,
 )
 from neuroflow.decoding import run_decoding_suite
+from neuroflow.figures import behavior_figure, event_analysis_figure
 from neuroflow.models import ProjectState
 from neuroflow.project import load_project, save_project
 from neuroflow.public_examples import (
@@ -27,6 +29,7 @@ from neuroflow.public_examples import (
 )
 from neuroflow.simulation import generate_demo_recording
 from neuroflow.statistics import adjust_pvalues, run_statistical_suite
+from neuroflow.sorting import _attach_probe
 
 
 def test_simulation_and_qc(tmp_path: Path):
@@ -52,6 +55,46 @@ def test_ground_truth_matching():
     assert match["f1"] == 1.0
 
 
+def test_positive_lag_acg_matches_pairwise_histogram():
+    spikes = np.array([0.0, 0.0005, 0.0015, 0.003, 0.050, 0.0505])
+    edges_ms = np.arange(0.0, 6.0, 1.0)
+    observed = _positive_lag_acg_counts(spikes, edges_ms)
+    pairwise_ms = (
+        spikes[np.newaxis, :] - spikes[:, np.newaxis]
+    )[np.triu_indices(len(spikes), k=1)] * 1_000.0
+    expected, _ = np.histogram(pairwise_ms, bins=edges_ms)
+    np.testing.assert_array_equal(observed, expected)
+
+
+def test_sorter_probe_keeps_independent_contacts_separate(tmp_path: Path):
+    import spikeinterface as si
+
+    recording = si.NumpyRecording(
+        np.zeros((100, 4), dtype=np.int16),
+        sampling_frequency=30_000.0,
+    )
+    state = ProjectState(
+        name="independent wires",
+        root=tmp_path,
+        sampling_rate=30_000.0,
+        channel_count=4,
+        duration_seconds=100 / 30_000.0,
+        dtype="int16",
+        metadata={
+            "probe": {
+                "geometry_mode": "independent_contacts",
+                "contact_count": 4,
+            }
+        },
+    )
+
+    attached = _attach_probe(recording, state)
+    probe = attached.get_probe()
+
+    np.testing.assert_allclose(probe.contact_positions[:, 0], [0, 1000, 2000, 3000])
+    assert len(np.unique(probe.shank_ids)) == 4
+
+
 def test_event_analysis(tmp_path: Path):
     state = generate_demo_recording(
         tmp_path / "project",
@@ -63,6 +106,162 @@ def test_event_analysis(tmp_path: Path):
     result = event_aligned_analysis(state)
     assert result["population_z"].shape[0] == len(state.ground_truth)
     assert len(result["units"]) == len(state.ground_truth)
+
+
+def test_real_event_figures_use_event_semantics_and_localized_conditions(
+    tmp_path: Path,
+):
+    state = generate_demo_recording(
+        tmp_path / "event_figures",
+        duration_seconds=6.0,
+        channel_count=16,
+        sampling_rate=10_000.0,
+    )
+    state.metadata["language"] = "zh_CN"
+    state.sorted_spikes = state.ground_truth
+    state.events = [
+        {
+            "time_seconds": time_seconds,
+            "event_code": event_code,
+            "condition": condition,
+            "label": label,
+            "zh_label": zh_label,
+            "analysis_role": "task_event",
+        }
+        for time_seconds, event_code, condition, label, zh_label in [
+            (1.0, 17, "left_lever_start", "Left lever start", "左杆开始"),
+            (2.0, 19, "right_lever_start", "Right lever start", "右杆开始"),
+            (3.0, 17, "left_lever_start", "Left lever start", "左杆开始"),
+            (4.0, 19, "right_lever_start", "Right lever start", "右杆开始"),
+        ]
+    ]
+    event_aligned_analysis(state, event_codes=[17, 19])
+
+    event_figure = event_analysis_figure(state)
+    legend = [text.get_text() for text in event_figure.axes[1].get_legend().texts]
+    assert event_figure.axes[0].get_ylabel() == "事件序号"
+    assert legend == ["左杆开始 (n=2)", "右杆开始 (n=2)"]
+    assert event_figure.axes[3].get_title(loc="left").startswith("事件后效应")
+
+    behavior = behavior_figure(state)
+    assert behavior.axes[1].get_ylabel() == ""
+
+
+def test_unit_qc_keeps_full_metrics_but_caps_plot_payload(tmp_path: Path):
+    state = ProjectState(
+        root=tmp_path / "large_unit_qc",
+        sampling_rate=30_000,
+        duration_seconds=1_800,
+        channel_count=32,
+    )
+    spikes = np.linspace(0.1, 1_799.9, 50_001)
+    state.sorted_spikes = {7: spikes}
+
+    metrics = compute_unit_metrics(state)
+    diagnostic = state.unit_diagnostics[7]
+
+    assert metrics[0]["spike_count"] == 50_001
+    assert diagnostic["isi_total_count"] == 50_000
+    assert diagnostic["isi_plot_sampled"] is True
+    assert len(diagnostic["isi_ms"]) == 20_000
+
+
+def test_linear_acg_matches_original_bin_definition():
+    spikes = np.array(
+        [0.0, 0.0005, 0.001, 0.007, 0.049, 0.050, 0.0505, 0.099]
+    )
+    edges_ms = np.arange(0.0, 51.0, 1.0)
+    expected = np.asarray(
+        [
+            np.sum(
+                np.searchsorted(
+                    spikes,
+                    spikes + upper_ms / 1_000.0,
+                    side="left",
+                )
+                - np.searchsorted(
+                    spikes,
+                    spikes + lower_ms / 1_000.0,
+                    side="left",
+                )
+            )
+            for lower_ms, upper_ms in zip(edges_ms[:-1], edges_ms[1:])
+        ],
+        dtype=int,
+    )
+    expected[0] -= len(spikes)
+
+    actual = _positive_lag_acg_counts(spikes, edges_ms)
+
+    assert np.array_equal(actual, expected)
+
+
+def test_event_analysis_filters_sync_and_out_of_bounds_events(tmp_path: Path):
+    state = generate_demo_recording(
+        tmp_path / "project",
+        duration_seconds=6.0,
+        channel_count=16,
+        sampling_rate=10_000.0,
+    )
+    state.sorted_spikes = state.ground_truth
+    state.events = [
+        {
+            "time_seconds": 1.0,
+            "condition": "sync",
+            "event_code": 11,
+            "analysis_role": "synchronization",
+        },
+        {
+            "time_seconds": 2.0,
+            "condition": "code_1",
+            "event_code": 1,
+            "analysis_role": "task_event",
+        },
+        {
+            "time_seconds": 3.0,
+            "condition": "code_3",
+            "event_code": 3,
+            "analysis_role": "task_event",
+        },
+        {
+            "time_seconds": 5.8,
+            "condition": "code_1",
+            "event_code": 1,
+            "analysis_role": "task_event",
+        },
+    ]
+    result = event_aligned_analysis(state, event_codes=[1, 3])
+    assert result["selected_event_count"] == 2
+    assert result["selected_event_codes"] == [1, 3]
+    assert result["event_filter"]["excluded_counts"]["synchronization"] == 1
+    assert result["event_filter"]["excluded_counts"]["outside_recording"] == 1
+
+
+def test_event_analysis_flags_coincident_condition_timestamps(tmp_path: Path):
+    state = generate_demo_recording(
+        tmp_path / "coincident_conditions",
+        duration_seconds=6.0,
+        channel_count=8,
+        sampling_rate=10_000.0,
+    )
+    state.sorted_spikes = state.ground_truth
+    state.events = [
+        {
+            "time_seconds": event_time,
+            "condition": condition,
+            "event_code": code,
+            "analysis_role": "task_event",
+        }
+        for event_time in (1.0, 2.0, 3.0, 4.0)
+        for condition, code in (("left_on", 21), ("right_on", 22))
+    ]
+
+    result = event_aligned_analysis(state, event_codes=[21, 22])
+
+    diagnostics = result["condition_diagnostics"]
+    assert diagnostics["valid_for_condition_comparison"] is False
+    assert diagnostics["pairwise_timestamp_overlap"][0]["overlap_fraction"] == 1.0
+    assert diagnostics["warnings"]
 
 
 def test_binary_import_and_project_roundtrip(tmp_path: Path):
@@ -121,6 +320,38 @@ def test_project_roundtrip_restores_results_and_resume_stage(tmp_path: Path):
     assert restored.analysis["time"] == [-0.1, 0.0, 0.1]
     assert restored.statistics["rows"][0]["p_value"] == 0.04
     assert "Preprocessing completed" in restored.run_log
+
+
+def test_project_restore_does_not_recompute_event_analysis(tmp_path: Path):
+    state = ProjectState(
+        root=tmp_path / "analysis_restore",
+        sampling_rate=30_000,
+        channel_count=2,
+        duration_seconds=10.0,
+    )
+    state.sorted_spikes = {0: np.array([1.0, 2.0])}
+    state.events = [
+        {"time_seconds": 2.0, "event_code": 21, "condition": "left_lever_on"},
+        {"time_seconds": 4.0, "event_code": 22, "condition": "right_lever_on"},
+    ]
+    state.analysis = {
+        "selected_event_codes": [21, 22],
+        "condition_labels": ["left_lever_on", "right_lever_on"],
+        "window": [-0.5, 1.0],
+        "bin_size": 0.025,
+        "units": {},
+    }
+    state.statistics = {"status": "completed"}
+
+    restored = load_project(save_project(state))
+
+    assert restored.analysis["selected_event_codes"] == [21, 22]
+    assert restored.analysis["condition_labels"] == [
+        "left_lever_on",
+        "right_lever_on",
+    ]
+    assert restored.analysis["window"] == [-0.5, 1.0]
+    assert restored.analysis["bin_size"] == 0.025
 
 
 def test_kilosort_and_ibl_alf_imports(tmp_path: Path):

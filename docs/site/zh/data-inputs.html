@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>导入自己的数据 · NeuroFlow</title>
+    <title>导入自己的数据 · NeuroEphys AI</title>
     <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
       <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>操作手册</small></a>
+      <a class="brand" href="index.html">NeuroEphys AI <small>操作手册</small></a>
       <input class="search" data-doc-search type="search" placeholder="搜索本页">
       <div class="topbar-actions">
         <a class="language-button language-link" data-language-link="en" href="../en/data-inputs.html">英文</a>
@@ -26,16 +26,19 @@
 <a class="active" href="data-inputs.html">导入自己的数据</a>
 <div class="sidebar-label">专项指南</div>
 <a href="sorting.html">Spike sorting 指南</a>
+<a href="unit-curation.html">Unit 人工复核</a>
 <a href="ai-assistant.html">AI 助手</a>
 <a href="parameters.html">参数参考</a>
 <a href="figure-studio.html">图形编辑与导出</a>
 <div class="sidebar-label">参考资料</div>
+<a href="provenance.html">中间产物与溯源</a>
+<a href="real-data-validation.html">真实数据验证</a>
 <a href="troubleshooting.html">故障排查</a>
 <a href="sources.html">方法与来源</a>
       </aside>
       <main class="content">
         <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroFlow 操作手册</p>
+          <p class="eyebrow">NeuroEphys AI 操作手册</p>
           <h1>导入自己的数据</h1>
           <p class="lead">先创建项目，再按手中真实文件选择入口。含原始电压的数据与只有处理后 unit 的数据会从不同阶段进入工作流。</p>
         </div>
@@ -55,10 +58,10 @@
   <pre><code>trial,time_seconds,event_type,condition,choice,reaction_time
 1,12.450,stimulus_onset,A,left,0.620
 1,13.070,response,A,left,0.620</code></pre>
-  <p>另一个 TTL CSV 可提供电生理时钟中的脉冲时间。NeuroFlow 会匹配脉冲序列，并报告起始偏移、漂移、残差和缺失事件。</p>
+  <p>另一个 TTL CSV 可提供电生理时钟中的脉冲时间。NeuroEphys AI 会匹配脉冲序列，并报告起始偏移、漂移、残差和缺失事件。</p>
 </section>
 
-        <footer class="footer">NeuroFlow · 原创说明文字，方法来源逐项标注</footer>
+        <footer class="footer">NeuroEphys AI · 原创说明文字，方法来源逐项标注</footer>
       </main>
     </div>
     <script src="../app.js?v=0.8.0"></script>

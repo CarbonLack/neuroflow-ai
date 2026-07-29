@@ -20,3 +20,5 @@ mountainsort5==0.5.9
 isosplit6==0.1.4
 ONE-api==3.4.1
 mplcursors==0.7.1
+jsonschema==4.25.1
+keyring==25.6.0

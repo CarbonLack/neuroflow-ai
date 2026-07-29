@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Methods and sources · NeuroFlow</title>
+    <title>Methods and sources · NeuroEphys AI</title>
     <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
       <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <a class="brand" href="index.html">NeuroEphys AI <small>Documentation</small></a>
       <input class="search" data-doc-search type="search" placeholder="Search this page">
       <div class="topbar-actions">
         <a class="language-button language-link" data-language-link="zh" href="../zh/sources.html">Chinese</a>
@@ -26,31 +26,34 @@
 <a href="data-inputs.html">Import your own data</a>
 <div class="sidebar-label">Guides</div>
 <a href="sorting.html">Spike sorting guide</a>
+<a href="unit-curation.html">Manual unit curation</a>
 <a href="ai-assistant.html">AI assistant</a>
 <a href="parameters.html">Parameter reference</a>
 <a href="figure-studio.html">Figure editing and export</a>
 <div class="sidebar-label">Reference</div>
+<a href="provenance.html">Artifacts and provenance</a>
+<a href="real-data-validation.html">Real-data validation</a>
 <a href="troubleshooting.html">Troubleshooting</a>
 <a class="active" href="sources.html">Methods and sources</a>
       </aside>
       <main class="content">
         <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroFlow operation manual</p>
+          <p class="eyebrow">NeuroEphys AI operation manual</p>
           <h1>Methods and sources</h1>
-          <p class="lead">NeuroFlow reuses established open-source computation and writes original interface, interoperability, tutorial, and audit layers. The summaries below are original paraphrases, not copied documentation.</p>
+          <p class="lead">NeuroEphys AI reuses established open-source computation and writes original interface, interoperability, tutorial, and audit layers. The summaries below are original paraphrases, not copied documentation.</p>
         </div>
 
 <section data-searchable>
   <h2>Attribution table</h2>
-  <table><thead><tr><th>Source</th><th>How NeuroFlow uses it</th></tr></thead>
-  <tbody><tr><td><a href="https://kilosort.readthedocs.io/en/latest/">Kilosort4 documentation</a></td><td>Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial.</td></tr><tr><td><a href="https://kilosort.readthedocs.io/en/latest/gui_guide.html">Kilosort4 GUI guide</a></td><td>Data/probe selection, input preview, channel-count checks, run sequence.</td></tr><tr><td><a href="https://kilosort.readthedocs.io/en/latest/parameters.html">Kilosort4 parameter guide</a></td><td>n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions.</td></tr><tr><td><a href="https://spikeinterface.readthedocs.io/en/stable/">SpikeInterface</a></td><td>Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces.</td></tr><tr><td><a href="https://spikeinterface.readthedocs.io/en/stable/modules/sorters.html">SpikeInterface sorters</a></td><td>Common sorter wrappers, native dependencies, and container execution.</td></tr><tr><td><a href="https://elephant.readthedocs.io/en/stable/modules.html">Elephant</a></td><td>Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects.</td></tr><tr><td><a href="https://neo.readthedocs.io/en/stable/read_and_analyze.html">Neo</a></td><td>Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects.</td></tr><tr><td><a href="https://phy.readthedocs.io/en/latest/quickstart/">Phy</a></td><td>Manual review of spike-sorting output.</td></tr><tr><td><a href="https://pypi.org/project/mountainsort5/">MountainSort5</a></td><td>CPU-oriented sorting schemes and package interface.</td></tr><tr><td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10312056/">Respiration/PFC study</a></td><td>Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses.</td></tr><tr><td><a href="https://www.graphpad.com/guides/prism/latest/user-guide/how_to_change_a_graph.htm">GraphPad Prism graph controls</a></td><td>Interaction expectations for editable graph objects, axes, grids, ticks, and exact size.</td></tr><tr><td><a href="https://www.internationalbrainlab.com/brainwidemap">IBL Brain-Wide Map</a></td><td>Public neural and behavioral validation context.</td></tr><tr><td><a href="https://docs.dandiarchive.org/introduction/">DANDI Archive</a></td><td>Versioned NWB public-data access and provenance.</td></tr><tr><td><a href="https://developers.openai.com/api/docs/guides/text">OpenAI Responses API</a></td><td>Optional cloud text generation with high-priority instructions and local deterministic computation.</td></tr><tr><td><a href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a></td><td>Schema-constrained advisory answers and workflow plans.</td></tr><tr><td><a href="https://developers.openai.com/api/docs/models">OpenAI model catalog</a></td><td>Current model identifiers and documented quality, latency, and cost roles.</td></tr></tbody></table>
+  <table><thead><tr><th>Source</th><th>How NeuroEphys AI uses it</th></tr></thead>
+  <tbody><tr><td><a href="https://kilosort.readthedocs.io/en/latest/">Kilosort4 documentation</a></td><td>Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial.</td></tr><tr><td><a href="https://kilosort.readthedocs.io/en/latest/gui_guide.html">Kilosort4 GUI guide</a></td><td>Data/probe selection, input preview, channel-count checks, run sequence.</td></tr><tr><td><a href="https://kilosort.readthedocs.io/en/latest/parameters.html">Kilosort4 parameter guide</a></td><td>n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions.</td></tr><tr><td><a href="https://spikeinterface.readthedocs.io/en/stable/">SpikeInterface</a></td><td>Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces.</td></tr><tr><td><a href="https://spikeinterface.readthedocs.io/en/stable/modules/sorters.html">SpikeInterface sorters</a></td><td>Common sorter wrappers, native dependencies, and container execution.</td></tr><tr><td><a href="https://spikeinterface.readthedocs.io/en/stable/modules/metrics/quality_metrics.html">SpikeInterface quality metrics</a></td><td>Definitions and implementation references for firing, refractory, amplitude, drift, and isolation-oriented metrics.</td></tr><tr><td><a href="https://elephant.readthedocs.io/en/stable/modules.html">Elephant</a></td><td>Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects.</td></tr><tr><td><a href="https://neo.readthedocs.io/en/stable/read_and_analyze.html">Neo</a></td><td>Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects.</td></tr><tr><td><a href="https://phy.readthedocs.io/en/latest/quickstart/">Phy</a></td><td>Manual review of spike-sorting output.</td></tr><tr><td><a href="https://pypi.org/project/mountainsort5/">MountainSort5</a></td><td>CPU-oriented sorting schemes and package interface.</td></tr><tr><td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10312056/">Respiration/PFC study</a></td><td>Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses.</td></tr><tr><td><a href="https://www.graphpad.com/guides/prism/latest/user-guide/how_to_change_a_graph.htm">GraphPad Prism graph controls</a></td><td>Interaction expectations for editable graph objects, axes, grids, ticks, and exact size.</td></tr><tr><td><a href="https://www.internationalbrainlab.com/brainwidemap">IBL Brain-Wide Map</a></td><td>Public neural and behavioral validation context.</td></tr><tr><td><a href="https://docs.dandiarchive.org/introduction/">DANDI Archive</a></td><td>Versioned NWB public-data access and provenance.</td></tr><tr><td><a href="https://api-docs.deepseek.com/api/create-chat-completion">DeepSeek chat completion API</a></td><td>Provider endpoint, streaming response, usage fields, and request structure.</td></tr><tr><td><a href="https://api-docs.deepseek.com/guides/function_calling/">DeepSeek function calling</a></td><td>Structured function definitions and model-generated argument requests.</td></tr><tr><td><a href="https://api-docs.deepseek.com/guides/tool_calls">DeepSeek tool calls</a></td><td>Tool-call response handling and multi-turn tool result flow.</td></tr><tr><td><a href="https://developers.openai.com/api/docs/guides/text">OpenAI Responses API</a></td><td>Optional provider adapter and structured text generation.</td></tr></tbody></table>
 </section>
 <section data-searchable>
   <h2>Non-copying rule</h2>
-  <div class="callout warning">NeuroFlow does not reproduce another product’s prose, screenshots, figures, numerical conclusions, or visual identity. It uses official method definitions and documentation patterns as references, then writes original product text, workflows, adapters, and interface behavior.</div>
+  <div class="callout warning">NeuroEphys AI does not reproduce another product’s prose, screenshots, figures, numerical conclusions, or visual identity. It uses official method definitions and documentation patterns as references, then writes original product text, workflows, adapters, and interface behavior.</div>
 </section>
 
-        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+        <footer class="footer">NeuroEphys AI · Original explanatory text with cited method sources</footer>
       </main>
     </div>
     <script src="../app.js?v=0.8.0"></script>

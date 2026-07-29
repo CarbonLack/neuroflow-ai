@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>真实数据验证 · NeuroEphys AI</title>
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
+      <a class="brand" href="index.html">NeuroEphys AI <small>操作手册</small></a>
+      <input class="search" data-doc-search type="search" placeholder="搜索本页">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="en" href="../en/real-data-validation.html">英文</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">开始使用</div>
+<a href="index.html">概览</a>
+<a href="installation.html">安装与运行</a>
+<a href="gui-guide.html">界面与基本操作</a>
+<div class="sidebar-label">教程</div>
+<a href="tutorials.html">完整逐步教程</a>
+<a href="data-inputs.html">导入自己的数据</a>
+<div class="sidebar-label">专项指南</div>
+<a href="sorting.html">Spike sorting 指南</a>
+<a href="unit-curation.html">Unit 人工复核</a>
+<a href="ai-assistant.html">AI 助手</a>
+<a href="parameters.html">参数参考</a>
+<a href="figure-studio.html">图形编辑与导出</a>
+<div class="sidebar-label">参考资料</div>
+<a href="provenance.html">中间产物与溯源</a>
+<a class="active" href="real-data-validation.html">真实数据验证</a>
+<a href="troubleshooting.html">故障排查</a>
+<a href="sources.html">方法与来源</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroEphys AI 操作手册</p>
+          <h1>真实数据验证</h1>
+          <p class="lead">一批本地提供的32-contact微丝记录用于验证Open Ephys直接导入、全时长sorting恢复、行为同步、下游分析、导出和项目重载；原始数据不随软件分发。</p>
+        </div>
+
+<section data-searchable>
+  <h2>已验证链路</h2>
+  <table><thead><tr><th>阶段</th><th>验证结果</th></tr></thead>
+  <tbody><tr><td><b>记录</b></td><td>32根独立微丝，30 kHz，7,497.489秒；采集时使用外部参考。</td></tr><tr><td><b>采集端处理</b></td><td>在线250–8,000 Hz滤波；程序阻止LFP、低频频谱和spike-field coupling。</td></tr><tr><td><b>原始质控</b></td><td>99.21875/100；配置的1–32通道没有被自动剔除。</td></tr><tr><td><b>Kilosort4</b></td><td>版本4.1.7，nblocks=0，阈值9/8，12个候选unit，2,195,626个spike；内部用时1,870.35秒，含适配器总用时2,096.54秒。</td></tr><tr><td><b>行为与同步</b></td><td>MED-PC事件4,654条；744/744个同步锚点匹配。动作起始分析使用事件码17和19，共168个事件。</td></tr><tr><td><b>统计与解码</b></td><td>已生成技术验证输出；解码结果不得直接用于生物学结论。</td></tr><tr><td><b>项目恢复</b></td><td>保存后重新加载，复用已有Kilosort数组，重新生成下游结果和产物索引。</td></tr><tr><td><b>人工复核状态</b></td><td>12个cluster均保持候选状态，等待波形、不应期、稳定性、重复性和sorter证据的逐个检查。</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>Sorter敏感性与比较</h2>
+  <p>独立30分钟Kilosort运行在阈值9/8下得到4个候选，在6/5下得到5个候选；MountainSort5、SpyKING CIRCUS 2和Tridesclous 2在相同片段给出不同候选数量。此差异用于触发人工复核和sorter一致度分析，无法直接确定真实神经元数量。</p>
+</section>
+<section data-searchable>
+  <h2>科学限制</h2>
+  <ul class="checks">
+    <li>数据提供者口头报告的8个细胞作为“未验证外部观察”保存，不能作为ground truth。</li>
+    <li>在线高通滤波使真实低频活动无法恢复。</li>
+    <li>该记录中事件码21和22时间完全重合；条件比较改用具有独立时间的17和19动作起始事件。</li>
+    <li>单session解码可能反映session结构，需要独立数据验证。</li>
+  </ul>
+</section>
+
+        <footer class="footer">NeuroEphys AI · 原创说明文字，方法来源逐项标注</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.8.0"></script>
+  </body>
+</html>

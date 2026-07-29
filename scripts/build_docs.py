@@ -25,9 +25,12 @@ PAGES = (
     ("tutorials.html", "完整逐步教程", "Complete step-by-step tutorial", "tutorials"),
     ("data-inputs.html", "导入自己的数据", "Import your own data", "tutorials"),
     ("sorting.html", "Spike sorting 指南", "Spike sorting guide", "guides"),
+    ("unit-curation.html", "Unit 人工复核", "Manual unit curation", "guides"),
     ("ai-assistant.html", "AI 助手", "AI assistant", "guides"),
     ("parameters.html", "参数参考", "Parameter reference", "guides"),
     ("figure-studio.html", "图形编辑与导出", "Figure editing and export", "guides"),
+    ("provenance.html", "中间产物与溯源", "Artifacts and provenance", "reference"),
+    ("real-data-validation.html", "真实数据验证", "Real-data validation", "reference"),
     ("troubleshooting.html", "故障排查", "Troubleshooting", "reference"),
     ("sources.html", "方法与来源", "Methods and sources", "reference"),
 )
@@ -82,19 +85,19 @@ def _layout(
     page_lang = "en" if language == "en_US" else "zh-CN"
     search = "Search this page" if language == "en_US" else "搜索本页"
     menu = "Open navigation" if language == "en_US" else "打开目录"
-    intro = eyebrow or ("NeuroFlow operation manual" if language == "en_US" else "NeuroFlow 操作手册")
+    intro = eyebrow or ("NeuroEphys AI operation manual" if language == "en_US" else "NeuroEphys AI 操作手册")
     document = f"""<!doctype html>
 <html lang="{page_lang}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{e(title)} · NeuroFlow</title>
+    <title>{e(title)} · NeuroEphys AI</title>
     <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
       <button class="icon-button" type="button" data-menu-toggle aria-label="{e(menu)}">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>{'Documentation' if language == 'en_US' else '操作手册'}</small></a>
+      <a class="brand" href="index.html">NeuroEphys AI <small>{'Documentation' if language == 'en_US' else '操作手册'}</small></a>
       <input class="search" data-doc-search type="search" placeholder="{e(search)}">
       <div class="topbar-actions">
         <a class="language-button language-link" data-language-link="{other}" href="../{other}/{filename}">{other_label}</a>
@@ -111,7 +114,7 @@ def _layout(
           <p class="lead">{e(lead)}</p>
         </div>
         {body}
-        <footer class="footer">NeuroFlow · {'Original explanatory text with cited method sources' if language == 'en_US' else '原创说明文字，方法来源逐项标注'}</footer>
+        <footer class="footer">NeuroEphys AI · {'Original explanatory text with cited method sources' if language == 'en_US' else '原创说明文字，方法来源逐项标注'}</footer>
       </main>
     </div>
     <script src="../app.js?v=0.8.0"></script>
@@ -142,9 +145,9 @@ def build_index(language: str) -> str:
     english = language == "en_US"
     title = "A visible, replaceable, and restorable electrophysiology workflow" if english else "看得见、换得掉、接得上、能恢复的电生理工作流"
     lead = (
-        "NeuroFlow connects raw multichannel recordings, replaceable spike sorters, behavior, neural analyses, statistics, machine learning, and publication export in one local-first project."
+        "NeuroEphys AI connects raw multichannel recordings, replaceable spike sorters, behavior, neural analyses, statistics, machine learning, and publication export in one local-first project."
         if english
-        else "NeuroFlow 把原始多通道记录、可替换的 spike sorter、行为、神经分析、统计、机器学习和论文导出组织在一个本地优先的项目中。"
+        else "NeuroEphys AI 把原始多通道记录、可替换的 spike sorter、行为、神经分析、统计、机器学习和论文导出组织在一个本地优先的项目中。"
     )
     principles = (
         (
@@ -200,23 +203,23 @@ def build_installation(language: str) -> str:
     english = language == "en_US"
     title = "Installation and runtime" if english else "安装与运行"
     lead = (
-        "The desktop application, scientific environments, sorter backends, and project data are separated so one failed tool does not prevent NeuroFlow from opening."
+        "The desktop application, scientific environments, sorter backends, and project data are separated so one failed tool does not prevent NeuroEphys AI from opening."
         if english
-        else "桌面程序、科学计算环境、sorter 后端和项目数据彼此分离，单个工具安装失败不会阻止 NeuroFlow 打开。"
+        else "桌面程序、科学计算环境、sorter 后端和项目数据彼此分离，单个工具安装失败不会阻止 NeuroEphys AI 打开。"
     )
     sections = (
         [
             ("System requirements", ["Windows 10/11, macOS, or Linux for the interface.", "Sufficient disk space for source data, normalized caches, sorter output, and exports.", "An NVIDIA GPU is recommended for Kilosort4; CPU sorters remain separate alternatives."]),
-            ("Desktop installation", ["Install or unpack the NeuroFlow release.", "Start NeuroFlow without opening a Python console.", "Open Sorter Manager to inspect actual backends, versions, hardware requirements, and probe suitability."]),
+            ("Desktop installation", ["Install or unpack the NeuroEphys AI release.", "Start NeuroEphys AI without opening a Python console.", "Open Sorter Manager to inspect actual backends, versions, hardware requirements, and probe suitability."]),
             ("Project storage", ["The source is read-only. Generic binary data can be linked or copied into the project.", "A project contains neuroflow_project.json, derived results, sorter-native folders, exports, and audit logs.", "Keep the source path stable when using a link; copy the source for a self-contained archive."]),
-            ("External sorter environments", ["A sorter is shown as runnable only after a real environment probe.", "Kilosort4 uses its installed Python/GPU stack; other sorters may use CPU, containers, or separate environments.", "NeuroFlow preserves exact failures and never substitutes another sorter silently."]),
+            ("External sorter environments", ["A sorter is shown as runnable only after a real environment probe.", "Kilosort4 uses its installed Python/GPU stack; other sorters may use CPU, containers, or separate environments.", "NeuroEphys AI preserves exact failures and never substitutes another sorter silently."]),
         ]
         if english
         else [
-            ("系统要求", ["界面支持 Windows 10/11、macOS 或 Linux。", "磁盘需要同时容纳原始数据、标准缓存、sorter 输出和导出文件。", "Kilosort4 推荐 NVIDIA GPU；CPU sorter 作为独立备选，不是假装执行 Kilosort。"]),
-            ("桌面软件安装", ["安装或解压 NeuroFlow 发行版。", "直接启动 NeuroFlow，不要求用户先打开 Python 终端。", "在“Sorter 管理”中查看真实后端、版本、硬件要求和适用探针。"]),
+            ("系统要求", ["界面支持 Windows 10/11、macOS 或 Linux。", "磁盘需要同时容纳原始数据、标准缓存、sorter 输出和导出文件。", "Kilosort4 推荐 NVIDIA GPU；CPU sorter 作为独立备选，并明确显示实际执行工具。"]),
+            ("桌面软件安装", ["安装或解压 NeuroEphys AI 发行版。", "直接启动 NeuroEphys AI，不要求用户先打开 Python 终端。", "在“Sorter 管理”中查看真实后端、版本、硬件要求和适用探针。"]),
             ("项目存储", ["原始数据保持只读；通用二进制可只建立索引，也可复制到项目。", "项目包含 neuroflow_project.json、派生结果、sorter 原生目录、导出和审计记录。", "使用索引时保持源路径稳定；需要独立归档时复制原始数据。"]),
-            ("外部 sorter 环境", ["只有通过实际环境检测的 sorter 才显示“可运行”。", "Kilosort4 使用其 Python/GPU 环境；其他 sorter 可使用 CPU、容器或独立环境。", "NeuroFlow 保存真实错误，绝不静默换用另一个 sorter。"]),
+            ("外部 sorter 环境", ["只有通过实际环境检测的 sorter 才显示“可运行”。", "Kilosort4 使用其 Python/GPU 环境；其他 sorter 可使用 CPU、容器或独立环境。", "NeuroEphys AI 保存真实错误，绝不静默换用另一个 sorter。"]),
         ]
     )
     body = "".join(
@@ -269,12 +272,12 @@ def build_gui_guide(language: str) -> str:
 <section data-searchable>
   <h2>{'One-analysis operating sequence' if english else '运行一个分析的标准顺序'}</h2>
   <ol class="steps">{''.join(f'<li>{e(item)}</li>' for item in sequence)}</ol>
-  <img class="product-shot" src="../assets/neuroflow-analysis.png" alt="NeuroFlow analysis workspace">
+  <img class="product-shot" src="../assets/neuroflow-analysis.png" alt="NeuroEphys AI analysis workspace">
 </section>
 <section data-searchable>
   <h2>{'Tutorial center' if english else '教程中心'}</h2>
   <p>{'Every workflow chapter uses the same structure: scientific purpose, prerequisites, operations, parameter reference, page controls, recommended sequence, common mistakes, checks, sources, and the next stage.' if english else '每个工作流章节都使用同一结构：科学目的、开始前准备、具体操作、参数说明、页面控件、推荐顺序、常见错误、验收检查、方法来源和下一步。'}</p>
-  <img class="product-shot" src="../assets/neuroflow-tutorial.png" alt="NeuroFlow tutorial center">
+  <img class="product-shot" src="../assets/neuroflow-tutorial.png" alt="NeuroEphys AI tutorial center">
 </section>
 <section data-searchable>
   <h2>{'Save, close, and resume' if english else '保存、退出与恢复'}</h2>
@@ -286,164 +289,159 @@ def build_gui_guide(language: str) -> str:
 
 def build_ai_assistant(language: str) -> str:
     english = language == "en_US"
-    title = "AI assistant: advice without a black box" if english else "AI 助手：提供建议，但不制造黑箱"
-    lead = (
-        "NeuroFlow's optional cloud assistant explains the current stage, reviews a "
-        "path-free project summary, proposes a candidate workflow, and interprets "
-        "warnings. It never receives raw voltage and never runs an analysis silently."
+    title = (
+        "Controlled AI assistant"
         if english
-        else (
-            "NeuroFlow 的可选云端助手可以解释当前阶段、审查不含路径的项目摘要、"
-            "提出候选流程并解释警告；它不接收原始电压，也不会静默运行分析。"
-        )
+        else "受控 AI 助手"
     )
-    tasks = (
+    lead = (
+        "The assistant works from the active project's structured evidence. It can "
+        "explain, plan, and propose validated local tool calls while the deterministic "
+        "analysis pipeline remains available at all times."
+        if english
+        else "助手依据当前项目的结构化证据工作，可解释、规划并提出经本地校验的工具调用；确定性分析管线始终可独立使用。"
+    )
+    modes = (
         [
             (
-                "Explain this stage",
-                (
-                    "Explains scientific purpose, required inputs, important parameters, "
-                    "evidence to inspect, and the condition for continuing."
-                ),
+                "Manual",
+                "Cloud AI is disabled. Data import, QC, sorting, curation, statistics, decoding, figure export, and project recovery remain available.",
             ),
             (
-                "Review project",
-                (
-                    "Separates completed evidence, missing prerequisites, data risks, "
-                    "environment risks, and the safest next action."
-                ),
+                "Assistant",
+                "The model explains the project, parameters, warnings, and candidate workflows. It cannot request execution.",
             ),
             (
-                "Propose workflow",
-                (
-                    "Returns a structured plan using only NeuroFlow's 11 registered "
-                    "stages. Each stage includes its reason, prerequisites, and "
-                    "parameter starting points."
-                ),
-            ),
-            (
-                "Explain latest error",
-                (
-                    "Interprets the available warning or failure without claiming that "
-                    "a repair has run. Existing results remain unchanged."
-                ),
+                "Collaborative",
+                "The model may propose a whitelisted local tool call. NeuroEphys AI validates prerequisites and parameters, then shows a confirmation dialog before execution.",
             ),
         ]
         if english
         else [
             (
-                "解释当前阶段",
-                "说明科学目的、所需输入、重要参数、应检查的证据和继续条件。",
+                "手动模式",
+                "关闭云端 AI。数据导入、质控、sorting、人工复核、统计、解码、图表导出和项目恢复均可继续使用。",
             ),
             (
-                "审查当前项目",
-                "区分已有证据、缺失前提、数据风险、环境风险和最稳妥的下一步。",
+                "助手模式",
+                "模型解释项目、参数、警告和候选工作流，没有执行权限。",
             ),
             (
-                "生成候选流程",
-                (
-                    "只使用 NeuroFlow 已注册的 11 个阶段返回结构化方案；"
-                    "每个阶段包含目的、前提和参数起点。"
-                ),
-            ),
-            (
-                "解释最近异常",
-                "解释当前可见警告或失败，但不会声称已经修复；已有结果保持不变。",
+                "协作模式",
+                "模型可提出白名单本地工具调用。NeuroEphys AI先检查前置条件和参数，再弹出确认窗口，由用户决定是否执行。",
             ),
         ]
     )
     setup = (
         [
-            "Open AI assistant from the home page, workspace toolbar, or right guidance panel.",
-            "Open AI settings. Choose OpenAI Responses API or an OpenAI-compatible Chat API.",
-            "For OpenAI, keep the default HTTPS base URL and choose a model. Terra is the balanced default; Luna reduces cost.",
-            "Paste the API key. It remains in memory for this NeuroFlow session and is not written to project files or application settings.",
-            "Open Preview cloud data and inspect the complete structured project summary before asking.",
-            "Choose a defined task or enter your own scientific question.",
+            "Open the collapsible AI panel on the right side of the workspace.",
+            "Choose Manual, Assistant, or Collaborative mode.",
+            "Open AI settings. DeepSeek is the first configured provider; OpenAI-compatible, laboratory, and local-compatible endpoints are also accepted.",
+            "Enter the endpoint and model. The current DeepSeek defaults are https://api.deepseek.com and deepseek-v4-flash.",
+            "Store the API key for the session or in the operating-system credential store. Project files never contain the key.",
+            "Open Context preview. Remove any optional field that should not be sent.",
+            "Enter a question or request a candidate workflow. Review every proposed node and parameter.",
         ]
         if english
         else [
-            "从首页、工作区顶部或右侧引导栏打开“AI 助手”。",
-            "打开“AI 设置”，选择 OpenAI Responses API 或 OpenAI 兼容 Chat API。",
-            "使用 OpenAI 时保留默认 HTTPS 地址并选择模型；Terra 是平衡型默认值，Luna 更节省成本。",
-            "粘贴 API 密钥。密钥只在本次 NeuroFlow 运行期间保存在内存，不写入项目或软件设置。",
-            "点击“预览云端发送内容”，先检查下一次请求会携带的完整结构化项目摘要。",
-            "选择一个明确任务，或输入自己的科学问题。",
+            "在工作区右侧展开 AI 面板。",
+            "选择手动、助手或协作模式。",
+            "打开 AI 设置。首个配置入口为 DeepSeek，同时支持 OpenAI 兼容接口、实验室服务和本地兼容服务。",
+            "填写服务地址和模型。当前 DeepSeek 默认地址为 https://api.deepseek.com，默认模型为 deepseek-v4-flash。",
+            "API 密钥可只保留在当前会话，或写入操作系统凭据区；项目文件不会保存密钥。",
+            "打开“上下文预览”，逐项检查并删除无需发送的可选字段。",
+            "输入问题或请求候选工作流；逐项核对节点、前置条件和参数。",
         ]
     )
-    privacy_rows = (
+    context_rows = (
         [
-            ("Raw voltage", "Never sent."),
-            ("Local source and project paths", "Removed before request construction."),
-            ("Project and subject identity", "Not included in the structured summary."),
-            ("Sampling rate, channel count, duration, probe type", "Sent because they determine valid analysis choices."),
-            ("QC, sorting, statistics, and decoding summaries", "Sent only as compact calculated values."),
-            ("Recent audit log", "Off by default; five redacted messages are sent only after explicit opt-in."),
-            ("Question and recent AI conversation", "Sent to provide the requested context."),
-            ("API key", "Used only in the HTTPS authorization header and never stored in the project."),
+            ("Raw voltage and large arrays", "Stay local and are excluded before request construction."),
+            ("Local paths and identity fields", "Removed from the online context."),
+            ("Acquisition structure", "Format, sample rate, channels, duration, units, probe, region, reference, and online filtering."),
+            ("Derived evidence", "QC metrics, sorter provenance, unit metrics, synchronization residuals, statistics, decoding, and warnings."),
+            ("Workflow state", "Completed, failed, skipped, pending stages, selected page, figure, sorter, and unit."),
+            ("Intermediate artifacts", "Only labels, stage, parameters, size, checksum, and artifact IDs; binary contents remain local."),
+            ("API key", "Used in the authorization header and stored only through the selected credential option."),
         ]
         if english
         else [
-            ("原始电压", "永不发送。"),
-            ("本地源文件和项目路径", "在构造请求前删除。"),
-            ("项目和实验对象身份", "不进入结构化摘要。"),
-            ("采样率、通道数、时长和探针类型", "需要发送，因为它们会决定分析选择是否合法。"),
-            ("质控、sorting、统计和解码摘要", "只发送压缩后的已计算数值。"),
-            ("最近审计日志", "默认关闭；只有用户主动勾选后才发送 5 条经脱敏的消息。"),
-            ("用户问题和最近 AI 对话", "为维持当前问题上下文而发送。"),
-            ("API 密钥", "只用于 HTTPS 授权请求头，不保存到项目。"),
+            ("原始电压与大型数组", "保留在本机，请求构造前即排除。"),
+            ("本地路径与身份字段", "从在线上下文中移除。"),
+            ("采集结构", "格式、采样率、通道、时长、单位、电极、脑区、参考和在线滤波。"),
+            ("派生证据", "质控指标、sorter来源、unit指标、同步残差、统计、解码和警告。"),
+            ("工作流状态", "已完成、失败、跳过、待运行阶段，以及当前页面、图表、sorter和unit。"),
+            ("中间产物", "仅发送标签、阶段、参数、大小、校验值和产物ID；二进制内容留在本机。"),
+            ("API 密钥", "仅用于授权请求头，并按用户选择写入会话或系统凭据区。"),
         ]
     )
-    boundaries = (
+    capabilities = (
         [
-            "The model cannot inspect hidden raw data or invent missing results.",
-            "A candidate plan is marked advisory_not_executed.",
-            "Applying a plan stores it in the project and navigates to a suggested stage; it does not run that stage.",
-            "Every real analysis still uses the fixed bottom action bar and its confirmation dialog.",
-            "AI answers and accepted plans enter the project audit history and can be restored after reopening.",
-            "Manual and guided modes remain fully available when AI is unconfigured or offline.",
+            "Explain recognized data and missing metadata after import.",
+            "Create an editable workflow from a scientific question using registered nodes only.",
+            "Compare compatible sorters while preserving their native requirements and outputs.",
+            "Detect duplicate filtering, missing events, invalid LFP requests, and leakage risks.",
+            "Read redacted errors and propose a recovery path.",
+            "Propose previews or analyses through the local tool whitelist in Collaborative mode.",
+            "Summarize figures with observed result, statistical evidence, interpretations, unsupported claims, limitations, and validation steps.",
+            "Generate Methods drafts, output indexes, and audit-oriented summaries from actual project evidence.",
         ]
         if english
         else [
-            "模型不能查看未发送的原始数据，也不能补造缺失结果。",
-            "候选方案会明确标记为 advisory_not_executed，即“建议但尚未执行”。",
-            "应用方案只会保存到项目并跳转到建议阶段，不会运行该阶段。",
-            "所有真实分析仍须通过底部固定操作栏和运行确认弹窗执行。",
-            "AI 回答和已接受方案会进入项目审计历史，重新打开项目后仍可恢复。",
-            "AI 未配置或网络不可用时，手动模式和引导模式仍可完整使用。",
+            "导入后解释已识别的数据与缺失元数据。",
+            "把研究问题转换为可编辑工作流，节点限定在本地注册表内。",
+            "比较可用sorter，同时保留各工具的原生要求与输出。",
+            "检查重复滤波、事件缺失、无效LFP请求和数据泄漏风险。",
+            "阅读脱敏错误并提出恢复路径。",
+            "在协作模式中通过本地白名单提出预览或分析请求。",
+            "按观察结果、统计证据、可考虑解释、当前无法支持的结论、限制和验证建议组织图表解释。",
+            "根据项目中的真实证据生成Methods草稿、输出索引和审计摘要。",
         ]
     )
     body = f"""
 <section data-searchable>
-  <h2>{'Configure cloud AI' if english else '配置云端 AI'}</h2>
+  <h2>{'Three operating modes' if english else '三种工作模式'}</h2>
+  <table><thead><tr><th>{'Mode' if english else '模式'}</th><th>{'Permission boundary' if english else '权限边界'}</th></tr></thead>
+  <tbody>{''.join(f'<tr><td><b>{e(name)}</b></td><td>{e(text)}</td></tr>' for name,text in modes)}</tbody></table>
+</section>
+<section data-searchable>
+  <h2>{'Provider setup' if english else '模型服务设置'}</h2>
   <ol class="steps">{''.join(f'<li>{e(item)}</li>' for item in setup)}</ol>
-  <div class="callout method">{'Recommended initial configuration: OpenAI Responses API, gpt-5.6-terra, medium reasoning. Change the model only after comparing response quality, latency, and cost on representative NeuroFlow questions.' if english else '推荐初始配置：OpenAI Responses API、gpt-5.6-terra、medium 推理强度。请在代表性 NeuroFlow 问题上比较质量、延迟和成本后再改变模型。'}</div>
-  <img class="product-shot" src="../assets/neuroflow-ai-assistant.png" alt="NeuroFlow AI assistant">
+  <div class="callout method">{'Provider settings include streaming, timeout, retries, cancellation, and service health. A provider change does not modify project data or analysis code.' if english else '设置项包含流式回复、超时、重试、取消和服务状态检测。更换模型服务不会改动项目数据与分析代码。'}</div>
+  <img class="product-shot" src="../assets/neuroflow-ai-assistant.png" alt="NeuroEphys AI assistant panel">
 </section>
 <section data-searchable>
-  <h2>{'Four defined tasks' if english else '四个明确任务'}</h2>
-  <table><thead><tr><th>{'Action' if english else '操作'}</th><th>{'What it produces' if english else '会得到什么'}</th></tr></thead>
-  <tbody>{''.join(f'<tr><td><b>{e(name)}</b></td><td>{e(text)}</td></tr>' for name,text in tasks)}</tbody></table>
+  <h2>{'Available assistance' if english else '可用能力'}</h2>
+  <ul class="checks">{''.join(f'<li>{e(item)}</li>' for item in capabilities)}</ul>
 </section>
 <section data-searchable>
-  <h2>{'Exactly what leaves the computer' if english else '哪些内容会离开当前电脑'}</h2>
+  <h2>{'Context sent to an online provider' if english else '在线请求使用的上下文'}</h2>
   <table><thead><tr><th>{'Information' if english else '信息'}</th><th>{'Handling' if english else '处理方式'}</th></tr></thead>
-  <tbody>{''.join(f'<tr><td><b>{e(name)}</b></td><td>{e(text)}</td></tr>' for name,text in privacy_rows)}</tbody></table>
+  <tbody>{''.join(f'<tr><td><b>{e(name)}</b></td><td>{e(text)}</td></tr>' for name,text in context_rows)}</tbody></table>
 </section>
 <section data-searchable>
-  <h2>{'Approval and audit boundaries' if english else '确认与审计边界'}</h2>
-  <ul class="checks">{''.join(f'<li>{e(item)}</li>' for item in boundaries)}</ul>
+  <h2>{'Tool-call lifecycle' if english else '工具调用过程'}</h2>
+  <ol class="steps">
+    <li>{'The provider returns a structured tool name and arguments.' if english else '模型返回结构化工具名和参数。'}</li>
+    <li>{'The local registry rejects unknown tools, invalid fields, missing prerequisites, wrong workflow order, and unsafe segment lengths.' if english else '本地注册表拒绝未知工具、非法字段、缺失前提、错误顺序和不安全的数据片段。'}</li>
+    <li>{'The confirmation dialog shows input, parameters, expected cost, data sent online, and output location.' if english else '确认窗口展示输入、参数、预计开销、在线发送内容和输出位置。'}</li>
+    <li>{'The user accepts, edits, or cancels. Sorting and other long tasks always require confirmation.' if english else '用户可以接受、修改或取消；sorting等长任务始终需要确认。'}</li>
+    <li>{'Completed or failed calls are linked to run IDs and artifact IDs in the project audit history.' if english else '完成或失败的调用通过run ID和artifact ID写入项目审计历史。'}</li>
+  </ol>
 </section>
 <section data-searchable>
-  <h2>{'Failure handling' if english else '失败时怎么处理'}</h2>
-  <p>{'If a request fails, NeuroFlow shows a dialog and leaves the project unchanged. Check the HTTPS endpoint, model identifier, API key, network access, and account quota. A model-format error means the provider did not return NeuroFlow’s required structured JSON; switch to Responses API or a compatible service with structured JSON support.' if english else '请求失败时，NeuroFlow 会弹窗并保持项目不变。请检查 HTTPS 地址、模型标识、API 密钥、网络和账户额度。若提示模型格式错误，说明服务没有返回 NeuroFlow 所需的结构化 JSON；请切换到 Responses API，或使用支持结构化 JSON 的兼容服务。'}</p>
+  <h2>{'Scientific interpretation format' if english else '科学解释格式'}</h2>
+  <p>{'Every result explanation is separated into observed result, statistical evidence, possible biological interpretations, unsupported conclusions, limitations, and recommended validation. Candidate units retain their candidate status until manual review.' if english else '每次结果解释均分为观察结果、统计证据、可考虑的生物学解释、当前无法支持的结论、数据与方法限制、建议增加的验证。候选unit在人工复核前持续保留候选状态。'}</p>
+</section>
+<section data-searchable>
+  <h2>{'Offline and failure behavior' if english else '断网与失败处理'}</h2>
+  <p>{'A provider failure stops the AI request, preserves the project, and leaves every manual analysis control active. Check the endpoint, model, key, network, quota, timeout, and provider response format. The failure record excludes the key and raw data.' if english else '模型服务失败时，AI请求停止，项目保持原状，全部手动分析控件仍可使用。请检查服务地址、模型、密钥、网络、额度、超时和返回格式；失败记录不会包含密钥和原始数据。'}</p>
 </section>
 <section data-searchable>
   <h2>{'Implementation sources' if english else '实现依据'}</h2>
   <ul class="source-list">
-    <li><a href="https://developers.openai.com/api/docs/guides/text">OpenAI Responses API text generation</a></li>
-    <li><a href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI Structured Outputs</a></li>
-    <li><a href="https://developers.openai.com/api/docs/models">OpenAI model catalog and selection guidance</a></li>
+    <li><a href="https://api-docs.deepseek.com/api/create-chat-completion">DeepSeek chat completion API</a></li>
+    <li><a href="https://api-docs.deepseek.com/guides/function_calling/">DeepSeek function calling</a></li>
+    <li><a href="https://api-docs.deepseek.com/guides/tool_calls">DeepSeek tool calls</a></li>
   </ul>
 </section>
 """
@@ -556,7 +554,7 @@ def build_data_inputs(language: str) -> str:
   <pre><code>trial,time_seconds,event_type,condition,choice,reaction_time
 1,12.450,stimulus_onset,A,left,0.620
 1,13.070,response,A,left,0.620</code></pre>
-  <p>{'A separate TTL CSV may contain ephys-clock pulse times. NeuroFlow pairs the pulse sequence and reports offset, drift, residuals, and missing events.' if english else '另一个 TTL CSV 可提供电生理时钟中的脉冲时间。NeuroFlow 会匹配脉冲序列，并报告起始偏移、漂移、残差和缺失事件。'}</p>
+  <p>{'A separate TTL CSV may contain ephys-clock pulse times. NeuroEphys AI pairs the pulse sequence and reports offset, drift, residuals, and missing events.' if english else '另一个 TTL CSV 可提供电生理时钟中的脉冲时间。NeuroEphys AI 会匹配脉冲序列，并报告起始偏移、漂移、残差和缺失事件。'}</p>
 </section>
 """
     return _layout(language, "data-inputs.html", title, lead, body)
@@ -599,16 +597,16 @@ def build_sorting(language: str) -> str:
   <ol class="steps">
     {''.join(f'<li>{e(item)}</li>' for item in (["Confirm binary layout and total channel count.", "Confirm probe geometry and preview it.", "Inspect raw and preprocessed input before running.", "Run with default settings on a representative segment.", "Inspect drift, depth-time, amplitudes, templates, similarity, exported files, and log.", "Run the full session and continue to Unit QC."] if english else ["确认二进制布局和文件总通道数。", "确认并预览探针几何。", "运行前检查原始与预处理输入。", "先用默认参数运行代表性片段。", "检查漂移、深度-时间、振幅、模板、相似度、导出文件和日志。", "运行整段记录并进入 Unit 质控。"]))}
   </ol>
-  <img class="product-shot" src="../assets/neuroflow-sorting.png" alt="NeuroFlow sorting workbench">
+  <img class="product-shot" src="../assets/neuroflow-sorting.png" alt="NeuroEphys AI sorting workbench">
 </section>
 <section data-searchable>
-  <h2>{'Kilosort4 settings exposed by NeuroFlow' if english else 'NeuroFlow 中的 Kilosort4 参数'}</h2>
+  <h2>{'Kilosort4 settings exposed by NeuroEphys AI' if english else 'NeuroEphys AI 中的 Kilosort4 参数'}</h2>
   <table class="parameter-table"><thead><tr><th>{'Parameter' if english else '参数'}</th><th>{'Meaning' if english else '含义'}</th><th>{'Default' if english else '默认值'}</th><th>{'Recommendation' if english else '推荐设置'}</th><th>{'Consequence' if english else '改变后的影响'}</th></tr></thead>
   <tbody>{''.join(f"<tr><td><code>{e(row['name'])}</code></td><td>{e(row['meaning'])}</td><td>{e(row['default'])}</td><td>{e(row['recommended'])}</td><td>{e(row['effect'])}</td></tr>" for row in ks_params)}</tbody></table>
 </section>
 <section data-searchable>
   <h2>{'Unified result and comparison' if english else '统一结果与比较'}</h2>
-  <p>{'Every backend keeps its native folder. NeuroFlow additionally records unit IDs, spike times in seconds, sampling rate, versions, parameters, logs, and optional channel/template fields in a common downstream schema. Sorter comparison reports matched, split, merged, unique, and consensus units. On real data this is agreement, not accuracy.' if english else '每个后端保留原生目录。NeuroFlow 额外把 unit ID、秒级 spike times、采样率、版本、参数、日志和可用通道/模板字段写入统一下游结构。sorter 比较报告匹配、拆分、合并、独有和共识 unit；真实数据上这叫一致度，不叫准确率。'}</p>
+  <p>{'Every backend keeps its native folder. NeuroEphys AI additionally records unit IDs, spike times in seconds, sampling rate, versions, parameters, logs, and optional channel/template fields in a common downstream schema. Sorter comparison reports matched, split, merged, unique, and consensus units. On real data this is agreement, not accuracy.' if english else '每个后端保留原生目录。NeuroEphys AI 额外把 unit ID、秒级 spike times、采样率、版本、参数、日志和可用通道/模板字段写入统一下游结构。sorter 比较报告匹配、拆分、合并、独有和共识 unit；真实数据上这叫一致度，不叫准确率。'}</p>
 </section>
 """
     return _layout(language, "sorting.html", title, lead, body)
@@ -620,7 +618,7 @@ def build_parameters(language: str) -> str:
     lead = (
         "Defaults are starting points, not universal truth. Change one setting at a time, preserve the reason, and compare evidence before and after."
         if english
-        else "默认值只是起点，不是通用真值。每次只改一个参数，记录原因，并比较修改前后的证据。"
+        else "默认值仅作为起点。每次只改一个参数，记录原因，并比较修改前后的证据。"
     )
     sections = []
     for chapter in TUTORIALS:
@@ -670,10 +668,195 @@ def build_figure_studio(language: str) -> str:
 <section data-searchable>
   <h2>{'Publication checklist' if english else '论文图检查清单'}</h2>
   <ol class="steps">{''.join(f'<li>{e(item)}</li>' for item in (["Axis labels include units.", "Sample size and error-bar definitions are explicit.", "Statistical annotations link to a saved table.", "Colors remain distinguishable in print and for color-vision deficiencies.", "Text fits the final physical dimensions.", "SVG/PDF and plotted CSV are saved together."] if english else ["坐标标签包含单位。", "样本量和误差线定义明确。", "统计标注能追溯到已保存统计表。", "颜色在打印和常见色觉条件下可区分。", "文字在最终物理尺寸下仍能完整显示。", "SVG/PDF 与绘图 CSV 一起保存。"]))}</ol>
-  <img class="product-shot" src="../assets/neuroflow-figure-studio.png" alt="NeuroFlow Figure Studio">
+  <img class="product-shot" src="../assets/neuroflow-figure-studio.png" alt="NeuroEphys AI Figure Studio">
 </section>
 """
     return _layout(language, "figure-studio.html", title, lead, body)
+
+
+def build_unit_curation(language: str) -> str:
+    english = language == "en_US"
+    title = "Manual unit curation" if english else "Unit 人工复核"
+    lead = (
+        "Every sorter produces candidate clusters. Manual review records the evidence "
+        "used to retain, reject, or defer each candidate without erasing the native sorter output."
+        if english
+        else "每个sorter输出的cluster均先视为候选。人工复核记录保留、排除或暂缓决定所依据的证据，同时保留sorter原始输出。"
+    )
+    labels = (
+        [
+            ("Candidate single unit", "Waveform, refractory period, stability, and isolation support single-unit use; final scientific inclusion still follows the study protocol."),
+            ("Multi-unit activity", "Biological spiking is present, while separation from nearby units remains insufficient."),
+            ("Noise", "The cluster is dominated by artifacts, electrical noise, or invalid waveform structure."),
+            ("Uncertain", "Evidence is incomplete or conflicting. The unit remains available for later review."),
+        ]
+        if english
+        else [
+            ("候选单神经元", "波形、不应期、稳定性与隔离证据支持单神经元使用；最终纳入仍应遵循研究方案。"),
+            ("多单元活动", "存在生物放电，但与邻近神经元的分离证据不足。"),
+            ("噪声", "cluster主要由伪迹、电噪声或无效波形结构构成。"),
+            ("不确定", "证据不完整或相互冲突，保留该unit供后续继续检查。"),
+        ]
+    )
+    checks = (
+        [
+            "Open Unit QC after activating the sorter result that will be reviewed.",
+            "Select a unit. Inspect waveform, autocorrelogram, ISI violations, firing rate, SNR, amplitude over time, and available sorter diagnostics.",
+            "Check waveform consistency across time and channels. Abrupt discontinuity or implausible shape requires closer review.",
+            "Check the refractory-period evidence. A single threshold never settles identity by itself.",
+            "Inspect amplitude and firing-rate stability across the whole recording; short fragments can hide drift or recording loss.",
+            "Compare nearby or highly similar clusters for possible duplication, split, or merge errors.",
+            "Choose a label, complete the evidence checklist, write an expert note, and save the decision.",
+            "Repeat for every retained candidate. Export the decision table with reviewer, timestamp, metric snapshot, sorter, and source run.",
+        ]
+        if english
+        else [
+            "激活需要复核的sorter结果，然后进入“Unit质控”。",
+            "选择一个unit，查看波形、自相关图、ISI违例、放电率、SNR、振幅随时间变化和可用的sorter诊断。",
+            "检查波形在时间和通道上的一致性；突变、截断或不合理形状需要进一步核查。",
+            "检查不应期证据；单一阈值无法独立决定unit身份。",
+            "查看整段记录的振幅和放电率稳定性；短片段可能掩盖漂移或记录中断。",
+            "比较邻近或高度相似cluster，检查重复、错误拆分和错误合并。",
+            "选择标签，完成证据清单，填写专家备注并保存。",
+            "逐个复核需要保留的候选；导出包含复核人、时间、指标快照、sorter和来源run的决定表。",
+        ]
+    )
+    body = f"""
+<section data-searchable>
+  <h2>{'Why curation remains necessary' if english else '为什么需要人工复核'}</h2>
+  <p>{'Kilosort4, MountainSort5, SpyKING CIRCUS 2, and other sorters use different detection and clustering strategies. Their unit counts can differ, and agreement measures reproducibility rather than biological truth. Curation applies an explicit laboratory decision rule to the evidence.' if english else 'Kilosort4、MountainSort5、SpyKING CIRCUS 2等工具采用不同检测与聚类策略，候选unit数量可能不同。算法一致度反映可复现性，无法直接等同于生物学真值；人工复核负责按实验室规则审查证据。'}</p>
+</section>
+<section data-searchable>
+  <h2>{'Review procedure' if english else '复核步骤'}</h2>
+  <ol class="steps">{''.join(f'<li>{e(item)}</li>' for item in checks)}</ol>
+  <img class="product-shot" src="../assets/neuroephys-ai-unit-curation.png" alt="NeuroEphys AI manual unit curation workspace">
+</section>
+<section data-searchable>
+  <h2>{'Available labels' if english else '可选标签'}</h2>
+  <table><thead><tr><th>{'Label' if english else '标签'}</th><th>{'Use' if english else '使用条件'}</th></tr></thead>
+  <tbody>{''.join(f'<tr><td><b>{e(name)}</b></td><td>{e(text)}</td></tr>' for name,text in labels)}</tbody></table>
+</section>
+<section data-searchable>
+  <h2>{'Sorter-specific and shared evidence' if english else '通用证据与工具特有证据'}</h2>
+  <p>{'The checklist and labels are sorter-independent. Native diagnostics remain attached to each result: Kilosort templates, amplitudes, depth-time plots, drift and contamination fields stay available; other sorters retain their own native files. Advanced split/merge work can continue in Phy or another dedicated curator and return through the sorting-result adapter.' if english else '标签与证据清单对sorter通用。每个结果仍保留原生诊断：Kilosort模板、振幅、深度-时间图、漂移和污染字段持续可见；其他sorter保留各自原生文件。复杂的拆分/合并可以在Phy等专用工具中完成，再通过sorting结果适配器导回。'}</p>
+  <ul class="source-list">
+    <li><a href="https://kilosort.readthedocs.io/en/stable/README.html">Kilosort4: manual curation with Phy</a></li>
+    <li><a href="https://spikeinterface.readthedocs.io/en/stable/modules/metrics/quality_metrics.html">SpikeInterface quality metrics</a></li>
+    <li><a href="https://phy.readthedocs.io/en/latest/quickstart/">Phy manual clustering guide</a></li>
+  </ul>
+</section>
+"""
+    return _layout(language, "unit-curation.html", title, lead, body)
+
+
+def build_provenance(language: str) -> str:
+    english = language == "en_US"
+    title = "Intermediate artifacts and provenance" if english else "中间产物与溯源"
+    lead = (
+        "Each completed stage produces readable tables, figures, structured audit records, "
+        "and machine-verifiable artifact links. These records also form the evidence available to AI."
+        if english
+        else "每个完成阶段都会生成可读表格、图、结构化审计记录和可校验的产物链接；这些记录同时构成AI能够使用的项目证据。"
+    )
+    rows = (
+        [
+            ("structured_runs.jsonl", "One record per run: stage, input, selected channels, segment, tool/version, parameters, start/end, status, warnings, error, recovery, and outputs."),
+            ("artifact_manifest.json", "One record per artifact: ID, stage, source run, relative path, type, size, checksum, parameters, and input references."),
+            ("workflow.json", "Current workflow nodes, state, selected tools, and saved parameters."),
+            ("provenance.json", "Environment, project metadata, analysis settings, results summary, warnings, and output relationships."),
+            ("CSV tables", "Unit metrics, event/trial tables, statistics, decoding, sorter comparisons, and plotted data."),
+            ("PNG/SVG figures", "Review image plus editable vector output, linked to the same stage and parameters."),
+            ("native sorter folders", "Unmodified sorter-native arrays, logs, templates, and diagnostics."),
+        ]
+        if english
+        else [
+            ("structured_runs.jsonl", "每次运行一条记录：阶段、输入、通道、片段、工具/版本、参数、起止时间、状态、警告、错误、恢复方式和输出。"),
+            ("artifact_manifest.json", "每个产物一条记录：ID、阶段、来源run、相对路径、类型、大小、校验值、参数和输入引用。"),
+            ("workflow.json", "当前工作流节点、状态、所选工具和已保存参数。"),
+            ("provenance.json", "环境、项目元数据、分析设置、结果摘要、警告和输出关系。"),
+            ("CSV表格", "Unit指标、事件/trial、统计、解码、sorter比较和绘图数据。"),
+            ("PNG/SVG图", "用于快速检查的位图和可编辑矢量图，共享同一阶段与参数来源。"),
+            ("sorter原生目录", "原样保留sorter数组、日志、模板和诊断文件。"),
+        ]
+    )
+    body = f"""
+<section data-searchable>
+  <h2>{'Project evidence layers' if english else '项目证据层'}</h2>
+  <table><thead><tr><th>{'Output' if english else '输出'}</th><th>{'Recorded content' if english else '记录内容'}</th></tr></thead>
+  <tbody>{''.join(f'<tr><td><code>{e(name)}</code></td><td>{e(text)}</td></tr>' for name,text in rows)}</tbody></table>
+</section>
+<section data-searchable>
+  <h2>{'How AI uses intermediate data' if english else 'AI如何使用中间数据'}</h2>
+  <ol class="steps">
+    <li>{'Local analysis writes the scientific result and provenance first.' if english else '本地分析先写入科学结果与来源记录。'}</li>
+    <li>{'The context builder selects compact fields such as metrics, status, warnings, parameters, and artifact IDs.' if english else '上下文构造器选取指标、状态、警告、参数和artifact ID等紧凑字段。'}</li>
+    <li>{'Paths, identities, raw arrays, and large binary content are removed.' if english else '路径、身份信息、原始数组和大型二进制内容会被移除。'}</li>
+    <li>{'The user reviews the exact online payload and can remove optional fields.' if english else '用户查看在线请求的完整内容，并可删除可选字段。'}</li>
+    <li>{'An AI answer cites the run and artifact evidence available in the project.' if english else 'AI回答引用项目中已有的run和artifact证据。'}</li>
+  </ol>
+</section>
+<section data-searchable>
+  <h2>{'Recovery rule' if english else '恢复规则'}</h2>
+  <p>{'Project files store links to every completed stage. Reopening restores the active page, source links, channel selection, sorter results, curation decisions, behavior mapping, statistics, figures, AI conversation, approved workflow, and audit history. Missing linked source data disables only the stages that need that source.' if english else '项目文件保存每个完成阶段的链接。重新打开后恢复当前页面、数据源、通道选择、sorter结果、人工决定、行为映射、统计、图表、AI对话、已批准工作流和审计历史。若外部数据源失效，只有依赖该数据源的阶段会被禁用。'}</p>
+</section>
+"""
+    return _layout(language, "provenance.html", title, lead, body)
+
+
+def build_real_data_validation(language: str) -> str:
+    english = language == "en_US"
+    title = "Real-data validation" if english else "真实数据验证"
+    lead = (
+        "A locally supplied 32-contact microwire recording was used to verify direct "
+        "Open Ephys import, full-duration sorting recovery, behavior synchronization, "
+        "downstream analysis, export, and project reload. The source data are not distributed."
+        if english
+        else "一批本地提供的32-contact微丝记录用于验证Open Ephys直接导入、全时长sorting恢复、行为同步、下游分析、导出和项目重载；原始数据不随软件分发。"
+    )
+    rows = (
+        [
+            ("Recording", "32 independent microwires, 30 kHz, 7,497.489 s, externally referenced during acquisition."),
+            ("Acquisition preprocessing", "250–8,000 Hz online filtering. LFP, low-frequency spectra, and spike-field coupling are blocked."),
+            ("Raw QC", "99.21875/100. No channels were removed from the configured 1–32 selection."),
+            ("Kilosort4", "Version 4.1.7, nblocks=0, thresholds 9/8, 12 candidate units, 2,195,626 spikes. Internal runtime 1,870.35 s; wrapper runtime 2,096.54 s."),
+            ("Behavior and synchronization", "4,654 MED-PC events; 744/744 synchronization anchors matched. Action-start analysis used event codes 17 and 19, 168 events total."),
+            ("Statistics and decoding", "Outputs were generated as technical validation. The decoding result must not be interpreted as a biological claim."),
+            ("Project recovery", "Saved project was reloaded, existing Kilosort arrays were reused, downstream outputs and artifact indexes were regenerated."),
+            ("Manual review status", "All 12 clusters remain candidates until waveform, refractory, stability, duplication, and sorter evidence have been reviewed."),
+        ]
+        if english
+        else [
+            ("记录", "32根独立微丝，30 kHz，7,497.489秒；采集时使用外部参考。"),
+            ("采集端处理", "在线250–8,000 Hz滤波；程序阻止LFP、低频频谱和spike-field coupling。"),
+            ("原始质控", "99.21875/100；配置的1–32通道没有被自动剔除。"),
+            ("Kilosort4", "版本4.1.7，nblocks=0，阈值9/8，12个候选unit，2,195,626个spike；内部用时1,870.35秒，含适配器总用时2,096.54秒。"),
+            ("行为与同步", "MED-PC事件4,654条；744/744个同步锚点匹配。动作起始分析使用事件码17和19，共168个事件。"),
+            ("统计与解码", "已生成技术验证输出；解码结果不得直接用于生物学结论。"),
+            ("项目恢复", "保存后重新加载，复用已有Kilosort数组，重新生成下游结果和产物索引。"),
+            ("人工复核状态", "12个cluster均保持候选状态，等待波形、不应期、稳定性、重复性和sorter证据的逐个检查。"),
+        ]
+    )
+    body = f"""
+<section data-searchable>
+  <h2>{'Verified chain' if english else '已验证链路'}</h2>
+  <table><thead><tr><th>{'Stage' if english else '阶段'}</th><th>{'Result' if english else '验证结果'}</th></tr></thead>
+  <tbody>{''.join(f'<tr><td><b>{e(name)}</b></td><td>{e(text)}</td></tr>' for name,text in rows)}</tbody></table>
+</section>
+<section data-searchable>
+  <h2>{'Sorter sensitivity and comparison' if english else 'Sorter敏感性与比较'}</h2>
+  <p>{'A separate 30-minute Kilosort run produced four candidates at thresholds 9/8 and five candidates at 6/5. MountainSort5, SpyKING CIRCUS 2, and Tridesclous 2 produced different candidate counts on the same segment. These differences trigger manual review and sorter-agreement analysis; they do not establish the neuron count.' if english else '独立30分钟Kilosort运行在阈值9/8下得到4个候选，在6/5下得到5个候选；MountainSort5、SpyKING CIRCUS 2和Tridesclous 2在相同片段给出不同候选数量。此差异用于触发人工复核和sorter一致度分析，无法直接确定真实神经元数量。'}</p>
+</section>
+<section data-searchable>
+  <h2>{'Scientific limits' if english else '科学限制'}</h2>
+  <ul class="checks">
+    <li>{'The verbal report of eight cells is stored as an unverified external observation and cannot serve as ground truth.' if english else '数据提供者口头报告的8个细胞作为“未验证外部观察”保存，不能作为ground truth。'}</li>
+    <li>{'Online high-pass filtering prevents recovery of true low-frequency activity.' if english else '在线高通滤波使真实低频活动无法恢复。'}</li>
+    <li>{'Event codes 21 and 22 were coincident in this recording; codes 17 and 19 supplied the distinct action-start comparison.' if english else '该记录中事件码21和22时间完全重合；条件比较改用具有独立时间的17和19动作起始事件。'}</li>
+    <li>{'Single-session decoding can reflect session structure and requires independent replication.' if english else '单session解码可能反映session结构，需要独立数据验证。'}</li>
+  </ul>
+</section>
+"""
+    return _layout(language, "real-data-validation.html", title, lead, body)
 
 
 def build_troubleshooting(language: str) -> str:
@@ -688,7 +871,7 @@ def build_troubleshooting(language: str) -> str:
         [
             ("Diagonal/repeated traces", "Wrong total channel count or dtype.", "Return to Data, verify the acquisition configuration, and re-import."),
             ("Selected sorter cannot run", "Backend or dependency is not installed, hardware is incompatible, or environment probing failed.", "Open Sorter Manager and follow that backend's exact diagnostic. Choose another sorter only as an explicit new decision."),
-            ("A run shows another sorter's result", "The selected result was not activated or the run failed.", "Check active sorter, run log, native output folder, and result timestamp. NeuroFlow must show pending/failed rather than substitute."),
+            ("A run shows another sorter's result", "The selected result was not activated or the run failed.", "Check active sorter, run log, native output folder, and result timestamp. NeuroEphys AI must show pending/failed rather than substitute."),
             ("No event-aligned analysis", "No events, wrong time units, or synchronization has not run.", "Import behavior/TTL, verify counts and residuals, then rerun the selected event analysis."),
             ("Completed stage has no restored figure", "The project was saved with an older schema or a linked source is missing.", "Open the audit log, verify source paths, then rerun only the missing derived stage."),
             ("Application close warning", "The project has unsaved navigation, parameters, decisions, or logs.", "Choose Save to update neuroflow_project.json, Discard to close without those changes, or Cancel to return."),
@@ -710,7 +893,7 @@ def build_troubleshooting(language: str) -> str:
 </section>
 <section data-searchable>
   <h2>{'What to include in a bug report' if english else '反馈问题时需要提供'}</h2>
-  <ul>{''.join(f'<li>{e(item)}</li>' for item in (["NeuroFlow version and operating system", "Project manifest with private paths redacted", "Current stage, selection, and parameters", "Exact first error line and audit-log tail", "Sorter name, backend version, GPU/CPU status", "Whether the issue reproduces on a teaching simulation"] if english else ["NeuroFlow 版本和操作系统", "隐去敏感路径后的项目清单", "当前阶段、具体选项和参数", "第一行真实错误与审计日志末尾", "sorter 名称、后端版本和 GPU/CPU 状态", "教学模拟项目能否复现"]))}</ul>
+  <ul>{''.join(f'<li>{e(item)}</li>' for item in (["NeuroEphys AI version and operating system", "Project manifest with private paths redacted", "Current stage, selection, and parameters", "Exact first error line and audit-log tail", "Sorter name, backend version, GPU/CPU status", "Whether the issue reproduces on a teaching simulation"] if english else ["NeuroEphys AI 版本和操作系统", "隐去敏感路径后的项目清单", "当前阶段、具体选项和参数", "第一行真实错误与审计日志末尾", "sorter 名称、后端版本和 GPU/CPU 状态", "教学模拟项目能否复现"]))}</ul>
 </section>
 """
     return _layout(language, "troubleshooting.html", title, lead, body)
@@ -720,9 +903,9 @@ def build_sources(language: str) -> str:
     english = language == "en_US"
     title = "Methods and sources" if english else "方法与来源"
     lead = (
-        "NeuroFlow reuses established open-source computation and writes original interface, interoperability, tutorial, and audit layers. The summaries below are original paraphrases, not copied documentation."
+        "NeuroEphys AI reuses established open-source computation and writes original interface, interoperability, tutorial, and audit layers. The summaries below are original paraphrases, not copied documentation."
         if english
-        else "NeuroFlow 复用成熟开源计算能力，自主编写界面、兼容、教程和审计层。以下内容为原创概括，不复制原文。"
+        else "NeuroEphys AI 复用成熟开源计算能力，自主编写界面、兼容、教程和审计层。以下内容为原创概括，不复制原文。"
     )
     sources = [
         ("Kilosort4 documentation", "https://kilosort.readthedocs.io/en/latest/", "Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial."),
@@ -730,6 +913,7 @@ def build_sources(language: str) -> str:
         ("Kilosort4 parameter guide", "https://kilosort.readthedocs.io/en/latest/parameters.html", "n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions."),
         ("SpikeInterface", "https://spikeinterface.readthedocs.io/en/stable/", "Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces."),
         ("SpikeInterface sorters", "https://spikeinterface.readthedocs.io/en/stable/modules/sorters.html", "Common sorter wrappers, native dependencies, and container execution."),
+        ("SpikeInterface quality metrics", "https://spikeinterface.readthedocs.io/en/stable/modules/metrics/quality_metrics.html", "Definitions and implementation references for firing, refractory, amplitude, drift, and isolation-oriented metrics."),
         ("Elephant", "https://elephant.readthedocs.io/en/stable/modules.html", "Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects."),
         ("Neo", "https://neo.readthedocs.io/en/stable/read_and_analyze.html", "Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects."),
         ("Phy", "https://phy.readthedocs.io/en/latest/quickstart/", "Manual review of spike-sorting output."),
@@ -738,19 +922,20 @@ def build_sources(language: str) -> str:
         ("GraphPad Prism graph controls", "https://www.graphpad.com/guides/prism/latest/user-guide/how_to_change_a_graph.htm", "Interaction expectations for editable graph objects, axes, grids, ticks, and exact size."),
         ("IBL Brain-Wide Map", "https://www.internationalbrainlab.com/brainwidemap", "Public neural and behavioral validation context."),
         ("DANDI Archive", "https://docs.dandiarchive.org/introduction/", "Versioned NWB public-data access and provenance."),
-        ("OpenAI Responses API", "https://developers.openai.com/api/docs/guides/text", "Optional cloud text generation with high-priority instructions and local deterministic computation."),
-        ("OpenAI Structured Outputs", "https://developers.openai.com/api/docs/guides/structured-outputs", "Schema-constrained advisory answers and workflow plans."),
-        ("OpenAI model catalog", "https://developers.openai.com/api/docs/models", "Current model identifiers and documented quality, latency, and cost roles."),
+        ("DeepSeek chat completion API", "https://api-docs.deepseek.com/api/create-chat-completion", "Provider endpoint, streaming response, usage fields, and request structure."),
+        ("DeepSeek function calling", "https://api-docs.deepseek.com/guides/function_calling/", "Structured function definitions and model-generated argument requests."),
+        ("DeepSeek tool calls", "https://api-docs.deepseek.com/guides/tool_calls", "Tool-call response handling and multi-turn tool result flow."),
+        ("OpenAI Responses API", "https://developers.openai.com/api/docs/guides/text", "Optional provider adapter and structured text generation."),
     ]
     body = f"""
 <section data-searchable>
   <h2>{'Attribution table' if english else '来源与借鉴范围'}</h2>
-  <table><thead><tr><th>{'Source' if english else '来源'}</th><th>{'How NeuroFlow uses it' if english else 'NeuroFlow 借鉴或调用的范围'}</th></tr></thead>
-  <tbody>{''.join(f'<tr><td><a href="{e(url)}">{e(name)}</a></td><td>{e(scope if english else {"Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial.":"文档层级、GUI 操作顺序、参数、导出文件、漂移检查和示例教程结构。","Data/probe selection, input preview, channel-count checks, run sequence.":"数据/探针选择、输入预览、通道数检查和运行顺序。","n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions.":"n_chan_bin、batch_size、nblocks、阈值、时间范围、几何和重复 spike 注意事项。","Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces.":"数据读取、预处理、sorter 适配、后处理、质量指标和比较接口。","Common sorter wrappers, native dependencies, and container execution.":"统一 sorter wrapper、原生依赖和容器执行机制。","Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects.":"基于 Neo 对象的 spike train 统计、频谱、相关、相位和信号分析 API。","Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects.":"带单位的 SpikeTrain、AnalogSignal、Event、Epoch、Segment 和 Block 对象。","Manual review of spike-sorting output.":"spike sorting 输出的人工复核工作流。","CPU-oriented sorting schemes and package interface.":"面向 CPU 的 sorting scheme 和包接口。","Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses.":"行为状态、呼吸、spike、LFP、相位和 surrogate 分析的方法结构。","Interaction expectations for editable graph objects, axes, grids, ticks, and exact size.":"图元、坐标轴、网格、刻度和精确尺寸的可编辑交互预期。","Public neural and behavioral validation context.":"公开神经与行为数据的验证背景。","Versioned NWB public-data access and provenance.":"版本化 NWB 公开数据访问与来源记录。","Optional cloud text generation with high-priority instructions and local deterministic computation.":"可选云端文本生成、高优先级助手指令和本地确定性计算边界。","Schema-constrained advisory answers and workflow plans.":"受结构约束的辅助回答与候选工作流。","Current model identifiers and documented quality, latency, and cost roles.":"当前模型标识及官方说明的质量、延迟与成本定位。"}[scope])}</td></tr>' for name,url,scope in sources)}</tbody></table>
+  <table><thead><tr><th>{'Source' if english else '来源'}</th><th>{'How NeuroEphys AI uses it' if english else 'NeuroEphys AI 借鉴或调用的范围'}</th></tr></thead>
+  <tbody>{''.join(f'<tr><td><a href="{e(url)}">{e(name)}</a></td><td>{e(scope if english else {"Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial.":"文档层级、GUI 操作顺序、参数、导出文件、漂移检查和示例教程结构。","Data/probe selection, input preview, channel-count checks, run sequence.":"数据/探针选择、输入预览、通道数检查和运行顺序。","n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions.":"n_chan_bin、batch_size、nblocks、阈值、时间范围、几何和重复 spike 注意事项。","Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces.":"数据读取、预处理、sorter 适配、后处理、质量指标和比较接口。","Common sorter wrappers, native dependencies, and container execution.":"统一sorter wrapper、原生依赖和容器执行机制。","Definitions and implementation references for firing, refractory, amplitude, drift, and isolation-oriented metrics.":"放电、不应期、振幅、漂移和隔离相关指标的定义与实现依据。","Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects.":"基于Neo对象的spike train统计、频谱、相关、相位和信号分析API。","Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects.":"带单位的SpikeTrain、AnalogSignal、Event、Epoch、Segment和Block对象。","Manual review of spike-sorting output.":"spike sorting输出的人工复核工作流。","CPU-oriented sorting schemes and package interface.":"面向CPU的sorting scheme和包接口。","Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses.":"行为状态、呼吸、spike、LFP、相位和surrogate分析的方法结构。","Interaction expectations for editable graph objects, axes, grids, ticks, and exact size.":"图元、坐标轴、网格、刻度和精确尺寸的可编辑交互预期。","Public neural and behavioral validation context.":"公开神经与行为数据的验证背景。","Versioned NWB public-data access and provenance.":"版本化NWB公开数据访问与来源记录。","Provider endpoint, streaming response, usage fields, and request structure.":"模型服务地址、流式返回、用量字段和请求结构。","Structured function definitions and model-generated argument requests.":"结构化函数定义和模型参数请求。","Tool-call response handling and multi-turn tool result flow.":"工具调用返回处理和多轮工具结果流程。","Optional provider adapter and structured text generation.":"可选模型适配器和结构化文本生成。"}[scope])}</td></tr>' for name,url,scope in sources)}</tbody></table>
 </section>
 <section data-searchable>
   <h2>{'Non-copying rule' if english else '不直接抄袭原则'}</h2>
-  <div class="callout warning">{'NeuroFlow does not reproduce another product’s prose, screenshots, figures, numerical conclusions, or visual identity. It uses official method definitions and documentation patterns as references, then writes original product text, workflows, adapters, and interface behavior.' if english else 'NeuroFlow 不复制其他产品的原文、截图、论文图、数值结论或视觉识别；只把官方方法定义和文档组织方式作为参考，再自主编写产品文字、工作流、适配器和界面行为。'}</div>
+  <div class="callout warning">{'NeuroEphys AI does not reproduce another product’s prose, screenshots, figures, numerical conclusions, or visual identity. It uses official method definitions and documentation patterns as references, then writes original product text, workflows, adapters, and interface behavior.' if english else 'NeuroEphys AI 不复制其他产品的原文、截图、论文图、数值结论或视觉识别；只把官方方法定义和文档组织方式作为参考，再自主编写产品文字、工作流、适配器和界面行为。'}</div>
 </section>
 """
     return _layout(language, "sources.html", title, lead, body)
@@ -763,9 +948,12 @@ BUILDERS = {
     "tutorials.html": build_tutorials,
     "data-inputs.html": build_data_inputs,
     "sorting.html": build_sorting,
+    "unit-curation.html": build_unit_curation,
     "ai-assistant.html": build_ai_assistant,
     "parameters.html": build_parameters,
     "figure-studio.html": build_figure_studio,
+    "provenance.html": build_provenance,
+    "real-data-validation.html": build_real_data_validation,
     "troubleshooting.html": build_troubleshooting,
     "sources.html": build_sources,
 }
@@ -783,12 +971,12 @@ def build() -> None:
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>NeuroFlow Documentation</title>
+    <title>NeuroEphys AI Documentation</title>
     <link rel="stylesheet" href="styles.css?v=0.8.0">
   </head>
   <body class="language-gateway">
     <main class="gateway-panel">
-      <p class="eyebrow">NeuroFlow Documentation</p>
+      <p class="eyebrow">NeuroEphys AI Documentation</p>
       <h1>选择操作手册语言</h1>
       <p class="lead">每套手册只显示一种语言；专有软件名和参数名保持原名。</p>
       <div class="gateway-actions">

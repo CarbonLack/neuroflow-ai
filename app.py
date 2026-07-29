@@ -3,7 +3,14 @@ from pathlib import Path
 
 if __name__ == "__main__":
     if getattr(sys, "frozen", False):
-        workspace = Path.home() / "Documents" / "NeuroFlow"
+        documents = Path.home() / "Documents"
+        preferred_workspace = documents / "NeuroEphysAI"
+        legacy_workspace = documents / "NeuroFlow"
+        workspace = (
+            preferred_workspace
+            if preferred_workspace.exists() or not legacy_workspace.exists()
+            else legacy_workspace
+        )
     else:
         workspace = Path(__file__).resolve().parent
     if "--self-test-kilosort" in sys.argv:

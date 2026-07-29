@@ -119,10 +119,13 @@ def test_generated_documentation_is_complete_and_english_is_monolingual():
         "sorting.html",
         "ai-assistant.html",
         "parameters.html",
-        "figure-studio.html",
-        "troubleshooting.html",
-        "sources.html",
-    }
+            "figure-studio.html",
+            "provenance.html",
+            "real-data-validation.html",
+            "troubleshooting.html",
+            "sources.html",
+            "unit-curation.html",
+        }
     assert {path.name for path in (site / "zh").glob("*.html")} == expected
     assert {path.name for path in (site / "en").glob("*.html")} == expected
     english = "\n".join(
@@ -331,6 +334,32 @@ def test_elephant_toolkit_produces_real_results(tmp_path: Path):
     assert (exported / "figures" / "spike_field_coupling.svg").is_file()
 
 
+def test_export_removes_stale_trial_table_when_trials_are_not_defined(
+    tmp_path: Path,
+):
+    state = ProjectState(root=tmp_path / "project")
+    state.events = [
+        {
+            "event_index": 0,
+            "event_code": 11,
+            "time_seconds": 1.0,
+        }
+    ]
+    state.trials = []
+    output = tmp_path / "export"
+    tables = output / "tables"
+    tables.mkdir(parents=True)
+    (tables / "trials.csv").write_text(
+        "trial,event_code\n1,11\n",
+        encoding="utf-8",
+    )
+
+    export_reproducible_bundle(state, output)
+
+    assert (tables / "events.csv").is_file()
+    assert not (tables / "trials.csv").exists()
+
+
 def test_normalized_multi_sorter_comparison_and_roundtrip(tmp_path: Path):
     state = ProjectState(root=tmp_path / "comparison", sampling_rate=30_000)
     state.ground_truth = {
@@ -371,3 +400,77 @@ def test_normalized_multi_sorter_comparison_and_roundtrip(tmp_path: Path):
     assert set(restored.sorted_spikes) == {10, 11, 12}
     assert set(restored.ground_truth) == {0, 1}
     assert restored.sorting_provenance["sorter_b"]["time_unit"] == "seconds"
+
+
+def test_unit_qc_is_preserved_per_sorter_and_roundtrips(tmp_path: Path):
+    state = ProjectState(
+        root=tmp_path / "sorter_qc",
+        sampling_rate=30_000,
+        duration_seconds=1.0,
+    )
+    register_sorting_result(
+        state,
+        "sorter_a",
+        {1: np.array([0.1, 0.2, 0.3])},
+        {"sorter": "Sorter A"},
+    )
+    metrics_a = compute_unit_metrics(state)
+    register_sorting_result(
+        state,
+        "sorter_b",
+        {2: np.array([0.15, 0.25])},
+        {"sorter": "Sorter B"},
+    )
+    metrics_b = compute_unit_metrics(state)
+
+    activate_sorting_result(state, "sorter_a")
+    assert state.unit_metrics == metrics_a
+    assert set(state.unit_diagnostics) == {1}
+    activate_sorting_result(state, "sorter_b")
+    assert state.unit_metrics == metrics_b
+    assert set(state.unit_diagnostics) == {2}
+
+    restored = load_project(save_project(state))
+    activate_sorting_result(restored, "sorter_a")
+    assert restored.unit_metrics[0]["unit_id"] == metrics_a[0]["unit_id"]
+    assert np.isnan(restored.unit_metrics[0]["snr"])
+    assert set(restored.unit_diagnostics) == {1}
+    activate_sorting_result(restored, "sorter_b")
+    assert restored.unit_metrics[0]["unit_id"] == metrics_b[0]["unit_id"]
+    assert np.isnan(restored.unit_metrics[0]["snr"])
+    assert set(restored.unit_diagnostics) == {2}
+
+
+def test_replacing_sorter_result_invalidates_stale_unit_qc(tmp_path: Path):
+    state = ProjectState(
+        root=tmp_path / "replace_sorter_qc",
+        sampling_rate=30_000,
+        duration_seconds=1.0,
+    )
+    register_sorting_result(
+        state,
+        "sorter_a",
+        {1: np.array([0.1, 0.2, 0.3])},
+        {"sorter": "Sorter A", "settings": {"threshold": 5}},
+    )
+    compute_unit_metrics(state)
+    state.analysis = {"source": "sorter_a"}
+    state.statistics = {"source": "sorter_a"}
+
+    register_sorting_result(
+        state,
+        "sorter_a",
+        {
+            10: np.array([0.15, 0.25]),
+            11: np.array([0.35, 0.45]),
+        },
+        {"sorter": "Sorter A", "settings": {"threshold": 6}},
+    )
+
+    assert set(state.sorted_spikes) == {10, 11}
+    assert "sorter_a" not in state.unit_metrics_by_sorter
+    assert "sorter_a" not in state.unit_diagnostics_by_sorter
+    assert state.unit_metrics == []
+    assert state.unit_diagnostics == {}
+    assert state.analysis == {}
+    assert state.statistics == {}

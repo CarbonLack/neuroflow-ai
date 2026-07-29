@@ -41,6 +41,12 @@ class ProjectState:
     preprocessing: dict[str, Any] = field(default_factory=dict)
     unit_metrics: list[dict[str, Any]] = field(default_factory=list)
     unit_diagnostics: dict[int, dict[str, Any]] = field(default_factory=dict)
+    unit_metrics_by_sorter: dict[str, list[dict[str, Any]]] = field(
+        default_factory=dict
+    )
+    unit_diagnostics_by_sorter: dict[
+        str, dict[int, dict[str, Any]]
+    ] = field(default_factory=dict)
     analysis: dict[str, Any] = field(default_factory=dict)
     spike_train_analysis: dict[str, Any] = field(default_factory=dict)
     lfp_analysis: dict[str, Any] = field(default_factory=dict)

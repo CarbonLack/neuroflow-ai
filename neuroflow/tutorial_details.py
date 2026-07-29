@@ -35,7 +35,7 @@ DEFAULT_TRANSLATIONS = {
     "线性/SVM 模型使用 StandardScaler": "StandardScaler for linear/SVM models",
     "balanced（不平衡时）": "balanced (for imbalanced classes)",
     "按当前图": "Use the current figure",
-    "NeuroFlow 标准主题": "NeuroFlow standard theme",
+    "NeuroEphys AI 标准主题": "NeuroEphys AI standard theme",
     "取决于导入选择": "Defined by the import choice",
 }
 
@@ -96,13 +96,13 @@ def _parameter(
 TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     "import": {
         "narrative": (
-            "这一页不是简单的“选文件”。NeuroFlow 必须先知道每个采样值怎样存储、"
+            "数据导入从结构确认开始。NeuroEphys AI 必须先知道每个采样值怎样存储、"
             "多少个值组成一个时间点、探针通道怎样排列，以及行为事件使用哪一台设备的"
             "时钟。只有这些结构被确认，后面的滤波、sorting 和事件对齐才有正确的物理"
             "单位。导入过程保持原始数据只读，项目只保存索引、缓存和派生结果。"
         ),
         "narrative_en": (
-            "This page does more than select a file. NeuroFlow must know how each "
+            "This page does more than select a file. NeuroEphys AI must know how each "
             "sample is stored, how many values form one time point, how probe "
             "contacts are arranged, and which device clock timestamps behavior. "
             "Those facts give filtering, sorting, and event alignment their correct "
@@ -111,7 +111,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
         ),
         "before": (
             "准备记录系统说明、采样率、总通道数、数据类型、增益或 μV/bit、探针几何，"
-            "以及可选的事件 CSV。若是通用二进制，必须从采集软件配置中核对，而不是凭"
+            "以及可选的事件 CSV。若是通用二进制，必须从采集软件配置中核对，禁止根据"
             "波形猜参数。"
         ),
         "before_en": (
@@ -239,7 +239,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     },
     "qc": {
         "narrative": (
-            "质控的目标不是自动删除通道，而是建立证据：异常发生在哪些通道、哪些时间、"
+            "质控用于建立异常证据：异常发生在哪些通道、哪些时间、"
             "哪些频率，以及是否可能影响重参考和 spike 检测。先在整段记录上定位问题，"
             "再放大到原始波形核实，最后才给出坏通道候选。"
         ),
@@ -267,7 +267,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
                 "QC metric summary",
                 "运行该子分析，查看每通道 RMS、峰峰值、饱和比例和工频比值。",
                 "Run the sub-analysis and inspect RMS, peak-to-peak, clipping, and line-noise ratios.",
-                "用多个指标共同筛选，而不是依赖单一阈值。",
+                "用多个指标共同筛选，避免依赖单一阈值。",
                 "Screens channels using several metrics rather than one threshold.",
                 "生成候选坏通道表；不会自动排除。",
                 "Creates a candidate bad-channel table without automatic exclusion.",
@@ -370,14 +370,14 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     },
     "preprocess": {
         "narrative": (
-            "预处理不是“越多越干净”。每个操作都改变信号，因此必须说明目标、顺序和"
-            "是否会在 sorter 内再次执行。NeuroFlow 默认先做短片段预览，让用户比较"
+            "预处理操作会改变信号，处理数量增加并不必然提升质量。每个操作都要说明目标、顺序和"
+            "是否会在 sorter 内再次执行。NeuroEphys AI 默认先做短片段预览，让用户比较"
             "处理前后波形和频谱；确认后才把参数写入工作流。"
         ),
         "narrative_en": (
             "More preprocessing is not automatically better. Every operation changes "
             "the signal, so its purpose, order, and duplication inside the sorter must "
-            "be explicit. NeuroFlow previews a short segment first and compares traces "
+            "be explicit. NeuroEphys AI previews a short segment first and compares traces "
             "and spectra before parameters are committed to the workflow."
         ),
         "before": "先完成坏通道确认；明确当前目标是 AP/spike sorting、LFP，还是两者。",
@@ -501,13 +501,13 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     },
     "sorting": {
         "narrative": (
-            "Spike sorting 把多通道电压中的候选事件分配给 unit。NeuroFlow 不把不同 "
+            "Spike sorting 把多通道电压中的候选事件分配给 unit。NeuroEphys AI 不把不同 "
             "sorter 的原生输出强行抹平：它保留原始文件、参数和日志，同时把共同结果转换"
             "为统一的 unit、spike 秒时间和通道/模板描述，供下游比较。"
         ),
         "narrative_en": (
             "Spike sorting assigns candidate events in multichannel voltage to units. "
-            "NeuroFlow preserves each sorter's native files, parameters, and logs while "
+            "NeuroEphys AI preserves each sorter's native files, parameters, and logs while "
             "normalizing shared outputs into units, spike times in seconds, and "
             "channel/template descriptions for downstream comparison."
         ),
@@ -519,7 +519,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
                 "Select a sorter",
                 "在表中选择 Kilosort4、MountainSort5 或其他已安装后端。",
                 "Choose Kilosort4, MountainSort5, or another installed backend.",
-                "按探针密度、硬件和研究需求选择算法，而不是只按“能运行”。",
+                "按探针密度、硬件和研究需求选择算法，不能只看“能运行”。",
                 "Chooses an algorithm by probe density, hardware, and scientific need, not only availability.",
                 "参数区切换到该 sorter 的真实配置，未运行时显示输入预览。",
                 "Loads that sorter's real settings and shows input preview before a run.",
@@ -791,7 +791,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
             "Behavior computers, cameras, and electrophysiology systems often have "
             "independent clocks. The synchronization page fits offset + slope × "
             "behavior_time from paired TTL pulses and uses residuals to detect missing "
-            "pulses, mismatches, or nonlinear drift. Without matching TTLs, NeuroFlow "
+            "pulses, mismatches, or nonlinear drift. Without matching TTLs, NeuroEphys AI "
             "can only assume a shared clock and labels that assumption explicitly."
         ),
         "before": "准备行为事件 CSV 和可选 TTL CSV；明确每一列的时钟、单位和事件含义。",
@@ -1036,7 +1036,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     },
     "analysis": {
         "narrative": (
-            "神经活动页不是一张固定 PSTH，而是四类可独立运行的分析入口：事件对齐"
+            "神经活动页提供四类可独立运行的分析入口：事件对齐"
             "响应、spike train 统计、LFP 频谱/时频，以及 spike-field 耦合。每个子分析"
             "都有自己的输入、参数、图和表；未运行时显示输入预览和运行目的，不伪造结果。"
         ),
@@ -1178,7 +1178,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     },
     "statistics": {
         "narrative": (
-            "统计页从“样本是什么”开始，而不是从检验名称开始。trial 嵌套于 session，"
+            "统计页先定义“样本是什么”，随后选择检验。trial 嵌套于 session，"
             "unit 嵌套于动物；配对、重复测量和层级结构决定了哪些比较合法。页面同时"
             "报告效应量、置信区间和多重比较处理，不把 p 值作为唯一结论。"
         ),
@@ -1310,7 +1310,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     "decoding": {
         "narrative": (
             "机器学习页把神经活动转换为 trial × feature 矩阵，并把预处理、特征选择和"
-            "模型全部放入交叉验证内部。核心不是寻找最高分，而是建立没有数据泄漏、"
+            "模型全部放入交叉验证内部。核心目标是建立没有数据泄漏、"
             "与 shuffle 基线比较、能跨 session/动物泛化的评估。"
         ),
         "narrative_en": (
@@ -1418,7 +1418,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
         "recommended": [
             "先建立线性基线，再比较复杂模型。",
             "模型、特征选择、缩放和超参数搜索全部封装在验证循环内。",
-            "报告每折分数、shuffle 分布和跨组泛化，而不是一个最高分。",
+            "报告每折分数、shuffle 分布和跨组泛化，避免只报告一个最高分。",
         ],
         "recommended_en": [
             "Establish a linear baseline before comparing complex models.",
@@ -1529,7 +1529,7 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
                 "Axis/grid/spine",
                 "坐标轴线宽、长度、刻度、网格和边框显示。",
                 "Axis line width, extent, ticks, grid, and spine visibility.",
-                "NeuroFlow 标准主题",
+                "NeuroEphys AI 标准主题",
                 "按图类型调整并保持同一 Figure 内一致；不要用装饰网格掩盖数据。",
                 "Adjust by plot type and keep a figure consistent; do not let decorative grids obscure data.",
                 "粗线提高可见性但会压缩小 panel；网格过强会与数据竞争。",

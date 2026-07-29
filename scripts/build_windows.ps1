@@ -18,9 +18,9 @@ try {
     }
     & $Python -m PyInstaller --noconfirm --clean NeuroFlow.spec
     if ($LASTEXITCODE -ne 0) {
-        throw "NeuroFlow packaging failed with exit code $LASTEXITCODE."
+        throw "NeuroEphys AI packaging failed with exit code $LASTEXITCODE."
     }
-    Write-Host "Portable application created at dist\NeuroFlow\NeuroFlow.exe" -ForegroundColor Green
+    Write-Host "Portable application created at dist\NeuroEphysAI\NeuroEphysAI.exe" -ForegroundColor Green
 } finally {
     Pop-Location
 }

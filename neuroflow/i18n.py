@@ -4,8 +4,8 @@ LANGUAGES = {"zh_CN": "中文", "en_US": "English"}
 
 TEXT = {
     "app_title": {
-        "zh_CN": "NeuroFlow - 在体电生理全流程工作台",
-        "en_US": "NeuroFlow - In-vivo electrophysiology workbench",
+        "zh_CN": "NeuroEphys AI - 在体电生理全流程工作台",
+        "en_US": "NeuroEphys AI - In-vivo electrophysiology workbench",
     },
     "home": {"zh_CN": "首页", "en_US": "Home"},
     "save": {"zh_CN": "保存项目", "en_US": "Save project"},
@@ -16,7 +16,7 @@ TEXT = {
     "language": {"zh_CN": "语言", "en_US": "Language"},
     "import_data": {"zh_CN": "导入我的数据", "en_US": "Import my data"},
     "sample": {"zh_CN": "打开示例数据", "en_US": "Open demo data"},
-    "restore": {"zh_CN": "恢复 NeuroFlow 项目", "en_US": "Restore NeuroFlow project"},
+    "restore": {"zh_CN": "恢复 NeuroEphys AI 项目", "en_US": "Restore NeuroEphys AI project"},
     "hero": {
         "zh_CN": "从自己的原始数据开始，\n逐步走到可复现的论文图。",
         "en_US": "Start with your own raw data,\nand reach reproducible publication figures.",
@@ -121,7 +121,7 @@ STEP_TEXT = {
         "zh_CN": ("10  机器学习", "分类、聚类、交叉验证、置换与 PCA"),
         "en_US": (
             "10  Machine learning",
-            "Classification, clustering, CV, permutation, and PCA",
+            "Classification, CV, clustering, and PCA",
         ),
     },
     "export": {

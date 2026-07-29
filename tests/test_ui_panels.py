@@ -14,7 +14,43 @@ from neuroflow.sorting_results import (
     compare_sorting_results,
     register_sorting_result,
 )
-from neuroflow.ui import NeuroFlowWindow
+from neuroflow.ui import ImportDialog, NeuroFlowWindow, PipelineWorker
+from neuroflow.unit_curation_ui import UnitCurationDialog
+
+
+def test_gui_worker_writes_reloadable_structured_audit(tmp_path: Path):
+    QApplication.instance() or QApplication([])
+    state = ProjectState(
+        root=tmp_path / "audited_project",
+        name="Audited GUI project",
+        source_type="binary",
+        recording_path=tmp_path / "recording.bin",
+        channel_count=4,
+        sampling_rate=1_000.0,
+        duration_seconds=1.0,
+    )
+    state.recording_path.write_bytes(b"\0" * (1_000 * 4 * 2))
+    worker = PipelineWorker(
+        state,
+        ["import"],
+        "kilosort4",
+        {},
+        "classification:Logistic regression",
+    )
+
+    worker.run()
+
+    audit_path = state.root / "logs" / "structured_runs.jsonl"
+    records = [
+        json.loads(line)
+        for line in audit_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert [record["status"] for record in records] == ["running", "completed"]
+    assert records[-1]["input_files"] == [str(state.recording_path)]
+    assert records[-1]["elapsed_seconds"] >= 0
+    restored = load_project(state.root)
+    assert restored.metadata["structured_run_log"][-1]["stage"] == "import"
+    assert restored.metadata["structured_run_log"][-1]["status"] == "completed"
 
 
 def test_scrollable_workspace_and_independent_panel_export(
@@ -106,6 +142,48 @@ def test_saved_project_reopens_at_the_last_stage(tmp_path: Path):
     assert window.state.workflow_status["qc"] == "completed"
     assert window.project_dirty is False
     window.close()
+    app.processEvents()
+
+
+def test_import_dialog_saves_generic_probe_and_behavior_configuration(
+    tmp_path: Path,
+):
+    app = QApplication.instance() or QApplication([])
+    dialog = ImportDialog(tmp_path / "workspace", language="en_US")
+    state = ProjectState(
+        root=tmp_path / "project",
+        name="Own recording",
+        source_type="read_openephys",
+        recording_path=tmp_path / "source",
+        channel_count=32,
+        sampling_rate=30_000,
+        duration_seconds=1_800,
+    )
+    dialog.state = state
+    dialog.electrode_type_edit.setCurrentText("independent microwires")
+    dialog.brain_region_edit.setText("OFC")
+    geometry_index = dialog.geometry_mode_combo.findData("independent_contacts")
+    dialog.geometry_mode_combo.setCurrentIndex(geometry_index)
+    dialog.reference_edit.setText("External reference; not stored")
+    dialog.known_bad_channels_edit.setText("")
+    dialog.device_channels.setText("1-32")
+
+    dialog._apply_import_metadata_and_behavior("device")
+
+    assert state.electrode_type == "independent microwires"
+    assert state.metadata["probe"] == {
+        "type": "independent microwires",
+        "contact_count": 32,
+        "geometry_mode": "independent_contacts",
+        "brain_region": "OFC",
+        "reference_configuration": "External reference; not stored",
+        "known_hardware_bad_channels": [],
+    }
+    assert state.metadata["import_configuration"]["channel_selection"] == "1-32"
+    assert state.metadata["behavior_import_configuration"]["status"] == (
+        "not_configured"
+    )
+    dialog.close()
     app.processEvents()
 
 
@@ -245,6 +323,10 @@ def test_ai_assistant_is_discoverable_and_plan_never_auto_runs(
             "recommended_parameters": [],
         }
     ]
+    window.ai_dialog.current_plan = plan
+    window.ai_dialog._render_plan()
+    assert window.ai_dialog.plan_table.rowCount() == 1
+    assert window.ai_dialog.plan_table.item(0, 0).checkState().value == 2
     window._apply_ai_plan(plan, "qc")
 
     assert state.metadata["ai_workflow_plan"]["status"] == "advisory_not_executed"
@@ -253,4 +335,60 @@ def test_ai_assistant_is_discoverable_and_plan_never_auto_runs(
     window.ai_dialog.hide()
     window._set_project_clean()
     window.close()
+    app.processEvents()
+
+
+def test_manual_unit_curation_dialog_saves_review_evidence(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    state = ProjectState(
+        root=tmp_path / "project",
+        duration_seconds=10.0,
+    )
+    state.active_sorter_key = "kilosort4"
+    state.sorted_spikes = {3: np.array([0.1, 0.2, 0.5])}
+    state.sorting_results = {"kilosort4": state.sorted_spikes}
+    state.unit_metrics = [
+        {
+            "unit_id": 3,
+            "spike_count": 3,
+            "firing_rate_hz": 0.3,
+            "isi_violation_rate": 0.0,
+            "snr": 4.2,
+            "peak_channel": 1,
+            "label": "候选单神经元",
+        }
+    ]
+    state.unit_metrics_by_sorter = {"kilosort4": state.unit_metrics}
+    state.unit_diagnostics = {
+        3: {
+            "waveform": np.zeros((41, 1)).tolist(),
+            "waveform_time_ms": np.linspace(-0.67, 0.67, 41).tolist(),
+            "waveform_channels": [1],
+            "isi_ms": [100.0, 300.0],
+            "acg_lags_ms": np.arange(0.5, 50.0, 1.0).tolist(),
+            "acg_counts": np.zeros(50).tolist(),
+            "stability_time_s": np.arange(10).tolist(),
+            "stability_rate_hz": np.zeros(10).tolist(),
+            "amplitude_time_s": [],
+            "amplitude_adc": [],
+        }
+    }
+    state.unit_diagnostics_by_sorter = {
+        "kilosort4": state.unit_diagnostics
+    }
+
+    dialog = UnitCurationDialog(state, "en_US")
+    dialog.label_combo.setCurrentIndex(
+        dialog.label_combo.findData("candidate_single_unit")
+    )
+    dialog.checks["waveform_shape"].setChecked(True)
+    dialog.checks["refractory_period"].setChecked(True)
+    dialog.notes_edit.setPlainText("Waveform and refractory evidence reviewed.")
+    dialog._save()
+
+    record = state.metadata["unit_curation"]["kilosort4"]["3"]
+    assert record["label"] == "candidate_single_unit"
+    assert record["checks"]["waveform_shape"] is True
+    assert "ground truth" in record["decision_scope"]
+    dialog.close()
     app.processEvents()

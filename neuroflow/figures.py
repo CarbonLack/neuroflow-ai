@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 from scipy import signal as scipy_signal
 
 from .analysis import load_recording
+from .medpc import CONFIRMED_EVENT_DICTIONARY
 from .models import ProjectState
 
 INK = "#17221f"
@@ -388,9 +389,95 @@ def raw_overview_figure(
     return fig
 
 
+def _task_event_behavior_figure(state: ProjectState) -> Figure:
+    """Show task-event counts and timing without calling each event a trial."""
+    fig, axes = _base_figure(1, 2, 6.2)
+    events = [
+        event
+        for event in state.events
+        if event.get("analysis_role") != "synchronization"
+        and 0.0
+        <= float(event.get("time_seconds", -1.0))
+        <= float(state.duration_seconds)
+    ]
+    dictionary = state.metadata.get("medpc", {}).get(
+        "confirmed_event_dictionary",
+        {},
+    )
+    english = state.metadata.get("language") == "en_US"
+
+    def display_label(code: int, fallback: str) -> str:
+        details = dictionary.get(str(code), dictionary.get(code, {}))
+        label = (
+            details.get("label", fallback)
+            if english
+            else details.get("zh_label", fallback)
+        )
+        return f"{code}  {label}"
+
+    grouped: dict[int, list[dict]] = {}
+    for event in events:
+        code = int(event.get("event_code", -1))
+        grouped.setdefault(code, []).append(event)
+    codes = sorted(grouped)
+    labels = [
+        display_label(code, str(grouped[code][0].get("label", code)))
+        for code in codes
+    ]
+    counts = np.asarray([len(grouped[code]) for code in codes], dtype=int)
+    positions = np.arange(len(codes))
+
+    axes[0, 0].barh(positions, counts, color=GREEN, height=0.68)
+    axes[0, 0].set_yticks(positions, labels)
+    axes[0, 0].invert_yaxis()
+    axes[0, 0].set_title(
+        _text(state, "当前片段中的任务事件数", "Task-event counts in this segment"),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 0].set_xlabel(_text(state, "事件数", "Event count"), color=MUTED)
+    axes[0, 0].grid(axis="x", color=GRID, linewidth=0.7, alpha=0.65)
+    axes[0, 0].grid(axis="y", visible=False)
+
+    phase_colors = {"on": GREEN, "off": CORAL, "start": GOLD, "end": MUTED}
+    for position, code in enumerate(codes):
+        code_events = grouped[code]
+        times_minutes = np.asarray(
+            [float(event["time_seconds"]) / 60.0 for event in code_events]
+        )
+        phase = str(code_events[0].get("event_phase", "event"))
+        axes[0, 1].scatter(
+            times_minutes,
+            np.full(len(times_minutes), position),
+            s=10,
+            color=phase_colors.get(phase, GREEN),
+            alpha=0.72,
+            linewidths=0,
+        )
+    axes[0, 1].set_yticks(positions, labels)
+    axes[0, 1].invert_yaxis()
+    axes[0, 1].set_title(
+        _text(state, "任务事件时间轴", "Task-event timeline"),
+        loc="left",
+        fontsize=11,
+        color=INK,
+    )
+    axes[0, 1].set_xlabel(
+        _text(state, "记录时间（分钟）", "Recording time (min)"),
+        color=MUTED,
+    )
+    return fig
+
+
 def behavior_figure(state: ProjectState) -> Figure:
     fig, axes = _base_figure(1, 2, 4.8)
     trials = state.trials
+    has_ibl_trial_structure = bool(trials) and any(
+        "contrastLeft" in trial or "contrastRight" in trial for trial in trials
+    )
+    if not has_ibl_trial_structure:
+        return _task_event_behavior_figure(state)
     if trials and any(
         "contrastLeft" in trial or "contrastRight" in trial for trial in trials
     ):
@@ -690,6 +777,36 @@ def preprocessing_diagnostics_figure(
         return fig
     if view == "lfp":
         fig, axes = _base_figure(1, 2, 5.0)
+        if not preview.get("lfp_available", True):
+            reason = next(
+                (
+                    step.get("reason")
+                    for step in preview.get("pipeline", [])
+                    if step.get("branch") == "LFP" and step.get("reason")
+                ),
+                "The linked source does not contain an analyzable LFP band.",
+            )
+            for axis in axes.flat:
+                axis.axis("off")
+            axes[0, 0].text(
+                0.02,
+                0.92,
+                _text(state, "LFP 分支不可用", "LFP branch unavailable"),
+                transform=axes[0, 0].transAxes,
+                fontsize=15,
+                fontweight="bold",
+                va="top",
+            )
+            axes[0, 0].text(
+                0.02,
+                0.72,
+                str(reason),
+                transform=axes[0, 0].transAxes,
+                fontsize=10,
+                va="top",
+                wrap=True,
+            )
+            return fig
         lfp = np.asarray(preview["lfp"], dtype=float)
         times = np.asarray(preview["lfp_time_s"], dtype=float)
         channels = min(4, lfp.shape[1])
@@ -1591,7 +1708,12 @@ def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
         rates = np.asarray([row["firing_rate_hz"] for row in metrics])
         snr = np.asarray([row["snr"] for row in metrics])
         violations = np.asarray([row["isi_violation_rate"] for row in metrics])
-        colors = [GREEN if row["label"] == "候选单神经元" else CORAL for row in metrics]
+        colors = [
+            GREEN
+            if row.get("label") in {"候选单神经元", "candidate_single_unit"}
+            else CORAL
+            for row in metrics
+        ]
         axes[0, 0].scatter(rates, snr, c=colors, s=42, edgecolor="white", linewidth=0.7)
         axes[0, 1].bar(np.arange(len(metrics)), violations * 100, color=colors)
     axes[0, 0].set_title(
@@ -1852,39 +1974,103 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     unit = analysis["units"][unit_id]
     centers = analysis["bin_centers"]
     fig, axes = _base_figure(2, 2, 6.8)
+    raw_labels = [
+        str(value)
+        for value in analysis.get("condition_labels", ["condition_a", "condition_b"])
+    ][:2]
+    while len(raw_labels) < 2:
+        raw_labels.append(f"condition_{len(raw_labels) + 1}")
+    conditions = np.asarray(analysis.get("conditions", []), dtype=str)
+    condition_colors = (GREEN, CORAL)
+
+    def display_label(raw_label: str) -> str:
+        for event in state.events:
+            if str(event.get("condition", "")) != raw_label:
+                continue
+            if state.metadata.get("language") == "en_US":
+                return str(event.get("label") or raw_label.replace("_", " "))
+            if event.get("zh_label"):
+                return str(event["zh_label"])
+            event_code = event.get("event_code")
+            event_definition = (
+                CONFIRMED_EVENT_DICTIONARY.get(int(event_code))
+                if event_code is not None
+                else None
+            )
+            if event_definition:
+                return str(event_definition["zh_label"])
+            return str(event.get("label") or raw_label.replace("_", " "))
+        return raw_label.replace("_", " ") if state.metadata.get("language") == "en_US" else raw_label
+
+    display_labels = [display_label(label) for label in raw_labels]
+    condition_counts = [
+        int(np.count_nonzero(conditions == label)) for label in raw_labels
+    ]
+
     raster = axes[0, 0]
-    for trial_index, relative in enumerate(unit["aligned_spikes"]):
+    for event_index, relative in enumerate(unit["aligned_spikes"]):
+        color = INK
+        if event_index < len(conditions):
+            if conditions[event_index] == raw_labels[0]:
+                color = condition_colors[0]
+            elif conditions[event_index] == raw_labels[1]:
+                color = condition_colors[1]
         raster.vlines(
-            relative, trial_index + 0.6, trial_index + 1.4, color=INK, linewidth=0.65
+            relative,
+            event_index + 0.6,
+            event_index + 1.4,
+            color=color,
+            linewidth=0.65,
         )
     raster.axvline(0, color=CORAL, linewidth=1.2)
-    raster.set_title(f"Unit {unit_id} Raster", loc="left", fontsize=11, color=INK)
-    raster.set_xlabel(
-        _text(state, "相对事件时间 (s)", "Time from event (s)"), color=MUTED
+    raster.set_title(
+        _text(state, f"单元 {unit_id} Raster", f"Unit {unit_id} raster"),
+        loc="left",
+        fontsize=11,
+        color=INK,
     )
-    raster.set_ylabel("Trial", color=MUTED)
+    raster.set_xlabel(
+        _text(state, "相对事件时间（秒）", "Time from event (s)"), color=MUTED
+    )
+    raster.set_ylabel(_text(state, "事件序号", "Event index"), color=MUTED)
 
     psth = axes[0, 1]
-    labels = analysis.get(
-        "condition_labels",
-        ["Condition A", "Condition B"]
-        if state.metadata.get("language") == "en_US"
-        else ["条件 A", "条件 B"],
-    )
-    psth.plot(centers, unit["condition_a"], color=GREEN, linewidth=1.8, label=labels[0])
-    psth.plot(centers, unit["condition_b"], color=CORAL, linewidth=1.8, label=labels[1])
+    rates = np.asarray(unit.get("rates", []), dtype=float)
+    for index, (raw_label, display, count, color) in enumerate(
+        zip(raw_labels, display_labels, condition_counts, condition_colors, strict=True)
+    ):
+        mean_key = "condition_a" if index == 0 else "condition_b"
+        mean_rate = np.asarray(unit[mean_key], dtype=float)
+        psth.plot(
+            centers,
+            mean_rate,
+            color=color,
+            linewidth=1.8,
+            label=f"{display} (n={count})",
+        )
+        if rates.ndim == 2 and rates.shape[0] == len(conditions) and count > 1:
+            samples = rates[conditions == raw_label]
+            sem = np.nanstd(samples, axis=0, ddof=1) / np.sqrt(count)
+            psth.fill_between(
+                centers,
+                mean_rate - sem,
+                mean_rate + sem,
+                color=color,
+                alpha=0.18,
+                linewidth=0,
+            )
     psth.axvline(0, color=INK, linewidth=1)
     psth.legend(frameon=False, fontsize=8)
     psth.set_title(
-        _text(state, "条件 PSTH", "Condition PSTH"),
+        _text(state, "条件事件 PSTH（均值 ± 标准误）", "Event PSTH (mean ± SEM)"),
         loc="left",
         fontsize=11,
         color=INK,
     )
     psth.set_xlabel(
-        _text(state, "相对事件时间 (s)", "Time from event (s)"), color=MUTED
+        _text(state, "相对事件时间（秒）", "Time from event (s)"), color=MUTED
     )
-    psth.set_ylabel(_text(state, "放电率 (Hz)", "Firing rate (Hz)"), color=MUTED)
+    psth.set_ylabel(_text(state, "放电率（Hz）", "Firing rate (Hz)"), color=MUTED)
 
     heatmap = axes[1, 0]
     population = np.asarray(analysis["population_z"])
@@ -1899,18 +2085,23 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
             vmin=-3,
             vmax=3,
         )
-        fig.colorbar(image, ax=heatmap, label="Baseline z-score", shrink=0.75)
+        fig.colorbar(
+            image,
+            ax=heatmap,
+            label=_text(state, "基线 z 分数", "Baseline z-score"),
+            shrink=0.75,
+        )
     heatmap.axvline(0, color="white", linewidth=1)
     heatmap.set_title(
-        _text(state, "群体响应热图", "Population response heatmap"),
+        _text(state, "群体事件响应热图", "Population event-response heatmap"),
         loc="left",
         fontsize=11,
         color=INK,
     )
     heatmap.set_xlabel(
-        _text(state, "相对事件时间 (s)", "Time from event (s)"), color=MUTED
+        _text(state, "相对事件时间（秒）", "Time from event (s)"), color=MUTED
     )
-    heatmap.set_ylabel("Unit", color=MUTED)
+    heatmap.set_ylabel(_text(state, "单元", "Unit"), color=MUTED)
 
     summary = axes[1, 1]
     effects = [value["effect_hz"] for value in analysis["units"].values()]
@@ -1921,16 +2112,22 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     summary.set_title(
         _text(
             state,
-            f"刺激后效应：{analysis['responsive_units']} 个 Unit 通过 FDR",
-            f"Post-event effect: {analysis['responsive_units']} units pass FDR",
+            (
+                "事件后效应（基线与事件后比较）："
+                f"{analysis['responsive_units']} 个单元通过 BH-FDR"
+            ),
+            (
+                "Post-event effect (baseline vs post-event): "
+                f"{analysis['responsive_units']} units pass BH-FDR"
+            ),
         ),
         loc="left",
         fontsize=11,
         color=INK,
     )
-    summary.set_xlabel("Unit", color=MUTED)
+    summary.set_xlabel(_text(state, "单元", "Unit"), color=MUTED)
     summary.set_ylabel(
-        _text(state, "放电率变化 (Hz)", "Firing-rate change (Hz)"), color=MUTED
+        _text(state, "放电率变化（Hz）", "Firing-rate change (Hz)"), color=MUTED
     )
     return fig
 

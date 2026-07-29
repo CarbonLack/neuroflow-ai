@@ -158,6 +158,17 @@ def import_behavior_events(
 def synchronize_existing_events(state: ProjectState) -> dict[str, Any]:
     if not state.events:
         raise RuntimeError("No behavior events are available")
+    existing = state.metadata.get("synchronization", {})
+    if (
+        existing.get("status") == "aligned"
+        and existing.get("method") == "piecewise_linear_ttl_anchors"
+    ):
+        state.trials = []
+        state.log(
+            "Existing piecewise MED-PC/TTL synchronization retained; "
+            "trial boundaries remain undefined."
+        )
+        return existing
     behavior_times = np.asarray(
         [
             float(event.get("behavior_time_seconds", event["time_seconds"]))
@@ -190,7 +201,10 @@ def synchronize_existing_events(state: ProjectState) -> dict[str, Any]:
         )
         event["time_seconds"] = float(aligned)
         event["alignment_residual_ms"] = float(residual)
-    state.trials = [dict(event) for event in state.events]
+    if state.metadata.get("trial_definition", {}).get("status") == "not_defined":
+        state.trials = []
+    else:
+        state.trials = [dict(event) for event in state.events]
     result = {
         "status": (
             "aligned"

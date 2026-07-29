@@ -76,7 +76,7 @@ def run_packaged_figure_export_self_test(workspace: Path) -> int:
         figure = Figure(figsize=(4, 3))
         axis = figure.subplots()
         axis.plot([0, 1, 2], [0, 1, 0], color="#1f7a63")
-        axis.set(xlabel="Time (s)", ylabel="Value", title="NeuroFlow export test")
+        axis.set(xlabel="Time (s)", ylabel="Value", title="NeuroEphys AI export test")
         outputs = []
         for suffix in ("svg", "pdf", "png"):
             path = output_dir / f"export_test.{suffix}"

@@ -101,7 +101,7 @@ CONTROL_HELP = {
         ),
         "en_US": (
             "Create empty project",
-            "Choose a project name and location. NeuroFlow creates only the manifest, "
+            "Choose a project name and location. NeuroEphys AI creates only the manifest, "
             "parameter, result, and audit structure; it does not generate simulated "
             "data or copy raw files. Import your recording explicitly afterward.",
         ),
@@ -145,7 +145,7 @@ CONTROL_HELP = {
             "Open verified public project",
             "Open one of two version-locked projects: the specified IBL Brain-Wide "
             "Map eID/PID or the specified Buzsáki/DANDI 000552 asset. Double-click "
-            "a row to open it; NeuroFlow confirms any required download first.",
+            "a row to open it; NeuroEphys AI confirms any required download first.",
         ),
     },
     "home.restore": {
@@ -531,7 +531,7 @@ PAGE_CONTROLS = {
         ("Spike train 统计", "CV2、Lv、Fano、CCH、STTC 和距离回答不同的变异性、相关性或相似性问题。"),
         ("LFP", "PSD、coherence、相位延迟和时频图使用带单位的 Neo 信号与 Elephant/SciPy 计算。"),
         ("Spike-field", "相位锁定必须说明参考频段、相位定义、spike 数和 surrogate 方法。"),
-        ("呼吸案例", "只在 NeuroFlow 模拟数据上验证论文方法结构，不复制原图或数值结论。"),
+        ("呼吸案例", "只在 NeuroEphys AI 模拟数据上验证论文方法结构，不复制原图或数值结论。"),
     ],
     "statistics": [
         ("视图选择", "在效应、多重比较、分布假设和混合模型诊断间切换。"),
@@ -694,7 +694,7 @@ PAGE_CONTROLS_EN = {
         ),
         (
             "Respiration case",
-            "Validates a paper-derived method structure on NeuroFlow simulation data without copying figures or numerical claims.",
+            "Validates a paper-derived method structure on NeuroEphys AI simulation data without copying figures or numerical claims.",
         ),
     ],
     "statistics": [

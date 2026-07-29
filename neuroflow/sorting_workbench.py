@@ -32,12 +32,12 @@ SORTER_ZH = {
 SORTER_CONTRACTS = {
     "kilosort4": {
         "zh": (
-            "输入：原始 AP 宽带二进制与探针几何。NeuroFlow 直接交给 Kilosort4，"
+            "输入：原始 AP 宽带二进制与探针几何。NeuroEphys AI 直接交给 Kilosort4，"
             "由其执行 common-average reference、滤波/白化、检测、聚类与模板匹配；"
             "第 03 页只是预览，不会把已白化数据再次传入。"
         ),
         "en": (
-            "Input: raw AP-band binary and probe geometry. NeuroFlow passes the raw "
+            "Input: raw AP-band binary and probe geometry. NeuroEphys AI passes the raw "
             "recording to Kilosort4, which performs referencing, filtering/whitening, "
             "detection, clustering, and template matching. Stage 03 is a preview and "
             "does not feed pre-whitened data into Kilosort."
@@ -552,6 +552,47 @@ class SortingWorkbench(QFrame):
         if row < 0 or row >= len(self.catalog):
             return "kilosort4"
         return str(self.catalog[row]["key"])
+
+    def select_sorter(
+        self,
+        sorter_key: str,
+        parameters: dict | None = None,
+    ) -> bool:
+        row = next(
+            (
+                index
+                for index, item in enumerate(self.catalog)
+                if item["key"] == sorter_key
+            ),
+            -1,
+        )
+        if row < 0:
+            return False
+        self.table.selectRow(row)
+        values = parameters or {}
+        if sorter_key == "kilosort4":
+            if "batch_size" in values:
+                self.batch_size.setValue(int(values["batch_size"]))
+            if "nblocks" in values:
+                self.nblocks.setValue(int(values["nblocks"]))
+            if "Th_universal" in values:
+                self.th_universal.setValue(int(values["Th_universal"]))
+            if "Th_learned" in values:
+                self.th_learned.setValue(int(values["Th_learned"]))
+            if "save_extra_vars" in values:
+                self.save_extra.setChecked(bool(values["save_extra_vars"]))
+        elif sorter_key == "mountainsort5":
+            if "scheme" in values:
+                index = self.ms5_scheme.findData(str(values["scheme"]))
+                if index >= 0:
+                    self.ms5_scheme.setCurrentIndex(index)
+            if "detect_threshold" in values:
+                self.ms5_threshold.setValue(float(values["detect_threshold"]))
+            if "scheme2_training_duration_sec" in values:
+                self.ms5_training.setValue(
+                    int(values["scheme2_training_duration_sec"])
+                )
+        return True
 
     def selected_diagnostic(self) -> str:
         return str(self.diagnostic_combo.currentData() or "pipeline")

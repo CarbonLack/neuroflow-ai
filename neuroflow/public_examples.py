@@ -137,7 +137,7 @@ def download_public_example(
             )
         request = urllib.request.Request(
             BUZSAKI_DOWNLOAD_URL,
-            headers={"User-Agent": "NeuroFlow public-data validator"},
+            headers={"User-Agent": "NeuroEphys AI public-data validator"},
         )
         with (
             urllib.request.urlopen(request) as response,
@@ -160,7 +160,7 @@ def open_or_create_public_example(
     source = public_example_source(workspace, key)
     if source is None:
         raise FileNotFoundError(
-            "The fixed public source is not downloaded in the NeuroFlow library."
+            "The fixed public source is not downloaded in the NeuroEphys AI library."
         )
     if key == "ibl_bwm":
         state = import_ibl_alf(project_root, source)

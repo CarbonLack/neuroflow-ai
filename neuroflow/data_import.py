@@ -12,6 +12,13 @@ import pandas as pd
 
 from .models import ProjectState
 from .project import save_project
+from .recording_io import (
+    find_open_ephys_legacy_folder,
+    inspect_open_ephys_legacy,
+    inspect_open_ephys_settings,
+    parse_channel_selection,
+    read_open_ephys_legacy_events,
+)
 from .simulation import generate_demo_recording
 from .sorting_results import register_sorting_result
 
@@ -91,7 +98,7 @@ def create_simulated_project(
     state.electrode_type = electrode_type
     state.metadata.update(
         {
-            "provenance": "NeuroFlow deterministic simulator",
+            "provenance": "NeuroEphys AI deterministic simulator",
             "electrode_layout": electrode_type,
             "can_run_sorting": True,
         }
@@ -161,7 +168,7 @@ def import_binary_recording(
     return state
 
 
-def import_device_recording(
+def _import_device_recording_converted(
     project_root: Path,
     source: Path,
     device_name: str,
@@ -222,6 +229,157 @@ def import_device_recording(
     state.log(
         f"{device_name} imported through SpikeInterface: "
         f"{state.channel_count} channels, {state.duration_seconds:.1f} seconds"
+    )
+    save_project(state)
+    return state
+
+
+def import_device_recording(
+    project_root: Path,
+    source: Path,
+    device_name: str,
+    stream_id: str | None = None,
+    channel_selection: str | list[str] | None = None,
+) -> ProjectState:
+    """Link a supported acquisition source without converting the raw recording."""
+    if device_name not in DEVICE_READERS:
+        raise ValueError(f"Unsupported acquisition system: {device_name}")
+    import spikeinterface.extractors as se
+
+    reader_name, expects_directory = DEVICE_READERS[device_name]
+    if expects_directory and not source.is_dir():
+        raise ValueError(f"{device_name} requires a recording folder")
+    if not expects_directory and not source.is_file():
+        raise ValueError(f"{device_name} requires a recording file")
+
+    legacy_folder = (
+        find_open_ephys_legacy_folder(source)
+        if device_name == "Open Ephys"
+        else None
+    )
+    digital_events: list[dict[str, Any]] = []
+    acquisition_preprocessing: dict[str, Any] = {}
+    if legacy_folder is not None:
+        inspected = inspect_open_ephys_legacy(
+            legacy_folder,
+            channel_selection=channel_selection,
+        )
+        selected_ids = list(inspected["selected_channel_ids"])
+        selected_files = list(inspected["selected_files"])
+        source = Path(inspected["folder"])
+        sampling_rate = float(inspected["sampling_rate"])
+        channel_count = len(selected_ids)
+        duration_seconds = float(inspected["duration_seconds"])
+        source_dtype = str(inspected["dtype"])
+        gains = np.asarray(inspected["gains_uv_per_bit"], dtype=float)
+        digital_events = read_open_ephys_legacy_events(
+            source,
+            sampling_rate,
+            selected_files[0],
+        )
+        acquisition_preprocessing = inspect_open_ephys_settings(source)
+        reference = acquisition_preprocessing.get("online_reference")
+        if reference:
+            selected_numbers = {
+                int(value) for value in selected_ids if str(value).isdigit()
+            }
+            selected_groups = [
+                [channel for channel in group if channel in selected_numbers]
+                for group in reference.get("channel_groups", [])
+            ]
+            reference["all_recorded_channel_groups"] = reference.get(
+                "channel_groups",
+                [],
+            )
+            reference["channel_groups"] = [
+                group for group in selected_groups if group
+            ]
+        adapter = {
+            "type": "spikeinterface",
+            "format": "open_ephys_legacy",
+            "reader_name": reader_name,
+            "source_path": str(source),
+            "stream_id": stream_id,
+            "channel_ids": selected_ids,
+            "channel_files": [str(path) for path in selected_files],
+            "frame_count": int(inspected["frame_count"]),
+            "start_frame": 0,
+            "end_frame": None,
+            "format_version": inspected["format_version"],
+            "date_created": inspected["date_created"],
+        }
+    else:
+        reader = getattr(se, reader_name)
+        kwargs: dict[str, Any] = {}
+        if stream_id and "stream_id" in inspect.signature(reader).parameters:
+            kwargs["stream_id"] = stream_id
+        recording = reader(source, **kwargs)
+        if recording.get_num_segments() != 1:
+            raise ValueError("Select a source containing one recording segment")
+        available = [str(value) for value in recording.channel_ids]
+        selected_ids = parse_channel_selection(channel_selection, available)
+        if selected_ids != available:
+            resolved = {str(value): value for value in recording.channel_ids}
+            recording = recording.channel_slice(
+                channel_ids=[resolved[value] for value in selected_ids]
+            )
+        sampling_rate = float(recording.get_sampling_frequency())
+        channel_count = int(recording.get_num_channels())
+        duration_seconds = float(recording.get_total_duration())
+        source_dtype = str(recording.get_dtype())
+        try:
+            gains = np.asarray(recording.get_channel_gains(), dtype=float)
+        except Exception:  # noqa: BLE001 - not every extractor exposes gains
+            gains = np.ones(channel_count, dtype=float)
+        adapter = {
+            "type": "spikeinterface",
+            "format": reader_name,
+            "reader_name": reader_name,
+            "source_path": str(source),
+            "stream_id": stream_id,
+            "channel_ids": selected_ids,
+            "start_frame": 0,
+            "end_frame": None,
+        }
+
+    project_root.mkdir(parents=True, exist_ok=True)
+    scale_uv_per_bit = (
+        float(gains[0])
+        if gains.size and np.allclose(gains, gains[0])
+        else 1.0
+    )
+    state = ProjectState(
+        root=project_root,
+        name=f"{device_name} {source.stem}",
+        source_type=reader_name,
+        source_path=source,
+        recording_path=source,
+        sampling_rate=sampling_rate,
+        channel_count=channel_count,
+        duration_seconds=duration_seconds,
+        dtype=source_dtype,
+        scale_uv_per_bit=scale_uv_per_bit,
+        electrode_type=device_name,
+        metadata={
+            "device": device_name,
+            "reader": f"SpikeInterface {reader_name}",
+            "source_dtype": source_dtype,
+            "stream_id": stream_id,
+            "selected_channel_ids": selected_ids,
+            "recording_adapter": adapter,
+            "digital_events": digital_events,
+            "digital_event_count": len(digital_events),
+            "acquisition_preprocessing": acquisition_preprocessing,
+            "conversion_notice": (
+                "The source is linked read-only. NeuroEphys AI reads slices on demand; "
+                "an interleaved cache is created only when a sorter requires it."
+            ),
+            "can_run_sorting": source_dtype == "int16",
+        },
+    )
+    state.log(
+        f"{device_name} linked read-only: {state.channel_count} selected channels, "
+        f"{state.duration_seconds:.1f} seconds, {len(digital_events)} digital edges"
     )
     save_project(state)
     return state
@@ -438,7 +596,7 @@ def import_nwb_units(
 
     The importer deliberately starts downstream of raw QC and sorting unless the
     selected NWB also exposes a raw ElectricalSeries through the device adapter.
-    Units are normalized to NeuroFlow's seconds-based sorting interface.
+    Units are normalized to NeuroEphys AI's seconds-based sorting interface.
     """
     import h5py
 

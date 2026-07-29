@@ -10,7 +10,7 @@
   propose a candidate workflow, and explain the latest error.
 - Added a path-free project summary, explicit cloud-data preview, raw-voltage
   exclusion, sensitive-text redaction, and opt-in audit-log context.
-- Constrained structured workflow plans to NeuroFlow's 11 registered stages and
+- Constrained structured workflow plans to NeuroEphys AI's 11 registered stages and
   rejected unknown stages before they reach the interface.
 - Kept every AI plan advisory: applying a plan requires confirmation, stores it
   as `advisory_not_executed`, and never runs or replaces an analysis result.

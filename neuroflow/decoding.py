@@ -280,6 +280,13 @@ def run_decoding_suite(
     n_splits: int = 5,
     n_permutations: int = 200,
 ) -> dict:
+    timing_diagnostics = state.analysis.get("condition_diagnostics", {})
+    if not timing_diagnostics.get("valid_for_condition_comparison", True):
+        detail = " ".join(timing_diagnostics.get("warnings", []))
+        raise ValueError(
+            "The selected conditions use coincident event timestamps and cannot "
+            f"support condition decoding. Select behaviorally distinct events. {detail}"
+        )
     x, labels, unit_ids = trial_feature_matrix(state)
     all_labels = np.asarray(state.analysis["conditions"]).astype(str)
     valid_mask = np.isin(all_labels, np.unique(labels))

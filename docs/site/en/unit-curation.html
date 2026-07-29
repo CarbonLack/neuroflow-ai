@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manual unit curation · NeuroEphys AI</title>
+    <link rel="stylesheet" href="../styles.css?v=0.8.0">
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
+      <a class="brand" href="index.html">NeuroEphys AI <small>Documentation</small></a>
+      <input class="search" data-doc-search type="search" placeholder="Search this page">
+      <div class="topbar-actions">
+        <a class="language-button language-link" data-language-link="zh" href="../zh/unit-curation.html">Chinese</a>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-label">Getting started</div>
+<a href="index.html">Overview</a>
+<a href="installation.html">Installation and runtime</a>
+<a href="gui-guide.html">Interface and basic operation</a>
+<div class="sidebar-label">Tutorials</div>
+<a href="tutorials.html">Complete step-by-step tutorial</a>
+<a href="data-inputs.html">Import your own data</a>
+<div class="sidebar-label">Guides</div>
+<a href="sorting.html">Spike sorting guide</a>
+<a class="active" href="unit-curation.html">Manual unit curation</a>
+<a href="ai-assistant.html">AI assistant</a>
+<a href="parameters.html">Parameter reference</a>
+<a href="figure-studio.html">Figure editing and export</a>
+<div class="sidebar-label">Reference</div>
+<a href="provenance.html">Artifacts and provenance</a>
+<a href="real-data-validation.html">Real-data validation</a>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="sources.html">Methods and sources</a>
+      </aside>
+      <main class="content">
+        <div class="page-intro" data-searchable>
+          <p class="eyebrow">NeuroEphys AI operation manual</p>
+          <h1>Manual unit curation</h1>
+          <p class="lead">Every sorter produces candidate clusters. Manual review records the evidence used to retain, reject, or defer each candidate without erasing the native sorter output.</p>
+        </div>
+
+<section data-searchable>
+  <h2>Why curation remains necessary</h2>
+  <p>Kilosort4, MountainSort5, SpyKING CIRCUS 2, and other sorters use different detection and clustering strategies. Their unit counts can differ, and agreement measures reproducibility rather than biological truth. Curation applies an explicit laboratory decision rule to the evidence.</p>
+</section>
+<section data-searchable>
+  <h2>Review procedure</h2>
+  <ol class="steps"><li>Open Unit QC after activating the sorter result that will be reviewed.</li><li>Select a unit. Inspect waveform, autocorrelogram, ISI violations, firing rate, SNR, amplitude over time, and available sorter diagnostics.</li><li>Check waveform consistency across time and channels. Abrupt discontinuity or implausible shape requires closer review.</li><li>Check the refractory-period evidence. A single threshold never settles identity by itself.</li><li>Inspect amplitude and firing-rate stability across the whole recording; short fragments can hide drift or recording loss.</li><li>Compare nearby or highly similar clusters for possible duplication, split, or merge errors.</li><li>Choose a label, complete the evidence checklist, write an expert note, and save the decision.</li><li>Repeat for every retained candidate. Export the decision table with reviewer, timestamp, metric snapshot, sorter, and source run.</li></ol>
+  <img class="product-shot" src="../assets/neuroephys-ai-unit-curation.png" alt="NeuroEphys AI manual unit curation workspace">
+</section>
+<section data-searchable>
+  <h2>Available labels</h2>
+  <table><thead><tr><th>Label</th><th>Use</th></tr></thead>
+  <tbody><tr><td><b>Candidate single unit</b></td><td>Waveform, refractory period, stability, and isolation support single-unit use; final scientific inclusion still follows the study protocol.</td></tr><tr><td><b>Multi-unit activity</b></td><td>Biological spiking is present, while separation from nearby units remains insufficient.</td></tr><tr><td><b>Noise</b></td><td>The cluster is dominated by artifacts, electrical noise, or invalid waveform structure.</td></tr><tr><td><b>Uncertain</b></td><td>Evidence is incomplete or conflicting. The unit remains available for later review.</td></tr></tbody></table>
+</section>
+<section data-searchable>
+  <h2>Sorter-specific and shared evidence</h2>
+  <p>The checklist and labels are sorter-independent. Native diagnostics remain attached to each result: Kilosort templates, amplitudes, depth-time plots, drift and contamination fields stay available; other sorters retain their own native files. Advanced split/merge work can continue in Phy or another dedicated curator and return through the sorting-result adapter.</p>
+  <ul class="source-list">
+    <li><a href="https://kilosort.readthedocs.io/en/stable/README.html">Kilosort4: manual curation with Phy</a></li>
+    <li><a href="https://spikeinterface.readthedocs.io/en/stable/modules/metrics/quality_metrics.html">SpikeInterface quality metrics</a></li>
+    <li><a href="https://phy.readthedocs.io/en/latest/quickstart/">Phy manual clustering guide</a></li>
+  </ul>
+</section>
+
+        <footer class="footer">NeuroEphys AI · Original explanatory text with cited method sources</footer>
+      </main>
+    </div>
+    <script src="../app.js?v=0.8.0"></script>
+  </body>
+</html>

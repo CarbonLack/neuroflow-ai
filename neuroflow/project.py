@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,64 @@ import numpy as np
 from .models import ProjectState
 
 MANIFEST_NAME = "neuroflow_project.json"
+
+
+def _migrate_event_trial_semantics(state: ProjectState) -> None:
+    """Repair legacy MED-PC projects that stored every event as a trial."""
+    is_medpc = bool(
+        state.metadata.get("medpc")
+        or str(state.metadata.get("behavior_format", "")).upper() == "MED-PC"
+    )
+    if not is_medpc:
+        return
+    for index, event in enumerate(state.events, start=1):
+        if "event_index" in event:
+            event.pop("trial", None)
+            event.setdefault("event_order", index)
+    mirrored_events = (
+        len(state.trials) == len(state.events)
+        and all("event_index" in row for row in state.trials)
+    )
+    if mirrored_events:
+        state.trials = []
+    counts = Counter(
+        int(event["event_code"])
+        for event in state.events
+        if event.get("event_code") is not None
+    )
+    state.metadata["event_inventory"] = {
+        "total_events": len(state.events),
+        "task_events": sum(
+            event.get("analysis_role") == "task_event"
+            for event in state.events
+        ),
+        "synchronization_events": sum(
+            event.get("analysis_role") == "synchronization"
+            for event in state.events
+        ),
+        "by_code": {
+            str(code): {
+                "label": next(
+                    (
+                        event.get("label", f"event_{code}")
+                        for event in state.events
+                        if int(event.get("event_code", -1)) == code
+                    ),
+                    f"event_{code}",
+                ),
+                "count": count,
+            }
+            for code, count in sorted(counts.items())
+        },
+    }
+    state.metadata["trial_definition"] = {
+        "status": "not_defined",
+        "trial_count": 0,
+        "reason": (
+            "The MED-PC C/D arrays provide an event stream. Define task-specific "
+            "trial start/end rules before trial-level analysis."
+        ),
+    }
 
 
 def _jsonable(value: Any) -> Any:
@@ -58,7 +117,7 @@ def save_project(state: ProjectState) -> Path:
         sorting_archives[sorter_key] = str(sorting_path.relative_to(state.root))
 
     payload = {
-        "schema_version": 4,
+        "schema_version": 5,
         "name": state.name,
         "source_type": state.source_type,
         "source_path": str(state.source_path) if state.source_path else None,
@@ -80,6 +139,10 @@ def save_project(state: ProjectState) -> Path:
         "preprocessing": _jsonable(state.preprocessing),
         "unit_metrics": _jsonable(state.unit_metrics),
         "unit_diagnostics": _jsonable(state.unit_diagnostics),
+        "unit_metrics_by_sorter": _jsonable(state.unit_metrics_by_sorter),
+        "unit_diagnostics_by_sorter": _jsonable(
+            state.unit_diagnostics_by_sorter
+        ),
         "analysis": _jsonable(state.analysis),
         "spike_train_analysis": _jsonable(state.spike_train_analysis),
         "lfp_analysis": _jsonable(state.lfp_analysis),
@@ -135,6 +198,36 @@ def load_project(path: Path) -> ProjectState:
                     int(key.rsplit("_", 1)[-1]): archive[key]
                     for key in archive.files
                 }
+    unit_metrics_by_sorter = payload.get("unit_metrics_by_sorter", {})
+    unit_diagnostics_by_sorter = {
+        str(sorter_key): {
+            int(unit_id): diagnostics
+            for unit_id, diagnostics in sorter_diagnostics.items()
+        }
+        for sorter_key, sorter_diagnostics in payload.get(
+            "unit_diagnostics_by_sorter",
+            {},
+        ).items()
+    }
+    if (
+        not unit_metrics_by_sorter
+        and active_sorter_key
+        and payload.get("unit_metrics")
+    ):
+        unit_metrics_by_sorter = {
+            str(active_sorter_key): payload.get("unit_metrics", [])
+        }
+    if (
+        not unit_diagnostics_by_sorter
+        and active_sorter_key
+        and payload.get("unit_diagnostics")
+    ):
+        unit_diagnostics_by_sorter = {
+            str(active_sorter_key): {
+                int(key): value
+                for key, value in payload.get("unit_diagnostics", {}).items()
+            }
+        }
     state = ProjectState(
         root=manifest_path.parent,
         name=payload.get("name", manifest_path.parent.name),
@@ -166,6 +259,8 @@ def load_project(path: Path) -> ProjectState:
             int(key): value
             for key, value in payload.get("unit_diagnostics", {}).items()
         },
+        unit_metrics_by_sorter=unit_metrics_by_sorter,
+        unit_diagnostics_by_sorter=unit_diagnostics_by_sorter,
         analysis=payload.get("analysis", {}),
         spike_train_analysis=payload.get("spike_train_analysis", {}),
         lfp_analysis=payload.get("lfp_analysis", {}),
@@ -181,17 +276,6 @@ def load_project(path: Path) -> ProjectState:
     from .sorting_results import ensure_sorting_registry
 
     ensure_sorting_registry(state)
-    if (
-        state.sorted_spikes
-        and state.events
-        and (
-            state.statistics
-            or state.decoding
-            or state.workflow_status.get("analysis") == "completed"
-        )
-    ):
-        from .analysis import event_aligned_analysis
-
-        event_aligned_analysis(state)
-    state.log("NeuroFlow project restored")
+    _migrate_event_trial_semantics(state)
+    state.log("NeuroEphys AI project restored")
     return state

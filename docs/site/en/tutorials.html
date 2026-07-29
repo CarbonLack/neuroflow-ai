@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Complete step-by-step tutorial · NeuroFlow</title>
+    <title>Complete step-by-step tutorial · NeuroEphys AI</title>
     <link rel="stylesheet" href="../styles.css?v=0.8.0">
   </head>
   <body>
     <header class="topbar">
       <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
-      <a class="brand" href="index.html">NeuroFlow <small>Documentation</small></a>
+      <a class="brand" href="index.html">NeuroEphys AI <small>Documentation</small></a>
       <input class="search" data-doc-search type="search" placeholder="Search this page">
       <div class="topbar-actions">
         <a class="language-button language-link" data-language-link="zh" href="../zh/tutorials.html">Chinese</a>
@@ -26,16 +26,19 @@
 <a href="data-inputs.html">Import your own data</a>
 <div class="sidebar-label">Guides</div>
 <a href="sorting.html">Spike sorting guide</a>
+<a href="unit-curation.html">Manual unit curation</a>
 <a href="ai-assistant.html">AI assistant</a>
 <a href="parameters.html">Parameter reference</a>
 <a href="figure-studio.html">Figure editing and export</a>
 <div class="sidebar-label">Reference</div>
+<a href="provenance.html">Artifacts and provenance</a>
+<a href="real-data-validation.html">Real-data validation</a>
 <a href="troubleshooting.html">Troubleshooting</a>
 <a href="sources.html">Methods and sources</a>
       </aside>
       <main class="content">
         <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroFlow operation manual</p>
+          <p class="eyebrow">NeuroEphys AI operation manual</p>
           <h1>Complete step-by-step tutorial</h1>
           <p class="lead">Follow all 11 stages from data structure to a restorable publication bundle. Each chapter explains purpose, operation, every exposed parameter, default, recommendation, consequence, and acceptance check.</p>
         </div>
@@ -43,7 +46,7 @@
 <section id="import" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">01</p>
   <h2>Start with the data structure</h2>
-  <div class="callout method">This page does more than select a file. NeuroFlow must know how each sample is stored, how many values form one time point, how probe contacts are arranged, and which device clock timestamps behavior. Those facts give filtering, sorting, and event alignment their correct physical units. Import keeps the source read-only and stores only links, caches, and derived results in the project.</div>
+  <div class="callout method">This page does more than select a file. NeuroEphys AI must know how each sample is stored, how many values form one time point, how probe contacts are arranged, and which device clock timestamps behavior. Those facts give filtering, sorting, and event alignment their correct physical units. Import keeps the source read-only and stores only links, caches, and derived results in the project.</div>
   <h3>Before you begin</h3>
   <p>Have the acquisition notes, sampling rate, total channel count, dtype, gain or µV/bit, probe geometry, and optional event CSV ready. For a generic binary file, copy values from the acquisition configuration rather than guessing from the traces.</p>
   <h3>Operations and purpose</h3>
@@ -60,7 +63,7 @@
   </div>
   <h3>Inputs, outputs, and acceptance check</h3>
   <p><b>Input：</b>Raw acquisition files, probe information, and event logs</p>
-  <p><b>Output：</b>Read-only source links and a NeuroFlow project manifest</p>
+  <p><b>Output：</b>Read-only source links and a NeuroEphys AI project manifest</p>
   <p><b>Check：</b>Check file size, rate, channel count, dtype, and whether events use seconds, milliseconds, or samples. Inspect traces immediately after import.</p>
   <div class="callout next"><b>Next：</b> After confirming structure, continue to Raw QC; processed spikes begin at Unit QC.</div>
 </section>
@@ -93,7 +96,7 @@
 <section id="preprocess" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">03</p>
   <h2>Preprocessing is not a fixed recipe</h2>
-  <div class="callout method">More preprocessing is not automatically better. Every operation changes the signal, so its purpose, order, and duplication inside the sorter must be explicit. NeuroFlow previews a short segment first and compares traces and spectra before parameters are committed to the workflow.</div>
+  <div class="callout method">More preprocessing is not automatically better. Every operation changes the signal, so its purpose, order, and duplication inside the sorter must be explicit. NeuroEphys AI previews a short segment first and compares traces and spectra before parameters are committed to the workflow.</div>
   <h3>Before you begin</h3>
   <p>Confirm bad channels and decide whether the target is AP/sorting, LFP, or both.</p>
   <h3>Operations and purpose</h3>
@@ -118,7 +121,7 @@
 <section id="sorting" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">04</p>
   <h2>Spike sorting and tool selection</h2>
-  <div class="callout method">Spike sorting assigns candidate events in multichannel voltage to units. NeuroFlow preserves each sorter&#x27;s native files, parameters, and logs while normalizing shared outputs into units, spike times in seconds, and channel/template descriptions for downstream comparison.</div>
+  <div class="callout method">Spike sorting assigns candidate events in multichannel voltage to units. NeuroEphys AI preserves each sorter&#x27;s native files, parameters, and logs while normalizing shared outputs into units, spike times in seconds, and channel/template descriptions for downstream comparison.</div>
   <h3>Before you begin</h3>
   <p>Confirm AP input, probe geometry, bad channels, hardware, output directory, and free disk space.</p>
   <h3>Operations and purpose</h3>
@@ -168,7 +171,7 @@
 <section id="sync" class="manual-chapter" data-searchable>
   <p class="chapter-kicker">06</p>
   <h2>TTL, behavior, and a common timeline</h2>
-  <div class="callout method">Behavior computers, cameras, and electrophysiology systems often have independent clocks. The synchronization page fits offset + slope × behavior_time from paired TTL pulses and uses residuals to detect missing pulses, mismatches, or nonlinear drift. Without matching TTLs, NeuroFlow can only assume a shared clock and labels that assumption explicitly.</div>
+  <div class="callout method">Behavior computers, cameras, and electrophysiology systems often have independent clocks. The synchronization page fits offset + slope × behavior_time from paired TTL pulses and uses residuals to detect missing pulses, mismatches, or nonlinear drift. Without matching TTLs, NeuroEphys AI can only assume a shared clock and labels that assumption explicitly.</div>
   <h3>Before you begin</h3>
   <p>Prepare behavior-event and optional TTL CSV files and identify each column&#x27;s clock, unit, and event meaning.</p>
   <h3>Operations and purpose</h3>
@@ -228,7 +231,7 @@
   <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
   <tbody><tr><td><code>Alignment event</code></td><td>Time zero for every trial.</td><td>stimulus_onset (depends on the event table)</td><td>Choose from the hypothesis; stimulus, movement, choice, and reward answer different questions.</td><td>Changing the event changes temporal interpretation and must not be significance-driven.</td></tr><tr><td><code>Window</code></td><td>Time range extracted around the event.</td><td>-1 to +2 s</td><td>Cover baseline and expected response while avoiding neighboring trials or events.</td><td>Short windows miss slow responses; long windows increase overlap and multiplicity.</td></tr><tr><td><code>Bin size</code></td><td>Temporal bin width for PSTH or count features.</td><td>50 ms</td><td>Use 5–20 ms for fast sensory responses and 20–100 ms for behavioral/population trends, with sensitivity checks.</td><td>Small bins improve resolution but are noisy; large bins smooth responses and lower peaks.</td></tr><tr><td><code>Smoothing</code></td><td>Kernel and width applied to binned firing rates.</td><td>Minimal or off</td><td>Smoothing is acceptable for display; statistics should prefer unsmoothed trial features and report the kernel.</td><td>Stronger smoothing lowers peaks, broadens responses, and induces temporal dependence.</td></tr><tr><td><code>PSD method</code></td><td>Power-spectral estimator and segmentation settings.</td><td>Welch</td><td>Start with Welch for stationary segments and report window, overlap, resolution, and units.</td><td>Long windows improve frequency resolution but reduce temporal localization, and vice versa.</td></tr><tr><td><code>Surrogates</code></td><td>Number of time shifts or label shuffles used for a chance distribution.</td><td>200 (demonstration)</td><td>Use at least 1,000 for formal analysis and more for tail p-values; fix the random seed.</td><td>Fewer runs are faster but give coarse p-values; more runs are stable but expensive.</td></tr></tbody></table>
   <h3>Every page control</h3>
-  <dl class="control-list"><dt>Unit selection</dt><dd>Selecting a unit updates its raster, PSTH, and summary together.</dd><dt>Raster</dt><dd>Each row is one trial and each tick one spike, preserving trial-to-trial variability.</dd><dt>PSTH</dt><dd>Bins spikes and averages across trials; bin width controls temporal smoothing.</dd><dt>Spike-train statistics</dt><dd>CV2, Lv, Fano, CCH, STTC, and distances address different variability, correlation, or similarity questions.</dd><dt>LFP</dt><dd>PSD, coherence, phase lag, and time-frequency maps use unit-aware Neo signals with Elephant/SciPy.</dd><dt>Spike-field</dt><dd>Phase locking must report the reference band, phase definition, spike count, and surrogate method.</dd><dt>Respiration case</dt><dd>Validates a paper-derived method structure on NeuroFlow simulation data without copying figures or numerical claims.</dd></dl>
+  <dl class="control-list"><dt>Unit selection</dt><dd>Selecting a unit updates its raster, PSTH, and summary together.</dd><dt>Raster</dt><dd>Each row is one trial and each tick one spike, preserving trial-to-trial variability.</dd><dt>PSTH</dt><dd>Bins spikes and averages across trials; bin width controls temporal smoothing.</dd><dt>Spike-train statistics</dt><dd>CV2, Lv, Fano, CCH, STTC, and distances address different variability, correlation, or similarity questions.</dd><dt>LFP</dt><dd>PSD, coherence, phase lag, and time-frequency maps use unit-aware Neo signals with Elephant/SciPy.</dd><dt>Spike-field</dt><dd>Phase locking must report the reference band, phase definition, spike count, and surrogate method.</dd><dt>Respiration case</dt><dd>Validates a paper-derived method structure on NeuroEphys AI simulation data without copying figures or numerical claims.</dd></dl>
   <div class="grid-2">
     <article class="panel"><h3>Recommended sequence</h3><ol><li>Run one clearly defined sub-analysis at a time and review its input/settings summary first.</li><li>Figures and statistics share trial, window, and condition definitions, while inference avoids display smoothing.</li><li>Retain the data table behind every panel for independent editing and export.</li></ol></article>
     <article class="panel warning-panel"><h3>Common mistakes</h3><ul><li>Showing an old figure from another analysis before the new selection runs.</li><li>Applying many pointwise t-tests directly to a smoothed PSTH.</li><li>Downsampling LFP without anti-aliasing or allowing spike leakage in same-electrode coupling.</li></ul></article>
@@ -301,7 +304,7 @@
   <tbody><tr><td><b>Edit current figure</b></td><td>Double-click an axis or open Figure Studio for object-level styling.</td><td>Creates publication styling without recomputing data.</td><td>Edits lines, markers, bars, images, text, axes, ticks, grids, and legends.</td></tr><tr><td><b>Save one panel</b></td><td>Select a panel, set exact dimensions, and export it.</td><td>Avoids screenshots with poor resolution and layout.</td><td>Exports PNG, SVG, or PDF with background and font settings.</td></tr><tr><td><b>Export data and statistics</b></td><td>Save x/y/group data behind the figure and the complete statistical output.</td><td>Links the figure back to values and enables external verification.</td><td>Exports CSV/JSON tables and a provenance index.</td></tr><tr><td><b>Save/restore project</b></td><td>Save the project, then reopen neuroflow_project.json from the home page.</td><td>Restores sources, workflow state, sorter results, analysis tables, and audit log.</td><td>Reopens at the last saved page with completed stages available for inspection.</td></tr></tbody></table>
   <h3>Parameters</h3>
   <table class="parameter-table"><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th><th>Recommendation</th><th>Effect of changing it</th></tr></thead>
-  <tbody><tr><td><code>Format</code></td><td>Figure file type.</td><td>PNG + SVG</td><td>Use PNG for preview and SVG/PDF for vector editing and publication.</td><td>Raster output depends on DPI; vector output preserves line and text objects.</td></tr><tr><td><code>Figure size</code></td><td>Output width and height.</td><td>Use the current figure</td><td>Set journal single/double-column dimensions in millimeters and inspect long labels.</td><td>Changing dimensions alters relative text size and panel spacing.</td></tr><tr><td><code>DPI</code></td><td>Pixels per inch for raster output.</td><td>300</td><td>Use 300–600 DPI for line art and follow journal/source resolution for images or heatmaps.</td><td>Higher DPI increases file size but cannot add source-data resolution.</td></tr><tr><td><code>Axis/grid/spine</code></td><td>Axis line width, extent, ticks, grid, and spine visibility.</td><td>NeuroFlow standard theme</td><td>Adjust by plot type and keep a figure consistent; do not let decorative grids obscure data.</td><td>Thick lines improve visibility but crowd small panels; strong grids compete with data.</td></tr><tr><td><code>Project source mode</code></td><td>Whether the project uses an external read-only link or an internal raw copy.</td><td>Defined by the import choice</td><td>Before archiving, verify external paths; copy raw data or use stable shared storage for portability.</td><td>The manifest remains readable, but raw-dependent stages cannot rerun if an external source is missing.</td></tr></tbody></table>
+  <tbody><tr><td><code>Format</code></td><td>Figure file type.</td><td>PNG + SVG</td><td>Use PNG for preview and SVG/PDF for vector editing and publication.</td><td>Raster output depends on DPI; vector output preserves line and text objects.</td></tr><tr><td><code>Figure size</code></td><td>Output width and height.</td><td>Use the current figure</td><td>Set journal single/double-column dimensions in millimeters and inspect long labels.</td><td>Changing dimensions alters relative text size and panel spacing.</td></tr><tr><td><code>DPI</code></td><td>Pixels per inch for raster output.</td><td>300</td><td>Use 300–600 DPI for line art and follow journal/source resolution for images or heatmaps.</td><td>Higher DPI increases file size but cannot add source-data resolution.</td></tr><tr><td><code>Axis/grid/spine</code></td><td>Axis line width, extent, ticks, grid, and spine visibility.</td><td>NeuroEphys AI standard theme</td><td>Adjust by plot type and keep a figure consistent; do not let decorative grids obscure data.</td><td>Thick lines improve visibility but crowd small panels; strong grids compete with data.</td></tr><tr><td><code>Project source mode</code></td><td>Whether the project uses an external read-only link or an internal raw copy.</td><td>Defined by the import choice</td><td>Before archiving, verify external paths; copy raw data or use stable shared storage for portability.</td><td>The manifest remains readable, but raw-dependent stages cannot rerun if an external source is missing.</td></tr></tbody></table>
   <h3>Every page control</h3>
   <dl class="control-list"><dt>Figure settings</dt><dd>Edit the current figure title, axis names, limits, and grid.</dd><dt>SVG/PDF/PNG</dt><dd>SVG and PDF retain vector elements; PNG is suited to quick previews.</dd><dt>CSV and Methods</dt><dd>Export plotting data, statistical tables, parameters, versions, and a methods draft together.</dd><dt>Project manifest</dt><dd>Links every result back to source data, parameters, and execution state.</dd></dl>
   <div class="grid-2">
@@ -315,7 +318,7 @@
   <div class="callout next"><b>Next：</b> After the reproducibility bundle, the researcher remains responsible for interpretation, manuscript structure, and data-sharing decisions.</div>
 </section>
 
-        <footer class="footer">NeuroFlow · Original explanatory text with cited method sources</footer>
+        <footer class="footer">NeuroEphys AI · Original explanatory text with cited method sources</footer>
       </main>
     </div>
     <script src="../app.js?v=0.8.0"></script>

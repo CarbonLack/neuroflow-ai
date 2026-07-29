@@ -13,7 +13,6 @@ from elephant.spectral import welch_coherence, welch_psd
 from elephant.spike_train_correlation import (
     correlation_coefficient,
     cross_correlation_histogram,
-    spike_time_tiling_coefficient,
 )
 from elephant.spike_train_dissimilarity import (
     van_rossum_distance,
@@ -53,7 +52,7 @@ METHOD_CATALOG = (
     {
         "key": "spike_field",
         "stage": "combined",
-        "provider": "Elephant + NeuroFlow",
+        "provider": "Elephant + NeuroEphys AI",
         "methods": "spike-triggered phase, mean phase vector, surrogate test, PAC",
         "status": "integrated",
         "requires": "raw voltage and sorted spike times",
@@ -150,6 +149,14 @@ def to_neo_analog_signal(
 ) -> tuple[neo.AnalogSignal, list[int]]:
     if not state.ready:
         raise RuntimeError("Raw voltage is required for LFP and spike-field analysis")
+    acquisition = state.metadata.get("acquisition_preprocessing", {})
+    if not acquisition.get("lfp_available", True):
+        raise RuntimeError(
+            acquisition.get(
+                "lfp_unavailable_reason",
+                "The linked source does not contain an analyzable LFP band.",
+            )
+        )
     selected = channels or _usable_channels(state, 2)
     raw = load_recording(state)
     samples = min(raw.shape[0], int(max_seconds * state.sampling_rate))
@@ -173,7 +180,7 @@ def to_neo_analog_signal(
         traces,
         units=pq.uV,
         sampling_rate=actual_rate * pq.Hz,
-        name="NeuroFlow LFP proxy",
+        name="NeuroEphys AI LFP proxy",
         channel_ids=np.asarray(selected, dtype=int),
     )
     return analog, selected
@@ -188,21 +195,119 @@ def _trial_fano_factor(
         return float("nan")
     duration = window[1] - window[0]
     trials = []
+    spike_times = np.asarray(spike_times, dtype=float)
+    spike_times = np.sort(spike_times[np.isfinite(spike_times)])
     for event in events:
         event_time = float(event["time_seconds"])
-        relative = spike_times - event_time - window[0]
-        relative = relative[(relative >= 0) & (relative <= duration)]
+        absolute_start = event_time + window[0]
+        absolute_stop = event_time + window[1]
+        first = np.searchsorted(spike_times, absolute_start, side="left")
+        last = np.searchsorted(spike_times, absolute_stop, side="right")
+        relative = spike_times[first:last] - absolute_start
         trials.append(
             neo.SpikeTrain(relative * pq.s, t_start=0 * pq.s, t_stop=duration * pq.s)
         )
     return float(fanofactor(trials)) if trials else float("nan")
 
 
-def run_spike_train_suite(state: ProjectState, bin_ms: float = 20.0) -> dict:
+def _tiled_time_fraction(
+    spikes: np.ndarray,
+    dt_seconds: float,
+    start_seconds: float,
+    stop_seconds: float,
+) -> float:
+    if not len(spikes) or stop_seconds <= start_seconds:
+        return 0.0
+    starts = np.maximum(spikes - dt_seconds, start_seconds)
+    stops = np.minimum(spikes + dt_seconds, stop_seconds)
+    valid = stops > starts
+    starts = starts[valid]
+    stops = stops[valid]
+    if not len(starts):
+        return 0.0
+    total = 0.0
+    current_start = float(starts[0])
+    current_stop = float(stops[0])
+    for start, stop in zip(starts[1:], stops[1:]):
+        if start <= current_stop:
+            current_stop = max(current_stop, float(stop))
+        else:
+            total += current_stop - current_start
+            current_start = float(start)
+            current_stop = float(stop)
+    total += current_stop - current_start
+    return float(total / (stop_seconds - start_seconds))
+
+
+def _spike_proportion_near(
+    source: np.ndarray,
+    target: np.ndarray,
+    dt_seconds: float,
+) -> float:
+    if not len(source) or not len(target):
+        return 0.0
+    left = np.searchsorted(target, source - dt_seconds, side="left")
+    right = np.searchsorted(target, source + dt_seconds, side="right")
+    return float(np.mean(right > left))
+
+
+def _linear_sttc(
+    first: np.ndarray,
+    second: np.ndarray,
+    *,
+    dt_seconds: float,
+    start_seconds: float,
+    stop_seconds: float,
+) -> float:
+    """Compute the Cutts-Eglen STTC without an all-spike-pairs matrix."""
+    if not len(first) or not len(second):
+        return float("nan")
+    pa = _spike_proportion_near(first, second, dt_seconds)
+    pb = _spike_proportion_near(second, first, dt_seconds)
+    ta = _tiled_time_fraction(
+        first,
+        dt_seconds,
+        start_seconds,
+        stop_seconds,
+    )
+    tb = _tiled_time_fraction(
+        second,
+        dt_seconds,
+        start_seconds,
+        stop_seconds,
+    )
+
+    def term(proportion: float, tiled: float) -> float:
+        denominator = 1.0 - proportion * tiled
+        if abs(denominator) < 1e-12:
+            return 1.0
+        return (proportion - tiled) / denominator
+
+    return float(0.5 * (term(pa, tb) + term(pb, ta)))
+
+
+def run_spike_train_suite(
+    state: ProjectState,
+    bin_ms: float = 20.0,
+    distance_window_seconds: float = 10.0,
+) -> dict:
     if not state.sorted_spikes:
         raise RuntimeError("Spike-train analysis requires sorting results")
     unit_ids, trains = to_neo_spike_trains(state)
     rows = []
+    analysis_events = [
+        {"time_seconds": float(value)}
+        for value in np.asarray(
+            state.analysis.get("event_times", []),
+            dtype=float,
+        )
+    ]
+    fano_events = analysis_events or [
+        event
+        for event in state.events
+        if 0 <= float(event.get("time_seconds", -1)) <= state.duration_seconds
+        and event.get("analysis_role") != "synchronization"
+    ]
     for unit_id, train in zip(unit_ids, trains):
         intervals = isi(train).rescale(pq.s).magnitude
         row = {
@@ -217,7 +322,8 @@ def run_spike_train_suite(state: ProjectState, bin_ms: float = 20.0) -> dict:
                 else float("nan")
             ),
             "fano_trials": _trial_fano_factor(
-                np.asarray(state.sorted_spikes[unit_id], dtype=float), state.events
+                np.asarray(state.sorted_spikes[unit_id], dtype=float),
+                fano_events,
             ),
         }
         rows.append(row)
@@ -227,10 +333,31 @@ def run_spike_train_suite(state: ProjectState, bin_ms: float = 20.0) -> dict:
     sttc = np.eye(len(trains), dtype=float)
     for i in range(len(trains)):
         for j in range(i + 1, len(trains)):
-            value = spike_time_tiling_coefficient(trains[i], trains[j], dt=5 * pq.ms)
+            value = _linear_sttc(
+                np.asarray(state.sorted_spikes[unit_ids[i]], dtype=float),
+                np.asarray(state.sorted_spikes[unit_ids[j]], dtype=float),
+                dt_seconds=0.005,
+                start_seconds=0.0,
+                stop_seconds=state.duration_seconds,
+            )
             sttc[i, j] = sttc[j, i] = float(value)
 
-    subset = trains[: min(8, len(trains))]
+    distance_stop = min(
+        max(float(distance_window_seconds), 0.1),
+        state.duration_seconds,
+    )
+    subset_ids = unit_ids[: min(8, len(unit_ids))]
+    subset = [
+        neo.SpikeTrain(
+            np.asarray(state.sorted_spikes[unit_id], dtype=float)[
+                np.asarray(state.sorted_spikes[unit_id], dtype=float) <= distance_stop
+            ]
+            * pq.s,
+            t_start=0 * pq.s,
+            t_stop=distance_stop * pq.s,
+        )
+        for unit_id in subset_ids
+    ]
     vp_distance = np.asarray(
         victor_purpura_distance(subset, cost_factor=10 * pq.Hz), dtype=float
     )
@@ -257,6 +384,11 @@ def run_spike_train_suite(state: ProjectState, bin_ms: float = 20.0) -> dict:
         "correlation": correlation,
         "sttc": sttc,
         "distance_unit_ids": unit_ids[: len(subset)],
+        "distance_window_seconds": float(distance_stop),
+        "distance_window_note": (
+            "Victor-Purpura and van Rossum distances use a bounded window to "
+            "avoid quadratic memory growth on long, high-rate recordings."
+        ),
         "victor_purpura": vp_distance,
         "van_rossum": vr_distance,
         "cch": cch,
@@ -588,7 +720,7 @@ def run_respiration_case(state: ProjectState) -> dict:
             "pac": pac,
         }
     result = {
-        "label": "Method-inspired validation case on NeuroFlow simulated data",
+        "label": "Method-inspired validation case on NeuroEphys AI simulated data",
         "paper": SOURCES[-1],
         "respiration_source": (
             "simulated reference"
@@ -606,7 +738,7 @@ def run_respiration_case(state: ProjectState) -> dict:
     }
     state.case_studies["respiration"] = result
     state.log(
-        "Respiration case completed on NeuroFlow data; results are explicitly "
+        "Respiration case completed on NeuroEphys AI data; results are explicitly "
         "separated from the cited paper's findings"
     )
     return result
@@ -617,15 +749,25 @@ def run_neural_toolkit(state: ProjectState) -> dict:
         "event_aligned": event_aligned_analysis(state),
         "spike_train": run_spike_train_suite(state),
     }
-    if state.ready:
+    lfp_available = state.metadata.get("acquisition_preprocessing", {}).get(
+        "lfp_available",
+        True,
+    )
+    if state.ready and lfp_available:
         result["lfp"] = run_lfp_suite(state)
         result["spike_field"] = run_spike_field_suite(state)
         result["respiration_case"] = run_respiration_case(state)
     else:
-        result["lfp"] = {"skipped": True, "reason": "raw voltage unavailable"}
-        result["spike_field"] = {"skipped": True, "reason": "raw voltage unavailable"}
+        reason = (
+            state.metadata.get("acquisition_preprocessing", {}).get(
+                "lfp_unavailable_reason"
+            )
+            or "raw voltage unavailable"
+        )
+        result["lfp"] = {"skipped": True, "reason": reason}
+        result["spike_field"] = {"skipped": True, "reason": reason}
         result["respiration_case"] = {
             "skipped": True,
-            "reason": "raw voltage unavailable",
+            "reason": reason,
         }
     return result
