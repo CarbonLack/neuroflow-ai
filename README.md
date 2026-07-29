@@ -1,12 +1,19 @@
-# NeuroEphys AI v0.9.0
+# NeuroEphys AI v0.10.0-dev
 
-公开操作手册：[NeuroEphys AI Documentation](https://carbonlack.github.io/neuroephys-ai-docs/)
+<p align="center">
+  <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
+</p>
 
-公开文档仓库：[CarbonLack/neuroephys-ai-docs](https://github.com/CarbonLack/neuroephys-ai-docs)
+> **Development preview / 开发预览版**
+>
+> 当前版本用于科研工作流演示、兼容性验证和用户测试，功能仍在持续完善。候选 Unit、
+> 统计结果和 AI 建议均需研究者审核，请勿将本预览版作为无人监督的正式分析终点。
 
-主仓库同步手册：[NeuroEphys AI Manual](https://carbonlack.github.io/neuroflow-ai/)
-
-公开仓库与部署状态：[DEPLOYMENT_STATUS_ZH.md](DEPLOYMENT_STATUS_ZH.md)
+- 教程网站：[中文](https://carbonlack.github.io/neuroflow-ai/zh/) ·
+  [English](https://carbonlack.github.io/neuroflow-ai/en/)
+- 下载测试：[GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/releases)
+- 问题反馈：[GitHub Issues](https://github.com/CarbonLack/neuroflow-ai/issues)
+- 当前限制与测试范围：[DEVELOPMENT_PREVIEW.md](DEVELOPMENT_PREVIEW.md)
 
 NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 平台调用经过验证的 sorter 和分析库，将数据导入、质量控制、sorting、人工 Unit
@@ -61,7 +68,8 @@ NeuroEphys AI 不复制其他软件或文章的界面、文案、截图、图表
 界面、适配器、规则、教程、示例数据和图形均由 NeuroEphys AI 独立设计。
 
 - 官方方法与 API 来源见 [`docs/METHODS_AND_SOURCES.md`](docs/METHODS_AND_SOURCES.md)；
-- 原创双语产品文档入口为 [`docs/site/index.html`](docs/site/index.html)；
+- 原创双语产品文档入口为 [`docs/site/zh/index.html`](docs/site/zh/index.html)
+  和 [`docs/site/en/index.html`](docs/site/en/index.html)；
 - 呼吸案例使用 NeuroEphys AI 自己的模拟数据，只演示方法结构，不宣称复现论文结果；
 - 微信推文仅用于发现主题和追溯原文，不复制其内容。
 
@@ -210,4 +218,4 @@ Tridesclous2 的真实运行属于单独的集成验证。
 
 仓库只保存源码、测试、文档和小型配置，不提交原始记录、IBL 缓存、项目输出、
 虚拟环境、密钥或 Kilosort 中间文件。每个稳定里程碑在测试和窗口检查后再同步
-GitHub 与 GitLab。
+GitHub；当前交付不更新 GitLab。

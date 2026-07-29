@@ -1,177 +1,603 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>A visible, replaceable, and restorable electrophysiology workflow · NeuroEphys AI</title>
-    <link rel="stylesheet" href="../styles.css?v=0.8.0">
-  </head>
-  <body>
-    <header class="topbar">
-      <button class="icon-button" type="button" data-menu-toggle aria-label="Open navigation">☰</button>
-      <a class="brand" href="index.html">NeuroEphys AI <small>Documentation</small></a>
-      <input class="search" data-doc-search type="search" placeholder="Search this page">
-      <div class="topbar-actions">
-        <a class="language-button language-link" data-language-link="zh" href="../zh/index.html">Chinese</a>
-      </div>
-    </header>
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="sidebar-label">Getting started</div>
-<a class="active" href="index.html">Overview</a>
-<a href="installation.html">Installation and runtime</a>
-<a href="gui-guide.html">Interface and basic operation</a>
-<div class="sidebar-label">Tutorials</div>
-<a href="tutorials.html">Complete step-by-step tutorial</a>
-<a href="data-inputs.html">Import your own data</a>
-<div class="sidebar-label">Guides</div>
-<a href="sorting.html">Spike sorting guide</a>
-<a href="unit-curation.html">Manual unit curation</a>
-<a href="ai-assistant.html">AI assistant</a>
-<a href="parameters.html">Parameter reference</a>
-<a href="figure-studio.html">Figure editing and export</a>
-<div class="sidebar-label">Reference</div>
-<a href="provenance.html">Artifacts and provenance</a>
-<a href="real-data-validation.html">Real-data validation</a>
-<a href="troubleshooting.html">Troubleshooting</a>
-<a href="sources.html">Methods and sources</a>
-      </aside>
-      <main class="content">
-        <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroEphys AI operation manual</p>
-          <h1>A visible, replaceable, and restorable electrophysiology workflow</h1>
-          <p class="lead">NeuroEphys AI connects raw multichannel recordings, replaceable spike sorters, behavior, neural analyses, statistics, machine learning, and publication export in one local-first project.</p>
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuroEphys AI &mdash; NeuroEphys AI Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=69d471e2" />
+
+  
+    <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
+    <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/index.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=6f76189a"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="System requirements and installation" href="requirements-install.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            NeuroEphys AI
+              <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="requirements-install.html">System requirements and installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#minimum-practical-configuration">Minimum practical configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#development-preview-download">Development preview download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#developer-installation">Developer installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#sorter-environments">Sorter environments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="first-project.html">Create and reopen a project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#create-the-project">Create the project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#acquisition-metadata">Acquisition metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#save-and-recover">Save and recover</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#visible-changes-after-import">Visible changes after import</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Complete workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#data-and-project">01 Data and project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#raw-qc">02 Raw QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#preprocessing">03 Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#spike-sorting">04 Spike sorting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#unit-qc">05 Unit QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#synchronization-and-behavior">06–07 Synchronization and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#neural-analysis">08 Neural analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#statistics-and-decoding">09–10 Statistics and decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#publication-and-reproducibility">11 Publication and reproducibility</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Scientific workflow</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sorting-curation.html">Spike sorting and manual unit curation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#common-result-interface">Common result interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#kilosort4-workflow">Kilosort4 workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#manual-curation">Manual curation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="events-analysis.html">Behavior synchronization and event-aligned analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#import-and-map-events">Import and map events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#alignment-quality">Alignment quality</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#raster-and-psth">Raster and PSTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#quality-checks">Quality checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">Statistics, machine learning, and scientific limits</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#statistical-suite">Statistical suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#decoding">Decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#interpreting-the-figure">Interpreting the figure</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Product guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">Controlled AI assistant</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#operating-modes">Operating modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#providers">Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#cloud-data-preview">Cloud-data preview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#scientific-response-structure">Scientific response structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#local-ollama">Local Ollama</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="figures.html">Figure inspection and publication export</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#figure-studio">Figure Studio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#export-choices">Export choices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#publication-checks">Publication checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parameter-reference.html">Detailed controls and parameter reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#start-with-the-data-structure">01 Start with the data structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#before-you-start">01 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#page-controls-and-visible-consequences">01 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#create-an-empty-project">01 · Create an empty project</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#import-generic-binary">01 · Import generic binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#import-acquisition-system-data">01 · Import acquisition-system data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#resume-from-existing-sorting">01 · Resume from existing sorting</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#parameter-by-parameter-explanation">01 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#sampling-rate">01 · Sampling rate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#channel-count">01 · Channel count</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#dtype">01 · dtype</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#v-bit">01 · µV / bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#copy-source">01 · Copy source</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#recommended-operating-order">01 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#frequent-mistakes">01 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#next-step">01 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#raw-signal-quality-control">02 Raw-signal quality control</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id1">02 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id2">02 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#multichannel-raw-traces">02 · Multichannel raw traces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#qc-metric-summary">02 · QC metric summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#channel-by-frequency-power">02 · Channel-by-frequency power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#quality-timeline">02 · Quality timeline</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id3">02 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#time-start">02 · Time start</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#window">02 · Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#channel-range">02 · Channel range</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#display-gain">02 · Display gain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#line-frequency">02 · Line frequency</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id4">02 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id5">02 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id6">02 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#preprocessing-is-not-a-fixed-recipe">03 Preprocessing is not a fixed recipe</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id7">03 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id8">03 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#ap-sorting-preview">03 · AP / sorting preview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#lfp-branch-preview">03 · LFP branch preview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#reference-comparison">03 · Reference comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#commit-processing-chain">03 · Commit processing chain</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id9">03 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#ap-band">03 · AP band</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#lfp-low-pass">03 · LFP low-pass</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#lfp-sampling-rate">03 · LFP sampling rate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#reference">03 · Reference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#notch">03 · Notch</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id10">03 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id11">03 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id12">03 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#spike-sorting-and-tool-selection">04 Spike sorting and tool selection</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id13">04 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id14">04 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#select-a-sorter">04 · Select a sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#run-selected-sorter">04 · Run selected sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#inspect-run-diagnostics">04 · Inspect run diagnostics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#compare-sorters">04 · Compare sorters</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id15">04 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#sorter">04 · Sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#n-chan-bin">04 · n_chan_bin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#batch-size">04 · batch_size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#nblocks">04 · nblocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#th-universal-th-learned">04 · Th_universal / Th_learned</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#tmin-tmax">04 · tmin / tmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#duplicate-spike-ms">04 · duplicate_spike_ms</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id16">04 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id17">04 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id18">04 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#unit-qc-and-manual-review">05 Unit QC and manual review</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id19">05 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id20">05 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#metric-scatter-and-filters">05 · Metric scatter and filters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#waveforms-and-templates">05 · Waveforms and templates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#acg-and-isi">05 · ACG and ISI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#manual-decision">05 · Manual decision</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id21">05 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#firing-rate">05 · Firing rate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#isi-violation-window">05 · ISI violation window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#snr">05 · SNR</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#amplitude-stability">05 · Amplitude stability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#contamination-threshold">05 · Contamination threshold</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id22">05 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id23">05 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id24">05 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#ttl-behavior-and-a-common-timeline">06 TTL, behavior, and a common timeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id25">06 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id26">06 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#import-behavior-events">06 · Import behavior events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#import-ttl-pulses">06 · Import TTL pulses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#fit-common-timeline">06 · Fit common timeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#inspect-synchronization-evidence">06 · Inspect synchronization evidence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id27">06 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#behavior-time-column">06 · Behavior time column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#ttl-pairing">06 · TTL pairing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#clock-model">06 · Clock model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#residual-tolerance">06 · Residual tolerance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#shared-clock-assumption">06 · Shared-clock assumption</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id28">06 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id29">06 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id30">06 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#behavior-quality-precedes-neural-interpretation">07 Behavior quality precedes neural interpretation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id31">07 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id32">07 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#condition-counts">07 · Condition counts</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#reaction-time">07 · Reaction time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#psychometric-curve">07 · Psychometric curve</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#trial-exclusions">07 · Trial exclusions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id33">07 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#condition-column">07 · Condition column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#reaction-time-start-end">07 · Reaction-time start/end</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#minimum-trials">07 · Minimum trials</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#outlier-rule">07 · Outlier rule</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id34">07 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id35">07 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id36">07 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#neural-activity-analysis-workbench">08 Neural activity analysis workbench</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id37">08 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id38">08 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#event-aligned-raster-psth">08 · Event-aligned Raster/PSTH</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#spike-train-statistics">08 · Spike-train statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#lfp-analysis">08 · LFP analysis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#spike-field-coupling">08 · Spike-field coupling</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id39">08 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#alignment-event">08 · Alignment event</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id40">08 · Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#bin-size">08 · Bin size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#smoothing">08 · Smoothing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#psd-method">08 · PSD method</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#surrogates">08 · Surrogates</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id41">08 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id42">08 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id43">08 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#from-figures-to-statistical-evidence">09 From figures to statistical evidence</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id44">09 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id45">09 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#design-check">09 · Design check</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#parametric-nonparametric-comparison">09 · Parametric/nonparametric comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#permutation-bootstrap">09 · Permutation/bootstrap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#mixed-effects-model">09 · Mixed-effects model</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id46">09 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#sampling-unit">09 · Sampling unit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#paired">09 · Paired</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#alpha">09 · Alpha</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#multiple-comparison">09 · Multiple comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#resamples">09 · Resamples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id47">09 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id48">09 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id49">09 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#machine-learning-clustering-and-leakage">10 Machine learning, clustering, and leakage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id50">10 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id51">10 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#classification">10 · Classification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#regression">10 · Regression</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#time-resolved-decoding">10 · Time-resolved decoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#pca-and-clustering">10 · PCA and clustering</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id52">10 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#feature-window">10 · Feature window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#cross-validation">10 · Cross-validation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#scaling">10 · Scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#class-weighting">10 · Class weighting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#permutation-count">10 · Permutation count</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id53">10 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id54">10 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id55">10 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#publication-figures-and-reproducible-export">11 Publication figures and reproducible export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id56">11 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id57">11 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#edit-current-figure">11 · Edit current figure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#save-one-panel">11 · Save one panel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#export-data-and-statistics">11 · Export data and statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#save-restore-project">11 · Save/restore project</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id58">11 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#format">11 · Format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#figure-size">11 · Figure size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#dpi">11 · DPI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#axis-grid-spine">11 · Axis/grid/spine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#project-source-mode">11 · Project source mode</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id59">11 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id60">11 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id61">11 · Next step</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="provenance.html">Intermediate products, logs, and provenance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#run-record-fields">Run record fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#project-recovery">Project recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#ai-evidence">AI evidence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#output-status">Output status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="real-data-validation.html">Real-data validation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-questions">Validation questions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#data-and-acquisition-limits">Data and acquisition limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#sorter-cross-check">Sorter cross-check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#external-offline-sorter-results">External Offline Sorter results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#behavior-and-synchronization">Behavior and synchronization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#statistical-and-decoding-limits">Statistical and decoding limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#project-recovery-and-provenance">Project recovery and provenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-labels">Validation labels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#application-does-not-start">Application does not start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#sorter-appears-unavailable">Sorter appears unavailable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#psth-conditions-look-identical">PSTH conditions look identical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#lfp-controls-are-disabled">LFP controls are disabled</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#ai-service-fails">AI service fails</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#useful-issue-report">Useful issue report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">Methods, software, and sources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#core-sources">Core sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#attribution-and-data">Attribution and data</a></li>
+</ul>
+</li>
+</ul>
+
         </div>
+      </div>
+    </nav>
 
-<section data-searchable>
-  <h2>Product principles</h2>
-  <div class="grid-3">
-    <article class="panel"><h3>Visible</h3><p>Every stage exposes input, parameters, method, evidence, and limitations.</p></article><article class="panel"><h3>Replaceable</h3><p>Sorters and stage outputs can be changed without hiding native files.</p></article><article class="panel"><h3>Restorable</h3><p>The project manifest restores sources, completed stages, results, and audit history.</p></article>
-  </div>
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">NeuroEphys AI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">NeuroEphys AI</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="neuroephys-ai">
+<h1>NeuroEphys AI<a class="headerlink" href="#neuroephys-ai" title="Link to this heading"></a></h1>
+<p><strong>Development preview · v0.10.0-dev</strong></p>
+<p>NeuroEphys AI is a local-first workbench for extracellular multichannel
+electrophysiology. It keeps raw-data import, quality control, preprocessing,
+spike sorting, manual unit curation, behavioral synchronization, neural
+analysis, statistics, decoding, figure editing, and provenance in one
+recoverable project.</p>
+<p>The current release is a research prototype. Use it to inspect workflows,
+evaluate interoperability, and provide reproducible feedback. Every candidate
+unit and statistical result still requires scientific review.</p>
+<img class="product-shot" src="../assets/neuroflow-analysis.png"
+     alt="NeuroEphys AI analysis workspace"><section id="what-is-currently-working">
+<h2>What is currently working<a class="headerlink" href="#what-is-currently-working" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Teaching simulations for Neuropixels-like probes, tetrodes, and independent
+microwires, including behavior, TTL, and known spike times.</p></li>
+<li><p>Direct import routes for generic binary and supported acquisition systems.</p></li>
+<li><p>Replaceable sorter outputs normalized to seconds-based unit/spike records.</p></li>
+<li><p>Manual unit review with waveform, refractory-period, amplitude, and stability
+evidence.</p></li>
+<li><p>Event-aligned raster, PSTH, population heatmaps, statistics, decoding, and
+editable vector-figure export.</p></li>
+<li><p>Optional controlled AI assistance. Manual analysis remains available when no
+model service is configured.</p></li>
+</ul>
 </section>
-<section data-searchable>
-  <h2>Start in five minutes</h2>
-  <ol class="steps"><li>Create an empty project and import your own data, or open a teaching simulation.</li><li>Verify data structure and raw traces before preprocessing.</li><li>Run each selected analysis from the fixed bottom action bar.</li><li>Inspect figures, tables, parameters, and the audit log after every run.</li><li>Save the project and reopen neuroflow_project.json to resume.</li></ol>
-  <div class="callout method">AI is optional. Manual and guided workflows remain fully usable without a local model.</div>
-</section>
-<section data-searchable>
-  <h2>The complete workflow</h2>
-  <div class="stage-list">
-<article class="stage-card" data-searchable>
-  <div class="stage-number">01</div>
-  <div>
-    <h3><a href="tutorials.html#import">Start with the data structure</a></h3>
-    <p>This page does more than select a file. NeuroEphys AI must know how each sample is stored, how many values form one time point, how probe contacts are arranged, and which device clock timestamps behavior. Those facts give filtering, sorting, and event alignment their correct physical units. Import keeps the source read-only and stores only links, caches, and derived results in the project.</p>
-    <p><b>Recommended first action：</b> Create a project first, then choose the entry that matches the files you actually have.</p>
-    <p class="muted"><b>Then：</b> After confirming structure, continue to Raw QC; processed spikes begin at Unit QC.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">02</div>
-  <div>
-    <h3><a href="tutorials.html#qc">Raw-signal quality control</a></h3>
-    <p>QC does not automatically delete channels. It builds evidence about where an anomaly occurs in channel, time, and frequency and whether it can affect referencing or spike detection. Locate problems globally, verify them in zoomed traces, and only then label candidate bad channels.</p>
-    <p><b>Recommended first action：</b> Run summary and timeline first, then verify every candidate in traces and spectra.</p>
-    <p class="muted"><b>Then：</b> Carry confirmed bad channels and artifact intervals into separate AP and LFP preprocessing branches.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">03</div>
-  <div>
-    <h3><a href="tutorials.html#preprocess">Preprocessing is not a fixed recipe</a></h3>
-    <p>More preprocessing is not automatically better. Every operation changes the signal, so its purpose, order, and duplication inside the sorter must be explicit. NeuroEphys AI previews a short segment first and compares traces and spectra before parameters are committed to the workflow.</p>
-    <p><b>Recommended first action：</b> Create separate AP and LFP branches rather than reusing one recipe.</p>
-    <p class="muted"><b>Then：</b> Send the AP branch to Spike sorting and retain the LFP branch for neural analyses.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">04</div>
-  <div>
-    <h3><a href="tutorials.html#sorting">Spike sorting and tool selection</a></h3>
-    <p>Spike sorting assigns candidate events in multichannel voltage to units. NeuroEphys AI preserves each sorter&#x27;s native files, parameters, and logs while normalizing shared outputs into units, spike times in seconds, and channel/template descriptions for downstream comparison.</p>
-    <p><b>Recommended first action：</b> Run a representative segment with defaults to validate input and resources before the full session.</p>
-    <p class="muted"><b>Then：</b> Select an active sorting result and continue to Unit QC; return here when sorter comparison is needed.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">05</div>
-  <div>
-    <h3><a href="tutorials.html#unit_qc">Unit QC and manual review</a></h3>
-    <p>Sorter output contains candidate clusters. Unit QC combines firing rate, refractory-period evidence, SNR, waveforms, amplitude over time, and ACGs so the researcher can assign traceable keep, MUA, noise, or uncertain labels. No single threshold replaces review.</p>
-    <p><b>Recommended first action：</b> Inspect population distributions first, then review boundary and high-impact units.</p>
-    <p class="muted"><b>Then：</b> After selecting downstream units, import behavior and TTL data and establish a common timeline.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">06</div>
-  <div>
-    <h3><a href="tutorials.html#sync">TTL, behavior, and a common timeline</a></h3>
-    <p>Behavior computers, cameras, and electrophysiology systems often have independent clocks. The synchronization page fits offset + slope × behavior_time from paired TTL pulses and uses residuals to detect missing pulses, mismatches, or nonlinear drift. Without matching TTLs, NeuroEphys AI can only assume a shared clock and labels that assumption explicitly.</p>
-    <p><b>Recommended first action：</b> Inspect event/TTL counts and intervals before fitting.</p>
-    <p class="muted"><b>Then：</b> Use the synchronized trial table to inspect behavior before event-aligned neural analysis.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">07</div>
-  <div>
-    <h3><a href="tutorials.html#behavior">Behavior quality precedes neural interpretation</a></h3>
-    <p>Behavior analysis first asks whether the experiment ran as designed: trial counts per condition, choice balance, reaction times, missing values, and exclusions. Neural responses and machine-learning labels become interpretable only after behavior structure is reliable.</p>
-    <p><b>Recommended first action：</b> Generate and save behavior figures before neural figures.</p>
-    <p class="muted"><b>Then：</b> After locking valid trials and condition labels, continue to event response, spike-train, LFP, or joint analyses.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">08</div>
-  <div>
-    <h3><a href="tutorials.html#analysis">Neural activity analysis workbench</a></h3>
-    <p>The neural page is not a single fixed PSTH. It contains independently runnable event-response, spike-train, LFP spectral/time-frequency, and spike-field coupling analyses. Every sub-analysis has its own inputs, settings, figures, and tables; before execution it shows an input preview, never fabricated results.</p>
-    <p><b>Recommended first action：</b> Run one clearly defined sub-analysis at a time and review its input/settings summary first.</p>
-    <p class="muted"><b>Then：</b> Send trial-level neural metrics to Statistics or build a trial-by-feature matrix for Machine Learning.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">09</div>
-  <div>
-    <h3><a href="tutorials.html#statistics">From figures to statistical evidence</a></h3>
-    <p>Statistics begins with the sampling unit, not a test name. Trials are nested in sessions and units in animals; pairing, repeated measures, and hierarchy determine valid comparisons. The page reports effects, confidence intervals, and multiplicity handling rather than treating p-values as the only result.</p>
-    <p><b>Recommended first action：</b> Create a statistical-design card before enabling test selection.</p>
-    <p class="muted"><b>Then：</b> Statistical results can go to publication export; prediction questions continue to Machine Learning.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">10</div>
-  <div>
-    <h3><a href="tutorials.html#decoding">Machine learning, clustering, and leakage</a></h3>
-    <p>Machine Learning converts neural activity to a trial-by-feature matrix and places preprocessing, feature selection, and the model inside cross-validation. The goal is not the highest score but a leakage-free evaluation against a shuffle baseline with session/animal generalization.</p>
-    <p><b>Recommended first action：</b> Establish a linear baseline before comparing complex models.</p>
-    <p class="muted"><b>Then：</b> Send model configuration, validation splits, score tables, and figures to Publication and Reproducibility.</p>
-  </div>
-</article>
-
-<article class="stage-card" data-searchable>
-  <div class="stage-number">11</div>
-  <div>
-    <h3><a href="tutorials.html#export">Publication figures and reproducible export</a></h3>
-    <p>Export binds figures to plotted data, statistical tables, Methods, the software environment, and the workflow. Visual edits never rewrite analysis data; recomputation and styling have separate audit trails. A saved neuroflow_project.json restores completed stages and the active result.</p>
-    <p><b>Recommended first action：</b> Save vector output, plotted data, statistical tables, and generation settings for every publication figure.</p>
-    <p class="muted"><b>Then：</b> After the reproducibility bundle, the researcher remains responsible for interpretation, manuscript structure, and data-sharing decisions.</p>
-  </div>
-</article>
+<section id="language">
+<h2>Language<a class="headerlink" href="#language" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="../zh/index.html">Chinese documentation</a> · English documentation</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="requirements-install.html">System requirements and installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#minimum-practical-configuration">Minimum practical configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#development-preview-download">Development preview download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#developer-installation">Developer installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#sorter-environments">Sorter environments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="first-project.html">Create and reopen a project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#create-the-project">Create the project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#acquisition-metadata">Acquisition metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#save-and-recover">Save and recover</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#visible-changes-after-import">Visible changes after import</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Complete workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#data-and-project">01 Data and project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#raw-qc">02 Raw QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#preprocessing">03 Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#spike-sorting">04 Spike sorting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#unit-qc">05 Unit QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#synchronization-and-behavior">06–07 Synchronization and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#neural-analysis">08 Neural analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#statistics-and-decoding">09–10 Statistics and decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#publication-and-reproducibility">11 Publication and reproducibility</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Scientific workflow</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sorting-curation.html">Spike sorting and manual unit curation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#common-result-interface">Common result interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#kilosort4-workflow">Kilosort4 workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#manual-curation">Manual curation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="events-analysis.html">Behavior synchronization and event-aligned analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#import-and-map-events">Import and map events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#alignment-quality">Alignment quality</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#raster-and-psth">Raster and PSTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#quality-checks">Quality checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">Statistics, machine learning, and scientific limits</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#statistical-suite">Statistical suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#decoding">Decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#interpreting-the-figure">Interpreting the figure</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Product guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">Controlled AI assistant</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#operating-modes">Operating modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#providers">Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#cloud-data-preview">Cloud-data preview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#scientific-response-structure">Scientific response structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#local-ollama">Local Ollama</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="figures.html">Figure inspection and publication export</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#figure-studio">Figure Studio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#export-choices">Export choices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#publication-checks">Publication checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parameter-reference.html">Detailed controls and parameter reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#start-with-the-data-structure">01 Start with the data structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#raw-signal-quality-control">02 Raw-signal quality control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#preprocessing-is-not-a-fixed-recipe">03 Preprocessing is not a fixed recipe</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#spike-sorting-and-tool-selection">04 Spike sorting and tool selection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#unit-qc-and-manual-review">05 Unit QC and manual review</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#ttl-behavior-and-a-common-timeline">06 TTL, behavior, and a common timeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#behavior-quality-precedes-neural-interpretation">07 Behavior quality precedes neural interpretation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#neural-activity-analysis-workbench">08 Neural activity analysis workbench</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#from-figures-to-statistical-evidence">09 From figures to statistical evidence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#machine-learning-clustering-and-leakage">10 Machine learning, clustering, and leakage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#publication-figures-and-reproducible-export">11 Publication figures and reproducible export</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="provenance.html">Intermediate products, logs, and provenance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#run-record-fields">Run record fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#project-recovery">Project recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#ai-evidence">AI evidence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#output-status">Output status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="real-data-validation.html">Real-data validation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-questions">Validation questions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#data-and-acquisition-limits">Data and acquisition limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#sorter-cross-check">Sorter cross-check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#external-offline-sorter-results">External Offline Sorter results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#behavior-and-synchronization">Behavior and synchronization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#statistical-and-decoding-limits">Statistical and decoding limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#project-recovery-and-provenance">Project recovery and provenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-labels">Validation labels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#application-does-not-start">Application does not start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#sorter-appears-unavailable">Sorter appears unavailable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#psth-conditions-look-identical">PSTH conditions look identical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#lfp-controls-are-disabled">LFP controls are disabled</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#ai-service-fails">AI service fails</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#useful-issue-report">Useful issue report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">Methods, software, and sources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#core-sources">Core sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#attribution-and-data">Attribution and data</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </section>
+</section>
 
-        <footer class="footer">NeuroEphys AI · Original explanatory text with cited method sources</footer>
-      </main>
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="requirements-install.html" class="btn btn-neutral float-right" title="System requirements and installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
-    <script src="../app.js?v=0.8.0"></script>
-  </body>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, NeuroEphys AI team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
 </html>

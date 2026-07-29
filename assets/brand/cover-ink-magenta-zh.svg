@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">NeuroEphys AI 中文提交封面</title>
+  <desc id="desc">墨黑、洋红和薄荷绿色的在体电生理分析工作台封面。</desc>
+  <rect width="1920" height="1080" fill="#0D0C14"/>
+  <rect x="56" y="56" width="1808" height="968" rx="32" fill="#171521" stroke="#3B354A" stroke-width="2"/>
+  <g opacity=".24" fill="none" stroke="#746B89" stroke-width="2">
+    <path d="M80 263h250l20-12 20 29 25-76 28 118 26-91 24 50 22-18h310"/>
+    <path d="M80 318h180l17-8 19 20 25-51 29 76 25-60 21 36 17-13h370"/>
+    <path d="M1120 784h180l17-8 19 20 25-51 29 76 25-60 21 36 17-13h330"/>
+    <path d="M1110 842h250l20-12 20 29 25-76 28 118 26-91 24 50 22-18h270"/>
+  </g>
+  <g opacity=".24" fill="#D885E9">
+    <circle cx="210" cy="780" r="4"/><circle cx="257" cy="753" r="4"/><circle cx="306" cy="808" r="4"/>
+    <circle cx="362" cy="726" r="4"/><circle cx="420" cy="790" r="4"/><circle cx="478" cy="742" r="4"/>
+    <circle cx="535" cy="817" r="4"/><circle cx="590" cy="765" r="4"/><circle cx="648" cy="801" r="4"/>
+    <circle cx="705" cy="736" r="4"/><circle cx="760" cy="786" r="4"/>
+  </g>
+  <g transform="translate(832 206)">
+    <rect width="256" height="256" rx="38" fill="#0D0C14" stroke="#4A425B" stroke-width="3"/>
+    <path d="M64 43v170M96 43v170M128 43v170M160 43v170M192 43v170"
+          fill="none" stroke="#403A4D" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="64" cy="70" r="7" fill="#BDB3CC"/><circle cx="96" cy="92" r="7" fill="#BDB3CC"/>
+    <circle cx="128" cy="70" r="7" fill="#BDB3CC"/><circle cx="160" cy="92" r="7" fill="#BDB3CC"/>
+    <circle cx="192" cy="70" r="7" fill="#BDB3CC"/>
+    <path d="M30 137h42l12-18 16 39 19-92 20 129 19-77 17 37 13-18h38"
+          fill="none" stroke="#D885E9" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="226" cy="137" r="8" fill="#62D8A4"/>
+  </g>
+  <text x="960" y="565" text-anchor="middle" fill="#F7F3FA"
+        font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="88" font-weight="700">NeuroEphys AI</text>
+  <text x="960" y="636" text-anchor="middle" fill="#BDB3CC"
+        font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="31">本地优先的在体电生理分析工作台</text>
+  <line x1="742" y1="688" x2="1178" y2="688" stroke="#D885E9" stroke-width="5"/>
+  <g font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="24" fill="#DCD5E4">
+    <text x="960" y="758" text-anchor="middle">原始数据 · SPIKE SORTING · UNIT 人工复核 · 行为同步</text>
+    <text x="960" y="802" text-anchor="middle">统计 · 神经解码 · 论文出图 · 全程溯源</text>
+  </g>
+  <text x="960" y="940" text-anchor="middle" fill="#8E849F"
+        font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="22">开发预览版 · 确定性分析与受控 AI 助手</text>
+</svg>

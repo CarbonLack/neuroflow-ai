@@ -16,7 +16,7 @@ from matplotlib.backends.backend_qtagg import (
 )
 from matplotlib.transforms import Bbox
 from PySide6.QtCore import QEvent, Qt, QThread, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QFont
+from PySide6.QtGui import QDesktopServices, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QStackedWidget,
     QStyle,
+    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
     QTextBrowser,
@@ -333,77 +334,130 @@ def _documentation_page(language: str, page: str = "index.html") -> Path:
     return _documentation_index().parent / language_folder / page
 
 
+def _brand_asset(name: str) -> Path:
+    if getattr(sys, "frozen", False):
+        bundle_root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        return bundle_root / "neuroephys_brand" / name
+    return Path(__file__).resolve().parents[1] / "assets" / "brand" / name
+
+
 APP_STYLE = """
 QMainWindow, QWidget {
-    background: #f5f7f6;
-    color: #17211e;
+    background: #0d0c14;
+    color: #f7f3fa;
     font-family: "Microsoft YaHei", "Segoe UI";
     font-size: 13px;
 }
-#Header, #HomeHeader { background: #ffffff; border-bottom: 1px solid #d8e0dc; }
-#Brand { font-size: 22px; font-weight: 700; color: #14211d; }
-#Hero { font-size: 30px; font-weight: 700; color: #14211d; }
-#Sidebar, #Assistant { background: #ffffff; }
-#Sidebar { border-right: 1px solid #d8e0dc; }
-#Assistant { border-left: 1px solid #d8e0dc; }
+#Header, #HomeHeader {
+    background: #0d0c14;
+    color: #f7f3fa;
+    border-bottom: 1px solid #3b354a;
+}
+#Header QLabel, #HomeHeader QLabel, #HeroPanel QLabel,
+#Sidebar QLabel, #Assistant QLabel, #RunFooter QLabel {
+    background: transparent;
+}
+#Brand { font-size: 22px; font-weight: 700; color: #f7f3fa; }
+#Hero { font-size: 32px; font-weight: 700; color: #f7f3fa; }
+#HeroPanel {
+    background: #171521;
+    color: #f7f3fa;
+    border: 1px solid #3b354a;
+    border-radius: 7px;
+}
+#HeroPanel QLabel#Muted { color: #bdb3cc; }
+#Sidebar, #Assistant {
+    background: #121019;
+    color: #f2edf5;
+}
+#Sidebar { border-right: 1px solid #3b354a; }
+#Assistant { border-left: 1px solid #3b354a; }
+#Sidebar QLabel, #Assistant QLabel { color: #dcd5e4; }
+#Sidebar QLabel#Muted, #Assistant QLabel#Muted { color: #9e94ad; }
 #RunFooter {
-    background: #ffffff;
-    border-top: 1px solid #cfd8d4;
+    background: #0d0c14;
+    color: #f2edf5;
+    border-top: 1px solid #3b354a;
 }
 QPushButton {
     min-height: 36px;
-    border: 1px solid #c9d4cf;
-    background: #ffffff;
+    color: #f7f3fa;
+    border: 1px solid #4a425b;
+    background: #211d2b;
     padding: 0 14px;
     border-radius: 5px;
 }
-QPushButton:hover { border-color: #1f7a63; background: #eff6f3; }
-QPushButton:disabled { color: #96a09b; background: #f1f3f2; border-color: #dce1df; }
+QPushButton:hover { border-color: #d885e9; background: #2b2537; }
+QPushButton:disabled { color: #766e82; background: #171521; border-color: #332d3f; }
 QPushButton:checked, QPushButton#Primary {
-    color: #ffffff; background: #1f7a63; border-color: #1f7a63; font-weight: 600;
+    color: #140d17; background: #d885e9; border-color: #d885e9; font-weight: 700;
 }
 QPushButton#StepButton {
     text-align: left; min-height: 53px; border: none; border-left: 3px solid transparent;
-    border-radius: 0; padding: 2px 12px 2px 14px;
+    border-radius: 0; padding: 2px 12px 2px 14px; color: #c9c1d2; background: #121019;
 }
 QPushButton#StepButton:checked {
-    color: #17221f; background: #e7f0ec; border-left: 3px solid #1f7a63; font-weight: 650;
+    color: #f7f3fa; background: #292333; border-left: 3px solid #d885e9; font-weight: 650;
 }
-QPushButton#StepButton[status="completed"] { color: #1f7a63; }
-QPushButton#StepButton[status="failed"] { color: #b34f36; }
+QPushButton#StepButton[status="completed"] { color: #62d8a4; }
+QPushButton#StepButton[status="failed"] { color: #f58b82; }
 QFrame#Card, QFrame#Metric, QFrame#SortingWorkbench, QFrame#TraceControls {
-    background: #ffffff; border: 1px solid #d8e0dc; border-radius: 6px;
+    background: #171521; border: 1px solid #3b354a; border-radius: 6px;
 }
 QFrame#InsetPanel {
-    background: #f7f9f8; border: 1px solid #e0e6e3; border-radius: 5px;
+    background: #211d2b; border: 1px solid #3b354a; border-radius: 5px;
 }
 QLabel#MetricValue { font-size: 19px; font-weight: 700; }
-QLabel#Muted, QLabel#MetricLabel { color: #69756f; }
+QLabel#Muted, QLabel#MetricLabel { color: #a79db5; }
 QLabel#PanelTitle { font-size: 15px; font-weight: 700; }
-QLabel#FieldLabel { color: #4e5d57; font-weight: 600; }
+QLabel#FieldLabel { color: #d0c8d8; font-weight: 600; }
 QLabel#StatusBadge {
-    color: #8d3e2d; background: #fff1ec; border: 1px solid #f0c1b2;
+    color: #f3aaa3; background: #342128; border: 1px solid #75414c;
     border-radius: 4px; padding: 3px 8px; font-weight: 600;
 }
 QLabel#StatusBadge[available="true"] {
-    color: #17634f; background: #eaf5f0; border-color: #b7d9cb;
+    color: #8ce2bd; background: #183127; border-color: #3d7a62;
 }
 QLineEdit, QPlainTextEdit, QTextBrowser, QTableWidget, QComboBox, QSpinBox, QDoubleSpinBox, QListWidget {
-    background: #ffffff; border: 1px solid #d2dbd7; border-radius: 4px; min-height: 31px;
-    selection-background-color: #cfe5dc;
+    background: #13111a; color: #f2edf5; border: 1px solid #4a425b; border-radius: 4px; min-height: 31px;
+    selection-background-color: #5c3567;
 }
 QComboBox { padding: 0 8px; }
-QTableWidget { gridline-color: #e5ebe8; }
+QComboBox QAbstractItemView {
+    background: #171521; color: #f2edf5; selection-background-color: #5c3567;
+}
+QTableWidget { gridline-color: #342f3e; }
 QTableWidget::item { padding: 4px; }
-QTableWidget::item:selected { background: #dcece5; color: #17211e; }
+QTableWidget::item:selected { background: #5c3567; color: #ffffff; }
 QHeaderView::section {
-    background: #edf1ef; border: none; border-bottom: 1px solid #d2dcd7; padding: 7px; font-weight: 600;
+    background: #26212f; color: #eee8f2; border: none; border-bottom: 1px solid #4a425b; padding: 7px; font-weight: 600;
 }
 QProgressBar {
-    border: 1px solid #cfd8d4; border-radius: 4px; background: #ffffff;
+    border: 1px solid #4a425b; border-radius: 4px; background: #171521; color: #f2edf5;
     text-align: center; min-height: 18px;
 }
-QProgressBar::chunk { background: #1f7a63; border-radius: 3px; }
+QProgressBar::chunk { background: #d885e9; border-radius: 3px; }
+QTabWidget::pane { border: 1px solid #3b354a; background: #171521; }
+QTabBar::tab {
+    background: #171521; color: #bdb3cc; padding: 7px 12px;
+    border: 1px solid #3b354a; border-bottom: none;
+}
+QTabBar::tab:selected { color: #f7f3fa; border-top: 2px solid #d885e9; }
+QToolBar {
+    background: #f7f3fa; border: 1px solid #d8d1dd; spacing: 2px;
+}
+QToolBar QToolButton {
+    background: #f7f3fa; color: #16242c; border: none; padding: 3px;
+}
+QToolBar QToolButton:hover { background: #eee8f2; }
+QScrollBar:vertical {
+    background: #121019; width: 12px; margin: 0;
+}
+QScrollBar::handle:vertical {
+    background: #4a425b; min-height: 28px; border-radius: 5px;
+}
+QScrollBar::handle:vertical:hover { background: #6a5d7a; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 """
 
 
@@ -539,18 +593,19 @@ class SorterManagerDialog(QDialog):
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.table, 1)
-        note = QLabel(
-            "Kilosort4、SpyKING CIRCUS 2、Tridesclous2、Simple 和 Lupin 随当前发行版运行。"
-            "MountainSort5 在 Windows/Python 3.12 上需要 Microsoft C++ Build Tools 编译 isosplit6；"
-            "NeuroEphys AI 会明确显示该限制，不会把它误报为已安装。"
+        self.note = QLabel(
+            "以上环境探测结果是当前电脑的实际可运行状态。公开核心预览包可能未包含数 GiB 的 "
+            "Kilosort/CUDA 运行库；完整分析环境可通过仓库安装脚本配置。缺失后端会保持不可用，"
+            "不会自动替换成其他 sorter。"
             if language == "zh_CN"
-            else "Kilosort4, SpyKING CIRCUS 2, Tridesclous2, Simple, and Lupin run with this release. "
-            "MountainSort5 needs Microsoft C++ Build Tools to compile isosplit6 on Windows/Python 3.12; "
-            "NeuroEphys AI reports that limitation instead of claiming it is installed."
+            else "The environment probes above are authoritative for this computer. "
+            "The public core preview may omit the several-GiB Kilosort/CUDA runtime; "
+            "the repository setup script configures the full analysis environment. "
+            "A missing backend remains unavailable and is never replaced silently."
         )
-        note.setWordWrap(True)
-        note.setObjectName("Muted")
-        layout.addWidget(note)
+        self.note.setWordWrap(True)
+        self.note.setObjectName("Muted")
+        layout.addWidget(self.note)
         row = QHBoxLayout()
         refresh = QPushButton(tr("refresh", language))
         refresh.clicked.connect(self._refresh)
@@ -2150,7 +2205,7 @@ class TutorialDialog(QDialog):
         self.browser.verticalScrollBar().setValue(0)
 
     def _open_full_manual(self) -> None:
-        manual = _documentation_page(self.language, "tutorials.html")
+        manual = _documentation_page(self.language, "workflow.html")
         if manual.exists():
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(manual)))
 
@@ -2786,6 +2841,9 @@ class NeuroFlowWindow(QMainWindow):
         self.step_buttons: dict[str, QPushButton] = {}
         self.figure_cursor = None
         self._update_window_title()
+        application_icon = _brand_asset("neuroephys-ai-mark.png")
+        if application_icon.exists():
+            self.setWindowIcon(QIcon(str(application_icon)))
         self.resize(1500, 920)
         self.setMinimumSize(1180, 720)
         self.pages = QStackedWidget()
@@ -2839,15 +2897,35 @@ class NeuroFlowWindow(QMainWindow):
         layout = QVBoxLayout(body)
         layout.setContentsMargins(70, 45, 70, 50)
         layout.setSpacing(18)
+        hero_panel = QFrame()
+        hero_panel.setObjectName("HeroPanel")
+        hero_layout = QVBoxLayout(hero_panel)
+        hero_layout.setContentsMargins(36, 28, 36, 30)
+        hero_layout.setSpacing(14)
+        self.home_brand_mark = QLabel()
+        mark_path = _brand_asset("neuroephys-ai-mark.png")
+        if mark_path.exists():
+            self.home_brand_mark.setPixmap(
+                QPixmap(str(mark_path)).scaled(
+                    112,
+                    112,
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation,
+                )
+            )
+        self.home_brand_mark.setAlignment(Qt.AlignCenter)
+        hero_layout.addWidget(self.home_brand_mark)
         self.hero_label = QLabel("从自己的原始数据开始，\n逐步走到可复现的论文图。")
         self.hero_label.setObjectName("Hero")
-        layout.addWidget(self.hero_label)
+        self.hero_label.setAlignment(Qt.AlignCenter)
+        hero_layout.addWidget(self.hero_label)
         self.hero_subtitle = QLabel(
             "本地优先 · 模块可替换 · 每一步可解释 · Kilosort4 真实运行 · AI 非必需"
         )
         self.hero_subtitle.setObjectName("Muted")
         self.hero_subtitle.setStyleSheet("font-size: 15px;")
-        layout.addWidget(self.hero_subtitle)
+        self.hero_subtitle.setAlignment(Qt.AlignCenter)
+        hero_layout.addWidget(self.hero_subtitle)
 
         primary_actions = QHBoxLayout()
         primary_actions.setSpacing(12)
@@ -2869,11 +2947,12 @@ class NeuroFlowWindow(QMainWindow):
         self.project_button = QPushButton("恢复 NeuroEphys AI 项目")
         self.project_button.setProperty("neuroflow_help_key", "home.restore")
         self.project_button.clicked.connect(self._open_project)
+        primary_actions.addStretch()
         primary_actions.addWidget(self.new_project_button)
         primary_actions.addWidget(self.import_button)
         primary_actions.addWidget(self.project_button)
         primary_actions.addStretch()
-        layout.addLayout(primary_actions)
+        hero_layout.addLayout(primary_actions)
 
         secondary_actions = QHBoxLayout()
         secondary_actions.setSpacing(12)
@@ -2887,11 +2966,13 @@ class NeuroFlowWindow(QMainWindow):
         self.sample_button.clicked.connect(self._open_sample)
         self.demo_folder_button = QPushButton("查看示例数据文件夹")
         self.demo_folder_button.clicked.connect(self._open_demo_folder)
+        secondary_actions.addStretch()
         secondary_actions.addWidget(self.public_button)
         secondary_actions.addWidget(self.sample_button)
         secondary_actions.addWidget(self.demo_folder_button)
         secondary_actions.addStretch()
-        layout.addLayout(secondary_actions)
+        hero_layout.addLayout(secondary_actions)
+        layout.addWidget(hero_panel)
 
         capability = QFrame()
         capability.setObjectName("Card")
@@ -3341,12 +3422,32 @@ class NeuroFlowWindow(QMainWindow):
     def _assistant(self) -> QWidget:
         assistant = QWidget()
         assistant.setObjectName("Assistant")
-        assistant.setFixedWidth(310)
+        assistant.setMinimumWidth(340)
+        assistant.setMaximumWidth(460)
+        assistant.resize(390, assistant.height())
         layout = QVBoxLayout(assistant)
-        layout.setContentsMargins(16, 15, 16, 13)
-        self.assistant_title = QLabel("引导与证据")
+        layout.setContentsMargins(12, 12, 12, 10)
+        layout.setSpacing(8)
+        title_row = QHBoxLayout()
+        self.assistant_title = QLabel("AI、引导与证据")
         self.assistant_title.setStyleSheet("font-size: 16px; font-weight: 700;")
-        layout.addWidget(self.assistant_title)
+        title_row.addWidget(self.assistant_title)
+        title_row.addStretch()
+        self.close_ai_panel_button = QPushButton()
+        self.close_ai_panel_button.setFixedSize(34, 34)
+        self.close_ai_panel_button.setToolTip("关闭右侧面板")
+        self.close_ai_panel_button.clicked.connect(self._toggle_ai_panel)
+        title_row.addWidget(self.close_ai_panel_button)
+        layout.addLayout(title_row)
+
+        self.assistant_tabs = QTabWidget()
+        self.assistant_tabs.setDocumentMode(True)
+        layout.addWidget(self.assistant_tabs, 1)
+
+        ai_tab = QWidget()
+        ai_layout = QVBoxLayout(ai_tab)
+        ai_layout.setContentsMargins(4, 8, 4, 4)
+        ai_layout.setSpacing(8)
         mode_row = QHBoxLayout()
         self.assistant_mode = QLabel("AI 模式")
         self.assistant_mode.setObjectName("Muted")
@@ -3366,45 +3467,87 @@ class NeuroFlowWindow(QMainWindow):
             self._sidebar_ai_mode_changed
         )
         mode_row.addWidget(self.sidebar_ai_mode_combo, 1)
-        layout.addLayout(mode_row)
+        ai_layout.addLayout(mode_row)
         self.ai_context_label = QLabel("尚未打开项目")
         self.ai_context_label.setObjectName("Muted")
         self.ai_context_label.setWordWrap(True)
-        layout.addWidget(self.ai_context_label)
-        self.open_ai_button = QPushButton("打开 AI 助手")
-        self.open_ai_button.setObjectName("Primary")
+        ai_layout.addWidget(self.ai_context_label)
+        ai_quick_row = QHBoxLayout()
+        self.sidebar_ai_review_button = QPushButton("审查项目")
+        self.sidebar_ai_review_button.clicked.connect(
+            lambda: self._sidebar_ai_quick("review")
+        )
+        self.sidebar_ai_plan_button = QPushButton("建议流程")
+        self.sidebar_ai_plan_button.clicked.connect(
+            lambda: self._sidebar_ai_quick("plan")
+        )
+        ai_quick_row.addWidget(self.sidebar_ai_review_button)
+        ai_quick_row.addWidget(self.sidebar_ai_plan_button)
+        ai_layout.addLayout(ai_quick_row)
+        self.ai_sidebar_conversation = QTextBrowser()
+        self.ai_sidebar_conversation.setOpenExternalLinks(False)
+        self.ai_sidebar_conversation.setPlaceholderText("AI 对话会显示在这里。")
+        ai_layout.addWidget(self.ai_sidebar_conversation, 1)
+        self.ai_sidebar_question = QPlainTextEdit()
+        self.ai_sidebar_question.setMaximumHeight(92)
+        self.ai_sidebar_question.setPlaceholderText(
+            "询问当前数据、参数、结果或下一步。发送前可预览云端字段。"
+        )
+        ai_layout.addWidget(self.ai_sidebar_question)
+        ai_action_row = QHBoxLayout()
+        self.sidebar_ai_settings_button = QPushButton("设置")
+        self.sidebar_ai_settings_button.clicked.connect(self._sidebar_ai_settings)
+        self.open_ai_button = QPushButton("展开")
         self.open_ai_button.setProperty("neuroflow_help_key", "global.ai")
         self.open_ai_button.clicked.connect(self._open_ai_assistant)
-        layout.addWidget(self.open_ai_button)
-        self.ai_recent_label = QLabel("尚无 AI 对话或工具建议。")
-        self.ai_recent_label.setWordWrap(True)
-        self.ai_recent_label.setObjectName("InsetPanel")
-        self.ai_recent_label.setContentsMargins(9, 7, 9, 7)
-        layout.addWidget(self.ai_recent_label)
+        self.sidebar_ai_send_button = QPushButton("发送")
+        self.sidebar_ai_send_button.setObjectName("Primary")
+        self.sidebar_ai_send_button.clicked.connect(self._sidebar_ai_send)
+        ai_action_row.addWidget(self.sidebar_ai_settings_button)
+        ai_action_row.addWidget(self.open_ai_button)
+        ai_action_row.addWidget(self.sidebar_ai_send_button, 1)
+        ai_layout.addLayout(ai_action_row)
+        self.ai_sidebar_status = QLabel("AI 服务尚未配置。")
+        self.ai_sidebar_status.setObjectName("Muted")
+        self.ai_sidebar_status.setWordWrap(True)
+        ai_layout.addWidget(self.ai_sidebar_status)
+        self.assistant_tabs.addTab(ai_tab, "AI")
+
+        guide_tab = QWidget()
+        guide_layout = QVBoxLayout(guide_tab)
+        guide_layout.setContentsMargins(4, 8, 4, 4)
+        guide_layout.setSpacing(8)
         self.help_title = QLabel("先选择数据来源")
-        self.help_title.setStyleSheet("font-weight: 700; color: #1f7a63;")
-        layout.addWidget(self.help_title)
+        self.help_title.setStyleSheet("font-weight: 700; color: #62dbc9;")
+        guide_layout.addWidget(self.help_title)
         self.help_text = QLabel(f"{PRODUCT_NAME} 会展示数据结构和关键参数。")
         self.help_text.setWordWrap(True)
         self.help_text.setAlignment(Qt.AlignTop)
-        layout.addWidget(self.help_text)
+        guide_layout.addWidget(self.help_text, 1)
         self.open_tutorial_button = QPushButton("打开本章完整教程")
         self.open_tutorial_button.clicked.connect(self._open_context_tutorial)
-        layout.addWidget(self.open_tutorial_button)
+        guide_layout.addWidget(self.open_tutorial_button)
         self.warning_heading = QLabel("当前检查")
         self.warning_heading.setStyleSheet("font-weight: 700;")
-        layout.addWidget(self.warning_heading)
+        guide_layout.addWidget(self.warning_heading)
         self.warning_text = QLabel("尚未打开项目。")
         self.warning_text.setWordWrap(True)
         self.warning_text.setObjectName("Muted")
-        layout.addWidget(self.warning_text)
+        guide_layout.addWidget(self.warning_text)
+        self.assistant_tabs.addTab(guide_tab, "帮助")
+
+        log_tab = QWidget()
+        log_layout = QVBoxLayout(log_tab)
+        log_layout.setContentsMargins(4, 8, 4, 4)
+        log_layout.setSpacing(8)
         self.log_title = QLabel("运行与审计记录")
         self.log_title.setStyleSheet("font-weight: 700;")
-        layout.addWidget(self.log_title)
+        log_layout.addWidget(self.log_title)
         self.log_view = QPlainTextEdit()
         self.log_view.setReadOnly(True)
         self.log_view.setMaximumBlockCount(300)
-        layout.addWidget(self.log_view, 1)
+        log_layout.addWidget(self.log_view, 1)
+        self.assistant_tabs.addTab(log_tab, "日志")
         return assistant
 
     def _register_help_controls(self) -> None:
@@ -3444,6 +3587,9 @@ class NeuroFlowWindow(QMainWindow):
             (self.panel_edit_button, standard.SP_FileDialogDetailedView),
             (self.panel_save_button, standard.SP_DialogSaveButton),
             (self.open_ai_button, standard.SP_MessageBoxInformation),
+            (self.sidebar_ai_settings_button, standard.SP_FileDialogDetailedView),
+            (self.sidebar_ai_send_button, standard.SP_ArrowForward),
+            (self.close_ai_panel_button, standard.SP_TitleBarCloseButton),
         ):
             button.setIcon(icon(icon_name))
 
@@ -3709,16 +3855,51 @@ class NeuroFlowWindow(QMainWindow):
         self.metric_channels.label_widget.setText(tr("channels", language))
         self.metric_duration.label_widget.setText(tr("duration", language))
         self.metric_units.label_widget.setText(tr("units", language))
-        self.assistant_title.setText(tr("assistant", language))
+        self.assistant_title.setText(
+            "AI, guidance and evidence"
+            if language == "en_US"
+            else "AI、引导与证据"
+        )
         self.assistant_mode.setText(
-
-                "Offline guidance + optional cloud AI · raw data stays local"
-                if language == "en_US"
-                else "离线引导 + 可选云端 AI · 原始数据留在本机"
-
+            "AI mode" if language == "en_US" else "AI 模式"
         )
         self.open_ai_button.setText(
-            "Open AI assistant" if language == "en_US" else "打开 AI 助手"
+            "Expand" if language == "en_US" else "展开"
+        )
+        self.sidebar_ai_settings_button.setText(
+            "Settings" if language == "en_US" else "设置"
+        )
+        self.sidebar_ai_send_button.setText(
+            "Send" if language == "en_US" else "发送"
+        )
+        self.sidebar_ai_review_button.setText(
+            "Review project" if language == "en_US" else "审查项目"
+        )
+        self.sidebar_ai_plan_button.setText(
+            "Propose workflow" if language == "en_US" else "建议流程"
+        )
+        self.ai_sidebar_question.setPlaceholderText(
+            (
+                "Ask about the current data, parameters, result, or next step. "
+                "Cloud fields are previewed before sending."
+            )
+            if language == "en_US"
+            else "询问当前数据、参数、结果或下一步。发送前可预览云端字段。"
+        )
+        self.ai_sidebar_conversation.setPlaceholderText(
+            "AI conversation appears here."
+            if language == "en_US"
+            else "AI 对话会显示在这里。"
+        )
+        self.close_ai_panel_button.setToolTip(
+            "Close right panel" if language == "en_US" else "关闭右侧面板"
+        )
+        self.assistant_tabs.setTabText(0, "AI")
+        self.assistant_tabs.setTabText(
+            1, "Guide" if language == "en_US" else "帮助"
+        )
+        self.assistant_tabs.setTabText(
+            2, "Audit log" if language == "en_US" else "日志"
         )
         self.open_tutorial_button.setText(tr("open_chapter", language))
         self.warning_heading.setText(tr("current_checks", language))
@@ -3761,6 +3942,21 @@ class NeuroFlowWindow(QMainWindow):
         if not self.state:
             self.project_label.setText(tr("no_project", language))
             self.status_label.setText(tr("open_project_first", language))
+        else:
+            configured = self.state.source_type not in {"unknown", "unconfigured"}
+            self.status_label.setText(
+                (
+                    "Project opened; run one step or the full workflow"
+                    if language == "en_US"
+                    else "项目已打开；可逐节点运行，也可执行完整流程"
+                )
+                if configured
+                else (
+                    "Empty project opened; import your data on this page"
+                    if language == "en_US"
+                    else "空白项目已建立；请在本页导入自己的电生理数据"
+                )
+            )
         if self.current_step in self.step_buttons:
             self._select_step(self.current_step)
 
@@ -4611,7 +4807,11 @@ class NeuroFlowWindow(QMainWindow):
         elif key == "analysis" and self.state:
             for unit_id in sorted(self.state.sorted_spikes):
                 self.option_combo.addItem(
-                    f"Event · Unit {unit_id}",
+                    (
+                        f"事件 · Unit {unit_id}"
+                        if self.language == "zh_CN"
+                        else f"Event · Unit {unit_id}"
+                    ),
                     f"event:{unit_id}",
                 )
             analysis_views = (
@@ -5552,7 +5752,11 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_ai_sidebar()
 
     def _toggle_ai_panel(self) -> None:
-        self.assistant_panel.setVisible(not self.assistant_panel.isVisible())
+        visible = not self.assistant_panel.isVisible()
+        self.assistant_panel.setVisible(visible)
+        if visible:
+            self.assistant_tabs.setCurrentIndex(0)
+            self.ai_sidebar_question.setFocus()
 
     def _sidebar_ai_mode_changed(self) -> None:
         settings = (
@@ -5576,11 +5780,48 @@ class NeuroFlowWindow(QMainWindow):
         if not hasattr(self, "ai_context_label"):
             return
         english = self.language == "en_US"
+        settings = (
+            self.ai_dialog.settings
+            if self.ai_dialog is not None
+            else load_ai_settings()
+        )
+        if settings.ai_mode == AIMode.MANUAL:
+            service_text = (
+                "Manual mode · no online request will be sent."
+                if english
+                else "手动模式 · 不会发送在线请求。"
+            )
+        elif settings.configured:
+            service_text = (
+                (
+                    f"Ready · {settings.provider_label} · {settings.model}"
+                    if english
+                    else f"服务就绪 · {settings.provider_label} · {settings.model}"
+                )
+            )
+        else:
+            service_text = (
+                "AI is not configured. Open Settings to add an online API or Ollama."
+                if english
+                else "AI 尚未配置。请在“设置”中添加在线 API 或 Ollama。"
+            )
+        self.ai_sidebar_status.setText(service_text)
         if self.state is None:
             self.ai_context_label.setText(
                 "No project context"
                 if english
                 else "尚未打开项目"
+            )
+            self.ai_sidebar_conversation.setHtml(
+                (
+                    "<p><b>AI assistant</b></p><p>Create or open a project to let "
+                    "the assistant inspect a path-free structured summary.</p>"
+                    if english
+                    else (
+                        "<p><b>AI 助手</b></p><p>创建或打开项目后，助手可读取"
+                        "不含本地路径的结构化摘要。</p>"
+                    )
+                )
             )
             return
         self.state.metadata["ui_context"] = {
@@ -5613,24 +5854,67 @@ class NeuroFlowWindow(QMainWindow):
         )
         history = self.state.metadata.get("ai_history", [])
         if history:
-            last = history[-1]
-            calls = last.get("tool_calls", [])
-            suffix = (
-                f"\nProposed actions: {', '.join(item.get('name', '') for item in calls)}"
-                if calls
-                else ""
+            blocks = []
+            for record in history[-5:]:
+                question = escape(str(record.get("question", "")).strip())
+                answer = escape(str(record.get("answer", "")).strip())
+                if question:
+                    blocks.append(
+                        (
+                            '<div class="message user"><b>You</b><br>'
+                            if english
+                            else '<div class="message user"><b>你</b><br>'
+                        )
+                        + question.replace("\n", "<br>")
+                        + "</div>"
+                    )
+                if answer:
+                    calls = record.get("tool_calls", [])
+                    action_text = ""
+                    if calls:
+                        names = ", ".join(
+                            escape(str(item.get("name", ""))) for item in calls
+                        )
+                        action_text = (
+                            f"<br><span class='actions'>Proposed: {names}</span>"
+                            if english
+                            else f"<br><span class='actions'>建议操作：{names}</span>"
+                        )
+                    blocks.append(
+                        '<div class="message assistant"><b>NeuroEphys AI</b><br>'
+                        + answer.replace("\n", "<br>")
+                        + action_text
+                        + "</div>"
+                    )
+            self.ai_sidebar_conversation.setHtml(
+                """
+                <style>
+                  body { color:#f6f2fa; font-family:'Segoe UI'; }
+                  .message { margin:8px 2px; padding:9px 10px; border-radius:5px; }
+                  .user { background:#211d2d; border:1px solid #3b354a; }
+                  .assistant { background:#171521; border:1px solid #5c4968; }
+                  .actions { color:#62d8a4; }
+                </style>
+                """
+                + "".join(blocks)
             )
-            self.ai_recent_label.setText(
-                str(last.get("answer", ""))[:420] + suffix
-            )
+            scroll = self.ai_sidebar_conversation.verticalScrollBar()
+            scroll.setValue(scroll.maximum())
         else:
-            self.ai_recent_label.setText(
-                "No AI conversation or proposed action."
-                if english
-                else "尚无 AI 对话或工具建议。"
+            self.ai_sidebar_conversation.setHtml(
+                (
+                    "<p><b>No conversation yet.</b></p><p>Ask about the current "
+                    "recording, a parameter, an error, or the next evidence-producing "
+                    "step.</p>"
+                    if english
+                    else (
+                        "<p><b>尚无对话。</b></p><p>可以询问当前记录、参数、"
+                        "报错，或下一项能够产生证据的分析步骤。</p>"
+                    )
+                )
             )
 
-    def _open_ai_assistant(self) -> None:
+    def _ensure_ai_dialog(self) -> AIAssistantDialog:
         if self.ai_dialog is None:
             self.ai_dialog = AIAssistantDialog(
                 state_getter=lambda: self.state,
@@ -5660,6 +5944,41 @@ class NeuroFlowWindow(QMainWindow):
         )
         token = str(self.state.root) if self.state else "<no-project>"
         self.ai_dialog.load_project_history(records, token)
+        return self.ai_dialog
+
+    def _sidebar_ai_settings(self) -> None:
+        dialog = self._ensure_ai_dialog()
+        dialog._open_settings()
+        self._refresh_ai_sidebar()
+
+    def _sidebar_ai_send(self) -> None:
+        question = self.ai_sidebar_question.toPlainText().strip()
+        if not question:
+            return
+        dialog = self._ensure_ai_dialog()
+        dialog.question_edit.setPlainText(question)
+        self.ai_sidebar_status.setText(
+            "Waiting for the configured provider..."
+            if self.language == "en_US"
+            else "正在等待已配置的模型服务……"
+        )
+        dialog._submit("ask")
+        self.ai_sidebar_question.clear()
+
+    def _sidebar_ai_quick(self, task: str) -> None:
+        dialog = self._ensure_ai_dialog()
+        dialog._quick_request(task)
+        self.ai_sidebar_status.setText(
+            "Waiting for the configured provider..."
+            if self.language == "en_US"
+            else "正在等待已配置的模型服务……"
+        )
+
+    def _open_ai_assistant(self) -> None:
+        self.assistant_panel.setVisible(True)
+        self.assistant_tabs.setCurrentIndex(0)
+        self._refresh_ai_sidebar()
+        self.ai_dialog = self._ensure_ai_dialog()
         self.ai_dialog.show()
         self.ai_dialog.raise_()
         self.ai_dialog.activateWindow()

@@ -2,72 +2,59 @@
 
 最后检查日期：2026-07-29
 
-## 公开范围
+## 本轮发布范围
 
 - GitHub 仓库：`https://github.com/CarbonLack/neuroflow-ai`
-- GitLab 仓库：`https://gitlab.com/CarbonLack/neuroflow-ai`
-- GitHub 操作手册：`https://carbonlack.github.io/neuroflow-ai/`
-- 已发布的独立操作手册：`https://carbonlack.github.io/neuroephys-ai-docs/`
-- GitLab 操作手册目标地址：`https://carbonlack.gitlab.io/neuroflow-ai/`
+- 中文手册：`https://carbonlack.github.io/neuroflow-ai/zh/`
+- English manual: `https://carbonlack.github.io/neuroflow-ai/en/`
+- Windows 开发预览版：通过 GitHub Releases 发布
 
-GitHub 和 GitLab 仓库均设置为公开。公开仓库只包含程序源代码、公开教程、测试和脱敏演示资源。王淑霏真实数据、原始文件路径、私有运行项目和大体积派生文件不进入公开仓库。
+本轮只更新 GitHub。GitLab 仓库和 GitLab Pages 暂不推送，待账户验证与发布流程单独处理。
 
-## GitHub Pages
+## 公开内容
 
-GitHub Pages 使用 `.github/workflows/pages.yml` 发布 `docs/site`。仓库的 Pages 来源已经设置为 **GitHub Actions**，与工作流声明保持一致。
+公开仓库包括：
 
-此前失败现象：
-
-- `actions/configure-pages` 返回 `Resource not accessible by integration`。
-
-原因：
-
-- 仓库 Pages 来源仍是旧的“Deploy from a branch”，而提交中的工作流按 GitHub Actions Pages 方式发布。
-
-处理：
-
-- 在仓库 `Settings > Pages > Build and deployment` 中把 Source 改为 `GitHub Actions`。
-- 保留最小权限：`contents: read`、`pages: write`、`id-token: write`。
-- 通过后续提交重新触发发布。
-
-## GitLab Pages
-
-GitLab Pages 使用 `.gitlab-ci.yml` 把 `docs/site` 复制到 `public`，并使用当前 GitLab Pages 语法 `pages: true` 声明发布作业。
-
-此前失败现象：
-
-- Pipeline 创建后立即失败。
-- 页面显示 `0 jobs`。
-- GitLab 显示提示：`Before you can run pipelines, we need to verify your account.`
-
-原因：
-
-- GitLab.com 在创建 Runner 作业前要求账户所有者完成身份验证。该拦截发生在作业启动前，与 NeuroEphys AI 分析代码无关。
-- 原配置同时使用了已弃用的旧式 `pages` 作业名，现已升级。
-
-处理：
-
-- 作业改名为 `deploy-pages`。
-- 增加 `pages: true`。
-- 每次 `main` 分支提交均可触发发布，避免首次验证后还要制造额外文档改动。
-- 账户所有者完成 GitLab 身份验证后，重新运行最新 Pipeline 即可。
-
-## 上传边界
-
-以下内容上传到两个公开仓库：
-
-- 源代码和测试；
-- GitHub/GitLab Pages 配置；
-- 中英文公开操作手册；
-- 公开方法来源与开源归属说明；
-- 脱敏产品截图；
-- 可复现构建配置。
+- 源代码与自动化测试；
+- GitHub Pages 和 Windows 预览版构建配置；
+- 中英文操作手册；
+- 开源依赖、方法文献与授权来源；
+- 脱敏产品截图和教学模拟资源；
+- 不含身份信息和本机路径的验证摘要。
 
 以下内容保留在本机：
 
-- 未公开真实电生理和行为数据；
-- 含本机原始路径的验证项目；
-- 真实数据派生的大体积缓存和 sorting 输出；
-- 约 4.7 GiB 的 Windows 解压式应用目录。
+- 未公开的原始电生理和行为数据；
+- 含本机原始路径的项目文件与运行日志；
+- 真实数据产生的大体积缓存、波形和 sorting 输出；
+- API 密钥和操作系统凭据；
+- 仅供内部复核的派生结果。
 
-本地应用可依据仓库中的 `NeuroEphysAI.spec` 和依赖锁定信息重复构建。大体积安装产物应通过正式 Release、对象存储或比赛指定渠道发布，不能直接塞入普通 Git 历史。
+## GitHub Pages
+
+`.github/workflows/pages.yml` 会在 `main` 分支更新后执行：
+
+1. 安装文档依赖；
+2. 从 `docs/sphinx/en` 和 `docs/sphinx/zh` 构建双语 Sphinx 手册；
+3. 将 `docs/site` 上传为 Pages artifact；
+4. 发布到 GitHub Pages。
+
+仓库的 `Settings > Pages > Build and deployment > Source` 应设置为 **GitHub Actions**。
+
+## Windows 开发预览版
+
+`.github/workflows/release.yml` 构建公开核心版。该版本包含桌面界面、数据导入、质控、sorting 结果导入、Unit curation、行为与事件分析、统计、机器学习、Elephant、出图和受控 AI 接口。
+
+Kilosort/CUDA 运行环境体积较大，并受显卡、驱动和 PyTorch 版本约束，因此由独立的完整分析环境管理。公开核心版不会把缺失的 Kilosort 悄悄替换成其他 sorter。
+
+## 数据与来源边界
+
+任何真实数据进入公开材料前都必须完成：
+
+1. 移除姓名、动物编号、原始文件名和本机路径；
+2. 仅保留解释软件行为所需的汇总指标；
+3. 标注数据授权状态与方法来源；
+4. 人工复核截图、日志、报告和压缩包；
+5. 扫描 API 密钥、访问令牌和凭据模式。
+
+大体积安装包通过 GitHub Releases 或比赛指定渠道发布，不写入普通 Git 历史。

@@ -110,38 +110,40 @@ def test_detailed_tutorials_cover_operations_parameters_and_both_languages():
 
 def test_generated_documentation_is_complete_and_english_is_monolingual():
     site = Path(__file__).resolve().parents[1] / "docs" / "site"
-    expected = {
+    required = {
         "index.html",
-        "installation.html",
-        "gui-guide.html",
-        "tutorials.html",
-        "data-inputs.html",
-        "sorting.html",
+        "requirements-install.html",
+        "first-project.html",
+        "workflow.html",
+        "sorting-curation.html",
+        "events-analysis.html",
+        "statistics-ml.html",
+        "figures.html",
         "ai-assistant.html",
-        "parameters.html",
-            "figure-studio.html",
-            "provenance.html",
-            "real-data-validation.html",
-            "troubleshooting.html",
-            "sources.html",
-            "unit-curation.html",
-        }
-    assert {path.name for path in (site / "zh").glob("*.html")} == expected
-    assert {path.name for path in (site / "en").glob("*.html")} == expected
+        "parameter-reference.html",
+        "provenance.html",
+        "real-data-validation.html",
+        "troubleshooting.html",
+        "sources.html",
+    }
+    assert required <= {path.name for path in (site / "zh").glob("*.html")}
+    assert required <= {path.name for path in (site / "en").glob("*.html")}
     english = "\n".join(
         path.read_text(encoding="utf-8") for path in (site / "en").glob("*.html")
     )
     assert not any("\u4e00" <= char <= "\u9fff" for char in english)
-    english_inputs = (site / "en" / "data-inputs.html").read_text(
+    english_inputs = (site / "en" / "first-project.html").read_text(
         encoding="utf-8"
     )
-    chinese_inputs = (site / "zh" / "data-inputs.html").read_text(
+    chinese_inputs = (site / "zh" / "first-project.html").read_text(
         encoding="utf-8"
     )
-    assert "Existing NeuroExplorer NEX5 sorting" in english_inputs
-    assert "已有 NeuroExplorer NEX5 sorting" in chinese_inputs
-    assert "Automatic end alignment" in english_inputs
-    assert "自动结束对齐" in chinese_inputs
+    assert "Create the project" in english_inputs
+    assert "创建项目" in chinese_inputs
+    assert "generic interleaved binary" in english_inputs
+    assert "通用交错二进制" in chinese_inputs
+    assert "宸叉湁" not in chinese_inputs
+    assert "鑷姩" not in chinese_inputs
 
 
 def test_statistics_views_and_model_catalog(tmp_path: Path):

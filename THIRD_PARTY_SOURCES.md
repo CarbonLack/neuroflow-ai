@@ -39,5 +39,8 @@ NeuroEphys AI 采用“复用成熟计算能力、保留原生输出、自主实
 - DeepSeek API、函数调用与工具调用：
   https://api-docs.deepseek.com/api/create-chat-completion
   和 https://api-docs.deepseek.com/guides/function_calling/
+- DeepSeek 当前模型标识、兼容地址与能力：
+  https://api-docs.deepseek.com/api/list-models
+  和 https://api-docs.deepseek.com/quick_start/pricing
 
 网站“方法与来源”页逐项描述借鉴范围。全部解释文字由项目团队重新撰写。

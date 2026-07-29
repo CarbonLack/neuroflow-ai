@@ -1,72 +1,593 @@
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>真实数据验证 · NeuroEphys AI</title>
-    <link rel="stylesheet" href="../styles.css?v=0.8.0">
-  </head>
-  <body>
-    <header class="topbar">
-      <button class="icon-button" type="button" data-menu-toggle aria-label="打开目录">☰</button>
-      <a class="brand" href="index.html">NeuroEphys AI <small>操作手册</small></a>
-      <input class="search" data-doc-search type="search" placeholder="搜索本页">
-      <div class="topbar-actions">
-        <a class="language-button language-link" data-language-link="en" href="../en/real-data-validation.html">英文</a>
-      </div>
-    </header>
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="sidebar-label">开始使用</div>
-<a href="index.html">概览</a>
-<a href="installation.html">安装与运行</a>
-<a href="gui-guide.html">界面与基本操作</a>
-<div class="sidebar-label">教程</div>
-<a href="tutorials.html">完整逐步教程</a>
-<a href="data-inputs.html">导入自己的数据</a>
-<div class="sidebar-label">专项指南</div>
-<a href="sorting.html">Spike sorting 指南</a>
-<a href="unit-curation.html">Unit 人工复核</a>
-<a href="ai-assistant.html">AI 助手</a>
-<a href="parameters.html">参数参考</a>
-<a href="figure-studio.html">图形编辑与导出</a>
-<div class="sidebar-label">参考资料</div>
-<a href="provenance.html">中间产物与溯源</a>
-<a class="active" href="real-data-validation.html">真实数据验证</a>
-<a href="troubleshooting.html">故障排查</a>
-<a href="sources.html">方法与来源</a>
-      </aside>
-      <main class="content">
-        <div class="page-intro" data-searchable>
-          <p class="eyebrow">NeuroEphys AI 操作手册</p>
-          <h1>真实数据验证</h1>
-          <p class="lead">一批本地提供的32-contact微丝记录用于验证Open Ephys直接导入、全时长sorting恢复、行为同步、下游分析、导出和项目重载；原始数据不随软件分发。</p>
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>真实数据验证 &mdash; NeuroEphys AI 中文手册</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=69d471e2" />
+
+  
+    <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
+    <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/real-data-validation.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=c7861400"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/translations.js?v=beaddf03"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="genindex.html" />
+    <link rel="search" title="搜索" href="search.html" />
+    <link rel="next" title="常见问题" href="troubleshooting.html" />
+    <link rel="prev" title="中间产物、日志与溯源" href="provenance.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            NeuroEphys AI
+              <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="搜索文档" aria-label="搜索文档" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="导航菜单">
+              <p class="caption" role="heading"><span class="caption-text">开始使用</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="requirements-install.html">系统要求与安装</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#id2">实用起步配置</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#id3">下载开发预览版</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#id4">开发环境安装</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#sorter">Sorter 运行环境</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="first-project.html">新建、导入和恢复项目</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#id2">创建项目</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#id3">填写采集信息</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#id4">保存和恢复</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#id5">导入后的可见变化</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">完整分析流程</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id2">01 数据与项目</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id3">02 原始质控</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id4">03 预处理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#spike-sorting">04 Spike sorting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#unit">05 Unit 质控</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id5">06–07 同步与行为</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id6">08 神经活动分析</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id7">09–10 统计与解码</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id8">11 论文与复现</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">科学分析流程</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sorting-curation.html">Spike sorting 与 Unit 人工复核</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#id1">统一结果接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#kilosort4">Kilosort4 操作</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#id2">人工复核</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="events-analysis.html">行为同步与事件对齐分析</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id2">导入和映射事件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id3">判断对齐质量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#raster-psth">Raster 与 PSTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id4">必须检查</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">统计、机器学习与科学边界</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id2">统计检验</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id3">神经解码</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id4">阅读图表</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">产品手册</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">受控 AI 助手</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id1">三种模式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#provider">模型 Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id2">发送内容预览</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id3">科学解释结构</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#ollama">本机 Ollama</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="figures.html">图表检查与论文导出</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#figure-studio">Figure Studio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#id2">导出格式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#id3">导出前检查</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parameter-reference.html">逐项操作与参数参考</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#id2">01 从数据结构开始</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id3">01 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id4">01 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id5">01 · 创建空项目</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id6">01 · 导入通用二进制</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id7">01 · 导入记录系统文件</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#sorting">01 · 从已有 sorting 继续</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id8">01 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#sampling-rate">01 · 采样率（Sampling rate）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#channel-count">01 · 总通道数（Channel count）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#dtype">01 · 数据类型（dtype）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#v-bit">01 · µV / bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#copy-source">01 · 复制源文件（Copy source）</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id9">01 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id10">01 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id11">01 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#id12">02 原始信号质控</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id13">02 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id14">02 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id15">02 · 多通道原始波形</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id16">02 · 质控指标总览</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id17">02 · 通道 × 频率功率</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id18">02 · 质量时间线</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id19">02 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#time-start">02 · 起始时间（Time start）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#window">02 · 时间窗（Window）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#channel-range">02 · 通道范围（Channel range）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#display-gain">02 · 显示增益（Display gain）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#line-frequency">02 · 工频（Line frequency）</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id20">02 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id21">02 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id22">02 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#id23">03 按分析目标配置预处理</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id24">03 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id25">03 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#ap-sorting">03 · AP / sorting 预览</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#lfp">03 · LFP 分支预览</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id26">03 · 重参考比较</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id27">03 · 写入处理链</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id28">03 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#ap-ap-band">03 · AP 频段（AP band）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#lfp-lfp-low-pass">03 · LFP 低通（LFP low-pass）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#lfp-sampling-rate">03 · 降采样率（LFP sampling rate）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#reference">03 · 参考方式（Reference）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#notch">03 · 陷波（Notch）</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id29">03 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id30">03 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id31">03 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#spike-sorting">04 Spike sorting 与工具选择</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id32">04 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id33">04 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#sorter">04 · 选择 sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id34">04 · 运行所选 sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id35">04 · 查看运行诊断</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id36">04 · 比较 sorter</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id37">04 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id38">04 · Sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#n-chan-bin">04 · n_chan_bin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#batch-size">04 · batch_size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#nblocks">04 · nblocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#th-universal-th-learned">04 · Th_universal / Th_learned</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#tmin-tmax">04 · tmin / tmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#duplicate-spike-ms">04 · duplicate_spike_ms</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id39">04 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id40">04 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id41">04 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#unit">05 Unit 质控与人工复核</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id42">05 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id43">05 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id44">05 · 指标散点与筛选</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id45">05 · 波形与模板</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#acg-isi">05 · ACG 与 ISI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id46">05 · 人工决定</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id47">05 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#firing-rate">05 · 放电率（Firing rate）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#isi-violation-window">05 · ISI violation window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#snr">05 · SNR</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#amplitude-stability">05 · Amplitude stability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#contamination-threshold">05 · Contamination threshold</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id48">05 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id49">05 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id50">05 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#ttl">06 TTL、行为与统一时间轴</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id51">06 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id52">06 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id53">06 · 导入行为事件</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id54">06 · 导入 TTL</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id55">06 · 拟合统一时间轴</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id56">06 · 检查同步证据</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id57">06 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#behavior-time-column">06 · Behavior time column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#ttl-pairing">06 · TTL pairing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#clock-model">06 · Clock model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#residual-tolerance">06 · Residual tolerance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#shared-clock-assumption">06 · Shared-clock assumption</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id58">06 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id59">06 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id60">06 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#id61">07 行为质量先于神经解释</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id62">07 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id63">07 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id64">07 · 条件计数</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id65">07 · 反应时</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id66">07 · 心理测量曲线</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#trial">07 · trial 排除</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id67">07 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#condition-column">07 · Condition column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#reaction-time-start-end">07 · Reaction-time start/end</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#minimum-trials">07 · Minimum trials</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#outlier-rule">07 · Outlier rule</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id68">07 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id69">07 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id70">07 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#id71">08 神经活动分析工作台</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id72">08 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id73">08 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#raster-psth">08 · 事件对齐 Raster/PSTH</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#spike-train">08 · Spike train 统计</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id74">08 · LFP 分析</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#spike-field">08 · Spike-field 耦合</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id75">08 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#alignment-event">08 · Alignment event</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id76">08 · Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#bin-size">08 · Bin size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#smoothing">08 · Smoothing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#psd-method">08 · PSD method</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#surrogates">08 · Surrogates</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id77">08 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id78">08 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id79">08 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#id80">09 从图到统计证据</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id81">09 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id82">09 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id83">09 · 设计检查</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id84">09 · 参数/非参数比较</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#bootstrap">09 · 置换/Bootstrap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id85">09 · 混合效应模型</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id86">09 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#sampling-unit">09 · Sampling unit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#paired">09 · Paired</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#alpha">09 · Alpha</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#multiple-comparison">09 · Multiple comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#resamples">09 · Resamples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id87">09 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id88">09 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id89">09 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#id90">10 机器学习、聚类与数据泄漏</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id91">10 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id92">10 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id93">10 · 分类</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id94">10 · 回归</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id95">10 · 时间分辨解码</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#pca">10 · PCA 与聚类</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id96">10 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#feature-window">10 · Feature window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#cross-validation">10 · Cross-validation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#scaling">10 · Scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#class-weighting">10 · Class weighting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#permutation-count">10 · Permutation count</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id97">10 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id98">10 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id99">10 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#id100">11 论文图与可复现导出</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id101">11 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id102">11 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id103">11 · 编辑当前图</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id104">11 · 单独保存子图</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id105">11 · 导出数据与统计表</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#id106">11 · 保存/恢复项目</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id107">11 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#format">11 · Format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#figure-size">11 · Figure size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#dpi">11 · DPI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#axis-grid-spine">11 · Axis/grid/spine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="parameter-reference.html#project-source-mode">11 · Project source mode</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id108">11 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id109">11 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id110">11 · 下一步</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="provenance.html">中间产物、日志与溯源</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#id2">运行记录字段</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#id3">项目恢复范围</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#ai">AI 使用的证据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#id4">状态标注</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">真实数据验证</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id2">验证目的</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">数据和采集边界</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sorting">Sorting 交叉检查</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#offline-sorter">外部 Offline Sorter 结果</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">行为与同步</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">统计和解码限制</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">项目恢复与可追溯性</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">如何解读验证状态</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">常见问题</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#id2">程序无法启动</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#sorter">Sorter 显示不可用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#psth">两条 PSTH 曲线几乎相同</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#lfp">LFP 控件被禁用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#ai">AI 服务失败</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#id3">有效的问题报告</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">方法、软件与来源</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#id2">核心来源</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#id3">来源标注与数据</a></li>
+</ul>
+</li>
+</ul>
+
         </div>
+      </div>
+    </nav>
 
-<section data-searchable>
-  <h2>已验证链路</h2>
-  <table><thead><tr><th>阶段</th><th>验证结果</th></tr></thead>
-  <tbody><tr><td><b>记录</b></td><td>32根独立微丝，30 kHz，7,497.489秒；采集时使用外部参考。</td></tr><tr><td><b>采集端处理</b></td><td>在线250–8,000 Hz滤波；程序阻止LFP、低频频谱和spike-field coupling。</td></tr><tr><td><b>原始质控</b></td><td>99.21875/100；配置的1–32通道没有被自动剔除。</td></tr><tr><td><b>Kilosort4</b></td><td>版本4.1.7，nblocks=0，阈值9/8，12个候选unit，2,195,626个spike；内部用时1,870.35秒，含适配器总用时2,096.54秒。</td></tr><tr><td><b>外部离线 sorting</b></td><td>使用官方 nex5file 读取同一记录的8个 NEX5 候选 Unit；原始文件只读，名称、分组、波形摘要与时间对齐证据均保留。</td></tr><tr><td><b>行为与同步</b></td><td>MED-PC事件4,654条；744/744个同步锚点匹配。动作起始分析使用事件码17和19，共168个事件。</td></tr><tr><td><b>统计与解码</b></td><td>已生成技术验证输出；解码结果不得直接用于生物学结论。</td></tr><tr><td><b>项目恢复</b></td><td>保存后重新加载，复用已有Kilosort和 NEX5 数组，重新生成下游结果和产物索引。</td></tr><tr><td><b>人工复核状态</b></td><td>两份结果均保持候选状态，等待波形、不应期、稳定性、重复性和sorter证据的逐个检查。</td></tr></tbody></table>
-</section>
-<section data-searchable>
-  <h2>Sorter敏感性与比较</h2>
-  <p>整段 Kilosort4 结果含12个候选 Unit，外部 NEX5 结果含8个候选 Unit。经固定 lag 搜索和一对一时间戳匹配，只有1对达到强一致；部分外部 Unit 对一个高放电率 Kilosort cluster 具有高 recall、低 precision，提示合并、污染或单位定义差异。30分钟片段中，Kilosort4 含4个候选，裁剪后的 NEX5 仍含8个候选，其中1对达到强一致。候选数量和一致度均用于安排人工复核，不能直接确定真实神经元数量。</p>
-  <p>跨 Unit 重复筛查还发现若干时间戳高重合对，其中最高重合超过80%。程序只标记风险并保留原 Unit；最终判定需要同时查看波形、主通道、ACG、不应期、振幅稳定性和原 sorter 界面。</p>
-</section>
-<section data-searchable>
-  <h2>科学限制</h2>
-  <ul class="checks">
-    <li>外部 NEX5 确认保存了8个候选 Unit；其筛选方法和人工判断仍未完整审计，不能作为ground truth。</li>
-    <li>SW#1 与该动物的对应关系来自文件顺序和提供者说明，当前作为高可信推断保存，仍等待数据拥有者最终确认。</li>
-    <li>在线高通滤波使真实低频活动无法恢复。</li>
-    <li>该记录中事件码21和22时间完全重合；条件比较改用具有独立时间的17和19动作起始事件。</li>
-    <li>单session解码可能反映session结构，需要独立数据验证。</li>
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="移动版导航菜单" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NeuroEphys AI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="页面导航">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">真实数据验证</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/real-data-validation.rst.txt" rel="nofollow"> 查看页面源码</a>
+      </li>
   </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>真实数据验证<a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
+<p>本章公开软件验证的范围、参数和科学限制。授权原始数据、身份信息、实验室目录和
+逐动物结果均保留在本地，不随仓库和安装包发布。</p>
+<section id="id2">
+<h2>验证目的<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<p>真实数据验证回答以下工程问题：</p>
+<ul class="simple">
+<li><p>Open Ephys Legacy 记录能否从图形界面直接读取；</p></li>
+<li><p>用户选择的通道、时间范围、采集设置和电极说明能否写入项目；</p></li>
+<li><p>长记录能否分段读取，避免一次性占用数十 GiB 内存；</p></li>
+<li><p>多种 sorter 的原生结果能否保留，并转换到统一的秒级 spike 接口；</p></li>
+<li><p>MED-PC 事件和数字输入同步脉冲能否建立同一时间轴；</p></li>
+<li><p>项目保存、关闭和重新打开后，能否继续下游分析；</p></li>
+<li><p>图、表、统计、模型结果和运行日志能否追溯到输入与参数。</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>数据和采集边界<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<p>本次授权记录来自 32 根独立排列的自制微丝，记录系统为 Open Ephys Legacy。
+快速回归使用每段至少 1800 秒的数据，长记录回归覆盖 7497.489 秒。</p>
+<p>采集时已在线完成 250--8000 Hz 滤波和参考处理。低频成分无法从这批保存数据中
+恢复。因此项目会阻止 LFP、低频功率谱、LFP coherence 和 spike-field coupling。
+AP 波段的高频数据不能作为 LFP 的替代品。</p>
+</section>
+<section id="sorting">
+<h2>Sorting 交叉检查<a class="headerlink" href="#sorting" title="Link to this heading"></a></h2>
+<p>同一段 30 分钟记录运行了多条 sorting 路线：</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 18.0%" />
+<col style="width: 22.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Sorter</p></th>
+<th class="head"><p>候选 Unit</p></th>
+<th class="head"><p>Spike 数</p></th>
+<th class="head"><p>验证用途</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Kilosort4 默认配置</p></td>
+<td><p>4</p></td>
+<td><p>395,007</p></td>
+<td><p>GPU 基准路线</p></td>
+</tr>
+<tr class="row-odd"><td><p>Kilosort4 灵敏度配置</p></td>
+<td><p>5</p></td>
+<td><p>1,176,945</p></td>
+<td><p>阈值敏感性检查</p></td>
+</tr>
+<tr class="row-even"><td><p>MountainSort5</p></td>
+<td><p>89</p></td>
+<td><p>325,982</p></td>
+<td><p>CPU 路线与算法差异</p></td>
+</tr>
+<tr class="row-odd"><td><p>SpyKING CIRCUS 2</p></td>
+<td><p>1</p></td>
+<td><p>49,442</p></td>
+<td><p>SpikeInterface 适配验证</p></td>
+</tr>
+<tr class="row-even"><td><p>Tridesclous 2</p></td>
+<td><p>18</p></td>
+<td><p>196,250</p></td>
+<td><p>SpikeInterface 适配验证</p></td>
+</tr>
+</tbody>
+</table>
+<p>长记录 Kilosort4 恢复结果包含 12 个候选 Unit 和 2,195,626 个 spike。所有数量均为
+算法候选，不代表经过人工认证的单神经元数量。人工复核仍需同时查看波形、不应期、
+振幅稳定性、漂移、重复和拆分风险。不同 sorter 的数量差异用于暴露算法假设与
+阈值影响，不能直接用来判断哪个结果更准确。</p>
+</section>
+<section id="offline-sorter">
+<h2>外部 Offline Sorter 结果<a class="headerlink" href="#offline-sorter" title="Link to this heading"></a></h2>
+<p>数据提供者给出的两个 <code class="docutils literal notranslate"><span class="pre">.nex5</span></code> 文件通过官方 <code class="docutils literal notranslate"><span class="pre">nex5file</span></code> Python API 只读导入。
+文件名筛选限定为同一次 <code class="docutils literal notranslate"><span class="pre">SW#1</span></code> 记录；LO 文件含 5 个候选 Unit，MO 文件含 3 个，
+合计 8 个候选 Unit 和 273,358 个 spike。程序保留外部名称、通道号、LO/MO 分组、
+波形摘要和源文件索引，同时转换成统一的秒时间 + Unit 编号接口。</p>
+<p>NEX5 文档结束时间为 7653.4056 秒，原始记录长度为 7497.4891 秒。完整记录入口使用
+结束时间对齐，推断偏移为 155.9165 秒；该推断写入来源记录，不能替代独立同步证据。
+截取片段入口会拒绝自动结束对齐，要求用户提供人工或同步推导的偏移。</p>
+<p>全时长项目把 8 个外部候选 Unit 与 12 个 Kilosort4 候选 Unit 进行一对一时间比较，
+容差为 0.5 ms，滞后搜索范围为 ±2 ms。只有 1 对达到强一致；部分外部 Unit 对
+高放电率 Kilosort cluster 表现为高召回、低精确率，可能来自合并、污染或不同
+Unit 定义。这个比较用于安排人工复核，不把外部结果视作 ground truth，也不能据此
+判定真实神经元总数是 8 还是 12。</p>
+</section>
+<section id="id4">
+<h2>行为与同步<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<p>30 分钟项目解析出 4,654 个 MED-PC 事件，744 对同步锚点全部匹配。事件按
+<code class="docutils literal notranslate"><span class="pre">event</span> <span class="pre">code</span> <span class="pre">+</span> <span class="pre">event</span> <span class="pre">name</span> <span class="pre">+</span> <span class="pre">seconds</span></code> 保存；同步脉冲独立显示，默认不与任务事件
+挤在同一张计数图中。</p>
+<p>当前实验尚未配置可泛化的 trial 定义，因此软件导出 <code class="docutils literal notranslate"><span class="pre">events.csv</span></code>，不会把单个
+事件错误标记为 trial。左右条件分析会分别记录事件码、纳入事件数、时间窗、
+baseline、每个 Unit 的矩阵形状和统计来源。</p>
+</section>
+<section id="id5">
+<h2>统计和解码限制<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<p>早期技术回归曾把事件码 21 和 22 作为左右条件：两类各有 67 条记录，但 67 对
+时间戳逐一相同。条件审计因此判定这 134 条记录不能组成有效二分类任务。该旧流程
+得到的 Logistic regression 平衡准确率 0.425 和标签置换 <code class="docutils literal notranslate"><span class="pre">p=0.961</span></code> 仅保留为
+Bug 发现记录，不作为有效条件分析结果。</p>
+<p>修正后的 30 分钟回归使用动作开始事件码 17 和 19，每类 34 条，共 68 条事件。
+当前项目得到平衡准确率 0.7660、ROC AUC 0.803 和 50 次标签置换
+<code class="docutils literal notranslate"><span class="pre">p=0.0196078</span></code>。事件定义虽然不再重合，这仍是单个 session、4 个候选 Unit、
+低置换次数下的软件链路测试，不能支持神经编码结论。</p>
+<p>长记录回归得到平衡准确率 0.8257 和 <code class="docutils literal notranslate"><span class="pre">p=0.0196078</span></code>。该结果仍属于软件链路测试：
+事件定义、置换次数、层级抽样和跨动物重复尚未达到正式科学推断要求。NeuroEphys AI
+在报告中保留这一限制，不把技术回归结果写成神经编码结论。</p>
+</section>
+<section id="id6">
+<h2>项目恢复与可追溯性<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
+<p>保存后重新打开项目，已验证可恢复以下内容：</p>
+<ul class="simple">
+<li><p>原始数据只读链接、通道选择和分析时间段；</p></li>
+<li><p>电极、脑区、参考、在线滤波和 LFP 阻断状态；</p></li>
+<li><p>QC、sorting、Unit 指标和人工复核结构；</p></li>
+<li><p>行为事件、同步映射、统计、解码和图表设置；</p></li>
+<li><p>结构化运行日志、产物清单和 AI 项目历史。</p></li>
+</ul>
+<p>每次运行都记录阶段、输入、参数、工具版本、开始和结束时间、输出、警告、错误与
+恢复建议。授权验证的完整本地路径和逐步运行记录保存在项目
+<code class="docutils literal notranslate"><span class="pre">exports/documentation</span></code> 目录，公开文档仅保留脱敏后的工程证据。</p>
+</section>
+<section id="id7">
+<h2>如何解读验证状态<a class="headerlink" href="#id7" title="Link to this heading"></a></h2>
+<p>文档和界面使用三种状态：</p>
+<ul class="simple">
+<li><p><strong>真实数据已验证</strong>：在上述授权记录上实际运行并检查输出；</p></li>
+<li><p><strong>模拟数据已验证</strong>：在包含已知 spike 和行为事件的教学项目上验证；</p></li>
+<li><p><strong>接口已实现，尚未验证</strong>：代码和入口存在，但尚无受控数据完成回归。</p></li>
+</ul>
+<p>后续公开版本会继续加入可合法再分发的 IBL 与 DANDI 示例。公开数据结果用于验证
+导入和分析链路，不等同于复现原论文结论。</p>
+</section>
 </section>
 
-        <footer class="footer">NeuroEphys AI · 原创说明文字，方法来源逐项标注</footer>
-      </main>
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="页脚">
+        <a href="provenance.html" class="btn btn-neutral float-left" title="中间产物、日志与溯源" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> 上一页</a>
+        <a href="troubleshooting.html" class="btn btn-neutral float-right" title="常见问题" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
-    <script src="../app.js?v=0.8.0"></script>
-  </body>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2026, NeuroEphys AI 团队。</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a> 开发.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
 </html>

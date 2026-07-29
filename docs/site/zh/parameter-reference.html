@@ -1,0 +1,1507 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>逐项操作与参数参考 &mdash; NeuroEphys AI 中文手册</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=69d471e2" />
+
+  
+    <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
+    <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/parameter-reference.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=c7861400"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/translations.js?v=beaddf03"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="genindex.html" />
+    <link rel="search" title="搜索" href="search.html" />
+    <link rel="next" title="中间产物、日志与溯源" href="provenance.html" />
+    <link rel="prev" title="图表检查与论文导出" href="figures.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            NeuroEphys AI
+              <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="搜索文档" aria-label="搜索文档" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="导航菜单">
+              <p class="caption" role="heading"><span class="caption-text">开始使用</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="requirements-install.html">系统要求与安装</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#id2">实用起步配置</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#id3">下载开发预览版</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#id4">开发环境安装</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#sorter">Sorter 运行环境</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="first-project.html">新建、导入和恢复项目</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#id2">创建项目</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#id3">填写采集信息</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#id4">保存和恢复</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#id5">导入后的可见变化</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">完整分析流程</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id2">01 数据与项目</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id3">02 原始质控</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id4">03 预处理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#spike-sorting">04 Spike sorting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#unit">05 Unit 质控</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id5">06–07 同步与行为</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id6">08 神经活动分析</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id7">09–10 统计与解码</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#id8">11 论文与复现</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">科学分析流程</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sorting-curation.html">Spike sorting 与 Unit 人工复核</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#id1">统一结果接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#kilosort4">Kilosort4 操作</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#id2">人工复核</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="events-analysis.html">行为同步与事件对齐分析</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id2">导入和映射事件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id3">判断对齐质量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#raster-psth">Raster 与 PSTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id4">必须检查</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">统计、机器学习与科学边界</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id2">统计检验</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id3">神经解码</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id4">阅读图表</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">产品手册</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">受控 AI 助手</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id1">三种模式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#provider">模型 Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id2">发送内容预览</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id3">科学解释结构</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#ollama">本机 Ollama</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="figures.html">图表检查与论文导出</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#figure-studio">Figure Studio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#id2">导出格式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#id3">导出前检查</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">逐项操作与参数参考</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id2">01 从数据结构开始</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id3">01 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id4">01 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id5">01 · 创建空项目</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id6">01 · 导入通用二进制</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id7">01 · 导入记录系统文件</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sorting">01 · 从已有 sorting 继续</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id8">01 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sampling-rate">01 · 采样率（Sampling rate）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#channel-count">01 · 总通道数（Channel count）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dtype">01 · 数据类型（dtype）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#v-bit">01 · µV / bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#copy-source">01 · 复制源文件（Copy source）</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">01 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id10">01 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id11">01 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id12">02 原始信号质控</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id13">02 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">02 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id15">02 · 多通道原始波形</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id16">02 · 质控指标总览</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id17">02 · 通道 × 频率功率</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id18">02 · 质量时间线</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id19">02 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#time-start">02 · 起始时间（Time start）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#window">02 · 时间窗（Window）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#channel-range">02 · 通道范围（Channel range）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#display-gain">02 · 显示增益（Display gain）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#line-frequency">02 · 工频（Line frequency）</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id20">02 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id21">02 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id22">02 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id23">03 按分析目标配置预处理</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id24">03 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id25">03 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ap-sorting">03 · AP / sorting 预览</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lfp">03 · LFP 分支预览</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id26">03 · 重参考比较</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id27">03 · 写入处理链</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id28">03 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ap-ap-band">03 · AP 频段（AP band）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lfp-lfp-low-pass">03 · LFP 低通（LFP low-pass）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lfp-sampling-rate">03 · 降采样率（LFP sampling rate）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reference">03 · 参考方式（Reference）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#notch">03 · 陷波（Notch）</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id29">03 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id30">03 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id31">03 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#spike-sorting">04 Spike sorting 与工具选择</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id32">04 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id33">04 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sorter">04 · 选择 sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id34">04 · 运行所选 sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id35">04 · 查看运行诊断</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id36">04 · 比较 sorter</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id37">04 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id38">04 · Sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#n-chan-bin">04 · n_chan_bin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#batch-size">04 · batch_size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nblocks">04 · nblocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#th-universal-th-learned">04 · Th_universal / Th_learned</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tmin-tmax">04 · tmin / tmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#duplicate-spike-ms">04 · duplicate_spike_ms</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id39">04 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id40">04 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id41">04 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unit">05 Unit 质控与人工复核</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id42">05 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id43">05 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id44">05 · 指标散点与筛选</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id45">05 · 波形与模板</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#acg-isi">05 · ACG 与 ISI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id46">05 · 人工决定</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id47">05 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firing-rate">05 · 放电率（Firing rate）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#isi-violation-window">05 · ISI violation window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#snr">05 · SNR</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#amplitude-stability">05 · Amplitude stability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#contamination-threshold">05 · Contamination threshold</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id48">05 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id49">05 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id50">05 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ttl">06 TTL、行为与统一时间轴</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id51">06 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id52">06 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id53">06 · 导入行为事件</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id54">06 · 导入 TTL</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id55">06 · 拟合统一时间轴</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id56">06 · 检查同步证据</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id57">06 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#behavior-time-column">06 · Behavior time column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ttl-pairing">06 · TTL pairing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#clock-model">06 · Clock model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#residual-tolerance">06 · Residual tolerance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#shared-clock-assumption">06 · Shared-clock assumption</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id58">06 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id59">06 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id60">06 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id61">07 行为质量先于神经解释</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id62">07 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id63">07 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id64">07 · 条件计数</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id65">07 · 反应时</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id66">07 · 心理测量曲线</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trial">07 · trial 排除</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id67">07 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#condition-column">07 · Condition column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reaction-time-start-end">07 · Reaction-time start/end</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#minimum-trials">07 · Minimum trials</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#outlier-rule">07 · Outlier rule</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id68">07 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id69">07 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id70">07 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id71">08 神经活动分析工作台</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id72">08 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id73">08 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#raster-psth">08 · 事件对齐 Raster/PSTH</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spike-train">08 · Spike train 统计</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id74">08 · LFP 分析</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spike-field">08 · Spike-field 耦合</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id75">08 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#alignment-event">08 · Alignment event</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id76">08 · Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bin-size">08 · Bin size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#smoothing">08 · Smoothing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#psd-method">08 · PSD method</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#surrogates">08 · Surrogates</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id77">08 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id78">08 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id79">08 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id80">09 从图到统计证据</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id81">09 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id82">09 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id83">09 · 设计检查</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id84">09 · 参数/非参数比较</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bootstrap">09 · 置换/Bootstrap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id85">09 · 混合效应模型</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id86">09 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sampling-unit">09 · Sampling unit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#paired">09 · Paired</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#alpha">09 · Alpha</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multiple-comparison">09 · Multiple comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resamples">09 · Resamples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id87">09 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id88">09 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id89">09 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id90">10 机器学习、聚类与数据泄漏</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id91">10 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id92">10 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id93">10 · 分类</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id94">10 · 回归</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id95">10 · 时间分辨解码</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pca">10 · PCA 与聚类</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id96">10 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#feature-window">10 · Feature window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cross-validation">10 · Cross-validation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scaling">10 · Scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#class-weighting">10 · Class weighting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#permutation-count">10 · Permutation count</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id97">10 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id98">10 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id99">10 · 下一步</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id100">11 论文图与可复现导出</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id101">11 · 开始前准备</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id102">11 · 页面操作与可见后果</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id103">11 · 编辑当前图</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id104">11 · 单独保存子图</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id105">11 · 导出数据与统计表</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id106">11 · 保存/恢复项目</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id107">11 · 参数逐项说明</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#format">11 · Format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#figure-size">11 · Figure size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dpi">11 · DPI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#axis-grid-spine">11 · Axis/grid/spine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#project-source-mode">11 · Project source mode</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id108">11 · 推荐操作顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id109">11 · 常见错误</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id110">11 · 下一步</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="provenance.html">中间产物、日志与溯源</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#id2">运行记录字段</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#id3">项目恢复范围</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#ai">AI 使用的证据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#id4">状态标注</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="real-data-validation.html">真实数据验证</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id2">验证目的</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id3">数据和采集边界</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#sorting">Sorting 交叉检查</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#offline-sorter">外部 Offline Sorter 结果</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id4">行为与同步</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id5">统计和解码限制</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id6">项目恢复与可追溯性</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id7">如何解读验证状态</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">常见问题</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#id2">程序无法启动</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#sorter">Sorter 显示不可用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#psth">两条 PSTH 曲线几乎相同</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#lfp">LFP 控件被禁用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#ai">AI 服务失败</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#id3">有效的问题报告</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">方法、软件与来源</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#id2">核心来源</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#id3">来源标注与数据</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="移动版导航菜单" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NeuroEphys AI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="页面导航">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">逐项操作与参数参考</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/parameter-reference.rst.txt" rel="nofollow"> 查看页面源码</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>逐项操作与参数参考<a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
+<p>本参考按工作台的 11 个阶段组织，逐项说明操作会做什么、为什么提供、输出如何变化、默认值从哪里来，以及解释结果前必须检查什么。</p>
+<p>默认值用于建立可检查的起点，不代表所有实验的固定配方。采集元数据和实验设计始终具有更高优先级。</p>
+<section id="id2">
+<h2>01 从数据结构开始<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<p>数据导入从结构确认开始。NeuroEphys AI 必须先知道每个采样值怎样存储、多少个值组成一个时间点、探针通道怎样排列，以及行为事件使用哪一台设备的时钟。只有这些结构被确认，后面的滤波、sorting 和事件对齐才有正确的物理单位。导入过程保持原始数据只读，项目只保存索引、缓存和派生结果。</p>
+<section id="id3">
+<h3>01 · 开始前准备<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<p>准备记录系统说明、采样率、总通道数、数据类型、增益或 μV/bit、探针几何，以及可选的事件 CSV。若是通用二进制，必须从采集软件配置中核对，禁止根据波形猜参数。</p>
+</section>
+<section id="id4">
+<h3>01 · 页面操作与可见后果<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<section id="id5">
+<h4>01 · 创建空项目<a class="headerlink" href="#id5" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 先指定项目名称和保存目录，再从项目内导入数据。</p>
+<p><strong>目的：</strong> 把原始数据与分析产物分开，并建立后续恢复入口。</p>
+<p><strong>可见结果：</strong> 生成 neuroflow_project.json、derived、results 和 exports 目录。</p>
+</section>
+<section id="id6">
+<h4>01 · 导入通用二进制<a class="headerlink" href="#id6" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择 .bin/.dat/.raw，填写采样率、通道数、dtype 和 μV/bit。</p>
+<p><strong>目的：</strong> 读取没有自描述元数据的交错通道记录。</p>
+<p><strong>可见结果：</strong> 验证文件大小能否被“通道数 × 每样本字节数”整除，并显示波形。</p>
+</section>
+<section id="id7">
+<h4>01 · 导入记录系统文件<a class="headerlink" href="#id7" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择 Intan、Open Ephys、SpikeGLX、Blackrock、Plexon、TDT 或 NWB。</p>
+<p><strong>目的：</strong> 利用 SpikeInterface extractor 读取设备元数据并建立统一缓存。</p>
+<p><strong>可见结果：</strong> 项目中保存标准 int16 缓存，源文件保持不变。</p>
+</section>
+<section id="sorting">
+<h4>01 · 从已有 sorting 继续<a class="headerlink" href="#sorting" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择 Kilosort/Phy、IBL ALF 或含 Units 的 NWB。</p>
+<p><strong>目的：</strong> 跳过无法重复的原始处理阶段，直接进入 Unit 和下游分析。</p>
+<p><strong>可见结果：</strong> 统一得到以秒表示的 spike times、unit ID 和来源记录。</p>
+</section>
+</section>
+<section id="id8">
+<h3>01 · 参数逐项说明<a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
+<section id="sampling-rate">
+<h4>01 · 采样率（Sampling rate）<a class="headerlink" href="#sampling-rate" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 每秒采样点数，用于样本索引与秒之间的换算。</p>
+<p><strong>默认值：</strong> 模拟项目 30,000 Hz；设备文件读取元数据</p>
+<p><strong>推荐设置：</strong> 必须使用采集系统记录值；常见细胞外 spike 记录为 20–30 kHz。</p>
+<p><strong>调整后的影响：</strong> 填小会把时间拉长、频率压低；填大会把时间压短、频率抬高。</p>
+</section>
+<section id="channel-count">
+<h4>01 · 总通道数（Channel count）<a class="headerlink" href="#channel-count" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 二进制每个时间点包含的全部通道，包括文件中的辅助通道。</p>
+<p><strong>默认值：</strong> 模拟项目由电极模板决定</p>
+<p><strong>推荐设置：</strong> 按文件实际写入通道数填写，不等同于用于 sorting 的电生理通道数。</p>
+<p><strong>调整后的影响：</strong> 错误值会重排整个文件，常出现重复、错位或斜纹波形。</p>
+</section>
+<section id="dtype">
+<h4>01 · 数据类型（dtype）<a class="headerlink" href="#dtype" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 每个样本在磁盘上的存储类型。</p>
+<p><strong>默认值：</strong> int16</p>
+<p><strong>推荐设置：</strong> 优先从设备元数据或导出设置读取；不要把 float32 文件当作 int16。</p>
+<p><strong>调整后的影响：</strong> 错误 dtype 会改变帧长度和数值解释，可能仍能打开但波形完全错误。</p>
+</section>
+<section id="v-bit">
+<h4>01 · µV / bit<a class="headerlink" href="#v-bit" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 一个整数 ADC 步长对应的微伏数。</p>
+<p><strong>默认值：</strong> 通用导入 0.195；设备导入读取或标准化</p>
+<p><strong>推荐设置：</strong> 使用设备增益换算；若不确定，先保留原始计数并标记单位未知。</p>
+<p><strong>调整后的影响：</strong> 只影响振幅单位和依赖振幅的阈值，不改变 spike 的样本位置。</p>
+</section>
+<section id="copy-source">
+<h4>01 · 复制源文件（Copy source）<a class="headerlink" href="#copy-source" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 决定项目保存只读路径还是把原始二进制复制到项目。</p>
+<p><strong>默认值：</strong> 关闭：只读索引</p>
+<p><strong>推荐设置：</strong> 数据位置稳定时用索引；需要移动或长期归档项目时开启复制。</p>
+<p><strong>调整后的影响：</strong> 复制提高可移植性但占用额外磁盘；索引节省空间但源路径失效后无法重读。</p>
+</section>
+</section>
+<section id="id9">
+<h3>01 · 推荐操作顺序<a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>先创建项目，再选择与你手中真实文件相符的入口。</p></li>
+<li><p>导入后只查看 50–100 ms 波形，确认通道数量、振幅单位和时间长度。</p></li>
+<li><p>保存项目；重新打开 neuroflow_project.json 应回到上次页面和工作流状态。</p></li>
+</ul>
+</section>
+<section id="id10">
+<h3>01 · 常见错误<a class="headerlink" href="#id10" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>把 384 个电生理通道误当作文件总通道数，而文件实际还含同步通道。</p></li>
+<li><p>移动外部原始文件后仍期待只读索引自动找到新位置。</p></li>
+<li><p>IBL ALF 或 Units-only NWB 不含原始电压，不能回到 sorting 之前。</p></li>
+</ul>
+</section>
+<section id="id11">
+<h3>01 · 下一步<a class="headerlink" href="#id11" title="Link to this heading"></a></h3>
+<p>确认结构后进入原始质控；如果只有处理后 spike，则直接进入 Unit 质控。</p>
+<p><strong>方法来源：</strong> SpikeInterface extractors; IBL ALF data model</p>
+</section>
+</section>
+<section id="id12">
+<h2>02 原始信号质控<a class="headerlink" href="#id12" title="Link to this heading"></a></h2>
+<p>质控用于建立异常证据：异常发生在哪些通道、哪些时间、哪些频率，以及是否可能影响重参考和 spike 检测。先在整段记录上定位问题，再放大到原始波形核实，最后才给出坏通道候选。</p>
+<section id="id13">
+<h3>02 · 开始前准备<a class="headerlink" href="#id13" title="Link to this heading"></a></h3>
+<p>确保数据结构页的采样率、通道数、单位和记录时长已经核对。</p>
+</section>
+<section id="id14">
+<h3>02 · 页面操作与可见后果<a class="headerlink" href="#id14" title="Link to this heading"></a></h3>
+<section id="id15">
+<h4>02 · 多通道原始波形<a class="headerlink" href="#id15" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 用时间窗、起点、通道范围和显示增益逐段浏览。</p>
+<p><strong>目的：</strong> 识别饱和、跳变、运动伪迹、死通道和共同噪声。</p>
+<p><strong>可见结果：</strong> 得到可缩放的真实电压片段和当前窗口 RMS。</p>
+</section>
+<section id="id16">
+<h4>02 · 质控指标总览<a class="headerlink" href="#id16" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 运行该子分析，查看每通道 RMS、峰峰值、饱和比例和工频比值。</p>
+<p><strong>目的：</strong> 用多个指标共同筛选，避免依赖单一阈值。</p>
+<p><strong>可见结果：</strong> 生成候选坏通道表；不会自动排除。</p>
+</section>
+<section id="id17">
+<h4>02 · 通道 × 频率功率<a class="headerlink" href="#id17" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 查看所有通道的功率谱热图并缩放可疑频带。</p>
+<p><strong>目的：</strong> 区分宽带噪声、50/60 Hz 工频和局部通道异常。</p>
+<p><strong>可见结果：</strong> 得到各通道频谱证据和工频峰值。</p>
+</section>
+<section id="id18">
+<h4>02 · 质量时间线<a class="headerlink" href="#id18" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 按时间块计算振幅、噪声和饱和指标。</p>
+<p><strong>目的：</strong> 发现只在部分记录中出现的掉线、漂移或伪迹。</p>
+<p><strong>可见结果：</strong> 得到异常时间段，供预处理中的排除或修复使用。</p>
+</section>
+</section>
+<section id="id19">
+<h3>02 · 参数逐项说明<a class="headerlink" href="#id19" title="Link to this heading"></a></h3>
+<section id="time-start">
+<h4>02 · 起始时间（Time start）<a class="headerlink" href="#time-start" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 当前预览窗口从记录的哪一秒开始。</p>
+<p><strong>默认值：</strong> 0 s</p>
+<p><strong>推荐设置：</strong> 先看开头，再抽查中段、结尾和任务关键事件附近。</p>
+<p><strong>调整后的影响：</strong> 只改变显示和局部指标，不裁剪原始数据。</p>
+</section>
+<section id="window">
+<h4>02 · 时间窗（Window）<a class="headerlink" href="#window" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 一次显示多少毫秒或秒。</p>
+<p><strong>默认值：</strong> 60 ms</p>
+<p><strong>推荐设置：</strong> spike 波形用 20–100 ms；慢伪迹和节律可用 1–10 s。</p>
+<p><strong>调整后的影响：</strong> 短窗看波形细节，长窗看趋势，但过长会压缩尖峰。</p>
+</section>
+<section id="channel-range">
+<h4>02 · 通道范围（Channel range）<a class="headerlink" href="#channel-range" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 同时绘制的起始通道与数量。</p>
+<p><strong>默认值：</strong> Ch 0–11</p>
+<p><strong>推荐设置：</strong> 密集探针每次看 8–16 通道，并沿深度移动。</p>
+<p><strong>调整后的影响：</strong> 通道过多会降低单通道可读性；过少可能看不到空间共同模式。</p>
+</section>
+<section id="display-gain">
+<h4>02 · 显示增益（Display gain）<a class="headerlink" href="#display-gain" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 仅控制各通道在图中的垂直放大倍数。</p>
+<p><strong>默认值：</strong> 1.0×</p>
+<p><strong>推荐设置：</strong> 从 1.0× 开始，波形重叠时调低，振幅过小时调高。</p>
+<p><strong>调整后的影响：</strong> 不改变数据和 QC 数值，只改变可视化。</p>
+</section>
+<section id="line-frequency">
+<h4>02 · 工频（Line frequency）<a class="headerlink" href="#line-frequency" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 用于计算窄带工频功率的中心频率。</p>
+<p><strong>默认值：</strong> 50 Hz（中国与多数地区）</p>
+<p><strong>推荐设置：</strong> 按实验所在地选择 50 或 60 Hz，并同时查看谐波。</p>
+<p><strong>调整后的影响：</strong> 选错频率会漏报工频，但不会改变原始信号。</p>
+</section>
+</section>
+<section id="id20">
+<h3>02 · 推荐操作顺序<a class="headerlink" href="#id20" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>先运行总览和时间线，再用原始波形、频谱对每个候选异常交叉验证。</p></li>
+<li><p>坏通道标签必须记录证据和人工决定，不在质控页直接删除。</p></li>
+<li><p>质控结论保存后再进入预处理，避免重参考被异常通道污染。</p></li>
+</ul>
+</section>
+<section id="id21">
+<h3>02 · 常见错误<a class="headerlink" href="#id21" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>把高放电通道误判为高噪声通道。</p></li>
+<li><p>只看记录开头几十毫秒就宣布整段记录质量良好。</p></li>
+<li><p>看到 50 Hz 峰就直接 notch，而不检查接地、参考和谐波。</p></li>
+</ul>
+</section>
+<section id="id22">
+<h3>02 · 下一步<a class="headerlink" href="#id22" title="Link to this heading"></a></h3>
+<p>把确认的坏通道和异常时间段带入预处理，分别建立 AP 与 LFP 分支。</p>
+<p><strong>方法来源：</strong> SpikeInterface preprocessing: detect_bad_channels, coherence+PSD, and channel grouping</p>
+</section>
+</section>
+<section id="id23">
+<h2>03 按分析目标配置预处理<a class="headerlink" href="#id23" title="Link to this heading"></a></h2>
+<p>预处理操作会改变信号，处理数量增加并不必然提升质量。每个操作都要说明目标、顺序和是否会在 sorter 内再次执行。NeuroEphys AI 默认先做短片段预览，让用户比较处理前后波形和频谱；确认后才把参数写入工作流。</p>
+<section id="id24">
+<h3>03 · 开始前准备<a class="headerlink" href="#id24" title="Link to this heading"></a></h3>
+<p>先完成坏通道确认；明确当前目标是 AP/spike sorting、LFP，还是两者。</p>
+</section>
+<section id="id25">
+<h3>03 · 页面操作与可见后果<a class="headerlink" href="#id25" title="Link to this heading"></a></h3>
+<section id="ap-sorting">
+<h4>03 · AP / sorting 预览<a class="headerlink" href="#ap-sorting" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择高通/带通、参考方式和预览片段。</p>
+<p><strong>目的：</strong> 突出快速动作电位并评估 sorter 输入。</p>
+<p><strong>可见结果：</strong> 显示处理前后波形、频谱和 RMS 变化。</p>
+</section>
+<section id="lfp">
+<h4>03 · LFP 分支预览<a class="headerlink" href="#lfp" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择低通、降采样率和工频处理。</p>
+<p><strong>目的：</strong> 保留低频群体活动并降低后续计算量。</p>
+<p><strong>可见结果：</strong> 生成独立 LFP 处理链，不覆盖 AP 分支。</p>
+</section>
+<section id="id26">
+<h4>03 · 重参考比较<a class="headerlink" href="#id26" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 比较 none、common median 和 common average。</p>
+<p><strong>目的：</strong> 减少通道间共同噪声，同时检查是否传播坏通道伪迹。</p>
+<p><strong>可见结果：</strong> 显示参考前后共同成分和单通道波形。</p>
+</section>
+<section id="id27">
+<h4>03 · 写入处理链<a class="headerlink" href="#id27" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 确认预览后保存操作顺序和参数。</p>
+<p><strong>目的：</strong> 使 sorting、LFP 和复现导出使用同一可追溯配置。</p>
+<p><strong>可见结果：</strong> 项目记录处理链；原始文件仍保持只读。</p>
+</section>
+</section>
+<section id="id28">
+<h3>03 · 参数逐项说明<a class="headerlink" href="#id28" title="Link to this heading"></a></h3>
+<section id="ap-ap-band">
+<h4>03 · AP 频段（AP band）<a class="headerlink" href="#ap-ap-band" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 提供给 spike 检测或预览的通带。</p>
+<p><strong>默认值：</strong> 300–6000 Hz</p>
+<p><strong>推荐设置：</strong> 先使用 sorter 或领域常见默认；根据采样率和频谱证据调整。</p>
+<p><strong>调整后的影响：</strong> 高通太高会削弱宽波形；太低会保留 LFP 漂移。低通不能超过 Nyquist。</p>
+</section>
+<section id="lfp-lfp-low-pass">
+<h4>03 · LFP 低通（LFP low-pass）<a class="headerlink" href="#lfp-lfp-low-pass" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 保留的最高 LFP 频率。</p>
+<p><strong>默认值：</strong> 300 Hz</p>
+<p><strong>推荐设置：</strong> 若只分析 &lt;100 Hz，可设 150–250 Hz；研究高频振荡需提高并保留足够采样率。</p>
+<p><strong>调整后的影响：</strong> 截止频率越低，尖锐瞬态越被平滑；过高会把 spike 泄漏带入 LFP。</p>
+</section>
+<section id="lfp-sampling-rate">
+<h4>03 · 降采样率（LFP sampling rate）<a class="headerlink" href="#lfp-sampling-rate" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 滤波后 LFP 每秒保存的样本数。</p>
+<p><strong>默认值：</strong> 1,000 Hz</p>
+<p><strong>推荐设置：</strong> 至少为目标最高频率的 2 倍，实际通常保留 4–10 倍余量。</p>
+<p><strong>调整后的影响：</strong> 过低会混叠或失去相位精度；过高增加内存和计算。</p>
+</section>
+<section id="reference">
+<h4>03 · 参考方式（Reference）<a class="headerlink" href="#reference" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 从每个通道减去共同参考估计。</p>
+<p><strong>默认值：</strong> Common median</p>
+<p><strong>推荐设置：</strong> 密集多通道记录可从 median 开始；稀疏 tetrode/微丝需结合分组和参考电极。</p>
+<p><strong>调整后的影响：</strong> average 更受极端通道影响；median 更稳健，但两者都可能移除真实共同活动。</p>
+</section>
+<section id="notch">
+<h4>03 · 陷波（Notch）<a class="headerlink" href="#notch" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 压制 50/60 Hz 及可选谐波。</p>
+<p><strong>默认值：</strong> 默认关闭</p>
+<p><strong>推荐设置：</strong> 只有质控证据显示窄带污染且无法从硬件修复时开启。</p>
+<p><strong>调整后的影响：</strong> 陷波会改变目标频率附近的振幅和相位，可能影响相位耦合分析。</p>
+</section>
+</section>
+<section id="id29">
+<h3>03 · 推荐操作顺序<a class="headerlink" href="#id29" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>AP 和 LFP 建立独立分支，不把同一处理链机械复用。</p></li>
+<li><p>先预览再确认；图中同时保留原始、处理后和差值/频谱证据。</p></li>
+<li><p>检查 sorter 是否内部执行滤波、whitening 和 drift correction，避免重复。</p></li>
+</ul>
+</section>
+<section id="id30">
+<h3>03 · 常见错误<a class="headerlink" href="#id30" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>在外部和 Kilosort 内重复 whitening。</p></li>
+<li><p>坏通道未排除就做全局参考。</p></li>
+<li><p>先降采样再低通，造成混叠。</p></li>
+</ul>
+</section>
+<section id="id31">
+<h3>03 · 下一步<a class="headerlink" href="#id31" title="Link to this heading"></a></h3>
+<p>AP 分支进入 Spike sorting；LFP 分支保留到神经活动分析页。</p>
+<p><strong>方法来源：</strong> SpikeInterface PreprocessingPipeline, phase_shift, common_reference, and whitening</p>
+</section>
+</section>
+<section id="spike-sorting">
+<h2>04 Spike sorting 与工具选择<a class="headerlink" href="#spike-sorting" title="Link to this heading"></a></h2>
+<p>Spike sorting 把多通道电压中的候选事件分配给 unit。NeuroEphys AI 不把不同 sorter 的原生输出强行抹平：它保留原始文件、参数和日志，同时把共同结果转换为统一的 unit、spike 秒时间和通道/模板描述，供下游比较。</p>
+<section id="id32">
+<h3>04 · 开始前准备<a class="headerlink" href="#id32" title="Link to this heading"></a></h3>
+<p>确认 AP 输入、探针几何、坏通道、可用硬件、输出目录和预计磁盘空间。</p>
+</section>
+<section id="id33">
+<h3>04 · 页面操作与可见后果<a class="headerlink" href="#id33" title="Link to this heading"></a></h3>
+<section id="sorter">
+<h4>04 · 选择 sorter<a class="headerlink" href="#sorter" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 在表中选择 Kilosort4、MountainSort5 或其他已安装后端。</p>
+<p><strong>目的：</strong> 按探针密度、硬件和研究需求选择算法，不能只看“能运行”。</p>
+<p><strong>可见结果：</strong> 参数区切换到该 sorter 的真实配置，未运行时显示输入预览。</p>
+</section>
+<section id="id34">
+<h4>04 · 运行所选 sorter<a class="headerlink" href="#id34" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 确认弹窗中的数据、sorter、参数和运行位置。</p>
+<p><strong>目的：</strong> 防止把耗时任务误运行在错误数据或错误配置上。</p>
+<p><strong>可见结果：</strong> 保存原生输出、统一结果、版本、参数、日志和诊断图。</p>
+</section>
+<section id="id35">
+<h4>04 · 查看运行诊断<a class="headerlink" href="#id35" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 切换 drift、spike 深度-时间、振幅、模板、相似度和运行日志。</p>
+<p><strong>目的：</strong> 判断算法是否在整段记录和整个探针上稳定工作。</p>
+<p><strong>可见结果：</strong> 得到进入 Unit QC 前的 sorting 证据。</p>
+</section>
+<section id="id36">
+<h4>04 · 比较 sorter<a class="headerlink" href="#id36" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 激活不同结果并运行 unit 匹配与一致度比较。</p>
+<p><strong>目的：</strong> 识别共识、拆分、合并和仅单一算法发现的 unit。</p>
+<p><strong>可见结果：</strong> 真实数据报告 agreement；有 ground truth 的模拟数据才报告 accuracy。</p>
+</section>
+</section>
+<section id="id37">
+<h3>04 · 参数逐项说明<a class="headerlink" href="#id37" title="Link to this heading"></a></h3>
+<section id="id38">
+<h4>04 · Sorter<a class="headerlink" href="#id38" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 实际执行的 spike sorting 后端。</p>
+<p><strong>默认值：</strong> Kilosort4</p>
+<p><strong>推荐设置：</strong> 高密度 Neuropixels 优先评估 Kilosort4；稀疏/tetrode 可比较 CPU sorter。</p>
+<p><strong>调整后的影响：</strong> 不同 sorter 的预处理、检测、聚类和资源需求不同，结果不可视为同一算法的参数变体。</p>
+</section>
+<section id="n-chan-bin">
+<h4>04 · n_chan_bin<a class="headerlink" href="#n-chan-bin" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> Kilosort 二进制文件中的总通道数，包括未用于 sorting 的通道。</p>
+<p><strong>默认值：</strong> 从项目结构读取</p>
+<p><strong>推荐设置：</strong> 必须与文件物理布局一致；Neuropixels 1.0 常见文件总数为 385。</p>
+<p><strong>调整后的影响：</strong> 错误值会产生重复斜纹或错位热图，应在运行前立即停止。</p>
+</section>
+<section id="batch-size">
+<h4>04 · batch_size<a class="headerlink" href="#batch-size" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> Kilosort 每个批次处理的样本数。</p>
+<p><strong>默认值：</strong> 60,000（30 kHz 时 2 s）</p>
+<p><strong>推荐设置：</strong> 先用默认；≤64 通道且漂移估计不稳时可增加批次包含的时间。</p>
+<p><strong>调整后的影响：</strong> 更大批次需要更多显存/内存；过短批次用于漂移估计的 spike 更少。</p>
+</section>
+<section id="nblocks">
+<h4>04 · nblocks<a class="headerlink" href="#nblocks" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 漂移校正时沿探针深度分块的数量。</p>
+<p><strong>默认值：</strong> 1（刚性漂移）</p>
+<p><strong>推荐设置：</strong> 单 shank Neuropixels 可从 1 开始，非刚性漂移可试 5；≤64 通道或稀疏间距约 ≥50 µm 时考虑 0。</p>
+<p><strong>调整后的影响：</strong> 0 跳过漂移校正；分块过多会在 spike 稀少时产生不稳定估计。</p>
+</section>
+<section id="th-universal-th-learned">
+<h4>04 · Th_universal / Th_learned<a class="headerlink" href="#th-universal-th-learned" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 通用模板和学习模板的 spike 检测阈值。</p>
+<p><strong>默认值：</strong> Kilosort4 当前默认</p>
+<p><strong>推荐设置：</strong> 先用默认；漏检或 unit 时隐时现时每次只降低 1–2，并比较噪声和召回。</p>
+<p><strong>调整后的影响：</strong> 阈值降低会检出更多事件，也会增加噪声和计算量。</p>
+</section>
+<section id="tmin-tmax">
+<h4>04 · tmin / tmax<a class="headerlink" href="#tmin-tmax" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 参与 sorting 的起止秒数。</p>
+<p><strong>默认值：</strong> 整段记录</p>
+<p><strong>推荐设置：</strong> 只有开头或结尾存在已确认伪迹时裁剪，并在审计记录写明。</p>
+<p><strong>调整后的影响：</strong> 缩短可加快测试，但短片段结果不能代替整段稳定性评估。</p>
+</section>
+<section id="duplicate-spike-ms">
+<h4>04 · duplicate_spike_ms<a class="headerlink" href="#duplicate-spike-ms" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 同一 unit 中过近 spike 被判为重复并移除的窗口。</p>
+<p><strong>默认值：</strong> Kilosort4 默认</p>
+<p><strong>推荐设置：</strong> 仅在 ACG 零点附近出现重复峰且波形证据支持时调整；不得超过 0.5 ms。</p>
+<p><strong>调整后的影响：</strong> 过大会破坏不应期和 ACG/CCG 估计。</p>
+</section>
+</section>
+<section id="id39">
+<h3>04 · 推荐操作顺序<a class="headerlink" href="#id39" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>先用默认参数跑一段代表性数据检查输入和资源，再运行整段记录。</p></li>
+<li><p>Kilosort 的 drift、depth-time、amplitude、template 和 similarity 图都应查看。</p></li>
+<li><p>保留 sorter 原生目录；统一格式只服务跨工具衔接，不替代原生证据。</p></li>
+</ul>
+</section>
+<section id="id40">
+<h3>04 · 常见错误<a class="headerlink" href="#id40" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>未实际运行所选 sorter，却显示另一个 sorter 的旧结果。</p></li>
+<li><p>把真实数据上两个 sorter 的一致度写成准确率。</p></li>
+<li><p>只看 unit 数量，忽略漂移、重复、振幅和日志。</p></li>
+</ul>
+</section>
+<section id="id41">
+<h3>04 · 下一步<a class="headerlink" href="#id41" title="Link to this heading"></a></h3>
+<p>选择一个 active sorting 结果，进入 Unit 质控；必要时再回到本页比较 sorter。</p>
+<p><strong>方法来源：</strong> Kilosort4; MountainSort5; SpikeInterface sorter and comparison modules</p>
+</section>
+</section>
+<section id="unit">
+<h2>05 Unit 质控与人工复核<a class="headerlink" href="#unit" title="Link to this heading"></a></h2>
+<p>Sorter 输出的是候选 cluster。Unit 质控把放电率、不应期、信噪比、波形、振幅随时间和自相关图放在一起，让研究者给出可追溯的保留、MUA、噪声或待定判断。任何单一阈值都不能替代人工复核。</p>
+<section id="id42">
+<h3>05 · 开始前准备<a class="headerlink" href="#id42" title="Link to this heading"></a></h3>
+<p>先在 sorting 页确认 active 结果、运行日志和漂移诊断。</p>
+</section>
+<section id="id43">
+<h3>05 · 页面操作与可见后果<a class="headerlink" href="#id43" title="Link to this heading"></a></h3>
+<section id="id44">
+<h4>05 · 指标散点与筛选<a class="headerlink" href="#id44" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择 x/y 指标、阈值和标签，点击点查看 unit。</p>
+<p><strong>目的：</strong> 发现指标之间的权衡并快速定位异常 unit。</p>
+<p><strong>可见结果：</strong> 得到候选筛选集合，不自动改变最终标签。</p>
+</section>
+<section id="id45">
+<h4>05 · 波形与模板<a class="headerlink" href="#id45" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 查看主通道及相邻通道平均波形和变异。</p>
+<p><strong>目的：</strong> 判断波形是否稳定、空间上是否合理、是否可能为噪声。</p>
+<p><strong>可见结果：</strong> 生成 unit 级波形证据。</p>
+</section>
+<section id="acg-isi">
+<h4>05 · ACG 与 ISI<a class="headerlink" href="#acg-isi" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 放大 0 ms 附近并检查不应期违例和重复峰。</p>
+<p><strong>目的：</strong> 评估污染、重复 spike 和多单元混合。</p>
+<p><strong>可见结果：</strong> 得到时间结构证据和不应期指标。</p>
+</section>
+<section id="id46">
+<h4>05 · 人工决定<a class="headerlink" href="#id46" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 为 unit 标记 good、MUA、noise 或 uncertain，并写备注。</p>
+<p><strong>目的：</strong> 保留研究者判断和阈值版本，支持审计与重做。</p>
+<p><strong>可见结果：</strong> 输出可追踪的筛选表和下游 unit 集合。</p>
+</section>
+</section>
+<section id="id47">
+<h3>05 · 参数逐项说明<a class="headerlink" href="#id47" title="Link to this heading"></a></h3>
+<section id="firing-rate">
+<h4>05 · 放电率（Firing rate）<a class="headerlink" href="#firing-rate" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> unit 在有效记录时间内每秒的 spike 数。</p>
+<p><strong>默认值：</strong> 仅报告，不默认剔除</p>
+<p><strong>推荐设置：</strong> 结合脑区、细胞类型、记录时长和稳定性判断。</p>
+<p><strong>调整后的影响：</strong> 最低阈值升高会移除稀疏放电 unit，也可能丢失真实低频细胞。</p>
+</section>
+<section id="isi-violation-window">
+<h4>05 · ISI violation window<a class="headerlink" href="#isi-violation-window" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 用于统计不应期违例的时间窗口。</p>
+<p><strong>默认值：</strong> 2 ms</p>
+<p><strong>推荐设置：</strong> 常从 1–2 ms 开始，并报告具体定义。</p>
+<p><strong>调整后的影响：</strong> 窗口越大违例越多；不同研究的数值不可脱离定义直接比较。</p>
+</section>
+<section id="snr">
+<h4>05 · SNR<a class="headerlink" href="#snr" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 波形信号幅度相对背景噪声的指标。</p>
+<p><strong>默认值：</strong> 仅报告</p>
+<p><strong>推荐设置：</strong> 使用项目内一致算法并结合波形图；不要把跨软件阈值直接照搬。</p>
+<p><strong>调整后的影响：</strong> 阈值升高提高保守性，但会对小振幅真实 unit 不利。</p>
+</section>
+<section id="amplitude-stability">
+<h4>05 · Amplitude stability<a class="headerlink" href="#amplitude-stability" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 振幅随时间的变化程度。</p>
+<p><strong>默认值：</strong> 全记录时间线</p>
+<p><strong>推荐设置：</strong> 检查是否单调衰减、突变或只在短时段存在，并与漂移图对应。</p>
+<p><strong>调整后的影响：</strong> 稳定性要求过严会排除真实状态变化；过松会保留漂移/丢失 unit。</p>
+</section>
+<section id="contamination-threshold">
+<h4>05 · Contamination threshold<a class="headerlink" href="#contamination-threshold" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 允许的候选污染比例。</p>
+<p><strong>默认值：</strong> 不自动设为真值</p>
+<p><strong>推荐设置：</strong> 以 10% 作为可见参考线时必须说明估计方法，并与 ACG/波形共同判断。</p>
+<p><strong>调整后的影响：</strong> 降低阈值会减少 unit 数并提高保守性，但估计本身也有误差。</p>
+</section>
+</section>
+<section id="id48">
+<h3>05 · 推荐操作顺序<a class="headerlink" href="#id48" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>先看总体分布，再逐个复核临界和高影响 unit。</p></li>
+<li><p>阈值只生成候选标签；最终决定必须记录 reviewer、时间和备注。</p></li>
+<li><p>更换 active sorter 后重新计算 QC，不能沿用旧结果。</p></li>
+</ul>
+</section>
+<section id="id49">
+<h3>05 · 常见错误<a class="headerlink" href="#id49" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>用单一 SNR 或 ISI 阈值宣布“好神经元”。</p></li>
+<li><p>把 unit 数量当作 recording yield 而不报告筛选过程。</p></li>
+<li><p>人工修改标签却不保存审计记录。</p></li>
+</ul>
+</section>
+<section id="id50">
+<h3>05 · 下一步<a class="headerlink" href="#id50" title="Link to this heading"></a></h3>
+<p>确定下游 unit 集合后，导入行为与 TTL 并建立统一时间轴。</p>
+<p><strong>方法来源：</strong> SpikeInterface quality metrics; refractory-period contamination</p>
+</section>
+</section>
+<section id="ttl">
+<h2>06 TTL、行为与统一时间轴<a class="headerlink" href="#ttl" title="Link to this heading"></a></h2>
+<p>行为电脑、视频和电生理设备通常各有自己的时钟。同步页把成对 TTL 脉冲用于估计 offset + slope × behavior_time，并用残差判断是否存在漏脉冲、错配或非线性漂移。没有对应 TTL 时只能假设共用时钟，界面会明确标注。</p>
+<section id="id51">
+<h3>06 · 开始前准备<a class="headerlink" href="#id51" title="Link to this heading"></a></h3>
+<p>准备行为事件 CSV 和可选 TTL CSV；明确每一列的时钟、单位和事件含义。</p>
+</section>
+<section id="id52">
+<h3>06 · 页面操作与可见后果<a class="headerlink" href="#id52" title="Link to this heading"></a></h3>
+<section id="id53">
+<h4>06 · 导入行为事件<a class="headerlink" href="#id53" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择包含 time_seconds、trial、condition 和 event_type 的 CSV。</p>
+<p><strong>目的：</strong> 建立 trial 语义和行为时钟中的事件序列。</p>
+<p><strong>可见结果：</strong> 项目保存事件表和源文件路径。</p>
+</section>
+<section id="id54">
+<h4>06 · 导入 TTL<a class="headerlink" href="#id54" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择包含与行为同步脉冲一一对应的电生理时间 CSV。</p>
+<p><strong>目的：</strong> 建立两个设备时钟之间的可估计映射。</p>
+<p><strong>可见结果：</strong> 显示可匹配数量、缺失和重复脉冲。</p>
+</section>
+<section id="id55">
+<h4>06 · 拟合统一时间轴<a class="headerlink" href="#id55" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 按事件顺序匹配并拟合截距与斜率。</p>
+<p><strong>目的：</strong> 校正起始偏移和线性时钟漂移。</p>
+<p><strong>可见结果：</strong> 生成 ephys 秒时间、残差、drift ppm 和 trial 表。</p>
+</section>
+<section id="id56">
+<h4>06 · 检查同步证据<a class="headerlink" href="#id56" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 查看残差随时间、事件计数和异常配对。</p>
+<p><strong>目的：</strong> 判断线性映射是否足够，是否需要重新配对或分段。</p>
+<p><strong>可见结果：</strong> 保留同步质量报告供所有事件对齐分析引用。</p>
+</section>
+</section>
+<section id="id57">
+<h3>06 · 参数逐项说明<a class="headerlink" href="#id57" title="Link to this heading"></a></h3>
+<section id="behavior-time-column">
+<h4>06 · Behavior time column<a class="headerlink" href="#behavior-time-column" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 行为设备时间戳所在列。</p>
+<p><strong>默认值：</strong> time_seconds</p>
+<p><strong>推荐设置：</strong> 优先转换为秒并保留原始列；若为帧号需提供帧率或逐帧时间。</p>
+<p><strong>调整后的影响：</strong> 单位错误会产生 1000 倍或采样率倍的偏移。</p>
+</section>
+<section id="ttl-pairing">
+<h4>06 · TTL pairing<a class="headerlink" href="#ttl-pairing" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 行为脉冲与电生理脉冲如何对应。</p>
+<p><strong>默认值：</strong> 按顺序一一配对</p>
+<p><strong>推荐设置：</strong> 先核对数量和间隔；有漏脉冲时用间隔序列定位后再配对。</p>
+<p><strong>调整后的影响：</strong> 一个漏脉冲会让后续全部按序配对错位。</p>
+</section>
+<section id="clock-model">
+<h4>06 · Clock model<a class="headerlink" href="#clock-model" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 从行为时钟映射到电生理时钟的函数。</p>
+<p><strong>默认值：</strong> offset + slope × time</p>
+<p><strong>推荐设置：</strong> 先用线性模型；残差呈弯曲或分段跳变时才考虑分段/非线性。</p>
+<p><strong>调整后的影响：</strong> 模型过于复杂会拟合脉冲噪声；过于简单会留下系统漂移。</p>
+</section>
+<section id="residual-tolerance">
+<h4>06 · Residual tolerance<a class="headerlink" href="#residual-tolerance" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 匹配后允许的最大时间误差。</p>
+<p><strong>默认值：</strong> 报告实际值，不自动隐藏</p>
+<p><strong>推荐设置：</strong> 根据任务时间尺度和设备精度设定；毫秒级 spike 响应需更严格。</p>
+<p><strong>调整后的影响：</strong> 容差放宽会保留错配；过严会剔除正常 TTL 抖动。</p>
+</section>
+<section id="shared-clock-assumption">
+<h4>06 · Shared-clock assumption<a class="headerlink" href="#shared-clock-assumption" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 无 TTL 时是否把行为秒时间直接当作电生理秒时间。</p>
+<p><strong>默认值：</strong> 仅在未提供 TTL 时启用并警告</p>
+<p><strong>推荐设置：</strong> 只有系统确实共享硬件时钟或已在外部完成同步时使用。</p>
+<p><strong>调整后的影响：</strong> 无法检测起始偏移和漂移，结论风险必须写入报告。</p>
+</section>
+</section>
+<section id="id58">
+<h3>06 · 推荐操作顺序<a class="headerlink" href="#id58" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>导入后先看事件和 TTL 数量、间隔，再拟合。</p></li>
+<li><p>残差图必须覆盖整段记录，不能只报告平均误差。</p></li>
+<li><p>同步映射、源列、单位和排除配对全部保存到项目。</p></li>
+</ul>
+</section>
+<section id="id59">
+<h3>06 · 常见错误<a class="headerlink" href="#id59" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>把行为毫秒当成秒。</p></li>
+<li><p>有漏脉冲仍按行号强制一一对应。</p></li>
+<li><p>没有 TTL 却报告精确同步误差。</p></li>
+</ul>
+</section>
+<section id="id60">
+<h3>06 · 下一步<a class="headerlink" href="#id60" title="Link to this heading"></a></h3>
+<p>用同步后的 trial 表先检查行为质量，再进行事件对齐神经分析。</p>
+<p><strong>方法来源：</strong> IBL synchronization and ALF trials object</p>
+</section>
+</section>
+<section id="id61">
+<h2>07 行为质量先于神经解释<a class="headerlink" href="#id61" title="Link to this heading"></a></h2>
+<p>行为分析先回答实验是否按设计执行：各条件有多少 trial、选择是否平衡、反应时是否合理、缺失和排除发生在哪里。只有行为结构可靠，神经响应和机器学习标签才有可解释含义。</p>
+<section id="id62">
+<h3>07 · 开始前准备<a class="headerlink" href="#id62" title="Link to this heading"></a></h3>
+<p>同步页已生成统一秒时间和 trial 表，并明确 trial 开始、事件和结束。</p>
+</section>
+<section id="id63">
+<h3>07 · 页面操作与可见后果<a class="headerlink" href="#id63" title="Link to this heading"></a></h3>
+<section id="id64">
+<h4>07 · 条件计数<a class="headerlink" href="#id64" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 查看每个刺激、选择、结果或组别的 trial 数。</p>
+<p><strong>目的：</strong> 发现类别不平衡和设计遗漏。</p>
+<p><strong>可见结果：</strong> 输出可用于统计和解码的有效样本数。</p>
+</section>
+<section id="id65">
+<h4>07 · 反应时<a class="headerlink" href="#id65" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 绘制分布、条件比较和异常 trial。</p>
+<p><strong>目的：</strong> 识别过快猜测、超时和记录错误。</p>
+<p><strong>可见结果：</strong> 生成反应时变量和排除候选。</p>
+</section>
+<section id="id66">
+<h4>07 · 心理测量曲线<a class="headerlink" href="#id66" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 按刺激强度计算选择比例和样本量。</p>
+<p><strong>目的：</strong> 检查行为是否随任务变量系统变化。</p>
+<p><strong>可见结果：</strong> 输出曲线、每点 trial 数和拟合参数。</p>
+</section>
+<section id="trial">
+<h4>07 · trial 排除<a class="headerlink" href="#trial" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 依据预先定义规则标记缺失、超时、伪迹或异常值。</p>
+<p><strong>目的：</strong> 让排除发生在看神经结果之前，减少结果导向筛选。</p>
+<p><strong>可见结果：</strong> 保留原 trial 和 exclusion_reason，不物理删除。</p>
+</section>
+</section>
+<section id="id67">
+<h3>07 · 参数逐项说明<a class="headerlink" href="#id67" title="Link to this heading"></a></h3>
+<section id="condition-column">
+<h4>07 · Condition column<a class="headerlink" href="#condition-column" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 用于分组比较的 trial 字段。</p>
+<p><strong>默认值：</strong> condition</p>
+<p><strong>推荐设置：</strong> 使用实验程序原始标签并建立数据字典。</p>
+<p><strong>调整后的影响：</strong> 重新编码会改变分组和样本量，必须保留映射。</p>
+</section>
+<section id="reaction-time-start-end">
+<h4>07 · Reaction-time start/end<a class="headerlink" href="#reaction-time-start-end" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 计算反应时所用的两个事件。</p>
+<p><strong>默认值：</strong> stimulus_onset → response</p>
+<p><strong>推荐设置：</strong> 按科学问题明确；运动开始、按键和奖励不能混用。</p>
+<p><strong>调整后的影响：</strong> 终点事件不同会改变数值和神经对齐解释。</p>
+</section>
+<section id="minimum-trials">
+<h4>07 · Minimum trials<a class="headerlink" href="#minimum-trials" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 一个条件进入统计或解码所需的最低有效 trial 数。</p>
+<p><strong>默认值：</strong> 仅警告，不自动剔除</p>
+<p><strong>推荐设置：</strong> 依据效应大小、变异和验证方案做功效评估；不要固定套用一个数。</p>
+<p><strong>调整后的影响：</strong> 阈值越高条件越稳定但可用 session 越少。</p>
+</section>
+<section id="outlier-rule">
+<h4>07 · Outlier rule<a class="headerlink" href="#outlier-rule" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 反应时或连续行为变量的异常值定义。</p>
+<p><strong>默认值：</strong> 不默认删除</p>
+<p><strong>推荐设置：</strong> 优先使用任务定义边界或稳健规则，并报告剔除数量。</p>
+<p><strong>调整后的影响：</strong> 事后调整边界可能改变条件效应并引入偏差。</p>
+</section>
+</section>
+<section id="id68">
+<h3>07 · 推荐操作顺序<a class="headerlink" href="#id68" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>行为图先于神经图生成并保存。</p></li>
+<li><p>每个图点都可点击查看刺激水平、样本量和原始 trial。</p></li>
+<li><p>排除规则保存为字段和日志，不覆盖原始 trial 表。</p></li>
+</ul>
+</section>
+<section id="id69">
+<h3>07 · 常见错误<a class="headerlink" href="#id69" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>类别严重不平衡仍只报告普通准确率。</p></li>
+<li><p>看完神经差异后再调整行为排除规则。</p></li>
+<li><p>把 trial、session 和动物混为一个样本层级。</p></li>
+</ul>
+</section>
+<section id="id70">
+<h3>07 · 下一步<a class="headerlink" href="#id70" title="Link to this heading"></a></h3>
+<p>锁定有效 trial 和条件标签后，进入事件响应、spike train、LFP 或联合分析。</p>
+<p><strong>方法来源：</strong> IBL Brain-Wide Map behavioral analyses</p>
+</section>
+</section>
+<section id="id71">
+<h2>08 神经活动分析工作台<a class="headerlink" href="#id71" title="Link to this heading"></a></h2>
+<p>神经活动页提供四类可独立运行的分析入口：事件对齐响应、spike train 统计、LFP 频谱/时频，以及 spike-field 耦合。每个子分析都有自己的输入、参数、图和表；未运行时显示输入预览和运行目的，不伪造结果。</p>
+<section id="id72">
+<h3>08 · 开始前准备<a class="headerlink" href="#id72" title="Link to this heading"></a></h3>
+<p>确认 active units、同步事件、有效 trial；LFP 或耦合分析还需要原始/LFP 电压。</p>
+</section>
+<section id="id73">
+<h3>08 · 页面操作与可见后果<a class="headerlink" href="#id73" title="Link to this heading"></a></h3>
+<section id="raster-psth">
+<h4>08 · 事件对齐 Raster/PSTH<a class="headerlink" href="#raster-psth" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择事件、窗口、bin、平滑、baseline 和条件。</p>
+<p><strong>目的：</strong> 描述 unit 或群体在事件前后的时间响应。</p>
+<p><strong>可见结果：</strong> 输出 raster、PSTH、热图、响应窗口和 trial 级特征。</p>
+</section>
+<section id="spike-train">
+<h4>08 · Spike train 统计<a class="headerlink" href="#spike-train" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择 CV2、Lv、Fano、ACG/CCH、STTC 或距离。</p>
+<p><strong>目的：</strong> 量化放电规律性、变异和神经元间时间关系。</p>
+<p><strong>可见结果：</strong> 生成单位明确的指标表和 correlogram。</p>
+</section>
+<section id="id74">
+<h4>08 · LFP 分析<a class="headerlink" href="#id74" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 运行 PSD、频带功率、coherence 或时频图。</p>
+<p><strong>目的：</strong> 描述振荡功率、跨通道关系和事件相关频谱变化。</p>
+<p><strong>可见结果：</strong> 输出频谱、时频矩阵、频带汇总和方法参数。</p>
+</section>
+<section id="spike-field">
+<h4>08 · Spike-field 耦合<a class="headerlink" href="#spike-field" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择相位频带、参考通道、spike 集合和 surrogate。</p>
+<p><strong>目的：</strong> 检验 spike 是否偏好某一 LFP 相位，并评估机会水平。</p>
+<p><strong>可见结果：</strong> 输出相位分布、向量强度、Rayleigh/置换证据和 PAC/STA。</p>
+</section>
+</section>
+<section id="id75">
+<h3>08 · 参数逐项说明<a class="headerlink" href="#id75" title="Link to this heading"></a></h3>
+<section id="alignment-event">
+<h4>08 · Alignment event<a class="headerlink" href="#alignment-event" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 所有 trial 的时间零点。</p>
+<p><strong>默认值：</strong> stimulus_onset（取决于事件表）</p>
+<p><strong>推荐设置：</strong> 按假设选择；刺激、运动、选择和奖励回答不同问题。</p>
+<p><strong>调整后的影响：</strong> 更换事件会改变响应时间解释，不能只挑最显著者。</p>
+</section>
+<section id="id76">
+<h4>08 · Window<a class="headerlink" href="#id76" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 事件前后截取的时间范围。</p>
+<p><strong>默认值：</strong> -1 到 +2 s</p>
+<p><strong>推荐设置：</strong> 覆盖 baseline 和预期响应，同时避免相邻 trial/事件重叠。</p>
+<p><strong>调整后的影响：</strong> 过短漏掉慢响应；过长增加重叠和多重比较。</p>
+</section>
+<section id="bin-size">
+<h4>08 · Bin size<a class="headerlink" href="#bin-size" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> PSTH 或计数特征的时间分箱宽度。</p>
+<p><strong>默认值：</strong> 50 ms</p>
+<p><strong>推荐设置：</strong> 快速感觉响应可用 5–20 ms；行为/群体趋势常用 20–100 ms，并做敏感性比较。</p>
+<p><strong>调整后的影响：</strong> 小 bin 提高时间分辨率但噪声大；大 bin 平滑响应并降低峰值。</p>
+</section>
+<section id="smoothing">
+<h4>08 · Smoothing<a class="headerlink" href="#smoothing" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 对分箱放电率施加的平滑核与宽度。</p>
+<p><strong>默认值：</strong> 默认最小或关闭</p>
+<p><strong>推荐设置：</strong> 图示可平滑，统计优先使用未平滑 trial 特征；报告核和宽度。</p>
+<p><strong>调整后的影响：</strong> 平滑越强峰越低、响应越宽，可能制造相邻时间相关。</p>
+</section>
+<section id="psd-method">
+<h4>08 · PSD method<a class="headerlink" href="#psd-method" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 功率谱估计方法和分段设置。</p>
+<p><strong>默认值：</strong> Welch</p>
+<p><strong>推荐设置：</strong> 平稳片段从 Welch 开始；报告窗长、重叠、频率分辨率和单位。</p>
+<p><strong>调整后的影响：</strong> 长窗提高频率分辨率但降低时间局部性；短窗相反。</p>
+</section>
+<section id="surrogates">
+<h4>08 · Surrogates<a class="headerlink" href="#surrogates" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 通过时间移位或标签打乱建立机会分布的次数。</p>
+<p><strong>默认值：</strong> 200（演示）</p>
+<p><strong>推荐设置：</strong> 正式分析通常至少 1,000，尾部 p 值需要更多；固定随机种子。</p>
+<p><strong>调整后的影响：</strong> 次数少运行快但 p 值分辨率低；次数多更稳定但耗时增加。</p>
+</section>
+</section>
+<section id="id77">
+<h3>08 · 推荐操作顺序<a class="headerlink" href="#id77" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>每次只运行一个明确子分析，并在运行前阅读输入和参数摘要。</p></li>
+<li><p>图和统计共享同一 trial、窗口和条件定义，但统计不依赖图形平滑。</p></li>
+<li><p>保留每个子图对应的数据表，允许单独编辑和导出。</p></li>
+</ul>
+</section>
+<section id="id78">
+<h3>08 · 常见错误<a class="headerlink" href="#id78" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>未运行新选项时仍显示其他分析的旧图。</p></li>
+<li><p>用平滑后的 PSTH 每个时间点直接做大量 t 检验。</p></li>
+<li><p>LFP 未抗混叠降采样或 spike-field 使用同一电极造成 spike 泄漏。</p></li>
+</ul>
+</section>
+<section id="id79">
+<h3>08 · 下一步<a class="headerlink" href="#id79" title="Link to this heading"></a></h3>
+<p>将 trial 级神经指标送入统计页，或构建 trial × feature 矩阵进入机器学习。</p>
+<p><strong>方法来源：</strong> Neo data model; Elephant spike-train, spectral, STA and phase APIs; Folschweiller &amp; Sauer (2023) case structure</p>
+</section>
+</section>
+<section id="id80">
+<h2>09 从图到统计证据<a class="headerlink" href="#id80" title="Link to this heading"></a></h2>
+<p>统计页先定义“样本是什么”，随后选择检验。trial 嵌套于 session，unit 嵌套于动物；配对、重复测量和层级结构决定了哪些比较合法。页面同时报告效应量、置信区间和多重比较处理，不把 p 值作为唯一结论。</p>
+<section id="id81">
+<h3>09 · 开始前准备<a class="headerlink" href="#id81" title="Link to this heading"></a></h3>
+<p>准备未平滑的 trial 级指标、条件、unit/session/animal 标识和排除规则。</p>
+</section>
+<section id="id82">
+<h3>09 · 页面操作与可见后果<a class="headerlink" href="#id82" title="Link to this heading"></a></h3>
+<section id="id83">
+<h4>09 · 设计检查<a class="headerlink" href="#id83" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 指定样本单位、配对关系、层级和主要比较。</p>
+<p><strong>目的：</strong> 防止伪重复和把嵌套样本当独立样本。</p>
+<p><strong>可见结果：</strong> 生成可审计的统计设计摘要。</p>
+</section>
+<section id="id84">
+<h4>09 · 参数/非参数比较<a class="headerlink" href="#id84" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 根据设计选择 t/Welch/ANOVA 或 Wilcoxon/Mann–Whitney/Kruskal。</p>
+<p><strong>目的：</strong> 在假设和数据结构匹配的前提下比较条件。</p>
+<p><strong>可见结果：</strong> 输出统计量、p 值、效应量、置信区间和样本数。</p>
+</section>
+<section id="bootstrap">
+<h4>09 · 置换/Bootstrap<a class="headerlink" href="#bootstrap" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 按合法交换单位打乱标签或重采样。</p>
+<p><strong>目的：</strong> 在分布假设较弱时建立零分布或置信区间。</p>
+<p><strong>可见结果：</strong> 保存随机种子、次数和完整机会分布。</p>
+</section>
+<section id="id85">
+<h4>09 · 混合效应模型<a class="headerlink" href="#id85" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 设置固定效应和 animal/session/unit 随机效应。</p>
+<p><strong>目的：</strong> 处理分层、缺失和不平衡重复测量。</p>
+<p><strong>可见结果：</strong> 输出模型式、系数、区间、收敛和诊断。</p>
+</section>
+</section>
+<section id="id86">
+<h3>09 · 参数逐项说明<a class="headerlink" href="#id86" title="Link to this heading"></a></h3>
+<section id="sampling-unit">
+<h4>09 · Sampling unit<a class="headerlink" href="#sampling-unit" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 进入推断统计的独立观察单位。</p>
+<p><strong>默认值：</strong> 必须由用户确认</p>
+<p><strong>推荐设置：</strong> 动物层结论通常以动物为独立单位；unit/session 可作为嵌套层。</p>
+<p><strong>调整后的影响：</strong> 选得过细会虚增 n 和显著性；过粗会损失信息。</p>
+</section>
+<section id="paired">
+<h4>09 · Paired<a class="headerlink" href="#paired" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 两个条件是否来自同一对象或匹配单元。</p>
+<p><strong>默认值：</strong> 根据设计</p>
+<p><strong>推荐设置：</strong> 同一 unit/session/animal 的前后比较使用配对；不同对象使用非配对。</p>
+<p><strong>调整后的影响：</strong> 配对指定错误会改变误差项和检验效能。</p>
+</section>
+<section id="alpha">
+<h4>09 · Alpha<a class="headerlink" href="#alpha" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 预先定义的 I 类错误阈值。</p>
+<p><strong>默认值：</strong> 0.05</p>
+<p><strong>推荐设置：</strong> 在分析前设定，并与多重比较方法一起报告。</p>
+<p><strong>调整后的影响：</strong> 降低 alpha 更保守但增加漏检；不能为获得显著而事后调整。</p>
+</section>
+<section id="multiple-comparison">
+<h4>09 · Multiple comparison<a class="headerlink" href="#multiple-comparison" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 一组相关检验的错误率控制方法。</p>
+<p><strong>默认值：</strong> FDR Benjamini–Hochberg</p>
+<p><strong>推荐设置：</strong> 探索性多单元/多时间窗可用 FDR；少量预设比较可用 Holm；报告 family 定义。</p>
+<p><strong>调整后的影响：</strong> 更严格校正减少假阳性但降低功效；不定义检验族会使校正失去意义。</p>
+</section>
+<section id="resamples">
+<h4>09 · Resamples<a class="headerlink" href="#resamples" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 置换或 bootstrap 重复次数。</p>
+<p><strong>默认值：</strong> 1,000</p>
+<p><strong>推荐设置：</strong> 快速预览 200–1,000；最终估计常用 5,000–10,000 并固定种子。</p>
+<p><strong>调整后的影响：</strong> 次数决定 p 值/区间的蒙特卡洛稳定性和运行时间。</p>
+</section>
+</section>
+<section id="id87">
+<h3>09 · 推荐操作顺序<a class="headerlink" href="#id87" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>先生成统计设计卡，再允许选择检验。</p></li>
+<li><p>同时报告原始数据点、效应量、置信区间、p 值和校正方法。</p></li>
+<li><p>将完整统计表与生成图所用汇总分开保存。</p></li>
+</ul>
+</section>
+<section id="id88">
+<h3>09 · 常见错误<a class="headerlink" href="#id88" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>3 只动物的 300 个 unit 被当作 n=300 独立样本。</p></li>
+<li><p>对每个 PSTH 时间 bin 做检验却不校正。</p></li>
+<li><p>只报告 p 值，不报告方向、大小和不确定性。</p></li>
+</ul>
+</section>
+<section id="id89">
+<h3>09 · 下一步<a class="headerlink" href="#id89" title="Link to this heading"></a></h3>
+<p>统计结果可直接进入论文导出；若问题是预测标签或连续变量，进入机器学习。</p>
+<p><strong>方法来源：</strong> SciPy/statsmodels; Elephant phase analysis; Folschweiller &amp; Sauer (2023) statistical design</p>
+</section>
+</section>
+<section id="id90">
+<h2>10 机器学习、聚类与数据泄漏<a class="headerlink" href="#id90" title="Link to this heading"></a></h2>
+<p>机器学习页把神经活动转换为 trial × feature 矩阵，并把预处理、特征选择和模型全部放入交叉验证内部。核心目标是建立没有数据泄漏、与 shuffle 基线比较、能跨 session/动物泛化的评估。</p>
+<section id="id91">
+<h3>10 · 开始前准备<a class="headerlink" href="#id91" title="Link to this heading"></a></h3>
+<p>确定预测目标、特征时间窗、分组变量、类别平衡和最小样本量。</p>
+</section>
+<section id="id92">
+<h3>10 · 页面操作与可见后果<a class="headerlink" href="#id92" title="Link to this heading"></a></h3>
+<section id="id93">
+<h4>10 · 分类<a class="headerlink" href="#id93" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择 Logistic regression、SVM、Random forest、XGBoost 等模型。</p>
+<p><strong>目的：</strong> 预测离散刺激、选择或结果标签。</p>
+<p><strong>可见结果：</strong> 输出 balanced accuracy、F1、AUC、混淆矩阵和每折分数。</p>
+</section>
+<section id="id94">
+<h4>10 · 回归<a class="headerlink" href="#id94" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 选择线性、Ridge、随机森林等回归模型。</p>
+<p><strong>目的：</strong> 预测位置、速度、反应时或连续刺激变量。</p>
+<p><strong>可见结果：</strong> 输出 R²、MAE、预测-真实图和残差。</p>
+</section>
+<section id="id95">
+<h4>10 · 时间分辨解码<a class="headerlink" href="#id95" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 在滑动时间 bin 内重复完整交叉验证。</p>
+<p><strong>目的：</strong> 估计可预测信息随事件时间的变化。</p>
+<p><strong>可见结果：</strong> 输出时间曲线、机会分布和多重比较结果。</p>
+</section>
+<section id="pca">
+<h4>10 · PCA 与聚类<a class="headerlink" href="#pca" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 对神经群体特征降维或无监督分组。</p>
+<p><strong>目的：</strong> 探索群体结构，不把可视化分离自动当作统计证据。</p>
+<p><strong>可见结果：</strong> 输出解释方差、载荷、投影和聚类稳定性。</p>
+</section>
+</section>
+<section id="id96">
+<h3>10 · 参数逐项说明<a class="headerlink" href="#id96" title="Link to this heading"></a></h3>
+<section id="feature-window">
+<h4>10 · Feature window<a class="headerlink" href="#feature-window" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 每个 trial 提取神经特征的时间范围。</p>
+<p><strong>默认值：</strong> 0–0.5 s（依任务而定）</p>
+<p><strong>推荐设置：</strong> 根据因果时间关系预先定义；预测行为时避免使用行为发生后的信息。</p>
+<p><strong>调整后的影响：</strong> 更长窗口包含更多信息，也更容易混入后续事件和运动。</p>
+</section>
+<section id="cross-validation">
+<h4>10 · Cross-validation<a class="headerlink" href="#cross-validation" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 训练/验证数据划分与重复方式。</p>
+<p><strong>默认值：</strong> 5-fold stratified 或 grouped</p>
+<p><strong>推荐设置：</strong> 同一 session/动物不能跨折泄漏时使用 GroupKFold/LeaveOneGroupOut。</p>
+<p><strong>调整后的影响：</strong> 随机 trial 划分通常分数更高，但可能只学到 session 身份。</p>
+</section>
+<section id="scaling">
+<h4>10 · Scaling<a class="headerlink" href="#scaling" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 特征标准化或归一化。</p>
+<p><strong>默认值：</strong> 线性/SVM 模型使用 StandardScaler</p>
+<p><strong>推荐设置：</strong> 必须在每个训练折拟合，再应用到验证折。</p>
+<p><strong>调整后的影响：</strong> 全数据先标准化会泄漏验证集均值和方差。</p>
+</section>
+<section id="class-weighting">
+<h4>10 · Class weighting<a class="headerlink" href="#class-weighting" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 对不平衡类别的损失权重。</p>
+<p><strong>默认值：</strong> balanced（不平衡时）</p>
+<p><strong>推荐设置：</strong> 先报告类别数；使用权重或重采样时只能在训练折内完成。</p>
+<p><strong>调整后的影响：</strong> 会改变决策边界和概率校准，不能只报告普通准确率。</p>
+</section>
+<section id="permutation-count">
+<h4>10 · Permutation count<a class="headerlink" href="#permutation-count" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 打乱标签并重跑完整验证的次数。</p>
+<p><strong>默认值：</strong> 200（演示）</p>
+<p><strong>推荐设置：</strong> 正式结果至少 1,000，并保持分组结构不被破坏。</p>
+<p><strong>调整后的影响：</strong> 只打乱一次不能形成稳定机会分布；错误打乱会破坏嵌套结构。</p>
+</section>
+</section>
+<section id="id97">
+<h3>10 · 推荐操作顺序<a class="headerlink" href="#id97" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>先建立线性基线，再比较复杂模型。</p></li>
+<li><p>模型、特征选择、缩放和超参数搜索全部封装在验证循环内。</p></li>
+<li><p>报告每折分数、shuffle 分布和跨组泛化，避免只报告一个最高分。</p></li>
+</ul>
+</section>
+<section id="id98">
+<h3>10 · 常见错误<a class="headerlink" href="#id98" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>同一 session 的相邻 trial 同时进入训练和测试。</p></li>
+<li><p>用全数据选择神经元后再交叉验证。</p></li>
+<li><p>比较多个模型后只展示最高结果，不披露选择过程。</p></li>
+</ul>
+</section>
+<section id="id99">
+<h3>10 · 下一步<a class="headerlink" href="#id99" title="Link to this heading"></a></h3>
+<p>把模型配置、验证拆分、分数表和图送入论文与复现页。</p>
+<p><strong>方法来源：</strong> IBL Brain-Wide Map decoding analyses; scikit-learn</p>
+</section>
+</section>
+<section id="id100">
+<h2>11 论文图与可复现导出<a class="headerlink" href="#id100" title="Link to this heading"></a></h2>
+<p>导出页把图、绘图数据、统计表、Methods、软件环境和工作流绑定在一起。图形编辑不会改写分析数据；重新计算和视觉调整是两条独立审计记录。项目保存后，可通过 neuroflow_project.json 恢复已完成步骤和 active 结果。</p>
+<section id="id101">
+<h3>11 · 开始前准备<a class="headerlink" href="#id101" title="Link to this heading"></a></h3>
+<p>确认图中的坐标、单位、样本量、误差定义和统计标注均来自已保存结果。</p>
+</section>
+<section id="id102">
+<h3>11 · 页面操作与可见后果<a class="headerlink" href="#id102" title="Link to this heading"></a></h3>
+<section id="id103">
+<h4>11 · 编辑当前图<a class="headerlink" href="#id103" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 双击坐标轴或打开 Figure Studio，修改对象级样式。</p>
+<p><strong>目的：</strong> 在不重算数据的前提下完成论文版式。</p>
+<p><strong>可见结果：</strong> 修改线、点、柱、热图、文字、坐标、刻度、网格和图例。</p>
+</section>
+<section id="id104">
+<h4>11 · 单独保存子图<a class="headerlink" href="#id104" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 从图表面板选择子图，设置精确尺寸并导出。</p>
+<p><strong>目的：</strong> 避免整页截图造成分辨率和排版问题。</p>
+<p><strong>可见结果：</strong> 输出 PNG、SVG 或 PDF，并保留背景和字体设置。</p>
+</section>
+<section id="id105">
+<h4>11 · 导出数据与统计表<a class="headerlink" href="#id105" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 保存当前图背后的 x/y/分组数据和完整统计结果。</p>
+<p><strong>目的：</strong> 让读者能从图回到数值，并允许在外部软件复核。</p>
+<p><strong>可见结果：</strong> 输出 CSV/JSON 表和来源索引。</p>
+</section>
+<section id="id106">
+<h4>11 · 保存/恢复项目<a class="headerlink" href="#id106" title="Link to this heading"></a></h4>
+<p><strong>操作：</strong> 点击保存项目，之后从首页打开 neuroflow_project.json。</p>
+<p><strong>目的：</strong> 恢复数据来源、工作流状态、sorter 结果、分析表和审计日志。</p>
+<p><strong>可见结果：</strong> 重新打开后定位到上次保存页面，已完成节点可直接查看。</p>
+</section>
+</section>
+<section id="id107">
+<h3>11 · 参数逐项说明<a class="headerlink" href="#id107" title="Link to this heading"></a></h3>
+<section id="format">
+<h4>11 · Format<a class="headerlink" href="#format" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 图像文件类型。</p>
+<p><strong>默认值：</strong> PNG + SVG</p>
+<p><strong>推荐设置：</strong> PNG 用于快速预览；SVG/PDF 用于矢量编辑和出版。</p>
+<p><strong>调整后的影响：</strong> 栅格格式受 DPI 限制；矢量格式保留线和文字对象。</p>
+</section>
+<section id="figure-size">
+<h4>11 · Figure size<a class="headerlink" href="#figure-size" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 输出宽度和高度。</p>
+<p><strong>默认值：</strong> 按当前图</p>
+<p><strong>推荐设置：</strong> 按期刊单栏/双栏毫米尺寸设置，再检查最长标签是否溢出。</p>
+<p><strong>调整后的影响：</strong> 尺寸改变会影响文字相对大小和 panel 间距。</p>
+</section>
+<section id="dpi">
+<h4>11 · DPI<a class="headerlink" href="#dpi" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 栅格输出每英寸像素数。</p>
+<p><strong>默认值：</strong> 300</p>
+<p><strong>推荐设置：</strong> 线图 300–600 DPI；显微/热图按期刊要求和原始分辨率。</p>
+<p><strong>调整后的影响：</strong> DPI 越高文件越大，但不能增加原始数据分辨率。</p>
+</section>
+<section id="axis-grid-spine">
+<h4>11 · Axis/grid/spine<a class="headerlink" href="#axis-grid-spine" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 坐标轴线宽、长度、刻度、网格和边框显示。</p>
+<p><strong>默认值：</strong> NeuroEphys AI 标准主题</p>
+<p><strong>推荐设置：</strong> 按图类型调整并保持同一 Figure 内一致；不要用装饰网格掩盖数据。</p>
+<p><strong>调整后的影响：</strong> 粗线提高可见性但会压缩小 panel；网格过强会与数据竞争。</p>
+</section>
+<section id="project-source-mode">
+<h4>11 · Project source mode<a class="headerlink" href="#project-source-mode" title="Link to this heading"></a></h4>
+<p><strong>含义：</strong> 项目使用外部只读索引还是内部原始副本。</p>
+<p><strong>默认值：</strong> 取决于导入选择</p>
+<p><strong>推荐设置：</strong> 长期归档前检查所有外部路径；需要独立移动时复制原始数据或使用可访问共享路径。</p>
+<p><strong>调整后的影响：</strong> 清单始终可打开，但外部源丢失后依赖原始电压的步骤不能重跑。</p>
+</section>
+</section>
+<section id="id108">
+<h3>11 · 推荐操作顺序<a class="headerlink" href="#id108" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>每张论文图同时保存矢量图、绘图数据、统计表和生成参数。</p></li>
+<li><p>保存项目后关闭并重新打开一次，验证恢复位置和关键结果。</p></li>
+<li><p>对外分享前检查源路径、许可证、匿名化和未发表数据权限。</p></li>
+</ul>
+</section>
+<section id="id109">
+<h3>11 · 常见错误<a class="headerlink" href="#id109" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>只保存截图，没有绘图数据和统计来源。</p></li>
+<li><p>编辑图中文字后与实际单位或样本量不一致。</p></li>
+<li><p>只读索引指向个人临时目录，却把项目当作可独立归档。</p></li>
+</ul>
+</section>
+<section id="id110">
+<h3>11 · 下一步<a class="headerlink" href="#id110" title="Link to this heading"></a></h3>
+<p>完成复现包后仍由研究者负责科学解释、论文组织和最终数据共享决定。</p>
+<p><strong>方法来源：</strong> IBL Brain-Wide Map figure organization and reproducibility</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="页脚">
+        <a href="figures.html" class="btn btn-neutral float-left" title="图表检查与论文导出" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> 上一页</a>
+        <a href="provenance.html" class="btn btn-neutral float-right" title="中间产物、日志与溯源" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2026, NeuroEphys AI 团队。</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a> 开发.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -13,12 +13,13 @@ from .analysis import load_recording
 from .medpc import CONFIRMED_EVENT_DICTIONARY
 from .models import ProjectState
 
-INK = "#17221f"
-MUTED = "#66716d"
-GREEN = "#1f7a63"
-CORAL = "#d86d4b"
-GOLD = "#c9972b"
-GRID = "#dfe5e2"
+INK = "#16242c"
+MUTED = "#657781"
+GREEN = "#9f3fb4"
+CORAL = "#238a67"
+GOLD = "#b47c25"
+BLUE = "#6a5a88"
+GRID = "#e1e8eb"
 PAPER = "#ffffff"
 
 
@@ -47,10 +48,17 @@ def _base_figure(
     axes = fig.subplots(rows, columns, squeeze=False)
     for axis in axes.flat:
         axis.set_facecolor(PAPER)
-        axis.tick_params(colors=MUTED, labelsize=8)
-        axis.grid(color=GRID, linewidth=0.7, alpha=0.65)
+        axis.tick_params(colors=MUTED, labelsize=8, width=0.7)
+        axis.grid(
+            axis="y",
+            color=GRID,
+            linewidth=0.65,
+            alpha=0.8,
+            zorder=0,
+        )
         for spine in axis.spines.values():
-            spine.set_color("#cfd8d4")
+            spine.set_color("#cbd6db")
+            spine.set_linewidth(0.75)
     return fig, axes
 
 
@@ -2121,7 +2129,7 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
         unit_id = unit_ids[0]
     unit = analysis["units"][unit_id]
     centers = analysis["bin_centers"]
-    fig, axes = _base_figure(2, 2, 6.8)
+    fig, axes = _base_figure(2, 2, 5.8)
     raw_labels = [
         str(value)
         for value in analysis.get("condition_labels", ["condition_a", "condition_b"])
@@ -2132,6 +2140,14 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     condition_colors = (GREEN, CORAL)
 
     def display_label(raw_label: str) -> str:
+        common_zh = {
+            "left": "左侧条件",
+            "right": "右侧条件",
+            "success": "成功",
+            "failure": "失败",
+            "rewarded": "奖励",
+            "unrewarded": "未奖励",
+        }
         for event in state.events:
             if str(event.get("condition", "")) != raw_label:
                 continue
@@ -2147,8 +2163,11 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
             )
             if event_definition:
                 return str(event_definition["zh_label"])
-            return str(event.get("label") or raw_label.replace("_", " "))
-        return raw_label.replace("_", " ") if state.metadata.get("language") == "en_US" else raw_label
+            fallback = str(event.get("label") or raw_label.replace("_", " "))
+            return common_zh.get(raw_label.lower(), fallback)
+        if state.metadata.get("language") == "en_US":
+            return raw_label.replace("_", " ")
+        return common_zh.get(raw_label.lower(), raw_label)
 
     display_labels = [display_label(label) for label in raw_labels]
     condition_counts = [
@@ -2156,6 +2175,7 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     ]
 
     raster = axes[0, 0]
+    raster.grid(False)
     for event_index, relative in enumerate(unit["aligned_spikes"]):
         color = INK
         if event_index < len(conditions):
@@ -2168,11 +2188,16 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
             event_index + 0.6,
             event_index + 1.4,
             color=color,
-            linewidth=0.65,
+            linewidth=0.72,
         )
-    raster.axvline(0, color=CORAL, linewidth=1.2)
+    raster.axvline(0, color=INK, linewidth=1.0, linestyle="--")
+    raster.set_ylim(0.3, max(len(unit["aligned_spikes"]) + 0.7, 1.7))
     raster.set_title(
-        _text(state, f"单元 {unit_id} Raster", f"Unit {unit_id} raster"),
+        _text(
+            state,
+            f"单元 {unit_id} 事件对齐点阵图",
+            f"Unit {unit_id} · event-aligned raster",
+        ),
         loc="left",
         fontsize=11,
         color=INK,
@@ -2180,7 +2205,26 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     raster.set_xlabel(
         _text(state, "相对事件时间（秒）", "Time from event (s)"), color=MUTED
     )
-    raster.set_ylabel(_text(state, "事件序号", "Event index"), color=MUTED)
+    raster.set_ylabel(
+        _text(state, "事件序号（每行一个事件）", "Event index (one event per row)"),
+        color=MUTED,
+    )
+    for display, count, color in zip(
+        display_labels, condition_counts, condition_colors, strict=True
+    ):
+        raster.plot(
+            [],
+            [],
+            color=color,
+            linewidth=2,
+            label=f"{display} (n={count})",
+        )
+    raster.legend(
+        frameon=False,
+        fontsize=7.5,
+        loc="upper right",
+        handlelength=1.5,
+    )
 
     psth = axes[0, 1]
     rates = np.asarray(unit.get("rates", []), dtype=float)
@@ -2193,7 +2237,7 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
             centers,
             mean_rate,
             color=color,
-            linewidth=1.8,
+            linewidth=2.1,
             label=f"{display} (n={count})",
         )
         if rates.ndim == 2 and rates.shape[0] == len(conditions) and count > 1:
@@ -2207,10 +2251,32 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
                 alpha=0.18,
                 linewidth=0,
             )
-    psth.axvline(0, color=INK, linewidth=1)
-    psth.legend(frameon=False, fontsize=8)
+    psth.axvline(0, color=INK, linewidth=1, linestyle="--")
+    baseline_window = analysis.get("baseline_window", (-1.0, 0.0))
+    response_window = analysis.get("response_window", (0.0, 1.0))
+    psth.axvspan(
+        baseline_window[0],
+        baseline_window[1],
+        color=BLUE,
+        alpha=0.055,
+        linewidth=0,
+        label=_text(state, "基线窗", "Baseline window"),
+    )
+    psth.axvspan(
+        response_window[0],
+        response_window[1],
+        color=GOLD,
+        alpha=0.075,
+        linewidth=0,
+        label=_text(state, "响应窗", "Response window"),
+    )
+    psth.legend(frameon=False, fontsize=7.5, ncols=2)
     psth.set_title(
-        _text(state, "条件事件 PSTH（均值 ± 标准误）", "Event PSTH (mean ± SEM)"),
+        _text(
+            state,
+            "条件事件 PSTH · 均值 ± 标准误",
+            "Condition PSTH · mean ± SEM",
+        ),
         loc="left",
         fontsize=11,
         color=INK,
@@ -2221,6 +2287,7 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     psth.set_ylabel(_text(state, "放电率（Hz）", "Firing rate (Hz)"), color=MUTED)
 
     heatmap = axes[1, 0]
+    heatmap.grid(False)
     population = np.asarray(analysis["population_z"])
     if population.size:
         order = np.argsort(np.argmax(population, axis=1))
@@ -2229,7 +2296,7 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
             aspect="auto",
             interpolation="nearest",
             extent=[centers[0], centers[-1], len(order), 0],
-            cmap="RdYlGn",
+            cmap="RdBu_r",
             vmin=-3,
             vmax=3,
         )
@@ -2239,7 +2306,7 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
             label=_text(state, "基线 z 分数", "Baseline z-score"),
             shrink=0.75,
         )
-    heatmap.axvline(0, color="white", linewidth=1)
+    heatmap.axvline(0, color=INK, linewidth=0.85, linestyle="--")
     heatmap.set_title(
         _text(state, "群体事件响应热图", "Population event-response heatmap"),
         loc="left",
@@ -2255,7 +2322,13 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     effects = [value["effect_hz"] for value in analysis["units"].values()]
     q_values = [value["q_value"] for value in analysis["units"].values()]
     colors = [GREEN if q < 0.05 else "#b7c2bd" for q in q_values]
-    summary.bar(np.arange(len(effects)), effects, color=colors)
+    summary.bar(
+        np.arange(len(effects)),
+        effects,
+        color=colors,
+        width=0.72,
+        zorder=2,
+    )
     summary.axhline(0, color=INK, linewidth=0.8)
     summary.set_title(
         _text(
@@ -2274,6 +2347,11 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
         color=INK,
     )
     summary.set_xlabel(_text(state, "单元", "Unit"), color=MUTED)
+    summary.set_xticks(
+        np.arange(len(unit_ids)),
+        [str(value) for value in unit_ids],
+        rotation=0 if len(unit_ids) <= 12 else 60,
+    )
     summary.set_ylabel(
         _text(state, "放电率变化（Hz）", "Firing-rate change (Hz)"), color=MUTED
     )
@@ -2547,7 +2625,7 @@ def statistics_figure(state: ProjectState, view: str = "effects") -> Figure:
 
 
 def decoding_figure(state: ProjectState) -> Figure:
-    fig, axes = _base_figure(2, 3, 6.8)
+    fig, axes = _base_figure(2, 3, 5.8)
     result = state.decoding
     if not result:
         axes[0, 0].text(
@@ -2559,10 +2637,27 @@ def decoding_figure(state: ProjectState) -> Figure:
         )
         return fig
     matrix = np.asarray(result["confusion_matrix"])
-    image = axes[0, 0].imshow(matrix, cmap="Greens")
+    row_totals = np.maximum(matrix.sum(axis=1, keepdims=True), 1)
+    normalized_matrix = matrix / row_totals
+    axes[0, 0].grid(False)
+    image = axes[0, 0].imshow(
+        normalized_matrix,
+        cmap="Blues",
+        vmin=0,
+        vmax=1,
+    )
     for row in range(matrix.shape[0]):
         for column in range(matrix.shape[1]):
-            axes[0, 0].text(column, row, matrix[row, column], ha="center", va="center")
+            value = normalized_matrix[row, column]
+            axes[0, 0].text(
+                column,
+                row,
+                f"{int(matrix[row, column])}\n{value:.0%}",
+                ha="center",
+                va="center",
+                color="white" if value > 0.55 else INK,
+                fontsize=8,
+            )
     axes[0, 0].set_xticks(range(len(result["classes"])), result["classes"])
     axes[0, 0].set_yticks(range(len(result["classes"])), result["classes"])
     axes[0, 0].set_title(
@@ -2575,10 +2670,32 @@ def decoding_figure(state: ProjectState) -> Figure:
         fontsize=11,
         color=INK,
     )
+    axes[0, 0].set_xlabel(_text(state, "预测类别", "Predicted class"), color=MUTED)
+    axes[0, 0].set_ylabel(_text(state, "真实类别", "True class"), color=MUTED)
     fig.colorbar(image, ax=axes[0, 0], shrink=0.65)
     null = np.asarray(result["null_scores"])
-    axes[0, 1].hist(null, bins=22, color="#bac7c1", edgecolor="white")
-    axes[0, 1].axvline(result["balanced_accuracy"], color=CORAL, linewidth=2)
+    axes[0, 1].hist(
+        null,
+        bins=22,
+        color="#cbd8dd",
+        edgecolor=PAPER,
+        linewidth=0.6,
+    )
+    axes[0, 1].axvline(
+        result["balanced_accuracy"],
+        color=CORAL,
+        linewidth=2.2,
+        label=f"Observed = {result['balanced_accuracy']:.3f}",
+    )
+    chance_level = 1.0 / max(len(result["classes"]), 1)
+    axes[0, 1].axvline(
+        chance_level,
+        color=MUTED,
+        linewidth=1,
+        linestyle="--",
+        label=f"Chance = {chance_level:.3f}",
+    )
+    axes[0, 1].legend(frameon=False, fontsize=7.5)
     axes[0, 1].set_title(
         _text(
             state,
@@ -2595,7 +2712,7 @@ def decoding_figure(state: ProjectState) -> Figure:
         roc["fpr"],
         roc["tpr"],
         color=GREEN,
-        linewidth=1.8,
+        linewidth=2.1,
         label=f"ROC AUC={result['roc_auc']:.3f}",
     )
     axes[0, 2].plot([0, 1], [0, 1], linestyle="--", color=MUTED)
@@ -2614,10 +2731,15 @@ def decoding_figure(state: ProjectState) -> Figure:
         centers,
         scores,
         color=GREEN,
-        linewidth=1.8,
+        linewidth=2.1,
         label="Time-resolved balanced accuracy",
     )
-    axes[1, 0].axhline(0.5, color=MUTED, linestyle="--", linewidth=1)
+    axes[1, 0].axhline(
+        chance_level,
+        color=MUTED,
+        linestyle="--",
+        linewidth=1,
+    )
     axes[1, 0].axvline(0, color=CORAL, linewidth=1)
     axes[1, 0].set_ylim(0.25, 1.02)
     axes[1, 0].set_title(
@@ -2659,12 +2781,26 @@ def decoding_figure(state: ProjectState) -> Figure:
     axes[1, 1].set_title(
         _text(
             state,
-            f"群体 PCA 轨迹 · 最大距离 {peak_distance:.2f}",
-            f"Population PCA trajectories · maximum distance {peak_distance:.2f}",
+            "群体 PCA 轨迹",
+            "Population PCA trajectories",
         ),
         loc="left",
         fontsize=11,
         color=INK,
+    )
+    axes[1, 1].text(
+        0.98,
+        0.98,
+        _text(
+            state,
+            f"最大轨迹距离 = {peak_distance:.2f}",
+            f"Maximum distance = {peak_distance:.2f}",
+        ),
+        transform=axes[1, 1].transAxes,
+        ha="right",
+        va="top",
+        fontsize=7.5,
+        color=MUTED,
     )
     axes[1, 1].set_xlabel("PC1", color=MUTED)
     axes[1, 1].set_ylabel("PC2", color=MUTED)
@@ -2683,12 +2819,23 @@ def decoding_figure(state: ProjectState) -> Figure:
     )
     cluster = result["cluster_results"]
     axes[1, 2].set_title(
-        "Feature importance\n"
-        f"K-means ARI={cluster['kmeans_adjusted_rand']:.2f} · "
-        f"GMM ARI={cluster['gmm_adjusted_rand']:.2f}",
+        _text(state, "单元特征重要性", "Unit feature importance"),
         loc="left",
-        fontsize=10,
+        fontsize=11,
         color=INK,
+    )
+    axes[1, 2].text(
+        0.98,
+        0.98,
+        (
+            f"K-means ARI = {cluster['kmeans_adjusted_rand']:.2f}\n"
+            f"GMM ARI = {cluster['gmm_adjusted_rand']:.2f}"
+        ),
+        transform=axes[1, 2].transAxes,
+        ha="right",
+        va="top",
+        fontsize=7.5,
+        color=MUTED,
     )
     axes[1, 2].set_xlabel("Unit", color=MUTED)
     axes[1, 2].set_ylabel("Importance", color=MUTED)

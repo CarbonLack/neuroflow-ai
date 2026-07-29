@@ -326,7 +326,7 @@ class AISettingsDialog(QDialog):
         )
         layout.addLayout(form)
 
-        key_note = QLabel(
+        self.key_note = QLabel(
             (
                 "The API key is never written to a project, log or exported report. "
                 "It can be kept for this session, read from the provider environment "
@@ -338,11 +338,11 @@ class AISettingsDialog(QDialog):
                 "通过 Provider 对应的环境变量提供，或保存到操作系统凭据库。"
             )
         )
-        key_note.setWordWrap(True)
-        key_note.setObjectName("Muted")
-        layout.addWidget(key_note)
+        self.key_note.setWordWrap(True)
+        self.key_note.setObjectName("Muted")
+        layout.addWidget(self.key_note)
 
-        recommendation = QLabel(
+        self.recommendation = QLabel(
             (
                 "Recommended first configuration: DeepSeek API with "
                 "deepseek-v4-flash. A laboratory service, Ollama or another compatible "
@@ -354,10 +354,10 @@ class AISettingsDialog(QDialog):
                 "服务、Ollama 或其他兼容服务可使用 OpenAI-compatible 配置。"
             )
         )
-        recommendation.setWordWrap(True)
-        recommendation.setObjectName("InsetPanel")
-        recommendation.setContentsMargins(12, 9, 12, 9)
-        layout.addWidget(recommendation)
+        self.recommendation.setWordWrap(True)
+        self.recommendation.setObjectName("InsetPanel")
+        self.recommendation.setContentsMargins(12, 9, 12, 9)
+        layout.addWidget(self.recommendation)
 
         button_row = QHBoxLayout()
         self.health_button = QPushButton(
@@ -374,6 +374,7 @@ class AISettingsDialog(QDialog):
         buttons.rejected.connect(self.reject)
         button_row.addWidget(buttons)
         layout.addLayout(button_row)
+        self._provider_changed()
 
     def _provider_changed(self) -> None:
         provider = str(self.provider_combo.currentData())
@@ -390,8 +391,69 @@ class AISettingsDialog(QDialog):
             self.model_edit.addItems(models)
             self.model_edit.setCurrentIndex(0)
         stored = get_api_key(provider)
-        if stored:
-            self.api_key_edit.setText(stored)
+        self.api_key_edit.setText(stored)
+        local = bool(profile.get("local"))
+        self.api_key_edit.setEnabled(not local)
+        self.show_key.setEnabled(not local)
+        self.persist_key_check.setEnabled(not local)
+        self.api_key_edit.setPlaceholderText(
+            (
+                "No key required for local Ollama"
+                if self.language == "en_US"
+                else "本机 Ollama 不需要密钥"
+            )
+            if local
+            else (
+                "Provider API key"
+                if self.language == "en_US"
+                else "粘贴 Provider API 密钥"
+            )
+        )
+        if local:
+            self.key_note.setText(
+                (
+                    "Ollama runs on this computer. Project summaries stay local, "
+                    "and no API key is required."
+                    if self.language == "en_US"
+                    else "Ollama 在当前电脑运行；项目摘要留在本机，也不需要 API 密钥。"
+                )
+            )
+            self.recommendation.setText(
+                (
+                    "Start Ollama first, pull a tool-capable model, then use Check "
+                    "service to list the installed models."
+                    if self.language == "en_US"
+                    else (
+                        "请先启动 Ollama 并下载支持工具调用的模型，再点击“检测服务状态”"
+                        "确认本机模型列表。"
+                    )
+                )
+            )
+        else:
+            self.key_note.setText(
+                (
+                    "The API key is never written to a project, log or exported report. "
+                    "It can be kept for this session, read from an environment variable, "
+                    "or saved in the operating-system credential vault."
+                    if self.language == "en_US"
+                    else (
+                        "API 密钥不会写入项目、日志或导出报告。可仅在当前会话保存、"
+                        "通过环境变量提供，或保存到操作系统凭据库。"
+                    )
+                )
+            )
+            self.recommendation.setText(
+                (
+                    "Recommended online configuration: DeepSeek API with "
+                    "deepseek-v4-flash. Laboratory services can use an "
+                    "OpenAI-compatible profile."
+                    if self.language == "en_US"
+                    else (
+                        "在线模式建议使用 DeepSeek API 与 deepseek-v4-flash；"
+                        "实验室私有服务可使用 OpenAI-compatible 配置。"
+                    )
+                )
+            )
 
     def _candidate_settings(self) -> AISettings:
         return AISettings(

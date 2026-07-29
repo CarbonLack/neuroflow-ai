@@ -46,6 +46,8 @@ ui_*.png
 *.tev
 *.tsq
 docs_capture_workspace/
+docs/.build/
+docs/site/**/.doctrees/
 docs/site/assets/font_test.png
 docs/site/assets/native_test.png
 

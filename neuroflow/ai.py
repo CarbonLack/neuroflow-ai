@@ -205,6 +205,13 @@ PROVIDER_PROFILES: dict[str, dict[str, Any]] = {
         "models": [],
         "api_style": "chat",
     },
+    "ollama": {
+        "label": "Ollama · local computer",
+        "base_url": "http://127.0.0.1:11434/v1",
+        "models": ["qwen3:8b", "qwen3:4b", "deepseek-r1:8b"],
+        "api_style": "chat",
+        "local": True,
+    },
     "private_compatible": {
         "label": "Laboratory/private compatible service",
         "base_url": "https://model-server.example/v1",
@@ -234,7 +241,21 @@ class AISettings:
 
     @property
     def configured(self) -> bool:
-        return bool(self.api_key.strip() and self.base_url.strip() and self.model.strip())
+        profile = PROVIDER_PROFILES.get(self.provider, {})
+        credentials_ready = bool(self.api_key.strip()) or bool(
+            profile.get("local")
+        )
+        return bool(
+            credentials_ready and self.base_url.strip() and self.model.strip()
+        )
+
+    @property
+    def request_api_key(self) -> str:
+        if self.api_key.strip():
+            return self.api_key.strip()
+        if PROVIDER_PROFILES.get(self.provider, {}).get("local"):
+            return "ollama"
+        return ""
 
     @property
     def provider_label(self) -> str:
@@ -880,7 +901,7 @@ def check_provider_health(settings: AISettings) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
         headers={
-            "Authorization": f"Bearer {settings.api_key.strip()}",
+            "Authorization": f"Bearer {settings.request_api_key}",
             "User-Agent": f"{PRODUCT_NAME}/{PRODUCT_VERSION}",
         },
     )
@@ -1144,7 +1165,7 @@ def request_ai_advice(
         raw = _post_json(
             url,
             payload,
-            settings.api_key.strip(),
+            settings.request_api_key,
             settings.timeout_seconds,
             settings.retry_count,
         )
@@ -1169,6 +1190,19 @@ def request_ai_advice(
             "response_format": {"type": "json_object"},
             "temperature": 0.2,
         }
+        if settings.provider == "deepseek":
+            thinking_enabled = settings.reasoning_effort != "none"
+            payload["thinking"] = {
+                "type": "enabled" if thinking_enabled else "disabled"
+            }
+            if thinking_enabled:
+                payload["reasoning_effort"] = (
+                    "max"
+                    if settings.reasoning_effort in {"xhigh", "max"}
+                    else "high"
+                )
+        elif settings.provider == "ollama":
+            payload["reasoning_effort"] = settings.reasoning_effort
         if settings.ai_mode == AIMode.COLLABORATIVE:
             payload["tools"] = provider_tools()
             payload["tool_choice"] = "auto"
@@ -1178,7 +1212,7 @@ def request_ai_advice(
             raw = _post_chat_stream(
                 url,
                 payload,
-                settings.api_key.strip(),
+                settings.request_api_key,
                 settings.timeout_seconds,
                 on_text=on_stream_text,
                 cancel_event=cancel_event,
@@ -1187,7 +1221,7 @@ def request_ai_advice(
             raw = _post_json(
                 url,
                 payload,
-                settings.api_key.strip(),
+                settings.request_api_key,
                 settings.timeout_seconds,
                 settings.retry_count,
             )

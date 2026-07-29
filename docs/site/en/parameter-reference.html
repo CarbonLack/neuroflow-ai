@@ -1,0 +1,1506 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detailed controls and parameter reference &mdash; NeuroEphys AI Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=69d471e2" />
+
+  
+    <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
+    <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/parameter-reference.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=6f76189a"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Intermediate products, logs, and provenance" href="provenance.html" />
+    <link rel="prev" title="Figure inspection and publication export" href="figures.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            NeuroEphys AI
+              <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="requirements-install.html">System requirements and installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#minimum-practical-configuration">Minimum practical configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#development-preview-download">Development preview download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#developer-installation">Developer installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#sorter-environments">Sorter environments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="first-project.html">Create and reopen a project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#create-the-project">Create the project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#acquisition-metadata">Acquisition metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#save-and-recover">Save and recover</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#visible-changes-after-import">Visible changes after import</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Complete workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#data-and-project">01 Data and project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#raw-qc">02 Raw QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#preprocessing">03 Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#spike-sorting">04 Spike sorting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#unit-qc">05 Unit QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#synchronization-and-behavior">06–07 Synchronization and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#neural-analysis">08 Neural analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#statistics-and-decoding">09–10 Statistics and decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#publication-and-reproducibility">11 Publication and reproducibility</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Scientific workflow</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sorting-curation.html">Spike sorting and manual unit curation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#common-result-interface">Common result interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#kilosort4-workflow">Kilosort4 workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#manual-curation">Manual curation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="events-analysis.html">Behavior synchronization and event-aligned analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#import-and-map-events">Import and map events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#alignment-quality">Alignment quality</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#raster-and-psth">Raster and PSTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#quality-checks">Quality checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">Statistics, machine learning, and scientific limits</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#statistical-suite">Statistical suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#decoding">Decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#interpreting-the-figure">Interpreting the figure</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Product guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">Controlled AI assistant</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#operating-modes">Operating modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#providers">Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#cloud-data-preview">Cloud-data preview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#scientific-response-structure">Scientific response structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#local-ollama">Local Ollama</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="figures.html">Figure inspection and publication export</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#figure-studio">Figure Studio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#export-choices">Export choices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#publication-checks">Publication checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Detailed controls and parameter reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#start-with-the-data-structure">01 Start with the data structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#before-you-start">01 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#page-controls-and-visible-consequences">01 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-an-empty-project">01 · Create an empty project</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-generic-binary">01 · Import generic binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-acquisition-system-data">01 · Import acquisition-system data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resume-from-existing-sorting">01 · Resume from existing sorting</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#parameter-by-parameter-explanation">01 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sampling-rate">01 · Sampling rate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#channel-count">01 · Channel count</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dtype">01 · dtype</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#v-bit">01 · µV / bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#copy-source">01 · Copy source</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#recommended-operating-order">01 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#frequent-mistakes">01 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#next-step">01 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#raw-signal-quality-control">02 Raw-signal quality control</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">02 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">02 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#multichannel-raw-traces">02 · Multichannel raw traces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#qc-metric-summary">02 · QC metric summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#channel-by-frequency-power">02 · Channel-by-frequency power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#quality-timeline">02 · Quality timeline</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">02 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#time-start">02 · Time start</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#window">02 · Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#channel-range">02 · Channel range</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#display-gain">02 · Display gain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#line-frequency">02 · Line frequency</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id4">02 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id5">02 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id6">02 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#preprocessing-is-not-a-fixed-recipe">03 Preprocessing is not a fixed recipe</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id7">03 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id8">03 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ap-sorting-preview">03 · AP / sorting preview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lfp-branch-preview">03 · LFP branch preview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reference-comparison">03 · Reference comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#commit-processing-chain">03 · Commit processing chain</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">03 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ap-band">03 · AP band</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lfp-low-pass">03 · LFP low-pass</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lfp-sampling-rate">03 · LFP sampling rate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reference">03 · Reference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#notch">03 · Notch</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id10">03 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id11">03 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">03 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#spike-sorting-and-tool-selection">04 Spike sorting and tool selection</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id13">04 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">04 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#select-a-sorter">04 · Select a sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-selected-sorter">04 · Run selected sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inspect-run-diagnostics">04 · Inspect run diagnostics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#compare-sorters">04 · Compare sorters</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">04 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sorter">04 · Sorter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#n-chan-bin">04 · n_chan_bin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#batch-size">04 · batch_size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nblocks">04 · nblocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#th-universal-th-learned">04 · Th_universal / Th_learned</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tmin-tmax">04 · tmin / tmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#duplicate-spike-ms">04 · duplicate_spike_ms</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">04 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id17">04 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id18">04 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-qc-and-manual-review">05 Unit QC and manual review</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id19">05 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id20">05 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#metric-scatter-and-filters">05 · Metric scatter and filters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#waveforms-and-templates">05 · Waveforms and templates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#acg-and-isi">05 · ACG and ISI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manual-decision">05 · Manual decision</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id21">05 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firing-rate">05 · Firing rate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#isi-violation-window">05 · ISI violation window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#snr">05 · SNR</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#amplitude-stability">05 · Amplitude stability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#contamination-threshold">05 · Contamination threshold</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id22">05 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id23">05 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id24">05 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ttl-behavior-and-a-common-timeline">06 TTL, behavior, and a common timeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id25">06 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id26">06 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#import-behavior-events">06 · Import behavior events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-ttl-pulses">06 · Import TTL pulses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fit-common-timeline">06 · Fit common timeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inspect-synchronization-evidence">06 · Inspect synchronization evidence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id27">06 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#behavior-time-column">06 · Behavior time column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ttl-pairing">06 · TTL pairing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#clock-model">06 · Clock model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#residual-tolerance">06 · Residual tolerance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#shared-clock-assumption">06 · Shared-clock assumption</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id28">06 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id29">06 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id30">06 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#behavior-quality-precedes-neural-interpretation">07 Behavior quality precedes neural interpretation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id31">07 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id32">07 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#condition-counts">07 · Condition counts</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reaction-time">07 · Reaction time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#psychometric-curve">07 · Psychometric curve</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trial-exclusions">07 · Trial exclusions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id33">07 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#condition-column">07 · Condition column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reaction-time-start-end">07 · Reaction-time start/end</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#minimum-trials">07 · Minimum trials</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#outlier-rule">07 · Outlier rule</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id34">07 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id35">07 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id36">07 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#neural-activity-analysis-workbench">08 Neural activity analysis workbench</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id37">08 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id38">08 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#event-aligned-raster-psth">08 · Event-aligned Raster/PSTH</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spike-train-statistics">08 · Spike-train statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lfp-analysis">08 · LFP analysis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spike-field-coupling">08 · Spike-field coupling</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id39">08 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#alignment-event">08 · Alignment event</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id40">08 · Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bin-size">08 · Bin size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#smoothing">08 · Smoothing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#psd-method">08 · PSD method</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#surrogates">08 · Surrogates</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id41">08 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id42">08 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id43">08 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#from-figures-to-statistical-evidence">09 From figures to statistical evidence</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id44">09 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id45">09 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#design-check">09 · Design check</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#parametric-nonparametric-comparison">09 · Parametric/nonparametric comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#permutation-bootstrap">09 · Permutation/bootstrap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mixed-effects-model">09 · Mixed-effects model</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id46">09 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sampling-unit">09 · Sampling unit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#paired">09 · Paired</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#alpha">09 · Alpha</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multiple-comparison">09 · Multiple comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resamples">09 · Resamples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id47">09 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id48">09 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id49">09 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#machine-learning-clustering-and-leakage">10 Machine learning, clustering, and leakage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id50">10 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id51">10 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#classification">10 · Classification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#regression">10 · Regression</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#time-resolved-decoding">10 · Time-resolved decoding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pca-and-clustering">10 · PCA and clustering</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id52">10 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#feature-window">10 · Feature window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cross-validation">10 · Cross-validation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scaling">10 · Scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#class-weighting">10 · Class weighting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#permutation-count">10 · Permutation count</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id53">10 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id54">10 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id55">10 · Next step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#publication-figures-and-reproducible-export">11 Publication figures and reproducible export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id56">11 · Before you start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id57">11 · Page controls and visible consequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#edit-current-figure">11 · Edit current figure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#save-one-panel">11 · Save one panel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#export-data-and-statistics">11 · Export data and statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#save-restore-project">11 · Save/restore project</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id58">11 · Parameter-by-parameter explanation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#format">11 · Format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#figure-size">11 · Figure size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dpi">11 · DPI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#axis-grid-spine">11 · Axis/grid/spine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#project-source-mode">11 · Project source mode</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id59">11 · Recommended operating order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id60">11 · Frequent mistakes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id61">11 · Next step</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="provenance.html">Intermediate products, logs, and provenance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#run-record-fields">Run record fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#project-recovery">Project recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#ai-evidence">AI evidence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#output-status">Output status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="real-data-validation.html">Real-data validation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-questions">Validation questions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#data-and-acquisition-limits">Data and acquisition limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#sorter-cross-check">Sorter cross-check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#external-offline-sorter-results">External Offline Sorter results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#behavior-and-synchronization">Behavior and synchronization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#statistical-and-decoding-limits">Statistical and decoding limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#project-recovery-and-provenance">Project recovery and provenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-labels">Validation labels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#application-does-not-start">Application does not start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#sorter-appears-unavailable">Sorter appears unavailable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#psth-conditions-look-identical">PSTH conditions look identical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#lfp-controls-are-disabled">LFP controls are disabled</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#ai-service-fails">AI service fails</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#useful-issue-report">Useful issue report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">Methods, software, and sources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#core-sources">Core sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#attribution-and-data">Attribution and data</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NeuroEphys AI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Detailed controls and parameter reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/parameter-reference.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="detailed-controls-and-parameter-reference">
+<h1>Detailed controls and parameter reference<a class="headerlink" href="#detailed-controls-and-parameter-reference" title="Link to this heading"></a></h1>
+<p>This reference follows the 11-stage workbench. It explains what each operation does, why it is available, what output changes, how the default is chosen, and which checks must precede interpretation.</p>
+<p>Defaults are starting points, not universal recipes. Acquisition metadata and study design take precedence.</p>
+<section id="start-with-the-data-structure">
+<h2>01 Start with the data structure<a class="headerlink" href="#start-with-the-data-structure" title="Link to this heading"></a></h2>
+<p>This page does more than select a file. NeuroEphys AI must know how each sample is stored, how many values form one time point, how probe contacts are arranged, and which device clock timestamps behavior. Those facts give filtering, sorting, and event alignment their correct physical units. Import keeps the source read-only and stores only links, caches, and derived results in the project.</p>
+<section id="before-you-start">
+<h3>01 · Before you start<a class="headerlink" href="#before-you-start" title="Link to this heading"></a></h3>
+<p>Have the acquisition notes, sampling rate, total channel count, dtype, gain or µV/bit, probe geometry, and optional event CSV ready. For a generic binary file, copy values from the acquisition configuration rather than guessing from the traces.</p>
+</section>
+<section id="page-controls-and-visible-consequences">
+<h3>01 · Page controls and visible consequences<a class="headerlink" href="#page-controls-and-visible-consequences" title="Link to this heading"></a></h3>
+<section id="create-an-empty-project">
+<h4>01 · Create an empty project<a class="headerlink" href="#create-an-empty-project" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose a project name and location, then import data inside it.</p>
+<p><strong>Purpose：</strong> Separates source data from analysis products and creates a restore point.</p>
+<p><strong>Visible result：</strong> Creates neuroflow_project.json plus derived, results, and exports folders.</p>
+</section>
+<section id="import-generic-binary">
+<h4>01 · Import generic binary<a class="headerlink" href="#import-generic-binary" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Select .bin/.dat/.raw and enter rate, channels, dtype, and µV/bit.</p>
+<p><strong>Purpose：</strong> Reads interleaved recordings without self-describing metadata.</p>
+<p><strong>Visible result：</strong> Validates file size against channels × bytes per sample and displays traces.</p>
+</section>
+<section id="import-acquisition-system-data">
+<h4>01 · Import acquisition-system data<a class="headerlink" href="#import-acquisition-system-data" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, or NWB.</p>
+<p><strong>Purpose：</strong> Uses a SpikeInterface extractor to read metadata and build a common cache.</p>
+<p><strong>Visible result：</strong> Stores a normalized int16 cache while leaving source files unchanged.</p>
+</section>
+<section id="resume-from-existing-sorting">
+<h4>01 · Resume from existing sorting<a class="headerlink" href="#resume-from-existing-sorting" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Select Kilosort/Phy, IBL ALF, or an NWB file with Units.</p>
+<p><strong>Purpose：</strong> Skips unavailable raw stages and continues with units and downstream analyses.</p>
+<p><strong>Visible result：</strong> Produces normalized spike times in seconds, unit IDs, and provenance.</p>
+</section>
+</section>
+<section id="parameter-by-parameter-explanation">
+<h3>01 · Parameter-by-parameter explanation<a class="headerlink" href="#parameter-by-parameter-explanation" title="Link to this heading"></a></h3>
+<section id="sampling-rate">
+<h4>01 · Sampling rate<a class="headerlink" href="#sampling-rate" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Samples per second; converts sample indices to seconds.</p>
+<p><strong>Default：</strong> Simulation: 30,000 Hz; device files: read from metadata</p>
+<p><strong>Recommended setting：</strong> Use the acquisition value exactly; extracellular spike recordings commonly use 20–30 kHz.</p>
+<p><strong>Effect of changing it：</strong> A low value stretches time and lowers frequencies; a high value compresses time and raises frequencies.</p>
+</section>
+<section id="channel-count">
+<h4>01 · Channel count<a class="headerlink" href="#channel-count" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> All channels stored per time point, including auxiliary channels in the file.</p>
+<p><strong>Default：</strong> Defined by the simulation electrode template</p>
+<p><strong>Recommended setting：</strong> Use the number physically written to the file, not merely the channels selected for sorting.</p>
+<p><strong>Effect of changing it：</strong> A wrong value reshapes the file and often creates repeated, shifted, or diagonal patterns.</p>
+</section>
+<section id="dtype">
+<h4>01 · dtype<a class="headerlink" href="#dtype" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Storage type of each sample on disk.</p>
+<p><strong>Default：</strong> int16</p>
+<p><strong>Recommended setting：</strong> Read it from device metadata or export settings; never interpret float32 as int16.</p>
+<p><strong>Effect of changing it：</strong> A wrong dtype changes frame length and numeric interpretation; the file may open with invalid traces.</p>
+</section>
+<section id="v-bit">
+<h4>01 · µV / bit<a class="headerlink" href="#v-bit" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Microvolts represented by one integer ADC step.</p>
+<p><strong>Default：</strong> Generic import: 0.195; device import: read or normalize</p>
+<p><strong>Recommended setting：</strong> Use the acquisition gain; if unknown, keep ADC counts and mark units as unknown.</p>
+<p><strong>Effect of changing it：</strong> Affects amplitude units and amplitude-dependent thresholds, not spike sample locations.</p>
+</section>
+<section id="copy-source">
+<h4>01 · Copy source<a class="headerlink" href="#copy-source" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Chooses a read-only link or a copied raw binary inside the project.</p>
+<p><strong>Default：</strong> Off: read-only link</p>
+<p><strong>Recommended setting：</strong> Use a link for stable storage; copy when the project must move or be archived independently.</p>
+<p><strong>Effect of changing it：</strong> Copying improves portability at a storage cost; links save space but fail if the source moves.</p>
+</section>
+</section>
+<section id="recommended-operating-order">
+<h3>01 · Recommended operating order<a class="headerlink" href="#recommended-operating-order" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Create a project first, then choose the entry that matches the files you actually have.</p></li>
+<li><p>Inspect 50–100 ms of traces and verify channel count, amplitude units, and duration.</p></li>
+<li><p>Save the project; reopening neuroflow_project.json should restore the page and workflow state.</p></li>
+</ul>
+</section>
+<section id="frequent-mistakes">
+<h3>01 · Frequent mistakes<a class="headerlink" href="#frequent-mistakes" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Using 384 ephys channels as the file total when a sync channel is also stored.</p></li>
+<li><p>Moving an external source and expecting a read-only link to discover its new location.</p></li>
+<li><p>Expecting IBL ALF or Units-only NWB to provide raw voltage for re-sorting.</p></li>
+</ul>
+</section>
+<section id="next-step">
+<h3>01 · Next step<a class="headerlink" href="#next-step" title="Link to this heading"></a></h3>
+<p>After confirming structure, continue to Raw QC; processed spikes begin at Unit QC.</p>
+<p><strong>Method source：</strong> SpikeInterface extractors; IBL ALF data model</p>
+</section>
+</section>
+<section id="raw-signal-quality-control">
+<h2>02 Raw-signal quality control<a class="headerlink" href="#raw-signal-quality-control" title="Link to this heading"></a></h2>
+<p>QC does not automatically delete channels. It builds evidence about where an anomaly occurs in channel, time, and frequency and whether it can affect referencing or spike detection. Locate problems globally, verify them in zoomed traces, and only then label candidate bad channels.</p>
+<section id="id1">
+<h3>02 · Before you start<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Verify sampling rate, channel count, units, and duration on the Data page.</p>
+</section>
+<section id="id2">
+<h3>02 · Page controls and visible consequences<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<section id="multichannel-raw-traces">
+<h4>02 · Multichannel raw traces<a class="headerlink" href="#multichannel-raw-traces" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Browse with time window, start time, channel range, and display gain.</p>
+<p><strong>Purpose：</strong> Find clipping, jumps, motion artifacts, dead channels, and common noise.</p>
+<p><strong>Visible result：</strong> Produces zoomable voltage snippets and RMS for the current window.</p>
+</section>
+<section id="qc-metric-summary">
+<h4>02 · QC metric summary<a class="headerlink" href="#qc-metric-summary" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Run the sub-analysis and inspect RMS, peak-to-peak, clipping, and line-noise ratios.</p>
+<p><strong>Purpose：</strong> Screens channels using several metrics rather than one threshold.</p>
+<p><strong>Visible result：</strong> Creates a candidate bad-channel table without automatic exclusion.</p>
+</section>
+<section id="channel-by-frequency-power">
+<h4>02 · Channel-by-frequency power<a class="headerlink" href="#channel-by-frequency-power" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Inspect the channel-by-frequency power map and zoom suspicious bands.</p>
+<p><strong>Purpose：</strong> Distinguishes broadband noise, 50/60 Hz line noise, and local channel problems.</p>
+<p><strong>Visible result：</strong> Produces channel spectra and line-frequency evidence.</p>
+</section>
+<section id="quality-timeline">
+<h4>02 · Quality timeline<a class="headerlink" href="#quality-timeline" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Compute amplitude, noise, and clipping metrics in time blocks.</p>
+<p><strong>Purpose：</strong> Finds dropouts, drift, or artifacts limited to part of the session.</p>
+<p><strong>Visible result：</strong> Produces suspect intervals for exclusion or repair during preprocessing.</p>
+</section>
+</section>
+<section id="id3">
+<h3>02 · Parameter-by-parameter explanation<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<section id="time-start">
+<h4>02 · Time start<a class="headerlink" href="#time-start" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Start of the displayed recording window.</p>
+<p><strong>Default：</strong> 0 s</p>
+<p><strong>Recommended setting：</strong> Inspect the beginning, middle, end, and intervals around key task events.</p>
+<p><strong>Effect of changing it：</strong> Changes the view and local metrics without cropping the source.</p>
+</section>
+<section id="window">
+<h4>02 · Window<a class="headerlink" href="#window" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Duration displayed at once.</p>
+<p><strong>Default：</strong> 60 ms</p>
+<p><strong>Recommended setting：</strong> Use 20–100 ms for spikes and 1–10 s for slow artifacts or rhythms.</p>
+<p><strong>Effect of changing it：</strong> Short windows reveal waveforms; long windows reveal trends but compress spikes.</p>
+</section>
+<section id="channel-range">
+<h4>02 · Channel range<a class="headerlink" href="#channel-range" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> First channel and number shown together.</p>
+<p><strong>Default：</strong> Ch 0–11</p>
+<p><strong>Recommended setting：</strong> Inspect 8–16 channels at a time on dense probes and move along depth.</p>
+<p><strong>Effect of changing it：</strong> Too many channels reduce readability; too few can hide spatially shared patterns.</p>
+</section>
+<section id="display-gain">
+<h4>02 · Display gain<a class="headerlink" href="#display-gain" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Vertical display multiplier only.</p>
+<p><strong>Default：</strong> 1.0×</p>
+<p><strong>Recommended setting：</strong> Start at 1.0×, decrease for overlap, and increase for small traces.</p>
+<p><strong>Effect of changing it：</strong> Does not alter data or QC values; it only changes the view.</p>
+</section>
+<section id="line-frequency">
+<h4>02 · Line frequency<a class="headerlink" href="#line-frequency" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Center frequency for narrowband mains-power measurement.</p>
+<p><strong>Default：</strong> 50 Hz in China and most regions</p>
+<p><strong>Recommended setting：</strong> Choose 50 or 60 Hz for the recording location and inspect harmonics.</p>
+<p><strong>Effect of changing it：</strong> The wrong choice misses mains noise but does not alter the source.</p>
+</section>
+</section>
+<section id="id4">
+<h3>02 · Recommended operating order<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Run summary and timeline first, then verify every candidate in traces and spectra.</p></li>
+<li><p>Record evidence and the manual decision; do not delete channels directly on the QC page.</p></li>
+<li><p>Save QC decisions before preprocessing so bad channels do not contaminate referencing.</p></li>
+</ul>
+</section>
+<section id="id5">
+<h3>02 · Frequent mistakes<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Confusing a high-firing channel with a noisy channel.</p></li>
+<li><p>Declaring the whole session good after inspecting only the first milliseconds.</p></li>
+<li><p>Applying a notch immediately without checking grounding, reference, and harmonics.</p></li>
+</ul>
+</section>
+<section id="id6">
+<h3>02 · Next step<a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
+<p>Carry confirmed bad channels and artifact intervals into separate AP and LFP preprocessing branches.</p>
+<p><strong>Method source：</strong> SpikeInterface preprocessing: detect_bad_channels, coherence+PSD, and channel grouping</p>
+</section>
+</section>
+<section id="preprocessing-is-not-a-fixed-recipe">
+<h2>03 Preprocessing is not a fixed recipe<a class="headerlink" href="#preprocessing-is-not-a-fixed-recipe" title="Link to this heading"></a></h2>
+<p>More preprocessing is not automatically better. Every operation changes the signal, so its purpose, order, and duplication inside the sorter must be explicit. NeuroEphys AI previews a short segment first and compares traces and spectra before parameters are committed to the workflow.</p>
+<section id="id7">
+<h3>03 · Before you start<a class="headerlink" href="#id7" title="Link to this heading"></a></h3>
+<p>Confirm bad channels and decide whether the target is AP/sorting, LFP, or both.</p>
+</section>
+<section id="id8">
+<h3>03 · Page controls and visible consequences<a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
+<section id="ap-sorting-preview">
+<h4>03 · AP / sorting preview<a class="headerlink" href="#ap-sorting-preview" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose high-pass/band-pass, reference, and preview segment.</p>
+<p><strong>Purpose：</strong> Emphasizes fast action potentials and evaluates sorter input.</p>
+<p><strong>Visible result：</strong> Shows before/after traces, spectra, and RMS changes.</p>
+</section>
+<section id="lfp-branch-preview">
+<h4>03 · LFP branch preview<a class="headerlink" href="#lfp-branch-preview" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose low-pass, downsampling, and line-noise handling.</p>
+<p><strong>Purpose：</strong> Preserves low-frequency population activity and reduces later computation.</p>
+<p><strong>Visible result：</strong> Creates an independent LFP chain without overwriting the AP branch.</p>
+</section>
+<section id="reference-comparison">
+<h4>03 · Reference comparison<a class="headerlink" href="#reference-comparison" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Compare none, common median, and common average.</p>
+<p><strong>Purpose：</strong> Reduces common noise while checking whether bad-channel artifacts spread.</p>
+<p><strong>Visible result：</strong> Displays common components and channel traces before and after referencing.</p>
+</section>
+<section id="commit-processing-chain">
+<h4>03 · Commit processing chain<a class="headerlink" href="#commit-processing-chain" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Save operation order and parameters after reviewing the preview.</p>
+<p><strong>Purpose：</strong> Makes sorting, LFP, and reproducibility exports use the same traceable configuration.</p>
+<p><strong>Visible result：</strong> Stores the processing chain while the source remains read-only.</p>
+</section>
+</section>
+<section id="id9">
+<h3>03 · Parameter-by-parameter explanation<a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<section id="ap-band">
+<h4>03 · AP band<a class="headerlink" href="#ap-band" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Passband used for spike detection or preview.</p>
+<p><strong>Default：</strong> 300–6000 Hz</p>
+<p><strong>Recommended setting：</strong> Start with sorter/domain defaults and adjust only from sampling rate and spectral evidence.</p>
+<p><strong>Effect of changing it：</strong> A high lower cutoff suppresses broad spikes; a low one retains LFP drift. The upper cutoff must stay below Nyquist.</p>
+</section>
+<section id="lfp-low-pass">
+<h4>03 · LFP low-pass<a class="headerlink" href="#lfp-low-pass" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Highest retained LFP frequency.</p>
+<p><strong>Default：</strong> 300 Hz</p>
+<p><strong>Recommended setting：</strong> Use 150–250 Hz for analyses below 100 Hz; retain a higher cutoff and sampling rate for high-frequency oscillations.</p>
+<p><strong>Effect of changing it：</strong> Lower cutoffs smooth transients; overly high cutoffs allow spike leakage into LFP.</p>
+</section>
+<section id="lfp-sampling-rate">
+<h4>03 · LFP sampling rate<a class="headerlink" href="#lfp-sampling-rate" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Samples per second retained after LFP filtering.</p>
+<p><strong>Default：</strong> 1,000 Hz</p>
+<p><strong>Recommended setting：</strong> Keep at least twice the highest target frequency; 4–10× margin is common.</p>
+<p><strong>Effect of changing it：</strong> Too low causes aliasing or poor phase precision; too high increases memory and computation.</p>
+</section>
+<section id="reference">
+<h4>03 · Reference<a class="headerlink" href="#reference" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Common reference estimate subtracted from each channel.</p>
+<p><strong>Default：</strong> Common median</p>
+<p><strong>Recommended setting：</strong> Start with median for dense recordings; use probe groups and reference design for sparse tetrodes or microwires.</p>
+<p><strong>Effect of changing it：</strong> Average is more sensitive to outliers; median is robust, but both can remove genuine common activity.</p>
+</section>
+<section id="notch">
+<h4>03 · Notch<a class="headerlink" href="#notch" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Suppresses 50/60 Hz and optional harmonics.</p>
+<p><strong>Default：</strong> Off</p>
+<p><strong>Recommended setting：</strong> Enable only when QC shows narrowband contamination that cannot be corrected at acquisition.</p>
+<p><strong>Effect of changing it：</strong> Notching changes amplitude and phase around the target and can affect coupling analyses.</p>
+</section>
+</section>
+<section id="id10">
+<h3>03 · Recommended operating order<a class="headerlink" href="#id10" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Create separate AP and LFP branches rather than reusing one recipe.</p></li>
+<li><p>Preview before committing and retain raw, processed, and difference/spectral evidence.</p></li>
+<li><p>Check whether the sorter already filters, whitens, or corrects drift to avoid duplication.</p></li>
+</ul>
+</section>
+<section id="id11">
+<h3>03 · Frequent mistakes<a class="headerlink" href="#id11" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Whitening both externally and inside Kilosort.</p></li>
+<li><p>Applying a global reference before excluding bad channels.</p></li>
+<li><p>Downsampling before low-pass filtering and causing aliasing.</p></li>
+</ul>
+</section>
+<section id="id12">
+<h3>03 · Next step<a class="headerlink" href="#id12" title="Link to this heading"></a></h3>
+<p>Send the AP branch to Spike sorting and retain the LFP branch for neural analyses.</p>
+<p><strong>Method source：</strong> SpikeInterface PreprocessingPipeline, phase_shift, common_reference, and whitening</p>
+</section>
+</section>
+<section id="spike-sorting-and-tool-selection">
+<h2>04 Spike sorting and tool selection<a class="headerlink" href="#spike-sorting-and-tool-selection" title="Link to this heading"></a></h2>
+<p>Spike sorting assigns candidate events in multichannel voltage to units. NeuroEphys AI preserves each sorter’s native files, parameters, and logs while normalizing shared outputs into units, spike times in seconds, and channel/template descriptions for downstream comparison.</p>
+<section id="id13">
+<h3>04 · Before you start<a class="headerlink" href="#id13" title="Link to this heading"></a></h3>
+<p>Confirm AP input, probe geometry, bad channels, hardware, output directory, and free disk space.</p>
+</section>
+<section id="id14">
+<h3>04 · Page controls and visible consequences<a class="headerlink" href="#id14" title="Link to this heading"></a></h3>
+<section id="select-a-sorter">
+<h4>04 · Select a sorter<a class="headerlink" href="#select-a-sorter" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose Kilosort4, MountainSort5, or another installed backend.</p>
+<p><strong>Purpose：</strong> Chooses an algorithm by probe density, hardware, and scientific need, not only availability.</p>
+<p><strong>Visible result：</strong> Loads that sorter’s real settings and shows input preview before a run.</p>
+</section>
+<section id="run-selected-sorter">
+<h4>04 · Run selected sorter<a class="headerlink" href="#run-selected-sorter" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Confirm data, sorter, parameters, and execution location in the dialog.</p>
+<p><strong>Purpose：</strong> Prevents expensive runs on the wrong data or configuration.</p>
+<p><strong>Visible result：</strong> Saves native output, normalized results, versions, settings, logs, and diagnostics.</p>
+</section>
+<section id="inspect-run-diagnostics">
+<h4>04 · Inspect run diagnostics<a class="headerlink" href="#inspect-run-diagnostics" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Switch among drift, spike depth-time, amplitudes, templates, similarity, and logs.</p>
+<p><strong>Purpose：</strong> Assesses stability across time and probe depth.</p>
+<p><strong>Visible result：</strong> Produces sorting evidence required before Unit QC.</p>
+</section>
+<section id="compare-sorters">
+<h4>04 · Compare sorters<a class="headerlink" href="#compare-sorters" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Activate different results and run unit matching and agreement comparison.</p>
+<p><strong>Purpose：</strong> Identifies consensus units, splits, merges, and sorter-specific units.</p>
+<p><strong>Visible result：</strong> Reports agreement on real data and accuracy only when simulation ground truth exists.</p>
+</section>
+</section>
+<section id="id15">
+<h3>04 · Parameter-by-parameter explanation<a class="headerlink" href="#id15" title="Link to this heading"></a></h3>
+<section id="sorter">
+<h4>04 · Sorter<a class="headerlink" href="#sorter" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Spike-sorting backend that will actually run.</p>
+<p><strong>Default：</strong> Kilosort4</p>
+<p><strong>Recommended setting：</strong> Evaluate Kilosort4 first for dense Neuropixels; compare CPU sorters for sparse/tetrode recordings.</p>
+<p><strong>Effect of changing it：</strong> Sorters differ in preprocessing, detection, clustering, and resources; they are not interchangeable parameter presets.</p>
+</section>
+<section id="n-chan-bin">
+<h4>04 · n_chan_bin<a class="headerlink" href="#n-chan-bin" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Total channels in the Kilosort binary, including channels not used for sorting.</p>
+<p><strong>Default：</strong> Read from the project structure</p>
+<p><strong>Recommended setting：</strong> Must match the physical file layout; Neuropixels 1.0 files commonly contain 385 channels.</p>
+<p><strong>Effect of changing it：</strong> A wrong value creates diagonal/repeated heatmaps and should stop the run immediately.</p>
+</section>
+<section id="batch-size">
+<h4>04 · batch_size<a class="headerlink" href="#batch-size" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Samples processed in each Kilosort batch.</p>
+<p><strong>Default：</strong> 60,000 (2 s at 30 kHz)</p>
+<p><strong>Recommended setting：</strong> Start with the default; for ≤64 channels, a longer batch can improve drift estimation.</p>
+<p><strong>Effect of changing it：</strong> Larger batches need more memory; short batches contain fewer spikes for drift estimation.</p>
+</section>
+<section id="nblocks">
+<h4>04 · nblocks<a class="headerlink" href="#nblocks" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Number of depth blocks used for drift correction.</p>
+<p><strong>Default：</strong> 1 (rigid drift)</p>
+<p><strong>Recommended setting：</strong> Start at 1 for a single-shank Neuropixels probe, try 5 for non-rigid drift, and consider 0 for ≤64 sparse channels around ≥50 µm spacing.</p>
+<p><strong>Effect of changing it：</strong> Zero disables correction; too many blocks make sparse estimates unstable.</p>
+</section>
+<section id="th-universal-th-learned">
+<h4>04 · Th_universal / Th_learned<a class="headerlink" href="#th-universal-th-learned" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Detection thresholds for universal and learned templates.</p>
+<p><strong>Default：</strong> Current Kilosort4 default</p>
+<p><strong>Recommended setting：</strong> Start with defaults; lower by only 1–2 at a time when spikes are missed or units disappear.</p>
+<p><strong>Effect of changing it：</strong> Lower thresholds detect more events but increase noise and computation.</p>
+</section>
+<section id="tmin-tmax">
+<h4>04 · tmin / tmax<a class="headerlink" href="#tmin-tmax" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Start and end times included in sorting.</p>
+<p><strong>Default：</strong> Full recording</p>
+<p><strong>Recommended setting：</strong> Crop only confirmed start/end artifacts and document the exclusion.</p>
+<p><strong>Effect of changing it：</strong> Short ranges speed testing but cannot establish full-session stability.</p>
+</section>
+<section id="duplicate-spike-ms">
+<h4>04 · duplicate_spike_ms<a class="headerlink" href="#duplicate-spike-ms" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Window for removing near-duplicate spikes within a unit.</p>
+<p><strong>Default：</strong> Kilosort4 default</p>
+<p><strong>Recommended setting：</strong> Adjust only for a supported duplicate peak around zero in the ACG; never exceed 0.5 ms.</p>
+<p><strong>Effect of changing it：</strong> Large values corrupt refractory-period and ACG/CCG estimates.</p>
+</section>
+</section>
+<section id="id16">
+<h3>04 · Recommended operating order<a class="headerlink" href="#id16" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Run a representative segment with defaults to validate input and resources before the full session.</p></li>
+<li><p>Inspect Kilosort drift, depth-time, amplitude, template, and similarity views.</p></li>
+<li><p>Preserve native sorter directories; normalized output enables interoperability but does not replace native evidence.</p></li>
+</ul>
+</section>
+<section id="id17">
+<h3>04 · Frequent mistakes<a class="headerlink" href="#id17" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Showing an old result from a different sorter when the selected sorter was not run.</p></li>
+<li><p>Calling cross-sorter agreement on real data accuracy.</p></li>
+<li><p>Comparing only unit counts while ignoring drift, duplicates, amplitudes, and logs.</p></li>
+</ul>
+</section>
+<section id="id18">
+<h3>04 · Next step<a class="headerlink" href="#id18" title="Link to this heading"></a></h3>
+<p>Select an active sorting result and continue to Unit QC; return here when sorter comparison is needed.</p>
+<p><strong>Method source：</strong> Kilosort4; MountainSort5; SpikeInterface sorter and comparison modules</p>
+</section>
+</section>
+<section id="unit-qc-and-manual-review">
+<h2>05 Unit QC and manual review<a class="headerlink" href="#unit-qc-and-manual-review" title="Link to this heading"></a></h2>
+<p>Sorter output contains candidate clusters. Unit QC combines firing rate, refractory-period evidence, SNR, waveforms, amplitude over time, and ACGs so the researcher can assign traceable keep, MUA, noise, or uncertain labels. No single threshold replaces review.</p>
+<section id="id19">
+<h3>05 · Before you start<a class="headerlink" href="#id19" title="Link to this heading"></a></h3>
+<p>Confirm the active sorting result, run log, and drift diagnostics first.</p>
+</section>
+<section id="id20">
+<h3>05 · Page controls and visible consequences<a class="headerlink" href="#id20" title="Link to this heading"></a></h3>
+<section id="metric-scatter-and-filters">
+<h4>05 · Metric scatter and filters<a class="headerlink" href="#metric-scatter-and-filters" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose x/y metrics, thresholds, and labels; click a point to inspect a unit.</p>
+<p><strong>Purpose：</strong> Reveals metric tradeoffs and locates suspicious units.</p>
+<p><strong>Visible result：</strong> Produces a candidate subset without changing final labels automatically.</p>
+</section>
+<section id="waveforms-and-templates">
+<h4>05 · Waveforms and templates<a class="headerlink" href="#waveforms-and-templates" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Inspect mean waveforms and variation on the main and neighboring channels.</p>
+<p><strong>Purpose：</strong> Assesses temporal stability, spatial plausibility, and noise.</p>
+<p><strong>Visible result：</strong> Produces unit-level waveform evidence.</p>
+</section>
+<section id="acg-and-isi">
+<h4>05 · ACG and ISI<a class="headerlink" href="#acg-and-isi" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Zoom around 0 ms and inspect refractory violations and duplicate peaks.</p>
+<p><strong>Purpose：</strong> Evaluates contamination, duplicate spikes, and multi-unit mixtures.</p>
+<p><strong>Visible result：</strong> Produces temporal-structure evidence and refractory metrics.</p>
+</section>
+<section id="manual-decision">
+<h4>05 · Manual decision<a class="headerlink" href="#manual-decision" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Label units good, MUA, noise, or uncertain and add a note.</p>
+<p><strong>Purpose：</strong> Preserves reviewer decisions and threshold versions for audit and revision.</p>
+<p><strong>Visible result：</strong> Outputs a traceable review table and downstream unit set.</p>
+</section>
+</section>
+<section id="id21">
+<h3>05 · Parameter-by-parameter explanation<a class="headerlink" href="#id21" title="Link to this heading"></a></h3>
+<section id="firing-rate">
+<h4>05 · Firing rate<a class="headerlink" href="#firing-rate" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Spikes per second over valid recording time.</p>
+<p><strong>Default：</strong> Report only; no automatic exclusion</p>
+<p><strong>Recommended setting：</strong> Interpret with brain region, cell type, duration, and stability.</p>
+<p><strong>Effect of changing it：</strong> A higher minimum removes sparse units but can discard real low-rate cells.</p>
+</section>
+<section id="isi-violation-window">
+<h4>05 · ISI violation window<a class="headerlink" href="#isi-violation-window" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Window used to count refractory-period violations.</p>
+<p><strong>Default：</strong> 2 ms</p>
+<p><strong>Recommended setting：</strong> Start around 1–2 ms and report the exact definition.</p>
+<p><strong>Effect of changing it：</strong> Larger windows count more violations; values are incomparable without the definition.</p>
+</section>
+<section id="snr">
+<h4>05 · SNR<a class="headerlink" href="#snr" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Waveform signal magnitude relative to background noise.</p>
+<p><strong>Default：</strong> Report only</p>
+<p><strong>Recommended setting：</strong> Use one method consistently and inspect waveforms; do not transfer thresholds blindly across tools.</p>
+<p><strong>Effect of changing it：</strong> Higher thresholds are conservative but penalize real low-amplitude units.</p>
+</section>
+<section id="amplitude-stability">
+<h4>05 · Amplitude stability<a class="headerlink" href="#amplitude-stability" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Change in spike amplitude over time.</p>
+<p><strong>Default：</strong> Full-session timeline</p>
+<p><strong>Recommended setting：</strong> Look for decay, jumps, or brief presence and compare with drift diagnostics.</p>
+<p><strong>Effect of changing it：</strong> Overly strict criteria reject real state changes; loose criteria retain drifting or disappearing units.</p>
+</section>
+<section id="contamination-threshold">
+<h4>05 · Contamination threshold<a class="headerlink" href="#contamination-threshold" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Allowed estimated contamination.</p>
+<p><strong>Default：</strong> Not treated as ground truth</p>
+<p><strong>Recommended setting：</strong> If 10% is shown as a guide, report the estimator and review it with ACG and waveforms.</p>
+<p><strong>Effect of changing it：</strong> Lower thresholds reduce unit count and increase conservatism, but the estimate is itself uncertain.</p>
+</section>
+</section>
+<section id="id22">
+<h3>05 · Recommended operating order<a class="headerlink" href="#id22" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Inspect population distributions first, then review boundary and high-impact units.</p></li>
+<li><p>Thresholds create candidate labels; final decisions should record reviewer, time, and notes.</p></li>
+<li><p>Recompute QC after changing the active sorter; never reuse metrics from another result.</p></li>
+</ul>
+</section>
+<section id="id23">
+<h3>05 · Frequent mistakes<a class="headerlink" href="#id23" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Declaring a good neuron from one SNR or ISI threshold.</p></li>
+<li><p>Reporting unit count as yield without the screening process.</p></li>
+<li><p>Changing labels manually without preserving an audit record.</p></li>
+</ul>
+</section>
+<section id="id24">
+<h3>05 · Next step<a class="headerlink" href="#id24" title="Link to this heading"></a></h3>
+<p>After selecting downstream units, import behavior and TTL data and establish a common timeline.</p>
+<p><strong>Method source：</strong> SpikeInterface quality metrics; refractory-period contamination</p>
+</section>
+</section>
+<section id="ttl-behavior-and-a-common-timeline">
+<h2>06 TTL, behavior, and a common timeline<a class="headerlink" href="#ttl-behavior-and-a-common-timeline" title="Link to this heading"></a></h2>
+<p>Behavior computers, cameras, and electrophysiology systems often have independent clocks. The synchronization page fits offset + slope × behavior_time from paired TTL pulses and uses residuals to detect missing pulses, mismatches, or nonlinear drift. Without matching TTLs, NeuroEphys AI can only assume a shared clock and labels that assumption explicitly.</p>
+<section id="id25">
+<h3>06 · Before you start<a class="headerlink" href="#id25" title="Link to this heading"></a></h3>
+<p>Prepare behavior-event and optional TTL CSV files and identify each column’s clock, unit, and event meaning.</p>
+</section>
+<section id="id26">
+<h3>06 · Page controls and visible consequences<a class="headerlink" href="#id26" title="Link to this heading"></a></h3>
+<section id="import-behavior-events">
+<h4>06 · Import behavior events<a class="headerlink" href="#import-behavior-events" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Select a CSV with time_seconds, trial, condition, and event_type.</p>
+<p><strong>Purpose：</strong> Builds trial semantics and the event sequence in the behavior clock.</p>
+<p><strong>Visible result：</strong> Stores the event table and source path in the project.</p>
+</section>
+<section id="import-ttl-pulses">
+<h4>06 · Import TTL pulses<a class="headerlink" href="#import-ttl-pulses" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Select a CSV containing ephys-clock pulses corresponding to behavior sync pulses.</p>
+<p><strong>Purpose：</strong> Creates an estimable mapping between device clocks.</p>
+<p><strong>Visible result：</strong> Shows matched counts, missing pulses, and duplicates.</p>
+</section>
+<section id="fit-common-timeline">
+<h4>06 · Fit common timeline<a class="headerlink" href="#fit-common-timeline" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Pair pulses in order and fit intercept and slope.</p>
+<p><strong>Purpose：</strong> Corrects initial offset and linear clock drift.</p>
+<p><strong>Visible result：</strong> Produces ephys-clock seconds, residuals, drift ppm, and a trial table.</p>
+</section>
+<section id="inspect-synchronization-evidence">
+<h4>06 · Inspect synchronization evidence<a class="headerlink" href="#inspect-synchronization-evidence" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Inspect residuals over time, event counts, and suspect pairs.</p>
+<p><strong>Purpose：</strong> Determines whether a linear map is adequate or pairing/segmentation must change.</p>
+<p><strong>Visible result：</strong> Preserves a synchronization report for every event-aligned analysis.</p>
+</section>
+</section>
+<section id="id27">
+<h3>06 · Parameter-by-parameter explanation<a class="headerlink" href="#id27" title="Link to this heading"></a></h3>
+<section id="behavior-time-column">
+<h4>06 · Behavior time column<a class="headerlink" href="#behavior-time-column" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Column containing behavior-device timestamps.</p>
+<p><strong>Default：</strong> time_seconds</p>
+<p><strong>Recommended setting：</strong> Convert to seconds while retaining the source column; frame indices require frame rate or per-frame timestamps.</p>
+<p><strong>Effect of changing it：</strong> A unit mistake creates 1000× or sampling-rate-scale errors.</p>
+</section>
+<section id="ttl-pairing">
+<h4>06 · TTL pairing<a class="headerlink" href="#ttl-pairing" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> How behavior and ephys pulses are paired.</p>
+<p><strong>Default：</strong> Pair one-to-one in order</p>
+<p><strong>Recommended setting：</strong> Check counts and intervals first; locate missing pulses from interval patterns before pairing.</p>
+<p><strong>Effect of changing it：</strong> One missing pulse shifts all subsequent order-based pairs.</p>
+</section>
+<section id="clock-model">
+<h4>06 · Clock model<a class="headerlink" href="#clock-model" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Function mapping behavior time to ephys time.</p>
+<p><strong>Default：</strong> offset + slope × time</p>
+<p><strong>Recommended setting：</strong> Start linear; use segmented or nonlinear models only for curved residuals or clock jumps.</p>
+<p><strong>Effect of changing it：</strong> An overly complex model fits pulse jitter; an overly simple model leaves systematic drift.</p>
+</section>
+<section id="residual-tolerance">
+<h4>06 · Residual tolerance<a class="headerlink" href="#residual-tolerance" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Maximum allowed timing error after alignment.</p>
+<p><strong>Default：</strong> Report the observed value without hiding it</p>
+<p><strong>Recommended setting：</strong> Set from task timescale and device precision; millisecond spike responses require tighter limits.</p>
+<p><strong>Effect of changing it：</strong> Loose tolerance retains mismatches; strict tolerance rejects normal TTL jitter.</p>
+</section>
+<section id="shared-clock-assumption">
+<h4>06 · Shared-clock assumption<a class="headerlink" href="#shared-clock-assumption" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Whether behavior seconds are treated directly as ephys seconds without TTLs.</p>
+<p><strong>Default：</strong> Enabled with a warning only when TTLs are absent</p>
+<p><strong>Recommended setting：</strong> Use only with a shared hardware clock or externally completed synchronization.</p>
+<p><strong>Effect of changing it：</strong> Cannot detect offset or drift; the limitation must appear in the report.</p>
+</section>
+</section>
+<section id="id28">
+<h3>06 · Recommended operating order<a class="headerlink" href="#id28" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Inspect event/TTL counts and intervals before fitting.</p></li>
+<li><p>Residual plots must cover the full session, not only a mean error.</p></li>
+<li><p>Save the mapping, source columns, units, and excluded pairs in the project.</p></li>
+</ul>
+</section>
+<section id="id29">
+<h3>06 · Frequent mistakes<a class="headerlink" href="#id29" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Treating behavior milliseconds as seconds.</p></li>
+<li><p>Forcing row-by-row pairing after a missing pulse.</p></li>
+<li><p>Reporting precise synchronization error without TTL evidence.</p></li>
+</ul>
+</section>
+<section id="id30">
+<h3>06 · Next step<a class="headerlink" href="#id30" title="Link to this heading"></a></h3>
+<p>Use the synchronized trial table to inspect behavior before event-aligned neural analysis.</p>
+<p><strong>Method source：</strong> IBL synchronization and ALF trials object</p>
+</section>
+</section>
+<section id="behavior-quality-precedes-neural-interpretation">
+<h2>07 Behavior quality precedes neural interpretation<a class="headerlink" href="#behavior-quality-precedes-neural-interpretation" title="Link to this heading"></a></h2>
+<p>Behavior analysis first asks whether the experiment ran as designed: trial counts per condition, choice balance, reaction times, missing values, and exclusions. Neural responses and machine-learning labels become interpretable only after behavior structure is reliable.</p>
+<section id="id31">
+<h3>07 · Before you start<a class="headerlink" href="#id31" title="Link to this heading"></a></h3>
+<p>The synchronization page has produced a common timeline and trial table with start, event, and end definitions.</p>
+</section>
+<section id="id32">
+<h3>07 · Page controls and visible consequences<a class="headerlink" href="#id32" title="Link to this heading"></a></h3>
+<section id="condition-counts">
+<h4>07 · Condition counts<a class="headerlink" href="#condition-counts" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Inspect trial counts by stimulus, choice, outcome, or group.</p>
+<p><strong>Purpose：</strong> Finds class imbalance and missing design cells.</p>
+<p><strong>Visible result：</strong> Outputs valid sample counts for statistics and decoding.</p>
+</section>
+<section id="reaction-time">
+<h4>07 · Reaction time<a class="headerlink" href="#reaction-time" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Plot distributions, condition comparisons, and outlier trials.</p>
+<p><strong>Purpose：</strong> Identifies anticipatory responses, timeouts, and logging errors.</p>
+<p><strong>Visible result：</strong> Produces reaction-time variables and exclusion candidates.</p>
+</section>
+<section id="psychometric-curve">
+<h4>07 · Psychometric curve<a class="headerlink" href="#psychometric-curve" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Compute choice probability and sample size by stimulus level.</p>
+<p><strong>Purpose：</strong> Checks whether behavior varies systematically with task variables.</p>
+<p><strong>Visible result：</strong> Outputs the curve, trial count per point, and fit parameters.</p>
+</section>
+<section id="trial-exclusions">
+<h4>07 · Trial exclusions<a class="headerlink" href="#trial-exclusions" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Flag missing, timeout, artifact, or outlier trials using predefined rules.</p>
+<p><strong>Purpose：</strong> Applies exclusions before neural results are viewed to reduce outcome-driven filtering.</p>
+<p><strong>Visible result：</strong> Retains every trial and an exclusion_reason rather than deleting rows.</p>
+</section>
+</section>
+<section id="id33">
+<h3>07 · Parameter-by-parameter explanation<a class="headerlink" href="#id33" title="Link to this heading"></a></h3>
+<section id="condition-column">
+<h4>07 · Condition column<a class="headerlink" href="#condition-column" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Trial field used for group comparisons.</p>
+<p><strong>Default：</strong> condition</p>
+<p><strong>Recommended setting：</strong> Use original task labels and maintain a data dictionary.</p>
+<p><strong>Effect of changing it：</strong> Recoding changes groups and counts; preserve the mapping.</p>
+</section>
+<section id="reaction-time-start-end">
+<h4>07 · Reaction-time start/end<a class="headerlink" href="#reaction-time-start-end" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Two events defining reaction time.</p>
+<p><strong>Default：</strong> stimulus_onset → response</p>
+<p><strong>Recommended setting：</strong> Define from the scientific question; movement onset, button press, and reward are not interchangeable.</p>
+<p><strong>Effect of changing it：</strong> Different endpoints change both values and neural interpretation.</p>
+</section>
+<section id="minimum-trials">
+<h4>07 · Minimum trials<a class="headerlink" href="#minimum-trials" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Minimum valid trials required for a condition.</p>
+<p><strong>Default：</strong> Warning only; no automatic exclusion</p>
+<p><strong>Recommended setting：</strong> Use power analysis based on effect, variance, and validation design rather than one universal count.</p>
+<p><strong>Effect of changing it：</strong> Higher thresholds improve stability but exclude more sessions.</p>
+</section>
+<section id="outlier-rule">
+<h4>07 · Outlier rule<a class="headerlink" href="#outlier-rule" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Rule defining outliers in reaction time or continuous behavior.</p>
+<p><strong>Default：</strong> No deletion by default</p>
+<p><strong>Recommended setting：</strong> Prefer task-defined limits or robust rules and report excluded counts.</p>
+<p><strong>Effect of changing it：</strong> Post-hoc limits can change condition effects and introduce bias.</p>
+</section>
+</section>
+<section id="id34">
+<h3>07 · Recommended operating order<a class="headerlink" href="#id34" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Generate and save behavior figures before neural figures.</p></li>
+<li><p>Make every plotted point inspectable for stimulus level, count, and source trials.</p></li>
+<li><p>Store exclusion rules as fields and logs without overwriting the original trial table.</p></li>
+</ul>
+</section>
+<section id="id35">
+<h3>07 · Frequent mistakes<a class="headerlink" href="#id35" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Reporting ordinary accuracy despite severe class imbalance.</p></li>
+<li><p>Changing behavioral exclusions after seeing neural differences.</p></li>
+<li><p>Confusing trial, session, and animal sampling levels.</p></li>
+</ul>
+</section>
+<section id="id36">
+<h3>07 · Next step<a class="headerlink" href="#id36" title="Link to this heading"></a></h3>
+<p>After locking valid trials and condition labels, continue to event response, spike-train, LFP, or joint analyses.</p>
+<p><strong>Method source：</strong> IBL Brain-Wide Map behavioral analyses</p>
+</section>
+</section>
+<section id="neural-activity-analysis-workbench">
+<h2>08 Neural activity analysis workbench<a class="headerlink" href="#neural-activity-analysis-workbench" title="Link to this heading"></a></h2>
+<p>The neural page is not a single fixed PSTH. It contains independently runnable event-response, spike-train, LFP spectral/time-frequency, and spike-field coupling analyses. Every sub-analysis has its own inputs, settings, figures, and tables; before execution it shows an input preview, never fabricated results.</p>
+<section id="id37">
+<h3>08 · Before you start<a class="headerlink" href="#id37" title="Link to this heading"></a></h3>
+<p>Confirm active units, synchronized events, and valid trials; LFP and coupling also require voltage data.</p>
+</section>
+<section id="id38">
+<h3>08 · Page controls and visible consequences<a class="headerlink" href="#id38" title="Link to this heading"></a></h3>
+<section id="event-aligned-raster-psth">
+<h4>08 · Event-aligned Raster/PSTH<a class="headerlink" href="#event-aligned-raster-psth" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose event, window, bin, smoothing, baseline, and condition.</p>
+<p><strong>Purpose：</strong> Describes unit or population responses around an event.</p>
+<p><strong>Visible result：</strong> Outputs raster, PSTH, heatmap, response windows, and trial-level features.</p>
+</section>
+<section id="spike-train-statistics">
+<h4>08 · Spike-train statistics<a class="headerlink" href="#spike-train-statistics" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose CV2, Lv, Fano, ACG/CCH, STTC, or spike-train distances.</p>
+<p><strong>Purpose：</strong> Quantifies regularity, variability, and temporal relationships between units.</p>
+<p><strong>Visible result：</strong> Produces metrics with explicit units and correlograms.</p>
+</section>
+<section id="lfp-analysis">
+<h4>08 · LFP analysis<a class="headerlink" href="#lfp-analysis" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Run PSD, band power, coherence, or time-frequency analysis.</p>
+<p><strong>Purpose：</strong> Describes oscillatory power, cross-channel relations, and event-related spectral changes.</p>
+<p><strong>Visible result：</strong> Outputs spectra, time-frequency matrices, band summaries, and method settings.</p>
+</section>
+<section id="spike-field-coupling">
+<h4>08 · Spike-field coupling<a class="headerlink" href="#spike-field-coupling" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose phase band, reference channel, spike set, and surrogates.</p>
+<p><strong>Purpose：</strong> Tests whether spikes prefer an LFP phase and evaluates chance level.</p>
+<p><strong>Visible result：</strong> Outputs phase distributions, vector strength, Rayleigh/permutation evidence, and PAC/STA.</p>
+</section>
+</section>
+<section id="id39">
+<h3>08 · Parameter-by-parameter explanation<a class="headerlink" href="#id39" title="Link to this heading"></a></h3>
+<section id="alignment-event">
+<h4>08 · Alignment event<a class="headerlink" href="#alignment-event" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Time zero for every trial.</p>
+<p><strong>Default：</strong> stimulus_onset (depends on the event table)</p>
+<p><strong>Recommended setting：</strong> Choose from the hypothesis; stimulus, movement, choice, and reward answer different questions.</p>
+<p><strong>Effect of changing it：</strong> Changing the event changes temporal interpretation and must not be significance-driven.</p>
+</section>
+<section id="id40">
+<h4>08 · Window<a class="headerlink" href="#id40" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Time range extracted around the event.</p>
+<p><strong>Default：</strong> -1 to +2 s</p>
+<p><strong>Recommended setting：</strong> Cover baseline and expected response while avoiding neighboring trials or events.</p>
+<p><strong>Effect of changing it：</strong> Short windows miss slow responses; long windows increase overlap and multiplicity.</p>
+</section>
+<section id="bin-size">
+<h4>08 · Bin size<a class="headerlink" href="#bin-size" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Temporal bin width for PSTH or count features.</p>
+<p><strong>Default：</strong> 50 ms</p>
+<p><strong>Recommended setting：</strong> Use 5–20 ms for fast sensory responses and 20–100 ms for behavioral/population trends, with sensitivity checks.</p>
+<p><strong>Effect of changing it：</strong> Small bins improve resolution but are noisy; large bins smooth responses and lower peaks.</p>
+</section>
+<section id="smoothing">
+<h4>08 · Smoothing<a class="headerlink" href="#smoothing" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Kernel and width applied to binned firing rates.</p>
+<p><strong>Default：</strong> Minimal or off</p>
+<p><strong>Recommended setting：</strong> Smoothing is acceptable for display; statistics should prefer unsmoothed trial features and report the kernel.</p>
+<p><strong>Effect of changing it：</strong> Stronger smoothing lowers peaks, broadens responses, and induces temporal dependence.</p>
+</section>
+<section id="psd-method">
+<h4>08 · PSD method<a class="headerlink" href="#psd-method" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Power-spectral estimator and segmentation settings.</p>
+<p><strong>Default：</strong> Welch</p>
+<p><strong>Recommended setting：</strong> Start with Welch for stationary segments and report window, overlap, resolution, and units.</p>
+<p><strong>Effect of changing it：</strong> Long windows improve frequency resolution but reduce temporal localization, and vice versa.</p>
+</section>
+<section id="surrogates">
+<h4>08 · Surrogates<a class="headerlink" href="#surrogates" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Number of time shifts or label shuffles used for a chance distribution.</p>
+<p><strong>Default：</strong> 200 (demonstration)</p>
+<p><strong>Recommended setting：</strong> Use at least 1,000 for formal analysis and more for tail p-values; fix the random seed.</p>
+<p><strong>Effect of changing it：</strong> Fewer runs are faster but give coarse p-values; more runs are stable but expensive.</p>
+</section>
+</section>
+<section id="id41">
+<h3>08 · Recommended operating order<a class="headerlink" href="#id41" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Run one clearly defined sub-analysis at a time and review its input/settings summary first.</p></li>
+<li><p>Figures and statistics share trial, window, and condition definitions, while inference avoids display smoothing.</p></li>
+<li><p>Retain the data table behind every panel for independent editing and export.</p></li>
+</ul>
+</section>
+<section id="id42">
+<h3>08 · Frequent mistakes<a class="headerlink" href="#id42" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Showing an old figure from another analysis before the new selection runs.</p></li>
+<li><p>Applying many pointwise t-tests directly to a smoothed PSTH.</p></li>
+<li><p>Downsampling LFP without anti-aliasing or allowing spike leakage in same-electrode coupling.</p></li>
+</ul>
+</section>
+<section id="id43">
+<h3>08 · Next step<a class="headerlink" href="#id43" title="Link to this heading"></a></h3>
+<p>Send trial-level neural metrics to Statistics or build a trial-by-feature matrix for Machine Learning.</p>
+<p><strong>Method source：</strong> Neo data model; Elephant spike-train, spectral, STA and phase APIs; Folschweiller &amp; Sauer (2023) case structure</p>
+</section>
+</section>
+<section id="from-figures-to-statistical-evidence">
+<h2>09 From figures to statistical evidence<a class="headerlink" href="#from-figures-to-statistical-evidence" title="Link to this heading"></a></h2>
+<p>Statistics begins with the sampling unit, not a test name. Trials are nested in sessions and units in animals; pairing, repeated measures, and hierarchy determine valid comparisons. The page reports effects, confidence intervals, and multiplicity handling rather than treating p-values as the only result.</p>
+<section id="id44">
+<h3>09 · Before you start<a class="headerlink" href="#id44" title="Link to this heading"></a></h3>
+<p>Prepare unsmoothed trial-level metrics, conditions, unit/session/animal IDs, and exclusions.</p>
+</section>
+<section id="id45">
+<h3>09 · Page controls and visible consequences<a class="headerlink" href="#id45" title="Link to this heading"></a></h3>
+<section id="design-check">
+<h4>09 · Design check<a class="headerlink" href="#design-check" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Specify sampling unit, pairing, hierarchy, and primary comparison.</p>
+<p><strong>Purpose：</strong> Prevents pseudoreplication and treating nested samples as independent.</p>
+<p><strong>Visible result：</strong> Produces an auditable statistical-design summary.</p>
+</section>
+<section id="parametric-nonparametric-comparison">
+<h4>09 · Parametric/nonparametric comparison<a class="headerlink" href="#parametric-nonparametric-comparison" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose t/Welch/ANOVA or Wilcoxon/Mann–Whitney/Kruskal from the design.</p>
+<p><strong>Purpose：</strong> Compares conditions under explicit assumptions and data structure.</p>
+<p><strong>Visible result：</strong> Outputs statistic, p-value, effect, confidence interval, and sample size.</p>
+</section>
+<section id="permutation-bootstrap">
+<h4>09 · Permutation/bootstrap<a class="headerlink" href="#permutation-bootstrap" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Shuffle labels or resample at the legal exchangeability unit.</p>
+<p><strong>Purpose：</strong> Builds null distributions or intervals with fewer distributional assumptions.</p>
+<p><strong>Visible result：</strong> Saves random seed, repetitions, and the complete chance distribution.</p>
+</section>
+<section id="mixed-effects-model">
+<h4>09 · Mixed-effects model<a class="headerlink" href="#mixed-effects-model" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Set fixed effects and animal/session/unit random effects.</p>
+<p><strong>Purpose：</strong> Handles hierarchical, missing, and unbalanced repeated measures.</p>
+<p><strong>Visible result：</strong> Outputs formula, coefficients, intervals, convergence, and diagnostics.</p>
+</section>
+</section>
+<section id="id46">
+<h3>09 · Parameter-by-parameter explanation<a class="headerlink" href="#id46" title="Link to this heading"></a></h3>
+<section id="sampling-unit">
+<h4>09 · Sampling unit<a class="headerlink" href="#sampling-unit" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Independent observational unit used for inference.</p>
+<p><strong>Default：</strong> Must be confirmed by the user</p>
+<p><strong>Recommended setting：</strong> Animal-level claims usually require animals as independent units, with units/sessions nested.</p>
+<p><strong>Effect of changing it：</strong> Too fine inflates n and significance; too coarse loses information.</p>
+</section>
+<section id="paired">
+<h4>09 · Paired<a class="headerlink" href="#paired" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Whether conditions come from the same or matched observational unit.</p>
+<p><strong>Default：</strong> Defined by the study design</p>
+<p><strong>Recommended setting：</strong> Use paired tests for repeated observations from the same unit/session/animal.</p>
+<p><strong>Effect of changing it：</strong> Incorrect pairing changes the error term and statistical power.</p>
+</section>
+<section id="alpha">
+<h4>09 · Alpha<a class="headerlink" href="#alpha" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Predefined type-I error threshold.</p>
+<p><strong>Default：</strong> 0.05</p>
+<p><strong>Recommended setting：</strong> Set before analysis and report together with multiplicity correction.</p>
+<p><strong>Effect of changing it：</strong> Lower alpha is conservative but increases misses; never change it post hoc for significance.</p>
+</section>
+<section id="multiple-comparison">
+<h4>09 · Multiple comparison<a class="headerlink" href="#multiple-comparison" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Method controlling error across a family of tests.</p>
+<p><strong>Default：</strong> FDR Benjamini–Hochberg</p>
+<p><strong>Recommended setting：</strong> Use FDR for exploratory multi-unit/time tests and Holm for a few planned comparisons; define the family.</p>
+<p><strong>Effect of changing it：</strong> Stricter correction reduces false positives and power; correction is meaningless without a defined family.</p>
+</section>
+<section id="resamples">
+<h4>09 · Resamples<a class="headerlink" href="#resamples" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Number of permutation or bootstrap repetitions.</p>
+<p><strong>Default：</strong> 1,000</p>
+<p><strong>Recommended setting：</strong> Use 200–1,000 for preview and often 5,000–10,000 for final estimates with a fixed seed.</p>
+<p><strong>Effect of changing it：</strong> Controls Monte Carlo stability of p-values/intervals and runtime.</p>
+</section>
+</section>
+<section id="id47">
+<h3>09 · Recommended operating order<a class="headerlink" href="#id47" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Create a statistical-design card before enabling test selection.</p></li>
+<li><p>Report raw observations, effect, confidence interval, p-value, and correction together.</p></li>
+<li><p>Save the full statistical table separately from figure summaries.</p></li>
+</ul>
+</section>
+<section id="id48">
+<h3>09 · Frequent mistakes<a class="headerlink" href="#id48" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Treating 300 units from three animals as n=300 independent observations.</p></li>
+<li><p>Testing every PSTH bin without multiplicity control.</p></li>
+<li><p>Reporting only p-values without direction, magnitude, or uncertainty.</p></li>
+</ul>
+</section>
+<section id="id49">
+<h3>09 · Next step<a class="headerlink" href="#id49" title="Link to this heading"></a></h3>
+<p>Statistical results can go to publication export; prediction questions continue to Machine Learning.</p>
+<p><strong>Method source：</strong> SciPy/statsmodels; Elephant phase analysis; Folschweiller &amp; Sauer (2023) statistical design</p>
+</section>
+</section>
+<section id="machine-learning-clustering-and-leakage">
+<h2>10 Machine learning, clustering, and leakage<a class="headerlink" href="#machine-learning-clustering-and-leakage" title="Link to this heading"></a></h2>
+<p>Machine Learning converts neural activity to a trial-by-feature matrix and places preprocessing, feature selection, and the model inside cross-validation. The goal is not the highest score but a leakage-free evaluation against a shuffle baseline with session/animal generalization.</p>
+<section id="id50">
+<h3>10 · Before you start<a class="headerlink" href="#id50" title="Link to this heading"></a></h3>
+<p>Define prediction target, feature window, grouping variable, class balance, and minimum sample size.</p>
+</section>
+<section id="id51">
+<h3>10 · Page controls and visible consequences<a class="headerlink" href="#id51" title="Link to this heading"></a></h3>
+<section id="classification">
+<h4>10 · Classification<a class="headerlink" href="#classification" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose Logistic regression, SVM, Random forest, XGBoost, or another model.</p>
+<p><strong>Purpose：</strong> Predicts discrete stimulus, choice, or outcome labels.</p>
+<p><strong>Visible result：</strong> Outputs balanced accuracy, F1, AUC, confusion matrix, and fold scores.</p>
+</section>
+<section id="regression">
+<h4>10 · Regression<a class="headerlink" href="#regression" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Choose linear, Ridge, random-forest, or another regressor.</p>
+<p><strong>Purpose：</strong> Predicts position, speed, reaction time, or continuous stimulus values.</p>
+<p><strong>Visible result：</strong> Outputs R², MAE, predicted-versus-observed plots, and residuals.</p>
+</section>
+<section id="time-resolved-decoding">
+<h4>10 · Time-resolved decoding<a class="headerlink" href="#time-resolved-decoding" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Repeat the complete cross-validation inside sliding time bins.</p>
+<p><strong>Purpose：</strong> Estimates how predictive information changes around an event.</p>
+<p><strong>Visible result：</strong> Outputs a time course, chance distribution, and multiplicity results.</p>
+</section>
+<section id="pca-and-clustering">
+<h4>10 · PCA and clustering<a class="headerlink" href="#pca-and-clustering" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Reduce population features or perform unsupervised grouping.</p>
+<p><strong>Purpose：</strong> Explores population structure without treating visual separation as inference.</p>
+<p><strong>Visible result：</strong> Outputs explained variance, loadings, projections, and clustering stability.</p>
+</section>
+</section>
+<section id="id52">
+<h3>10 · Parameter-by-parameter explanation<a class="headerlink" href="#id52" title="Link to this heading"></a></h3>
+<section id="feature-window">
+<h4>10 · Feature window<a class="headerlink" href="#feature-window" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Time range used to extract neural features for each trial.</p>
+<p><strong>Default：</strong> 0–0.5 s (task-dependent)</p>
+<p><strong>Recommended setting：</strong> Predefine from causal timing; do not use post-behavior information to predict behavior.</p>
+<p><strong>Effect of changing it：</strong> Long windows contain more information but can include later events and movement.</p>
+</section>
+<section id="cross-validation">
+<h4>10 · Cross-validation<a class="headerlink" href="#cross-validation" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Train/validation split and repetition scheme.</p>
+<p><strong>Default：</strong> 5-fold stratified or grouped</p>
+<p><strong>Recommended setting：</strong> Use GroupKFold or LeaveOneGroupOut when sessions or animals must not cross folds.</p>
+<p><strong>Effect of changing it：</strong> Random trial splits often score higher but may learn session identity.</p>
+</section>
+<section id="scaling">
+<h4>10 · Scaling<a class="headerlink" href="#scaling" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Feature standardization or normalization.</p>
+<p><strong>Default：</strong> StandardScaler for linear/SVM models</p>
+<p><strong>Recommended setting：</strong> Fit within every training fold and apply to its validation fold.</p>
+<p><strong>Effect of changing it：</strong> Scaling the full dataset first leaks validation means and variances.</p>
+</section>
+<section id="class-weighting">
+<h4>10 · Class weighting<a class="headerlink" href="#class-weighting" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Loss weights for imbalanced classes.</p>
+<p><strong>Default：</strong> balanced (for imbalanced classes)</p>
+<p><strong>Recommended setting：</strong> Report class counts first; weighting or resampling must occur inside training folds.</p>
+<p><strong>Effect of changing it：</strong> Changes decision boundaries and calibration; ordinary accuracy is insufficient.</p>
+</section>
+<section id="permutation-count">
+<h4>10 · Permutation count<a class="headerlink" href="#permutation-count" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Number of label shuffles with complete re-validation.</p>
+<p><strong>Default：</strong> 200 (demonstration)</p>
+<p><strong>Recommended setting：</strong> Use at least 1,000 for final results while preserving group structure.</p>
+<p><strong>Effect of changing it：</strong> One shuffle is unstable; invalid shuffling destroys nesting.</p>
+</section>
+</section>
+<section id="id53">
+<h3>10 · Recommended operating order<a class="headerlink" href="#id53" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Establish a linear baseline before comparing complex models.</p></li>
+<li><p>Place the model, feature selection, scaling, and hyperparameter search inside validation.</p></li>
+<li><p>Report fold scores, shuffle distribution, and cross-group generalization rather than one best score.</p></li>
+</ul>
+</section>
+<section id="id54">
+<h3>10 · Frequent mistakes<a class="headerlink" href="#id54" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Putting adjacent trials from the same session into both train and test.</p></li>
+<li><p>Selecting units on all data before cross-validation.</p></li>
+<li><p>Showing only the best model after undisclosed model comparison.</p></li>
+</ul>
+</section>
+<section id="id55">
+<h3>10 · Next step<a class="headerlink" href="#id55" title="Link to this heading"></a></h3>
+<p>Send model configuration, validation splits, score tables, and figures to Publication and Reproducibility.</p>
+<p><strong>Method source：</strong> IBL Brain-Wide Map decoding analyses; scikit-learn</p>
+</section>
+</section>
+<section id="publication-figures-and-reproducible-export">
+<h2>11 Publication figures and reproducible export<a class="headerlink" href="#publication-figures-and-reproducible-export" title="Link to this heading"></a></h2>
+<p>Export binds figures to plotted data, statistical tables, Methods, the software environment, and the workflow. Visual edits never rewrite analysis data; recomputation and styling have separate audit trails. A saved neuroflow_project.json restores completed stages and the active result.</p>
+<section id="id56">
+<h3>11 · Before you start<a class="headerlink" href="#id56" title="Link to this heading"></a></h3>
+<p>Verify axes, units, sample sizes, error definitions, and annotations against saved results.</p>
+</section>
+<section id="id57">
+<h3>11 · Page controls and visible consequences<a class="headerlink" href="#id57" title="Link to this heading"></a></h3>
+<section id="edit-current-figure">
+<h4>11 · Edit current figure<a class="headerlink" href="#edit-current-figure" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Double-click an axis or open Figure Studio for object-level styling.</p>
+<p><strong>Purpose：</strong> Creates publication styling without recomputing data.</p>
+<p><strong>Visible result：</strong> Edits lines, markers, bars, images, text, axes, ticks, grids, and legends.</p>
+</section>
+<section id="save-one-panel">
+<h4>11 · Save one panel<a class="headerlink" href="#save-one-panel" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Select a panel, set exact dimensions, and export it.</p>
+<p><strong>Purpose：</strong> Avoids screenshots with poor resolution and layout.</p>
+<p><strong>Visible result：</strong> Exports PNG, SVG, or PDF with background and font settings.</p>
+</section>
+<section id="export-data-and-statistics">
+<h4>11 · Export data and statistics<a class="headerlink" href="#export-data-and-statistics" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Save x/y/group data behind the figure and the complete statistical output.</p>
+<p><strong>Purpose：</strong> Links the figure back to values and enables external verification.</p>
+<p><strong>Visible result：</strong> Exports CSV/JSON tables and a provenance index.</p>
+</section>
+<section id="save-restore-project">
+<h4>11 · Save/restore project<a class="headerlink" href="#save-restore-project" title="Link to this heading"></a></h4>
+<p><strong>Action：</strong> Save the project, then reopen neuroflow_project.json from the home page.</p>
+<p><strong>Purpose：</strong> Restores sources, workflow state, sorter results, analysis tables, and audit log.</p>
+<p><strong>Visible result：</strong> Reopens at the last saved page with completed stages available for inspection.</p>
+</section>
+</section>
+<section id="id58">
+<h3>11 · Parameter-by-parameter explanation<a class="headerlink" href="#id58" title="Link to this heading"></a></h3>
+<section id="format">
+<h4>11 · Format<a class="headerlink" href="#format" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Figure file type.</p>
+<p><strong>Default：</strong> PNG + SVG</p>
+<p><strong>Recommended setting：</strong> Use PNG for preview and SVG/PDF for vector editing and publication.</p>
+<p><strong>Effect of changing it：</strong> Raster output depends on DPI; vector output preserves line and text objects.</p>
+</section>
+<section id="figure-size">
+<h4>11 · Figure size<a class="headerlink" href="#figure-size" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Output width and height.</p>
+<p><strong>Default：</strong> Use the current figure</p>
+<p><strong>Recommended setting：</strong> Set journal single/double-column dimensions in millimeters and inspect long labels.</p>
+<p><strong>Effect of changing it：</strong> Changing dimensions alters relative text size and panel spacing.</p>
+</section>
+<section id="dpi">
+<h4>11 · DPI<a class="headerlink" href="#dpi" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Pixels per inch for raster output.</p>
+<p><strong>Default：</strong> 300</p>
+<p><strong>Recommended setting：</strong> Use 300–600 DPI for line art and follow journal/source resolution for images or heatmaps.</p>
+<p><strong>Effect of changing it：</strong> Higher DPI increases file size but cannot add source-data resolution.</p>
+</section>
+<section id="axis-grid-spine">
+<h4>11 · Axis/grid/spine<a class="headerlink" href="#axis-grid-spine" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Axis line width, extent, ticks, grid, and spine visibility.</p>
+<p><strong>Default：</strong> NeuroEphys AI standard theme</p>
+<p><strong>Recommended setting：</strong> Adjust by plot type and keep a figure consistent; do not let decorative grids obscure data.</p>
+<p><strong>Effect of changing it：</strong> Thick lines improve visibility but crowd small panels; strong grids compete with data.</p>
+</section>
+<section id="project-source-mode">
+<h4>11 · Project source mode<a class="headerlink" href="#project-source-mode" title="Link to this heading"></a></h4>
+<p><strong>Meaning：</strong> Whether the project uses an external read-only link or an internal raw copy.</p>
+<p><strong>Default：</strong> Defined by the import choice</p>
+<p><strong>Recommended setting：</strong> Before archiving, verify external paths; copy raw data or use stable shared storage for portability.</p>
+<p><strong>Effect of changing it：</strong> The manifest remains readable, but raw-dependent stages cannot rerun if an external source is missing.</p>
+</section>
+</section>
+<section id="id59">
+<h3>11 · Recommended operating order<a class="headerlink" href="#id59" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Save vector output, plotted data, statistical tables, and generation settings for every publication figure.</p></li>
+<li><p>After saving, close and reopen once to verify restore position and key results.</p></li>
+<li><p>Before sharing, check source paths, licenses, anonymization, and unpublished-data permissions.</p></li>
+</ul>
+</section>
+<section id="id60">
+<h3>11 · Frequent mistakes<a class="headerlink" href="#id60" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Saving only screenshots without plotted data or statistical provenance.</p></li>
+<li><p>Editing labels until units or sample counts no longer match results.</p></li>
+<li><p>Treating a project linked to a personal temporary folder as a portable archive.</p></li>
+</ul>
+</section>
+<section id="id61">
+<h3>11 · Next step<a class="headerlink" href="#id61" title="Link to this heading"></a></h3>
+<p>After the reproducibility bundle, the researcher remains responsible for interpretation, manuscript structure, and data-sharing decisions.</p>
+<p><strong>Method source：</strong> IBL Brain-Wide Map figure organization and reproducibility</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="figures.html" class="btn btn-neutral float-left" title="Figure inspection and publication export" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="provenance.html" class="btn btn-neutral float-right" title="Intermediate products, logs, and provenance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, NeuroEphys AI team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

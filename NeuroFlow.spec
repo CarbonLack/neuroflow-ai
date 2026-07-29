@@ -11,6 +11,7 @@ from PyInstaller.utils.hooks import (
 )
 
 python_dlls = Path(sys.base_prefix) / "DLLs"
+lite_build = os.environ.get("NEUROEPHYS_LITE_BUILD", "").strip() == "1"
 # PyInstaller resolves transitive DLLs through PATH. Prefer the OpenSSL build
 # shipped with this Python runtime over unrelated Conda installations.
 os.environ["PATH"] = f"{python_dlls}{os.pathsep}{os.environ.get('PATH', '')}"
@@ -42,8 +43,7 @@ def runtime_submodule(name):
     return not any(part in name for part in blocked_parts)
 
 
-for package in (
-    "kilosort",
+packages = [
     "mountainsort5",
     "isosplit6",
     "spikeinterface",
@@ -55,7 +55,11 @@ for package in (
     "sklearn",
     "keyring",
     "nex5file",
-):
+]
+if not lite_build:
+    packages.insert(0, "kilosort")
+
+for package in packages:
     package_datas, package_binaries, package_hidden = collect_all(
         package,
         include_py_files=False,
@@ -72,7 +76,13 @@ for package in (
     binaries += package_binaries
     hiddenimports += package_hidden
 
-datas += [("docs/site", "neuroflow_docs")]
+datas += [
+    ("docs/site", "neuroflow_docs"),
+    ("assets/brand", "neuroephys_brand"),
+    ("DEVELOPMENT_PREVIEW.md", "."),
+    ("THIRD_PARTY_SOURCES.md", "."),
+    ("PROJECT_RIGHTS_NOTICE_ZH.md", "."),
+]
 
 # XGBoost loads its native library at runtime, so PyInstaller cannot infer it
 # from the delayed Python import in the model catalog.
@@ -85,7 +95,7 @@ analysis = Analysis(
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
-    excludes=[],
+    excludes=["torch", "kilosort"] if lite_build else [],
     noarchive=False,
 )
 pyz = PYZ(analysis.pure)
@@ -95,6 +105,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="NeuroEphysAI",
+    icon="assets/brand/neuroephys-ai.ico",
     console=False,
 )
 collection = COLLECT(

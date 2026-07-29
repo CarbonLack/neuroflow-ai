@@ -168,12 +168,12 @@ def test_load_recording_prefers_verified_sorting_cache(tmp_path: Path):
 
 
 def test_medpc_event_codes_are_preserved_and_ttl_aligned(tmp_path: Path):
-    path = tmp_path / "Subject 101"
+    path = tmp_path / "Example subject"
     path.write_text(
         """
-File: C:\\MED-PC\\DATA\\Subject101
+File: C:\\MED-PC\\DATA\\ExampleSubject
 Start Date: 07/25/24
-Subject: 101
+Subject: example
 Box: 1
 MSN: example_box1
 C:
@@ -184,7 +184,7 @@ D:
         encoding="utf-8",
     )
     parsed = parse_medpc_file(path)
-    assert parsed.metadata["Subject"] == "101"
+    assert parsed.metadata["Subject"] == "example"
     assert parsed.arrays["C"].astype(int).tolist() == [11, 1, 12, 11, 2, 12, 11, 3, 12]
 
     state = ProjectState(root=tmp_path / "project")
@@ -199,7 +199,7 @@ D:
         sync_event_code=11,
     )
     assert result["matched_count"] == 3
-    assert result["subject"] == "101"
+    assert result["subject"] == "example"
     assert state.events[0]["event_code"] == 11
     assert state.events[0]["event_order"] == 1
     assert "trial" not in state.events[0]

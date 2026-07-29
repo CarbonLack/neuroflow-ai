@@ -1,0 +1,67 @@
+:root {
+  --brand-ink: #0b1117;
+  --brand-cyan: #a34fb6;
+  --brand-coral: #238a67;
+}
+
+.wy-side-nav-search {
+  background: #171521;
+}
+
+.wy-side-nav-search > a img.logo {
+  width: 84px;
+  height: 84px;
+}
+
+.wy-nav-side {
+  background: #201c29;
+}
+
+.wy-menu-vertical a:hover,
+.wy-menu-vertical li.current > a {
+  background: #2d2638;
+  color: #ffffff;
+}
+
+.wy-menu-vertical li.toctree-l1.current > a {
+  border-left: 3px solid var(--brand-cyan);
+}
+
+.rst-content a {
+  color: #087f74;
+}
+
+.rst-content .admonition-title {
+  background: #168c82;
+}
+
+.rst-content .warning .admonition-title {
+  background: var(--brand-coral);
+}
+
+.rst-content table.docutils {
+  width: 100%;
+}
+
+.rst-content code.literal {
+  color: #8e3d35;
+}
+
+.product-shot {
+  border: 1px solid #cad6dc;
+  box-shadow: 0 8px 24px rgba(11, 17, 23, 0.12);
+  margin: 1rem 0 1.5rem;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+
+.status-grid > div {
+  border: 1px solid #d6e0e4;
+  border-top: 3px solid var(--brand-cyan);
+  padding: 0.8rem;
+}

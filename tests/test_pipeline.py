@@ -139,8 +139,9 @@ def test_real_event_figures_use_event_semantics_and_localized_conditions(
 
     event_figure = event_analysis_figure(state)
     legend = [text.get_text() for text in event_figure.axes[1].get_legend().texts]
-    assert event_figure.axes[0].get_ylabel() == "事件序号"
-    assert legend == ["左杆开始 (n=2)", "右杆开始 (n=2)"]
+    assert event_figure.axes[0].get_ylabel() == "事件序号（每行一个事件）"
+    assert legend[:2] == ["左杆开始 (n=2)", "右杆开始 (n=2)"]
+    assert legend[2:] == ["基线窗", "响应窗"]
     assert event_figure.axes[3].get_title(loc="left").startswith("事件后效应")
 
     behavior = behavior_figure(state)

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">NeuroEphys AI cover, graphite and cyan</title>
+  <desc id="desc">Submission cover for a local-first electrophysiology workflow application.</desc>
+  <rect width="1920" height="1080" fill="#080D12"/>
+  <rect x="56" y="56" width="1808" height="968" rx="32" fill="#0D151C" stroke="#22313B" stroke-width="2"/>
+  <g opacity=".26" fill="none" stroke="#46606E" stroke-width="2">
+    <path d="M80 263h250l20-12 20 29 25-76 28 118 26-91 24 50 22-18h310"/>
+    <path d="M80 318h180l17-8 19 20 25-51 29 76 25-60 21 36 17-13h370"/>
+    <path d="M1120 784h180l17-8 19 20 25-51 29 76 25-60 21 36 17-13h330"/>
+    <path d="M1110 842h250l20-12 20 29 25-76 28 118 26-91 24 50 22-18h270"/>
+  </g>
+  <g opacity=".22" fill="#78E8D6">
+    <circle cx="210" cy="780" r="4"/><circle cx="257" cy="753" r="4"/><circle cx="306" cy="808" r="4"/>
+    <circle cx="362" cy="726" r="4"/><circle cx="420" cy="790" r="4"/><circle cx="478" cy="742" r="4"/>
+    <circle cx="535" cy="817" r="4"/><circle cx="590" cy="765" r="4"/><circle cx="648" cy="801" r="4"/>
+    <circle cx="705" cy="736" r="4"/><circle cx="760" cy="786" r="4"/>
+  </g>
+  <g transform="translate(832 206)">
+    <rect width="256" height="256" rx="38" fill="#080D12" stroke="#2E424E" stroke-width="3"/>
+    <path d="M64 43v170M96 43v170M128 43v170M160 43v170M192 43v170"
+          fill="none" stroke="#31404B" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="64" cy="70" r="7" fill="#91A6B4"/><circle cx="96" cy="92" r="7" fill="#91A6B4"/>
+    <circle cx="128" cy="70" r="7" fill="#91A6B4"/><circle cx="160" cy="92" r="7" fill="#91A6B4"/>
+    <circle cx="192" cy="70" r="7" fill="#91A6B4"/>
+    <path d="M30 137h42l12-18 16 39 19-92 20 129 19-77 17 37 13-18h38"
+          fill="none" stroke="#35D0BA" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="226" cy="137" r="8" fill="#FF6B5E"/>
+  </g>
+  <text x="960" y="565" text-anchor="middle" fill="#F2F7F9"
+        font-family="Segoe UI, Arial, sans-serif" font-size="88" font-weight="700">NeuroEphys AI</text>
+  <text x="960" y="636" text-anchor="middle" fill="#91A6B4"
+        font-family="Segoe UI, Arial, sans-serif" font-size="31">Local-first electrophysiology analysis workspace</text>
+  <line x1="742" y1="688" x2="1178" y2="688" stroke="#35D0BA" stroke-width="5"/>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="24" fill="#C6D2D8">
+    <text x="960" y="758" text-anchor="middle">RAW DATA  ·  SORTING  ·  UNIT CURATION  ·  BEHAVIOR</text>
+    <text x="960" y="802" text-anchor="middle">STATISTICS  ·  DECODING  ·  PUBLICATION  ·  PROVENANCE</text>
+  </g>
+  <text x="960" y="940" text-anchor="middle" fill="#6E838F"
+        font-family="Segoe UI, Arial, sans-serif" font-size="22">DEVELOPMENT PREVIEW · DETERMINISTIC ANALYSIS WITH A CONTROLLED AI ASSISTANT</text>
+</svg>

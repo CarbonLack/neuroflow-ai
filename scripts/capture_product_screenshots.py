@@ -21,6 +21,7 @@ from neuroflow.analysis import (
     run_raw_qc,
 )
 from neuroflow.ephys_toolkit import run_neural_toolkit
+from neuroflow.decoding import run_decoding_suite
 from neuroflow.figure_studio import FigureStudioDialog
 from neuroflow.simulation import generate_demo_recording
 from neuroflow.sorting_results import (
@@ -126,6 +127,12 @@ def main() -> int:
     compute_unit_metrics(state)
     run_neural_toolkit(state)
     run_statistical_suite(state)
+    run_decoding_suite(
+        state,
+        model_name="Logistic regression",
+        n_splits=5,
+        n_permutations=40,
+    )
     synchronize_existing_events(state)
     window._load_state(state)
     window.project_label.setText(
@@ -183,7 +190,7 @@ def main() -> int:
         ai_dialog.settings.api_key = "preview-credential-not-saved"
         ai_dialog.settings.provider = "deepseek"
         ai_dialog.settings.base_url = "https://api.deepseek.com"
-        ai_dialog.settings.model = "deepseek-chat"
+        ai_dialog.settings.model = "deepseek-v4-flash"
         ai_dialog.settings.mode = AIMode.COLLABORATIVE.value
         mode_index = ai_dialog.mode_combo.findData(AIMode.COLLABORATIVE.value)
         ai_dialog.mode_combo.setCurrentIndex(mode_index)
@@ -228,7 +235,78 @@ def main() -> int:
         ai_dialog._render_plan()
         _capture(ai_dialog, output / "neuroflow-ai-assistant.png")
         ai_dialog.hide()
+        window.assistant_panel.setVisible(True)
+        window._refresh_ai_sidebar()
+        _capture(
+            window,
+            output / "neuroephys-ai-assistant-interface-preview-en.png",
+        )
 
+    window.assistant_panel.setVisible(False)
+    window._select_step("analysis")
+    event_index = window.option_combo.findData(
+        f"event:{sorted(state.sorted_spikes)[0]}"
+    )
+    window.option_combo.setCurrentIndex(event_index)
+    window._refresh_figure()
+    window._refresh_table()
+    _capture(window, output / "neuroephys-event-analysis-en.png")
+    window.main_scroll.verticalScrollBar().setValue(
+        window.main_scroll.verticalScrollBar().maximum()
+    )
+    _capture(window, output / "neuroephys-event-analysis-detail-en.png")
+    window.main_scroll.verticalScrollBar().setValue(0)
+    window._set_language("zh_CN")
+    window.project_label.setText("NeuroEphys AI 教学演示项目 · 已隐藏本地路径")
+    window._select_step("analysis")
+    event_index = window.option_combo.findData(
+        f"event:{sorted(state.sorted_spikes)[0]}"
+    )
+    window.option_combo.setCurrentIndex(event_index)
+    window._refresh_figure()
+    _capture(window, output / "neuroephys-event-analysis-zh.png")
+    window.main_scroll.verticalScrollBar().setValue(
+        window.main_scroll.verticalScrollBar().maximum()
+    )
+    _capture(window, output / "neuroephys-event-analysis-detail-zh.png")
+    window.main_scroll.verticalScrollBar().setValue(0)
+
+    window._set_language("en_US")
+    window.project_label.setText(
+        "NeuroEphys AI demonstration project  ·  local path hidden"
+    )
+    window._select_step("decoding")
+    decoding_index = window.option_combo.findData(
+        "classification:Logistic regression"
+    )
+    window.option_combo.setCurrentIndex(decoding_index)
+    window._refresh_figure()
+    _capture(window, output / "neuroephys-decoding-en.png")
+    window.main_scroll.verticalScrollBar().setValue(
+        window.main_scroll.verticalScrollBar().maximum()
+    )
+    _capture(window, output / "neuroephys-decoding-detail-en.png")
+    window.main_scroll.verticalScrollBar().setValue(0)
+    window._set_language("zh_CN")
+    window.project_label.setText("NeuroEphys AI 教学演示项目 · 已隐藏本地路径")
+    window._select_step("decoding")
+    decoding_index = window.option_combo.findData(
+        "classification:Logistic regression"
+    )
+    window.option_combo.setCurrentIndex(decoding_index)
+    window._refresh_figure()
+    _capture(window, output / "neuroephys-decoding-zh.png")
+    window.main_scroll.verticalScrollBar().setValue(
+        window.main_scroll.verticalScrollBar().maximum()
+    )
+    _capture(window, output / "neuroephys-decoding-detail-zh.png")
+    window.main_scroll.verticalScrollBar().setValue(0)
+
+    window._set_language("en_US")
+    window.project_label.setText(
+        "NeuroEphys AI demonstration project  ·  local path hidden"
+    )
+    window.assistant_panel.setVisible(True)
     window._select_step("analysis")
     analysis_index = window.option_combo.findData("case:respiration")
     window.option_combo.setCurrentIndex(analysis_index)
@@ -245,6 +323,10 @@ def main() -> int:
     )
     _capture(studio, output / "neuroflow-figure-studio-axes.png")
     studio.close()
+    # The application correctly prompts before closing a dirty project. This
+    # automation has already persisted its screenshots and must not block on
+    # an unattended confirmation dialog.
+    window.project_dirty = False
     window.close()
     app.processEvents()
     return 0

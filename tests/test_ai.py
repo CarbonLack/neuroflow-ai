@@ -59,7 +59,7 @@ def test_project_summary_is_path_free_and_redacted(tmp_path: Path):
     state.qc = {"bad_channels": [2], "source_path": str(recording)}
     state.run_log = [
         f"Read {recording}",
-        "Authorization failed for sk-example_123456789012345",
+        "Authorization failed for sess-example_123456789012345",
     ]
     state.sorting_results = {"kilosort4": {0: np.array([0.1, 0.3])}}
 
@@ -73,7 +73,7 @@ def test_project_summary_is_path_free_and_redacted(tmp_path: Path):
     assert str(tmp_path) not in serialized
     assert "Animal_007" not in serialized
     assert "secret_recording.bin" not in serialized
-    assert "sk-example" not in serialized
+    assert "sess-example" not in serialized
     assert summary["channel_count"] == 4
     assert summary["sorting_results"]["kilosort4"] == 1
     assert "<local-path-redacted>" in serialized
@@ -191,11 +191,11 @@ def test_ai_history_and_plan_roundtrip_in_project(tmp_path: Path):
 
 def test_sensitive_text_redaction():
     value = redact_sensitive_text(
-        r"Open C:\Users\Researcher\private\data.bin with sk-example_123456789012345 "
+        r"Open C:\Users\Researcher\private\data.bin with sess-example_123456789012345 "
         "and mail scientist@example.org"
     )
     assert "Researcher" not in value
-    assert "sk-example" not in value
+    assert "sess-example" not in value
     assert "scientist@example.org" not in value
 
 
@@ -465,6 +465,20 @@ def test_deepseek_compatible_collaborative_request_registers_tools_without_paths
 
     serialized = json.dumps(captured["payload"])
     assert captured["payload"]["tools"]
+    assert captured["payload"]["thinking"] == {"type": "enabled"}
+    assert captured["payload"]["reasoning_effort"] == "high"
     assert "secret-provider-key" not in serialized
     assert private_path not in serialized
     assert response.tool_calls[0]["name"] == "run_raw_qc"
+
+
+def test_ollama_local_provider_does_not_require_a_secret():
+    settings = AISettings(
+        provider="ollama",
+        base_url="http://127.0.0.1:11434/v1",
+        model="qwen3:8b",
+        api_key="",
+    )
+
+    assert settings.configured is True
+    assert settings.request_api_key == "ollama"
