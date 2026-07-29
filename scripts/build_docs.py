@@ -546,13 +546,21 @@ def build_data_inputs(language: str) -> str:
   <h2>Attach NEX5 offline sorting to an existing project</h2>
   <ol class="steps">
     <li>Open the project that contains the raw voltage. From Home, choose “Import my data,” then “Existing NeuroExplorer NEX5 sorting.”</li>
-    <li>Select one <code>.nex5</code> file or a folder searched recursively. Use the filename filter to select one subject, session, or batch.</li>
-    <li>Enter a unique result key so several external results remain side by side.</li>
-    <li>Use end alignment only for a complete recording. Preserve timestamps for a shared clock, or enter a verified manual offset for a segment.</li>
-    <li>Review file count, Neuron variables, waveform variables, time range, and sampling rate before attaching the result.</li>
-    <li>Select the new read-only result on Spike sorting, then continue to Unit QC and manual curation.</li>
+    <li>Select one <code>.nex5</code> file or a folder searched recursively. Use the filename filter to select one subject, session, or batch, such as <code>SW#1</code>.</li>
+    <li>Enter a unique result key. This keeps several external results side by side without overwriting an existing result.</li>
+    <li>Select time alignment. End alignment is available for a full recording; preserve timestamps when both sources already share one clock; enter a manual offset for a segment.</li>
+    <li>Review the preview for file count, Neuron variables, waveform variables, time range, and sampling rate before attaching the result.</li>
+    <li>Open Spike sorting and select the new read-only result. Continue to Unit QC for waveform, refractory, stability, and duplicate review.</li>
   </ol>
-  <div class="callout warning">Candidate counts and agreement metrics are not ground truth. Import preserves original names, source groups, waveform summaries, alignment evidence, and read-only source links.</div>
+  <table class="parameter-table"><thead><tr><th>Control</th><th>Purpose</th><th>Default</th><th>When to change it</th></tr></thead>
+  <tbody>
+    <tr><td><b>Filename filter</b></td><td>Reads only NEX5 files whose path contains the supplied text.</td><td>Empty; read all</td><td>Required when one folder contains several subjects or sessions.</td></tr>
+    <tr><td><b>Result key</b></td><td>Unique sorter/result identifier stored in the project.</td><td>offline_sorter_nex5</td><td>Use a descriptive unique key when comparing several external results.</td></tr>
+    <tr><td><b>Automatic end alignment</b></td><td>Estimates clock offset from the NEX5 and raw-recording end times.</td><td>Preferred for a full recording</td><td>Use only for the same complete recording. The program rejects this inference for a clipped segment.</td></tr>
+    <tr><td><b>Preserve timestamps</b></td><td>Leaves NEX5 timestamps unchanged.</td><td>Off</td><td>Use when both results already use the same clock.</td></tr>
+    <tr><td><b>Manual offset</b></td><td>Subtracts the specified seconds from every NEX5 spike, then clips to the project range.</td><td>0 s</td><td>Use for a 30-minute segment, a known acquisition-start difference, or a sync-derived offset.</td></tr>
+  </tbody></table>
+  <div class="callout warning">Candidate counts and agreement metrics are not ground truth. Import keeps source files read-only and preserves original names, source groups, waveform summaries, and alignment evidence. Manual decisions are stored as separate project audit records.</div>
 </section>
 """
         if english
@@ -560,29 +568,37 @@ def build_data_inputs(language: str) -> str:
 <section data-searchable>
   <h2>把 NEX5 离线 sorting 接入已有项目</h2>
   <ol class="steps">
-    <li>打开含原始电压的项目；在首页选择“导入自己的数据”，再选择“已有 NeuroExplorer NEX5 sorting”。</li>
-    <li>选择单个 <code>.nex5</code> 文件或递归文件夹；用文件名筛选限定动物、session 或记录批次。</li>
-    <li>填写唯一结果键，让多个外部结果可以并列保存。</li>
-    <li>完整记录可使用结束时间对齐；同一时钟可保留原时间；截取片段必须填写经过验证的人工偏移。</li>
-    <li>接入前核对文件数、Neuron变量、波形变量、时间范围和采样率。</li>
-    <li>在Spike sorting页选择新增的只读结果，再进入Unit质控和人工复核。</li>
+    <li>先打开含原始电压的项目；在首页选择“导入自己的数据”，再选择“已有 NeuroExplorer NEX5 sorting”。</li>
+    <li>选择单个 <code>.nex5</code> 文件，或选择递归包含多个 NEX5 文件的文件夹。文件名过滤框用于限定动物、session 或记录批次，例如 <code>SW#1</code>。</li>
+    <li>填写结果键。结果键用于区分多个来源，例如 <code>offline_sorter_nex5_sw1</code>；已有结果不会被覆盖。</li>
+    <li>选择时间对齐。完整记录可使用“结束时间自动对齐”；NEX5 已经使用项目时钟时选择“保留原始时间”；短片段或截取项目必须填写人工偏移秒数。</li>
+    <li>查看识别预览，核对文件数、Neuron 变量数、波形变量数、时间范围和采样率后再创建或接入项目。</li>
+    <li>进入“Spike sorting”页选择新增的只读结果。页面会显示来源文件、候选 Unit 数和 spike 数；随后进入“Unit 质控”逐个复核。</li>
   </ol>
-  <div class="callout warning">候选Unit数和一致度没有ground truth含义。导入会保留原名称、来源分组、波形摘要、对齐证据和只读源文件链接。</div>
+  <table class="parameter-table"><thead><tr><th>控件</th><th>作用</th><th>默认值</th><th>需要调整的情况</th></tr></thead>
+  <tbody>
+    <tr><td><b>文件名过滤</b></td><td>只读取路径中名称含指定文字的 NEX5 文件。</td><td>空，读取全部</td><td>一个目录含多只动物或多个 session 时必须填写。</td></tr>
+    <tr><td><b>结果键</b></td><td>保存到项目中的唯一 sorter/result 标识。</td><td>offline_sorter_nex5</td><td>要同时比较多个外部结果时改成有含义的唯一名称。</td></tr>
+    <tr><td><b>自动结束对齐</b></td><td>用 NEX5 结束时间减去原始记录结束时间估计时钟偏移。</td><td>完整记录入口的首选</td><td>只适用于同一次完整记录。程序会拒绝对截取片段自动推断。</td></tr>
+    <tr><td><b>保留原始时间</b></td><td>不改变 NEX5 中的秒时间戳。</td><td>关闭</td><td>两个结果已经使用同一时钟时使用。</td></tr>
+    <tr><td><b>人工偏移</b></td><td>从每个 NEX5 spike 时间中减去指定秒数，再裁剪到项目范围。</td><td>0 s</td><td>分析 30 分钟片段、已知记录起点差或通过同步脉冲估计出偏移时使用。</td></tr>
+  </tbody></table>
+  <div class="callout warning">候选 Unit 数和匹配一致度没有 ground truth 含义。导入过程保持源文件只读，保留原名称、来源分组、波形摘要和时间对齐证据；人工复核结果另存为项目内的审计记录。</div>
 </section>
 """
-    )
+    ).strip()
     body = f"""
 <section data-searchable>
   <h2>{'Choose by what you have' if english else '按手中数据选择入口'}</h2>
   <table><thead><tr><th>{'Route' if english else '入口'}</th><th>{'Required files' if english else '需要提供'}</th><th>{'Workflow starts at' if english else '从哪里开始'}</th><th>{'Can run sorting?' if english else '能否 sorting'}</th></tr></thead>
   <tbody>{''.join(f'<tr><td><b>{e(a)}</b></td><td>{e(b)}</td><td>{e(c)}</td><td>{e(d)}</td></tr>' for a,b,c,d in routes)}</tbody></table>
 </section>
-{nex5_section}
 <section data-searchable>
   <h2>{'Generic binary checklist' if english else '通用二进制导入检查'}</h2>
   <ol class="steps">{''.join(f'<li>{e(item)}</li>' for item in checklist)}</ol>
   <div class="callout warning">{'A file that opens is not necessarily interpreted correctly. A wrong channel count or dtype can produce plausible-looking but invalid traces.' if english else '文件能够打开不等于解释正确；错误通道数或 dtype 可能产生看似有波形、实际完全错误的数据。'}</div>
 </section>
+{nex5_section}
 <section data-searchable>
   <h2>{'Behavior CSV example' if english else '行为 CSV 示例结构'}</h2>
   <pre><code>trial,time_seconds,event_type,condition,choice,reaction_time
@@ -623,22 +639,24 @@ def build_sorting(language: str) -> str:
     comparison_details = (
         """
   <h3>Attach read-only external results</h3>
-  <p>Kilosort/Phy and NeuroExplorer NEX5 results can be attached to a raw-data project. Original names, source files, timestamps in seconds, waveform summaries, and source labels remain available.</p>
-  <h3>Comparison evidence</h3>
-  <p>Precision, recall, F1, chance-corrected agreement, and bounded lag describe timestamp agreement. A high-recall, low-precision pair can indicate a reference unit embedded in a merged or contaminated cluster.</p>
+  <p>Kilosort/Phy and NeuroExplorer NEX5 results can be attached to a raw-data project. The importer preserves external unit names, source files, timestamps in seconds, waveform summaries, and source labels, then assigns stable internal unit IDs. Imported entries appear in the sorter list with a read-only badge. Running that entry does not create a substitute result; select an executable sorter to recompute the data.</p>
+  <h3>How to read the comparison</h3>
+  <table><thead><tr><th>Metric</th><th>Meaning</th><th>Limitation</th></tr></thead>
+  <tbody><tr><td><b>Precision</b></td><td>Fraction of tested-unit spikes paired one-to-one with the reference unit inside the tolerance.</td><td>A high-rate or contaminated cluster lowers this value.</td></tr><tr><td><b>Recall</b></td><td>Fraction of reference-unit spikes recovered by the tested unit.</td><td>A large merged cluster can have high recall and very low precision.</td></tr><tr><td><b>F1</b></td><td>Harmonic mean of precision and recall.</td><td>Measures timestamp agreement only.</td></tr><tr><td><b>Estimated lag</b></td><td>Fixed clock offset estimated inside a bounded lag search.</td><td>Does not replace sync pulses or a full clock audit.</td></tr><tr><td><b>Chance-corrected agreement</b></td><td>Coincidence after subtracting the expectation from both firing rates.</td><td>Waveform, channel, ISI, and stability evidence remain necessary.</td></tr></tbody></table>
   <h3>Manual review</h3>
-  <p>Unit QC presents waveform, channel profile, ACG and refractory evidence, amplitude, stability, native sorter diagnostics, and cross-unit timestamp overlap. Reviewers classify every candidate and keep the decision trail.</p>
+  <p>After sorting, open Unit QC. Review each candidate's mean waveform, channel profile, ACG and refractory evidence, amplitude distribution, recording stability, native sorter diagnostics, and cross-unit timestamp overlap. The reviewer can assign Candidate single unit, Multi-unit activity, Noise, Artifact, or Uncertain, with confidence, checklist, and notes. Every candidate and decision remains in the audit trail; automatic thresholds do not silently delete units.</p>
 """
         if english
         else """
   <h3>接入只读外部结果</h3>
-  <p>Kilosort/Phy和NeuroExplorer NEX5结果可附加到原始数据项目。原名称、源文件、秒时间、波形摘要和来源标签均会保留。</p>
-  <h3>比较证据</h3>
-  <p>Precision、recall、F1、chance-corrected agreement和受限lag描述时间戳一致度。高recall、低precision可能提示参考Unit被包含在合并或污染cluster中。</p>
+  <p>Kilosort/Phy 和 NeuroExplorer NEX5 结果可附加到已有原始数据项目。程序保留外部 Unit 名称、原始文件、秒时间、波形摘要和来源标签，再生成内部连续 Unit ID。导入条目会出现在 sorter 列表中并标记为“只读结果”；点击运行不会伪造新的 sorting，用户可切换到可执行 sorter 后重新计算。</p>
+  <h3>比较指标怎么读</h3>
+  <table><thead><tr><th>指标</th><th>含义</th><th>使用限制</th></tr></thead>
+  <tbody><tr><td><b>Precision</b></td><td>测试 Unit 的 spike 中有多少能在容差窗口内与参考 Unit 一一匹配。</td><td>高放电率或污染 cluster 会降低该值。</td></tr><tr><td><b>Recall</b></td><td>参考 Unit 的 spike 中有多少被测试 Unit 找到。</td><td>一个大 cluster 可具有很高 recall，同时 precision 很低。</td></tr><tr><td><b>F1</b></td><td>Precision 与 recall 的调和平均。</td><td>只评价时间戳一致度。</td></tr><tr><td><b>Estimated lag</b></td><td>在受限时间窗内估计两份结果的固定时钟偏移。</td><td>不能替代同步脉冲或完整时钟审计。</td></tr><tr><td><b>Chance-corrected agreement</b></td><td>扣除由两列放电率预期产生的随机重合。</td><td>仍然需要波形、通道、ISI 和稳定性证据。</td></tr></tbody></table>
   <h3>人工复核</h3>
-  <p>Unit质控提供波形、通道轮廓、ACG与不应期、振幅、稳定性、原sorter诊断和跨Unit时间戳重合。审核者分类每个候选并保留决定轨迹。</p>
+  <p>排序结束后进入“Unit 质控”。每个候选 Unit 依次查看平均波形、通道轮廓、ACG 与不应期、振幅分布、记录稳定性、sorter 原生诊断和跨 Unit 时间戳重合。审核者可标记“候选单 Unit”“Multi-unit activity”“噪声”“伪迹”或“待定”，填写置信度、检查清单和备注。程序保留全部候选与审核轨迹，不会因自动阈值静默删除 Unit。</p>
 """
-    )
+    ).strip()
     body = f"""
 <section data-searchable>
   <h2>{'Backend selection' if english else '后端选择'}</h2>
@@ -885,10 +903,10 @@ def build_real_data_validation(language: str) -> str:
             ("采集端处理", "在线250–8,000 Hz滤波；程序阻止LFP、低频频谱和spike-field coupling。"),
             ("原始质控", "99.21875/100；配置的1–32通道没有被自动剔除。"),
             ("Kilosort4", "版本4.1.7，nblocks=0，阈值9/8，12个候选unit，2,195,626个spike；内部用时1,870.35秒，含适配器总用时2,096.54秒。"),
-            ("外部离线 sorting", "使用官方nex5file读取同一记录的8个NEX5候选Unit；原始文件只读，名称、分组、波形摘要与时间对齐证据均保留。"),
+            ("外部离线 sorting", "使用官方 nex5file 读取同一记录的8个 NEX5 候选 Unit；原始文件只读，名称、分组、波形摘要与时间对齐证据均保留。"),
             ("行为与同步", "MED-PC事件4,654条；744/744个同步锚点匹配。动作起始分析使用事件码17和19，共168个事件。"),
             ("统计与解码", "已生成技术验证输出；解码结果不得直接用于生物学结论。"),
-            ("项目恢复", "保存后重新加载，复用已有Kilosort和NEX5数组，重新生成下游结果和产物索引。"),
+            ("项目恢复", "保存后重新加载，复用已有Kilosort和 NEX5 数组，重新生成下游结果和产物索引。"),
             ("人工复核状态", "两份结果均保持候选状态，等待波形、不应期、稳定性、重复性和sorter证据的逐个检查。"),
         ]
     )
@@ -900,14 +918,14 @@ def build_real_data_validation(language: str) -> str:
 </section>
 <section data-searchable>
   <h2>{'Sorter sensitivity and comparison' if english else 'Sorter敏感性与比较'}</h2>
-  <p>{'The full Kilosort4 result contains 12 candidate units and the external NEX5 result contains eight. Bounded lag search and one-to-one timestamp matching found one strong pair. The 30-minute Kilosort result contains four candidates; the clipped NEX5 result retains eight, again with one strong pair. Counts and agreement prioritize manual review and do not establish the neuron count.' if english else '整段Kilosort4结果含12个候选Unit，外部NEX5结果含8个候选Unit。受限lag搜索和一对一时间戳匹配只有1对达到强一致。30分钟Kilosort结果含4个候选，裁剪后NEX5仍含8个候选，其中1对达到强一致。候选数和一致度用于安排人工复核，不能确定真实神经元数量。'}</p>
-  <p>{'Cross-unit screening flagged several high timestamp-overlap pairs, including one above 80%. Every candidate remains available for waveform, channel, ACG, refractory, amplitude-stability, and native-sorter review.' if english else '跨Unit筛查标记了若干时间戳高重合对，其中一对超过80%。全部候选仍保留，等待波形、通道、ACG、不应期、振幅稳定性和原sorter证据复核。'}</p>
+  <p>{'The full Kilosort4 result contains 12 candidate units and the external NEX5 result contains eight. A bounded lag search and one-to-one timestamp matching found one strong pair. Several external units had high recall and low precision against one high-rate Kilosort cluster, which is compatible with merging, contamination, or different unit definitions. On the 30-minute segment, Kilosort4 produced four candidates while the clipped NEX5 result retained eight, again with one strong pair. Candidate counts and agreement prioritize manual review; they do not establish the neuron count.' if english else '整段 Kilosort4 结果含12个候选 Unit，外部 NEX5 结果含8个候选 Unit。经固定 lag 搜索和一对一时间戳匹配，只有1对达到强一致；部分外部 Unit 对一个高放电率 Kilosort cluster 具有高 recall、低 precision，提示合并、污染或单位定义差异。30分钟片段中，Kilosort4 含4个候选，裁剪后的 NEX5 仍含8个候选，其中1对达到强一致。候选数量和一致度均用于安排人工复核，不能直接确定真实神经元数量。'}</p>
+  <p>{'The cross-unit duplicate screen also flagged several high-overlap pairs, including one above 80%. The program records the risk and keeps every unit. Final decisions require waveform, peak channel, ACG, refractory, amplitude-stability, and native-sorter evidence.' if english else '跨 Unit 重复筛查还发现若干时间戳高重合对，其中最高重合超过80%。程序只标记风险并保留原 Unit；最终判定需要同时查看波形、主通道、ACG、不应期、振幅稳定性和原 sorter 界面。'}</p>
 </section>
 <section data-searchable>
   <h2>{'Scientific limits' if english else '科学限制'}</h2>
   <ul class="checks">
-    <li>{'The external NEX5 files contain eight candidate units. Their selection method and manual decisions have not been fully audited, so they cannot serve as ground truth.' if english else '外部NEX5确认保存了8个候选Unit；其筛选方法和人工判断仍未完整审计，不能作为ground truth。'}</li>
-    <li>{'The SW#1-to-subject mapping remains a high-confidence inference pending final owner confirmation.' if english else 'SW#1与当前动物的对应关系作为高可信推断保存，仍等待数据拥有者最终确认。'}</li>
+    <li>{'The external NEX5 files contain eight candidate units. Their selection method and manual decisions have not been fully audited, so they cannot serve as ground truth.' if english else '外部 NEX5 确认保存了8个候选 Unit；其筛选方法和人工判断仍未完整审计，不能作为ground truth。'}</li>
+    <li>{'The SW#1-to-subject mapping is a high-confidence inference from file order and owner notes, pending final owner confirmation.' if english else 'SW#1 与该动物的对应关系来自文件顺序和提供者说明，当前作为高可信推断保存，仍等待数据拥有者最终确认。'}</li>
     <li>{'Online high-pass filtering prevents recovery of true low-frequency activity.' if english else '在线高通滤波使真实低频活动无法恢复。'}</li>
     <li>{'Event codes 21 and 22 were coincident in this recording; codes 17 and 19 supplied the distinct action-start comparison.' if english else '该记录中事件码21和22时间完全重合；条件比较改用具有独立时间的17和19动作起始事件。'}</li>
     <li>{'Single-session decoding can reflect session structure and requires independent replication.' if english else '单session解码可能反映session结构，需要独立数据验证。'}</li>
@@ -995,6 +1013,15 @@ def build_sources(language: str) -> str:
 <section data-searchable>
   <h2>{'Non-copying rule' if english else '不直接抄袭原则'}</h2>
   <div class="callout warning">{'NeuroEphys AI does not reproduce another product’s prose, screenshots, figures, numerical conclusions, or visual identity. It uses official method definitions and documentation patterns as references, then writes original product text, workflows, adapters, and interface behavior.' if english else 'NeuroEphys AI 不复制其他产品的原文、截图、论文图、数值结论或视觉识别；只把官方方法定义和文档组织方式作为参考，再自主编写产品文字、工作流、适配器和界面行为。'}</div>
+</section>
+<section data-searchable>
+  <h2>{'Public source and deployment record' if english else '公开代码与部署记录'}</h2>
+  <p>{'Source code, tests, public documentation, and de-identified demonstration assets are mirrored in two public repositories. Authorized workstations retain experimental data, validation projects containing local paths, and large analysis caches.' if english else '程序源代码、测试、公开教程和脱敏演示资源同步保存在两个公开仓库。真实实验数据、含本机路径的验证项目和大体积分析缓存保留在授权计算机中。'}</p>
+  <ul>
+    <li><a href="https://github.com/CarbonLack/neuroflow-ai">GitHub: CarbonLack/neuroflow-ai</a></li>
+    <li><a href="https://gitlab.com/CarbonLack/neuroflow-ai">GitLab: CarbonLack/neuroflow-ai</a></li>
+    <li><a href="https://github.com/CarbonLack/neuroflow-ai/blob/main/DEPLOYMENT_STATUS_ZH.md">{'Repository scope, Pages configuration, and deployment incident record' if english else '公开范围、Pages 配置和发布故障记录'}</a></li>
+  </ul>
 </section>
 """
     return _layout(language, "sources.html", title, lead, body)
