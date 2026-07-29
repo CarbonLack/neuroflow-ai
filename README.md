@@ -1,5 +1,9 @@
 # NeuroEphys AI v0.9.0
 
+公开操作手册：[NeuroEphys AI Documentation](https://carbonlack.github.io/neuroephys-ai-docs/)
+
+公开文档仓库：[CarbonLack/neuroephys-ai-docs](https://github.com/CarbonLack/neuroephys-ai-docs)
+
 NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 平台调用经过验证的 sorter 和分析库，将数据导入、质量控制、sorting、人工 Unit
 复核、行为对齐、Neo/Elephant 神经分析、统计、机器学习、论文图和复现记录组织成
