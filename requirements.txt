@@ -11,6 +11,7 @@ remfile==0.1.14
 pyarrow==25.0.0
 PySide6==6.9.2
 spikeinterface==0.104.8
+networkx==3.6.1
 neo==0.14.5
 quantities==0.16.4
 elephant==1.2.1
