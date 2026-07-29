@@ -65,12 +65,17 @@ from .audit import audited_stage
 from .data_import import (
     DEVICE_READERS,
     SUPPORTED_FORMATS,
+    attach_kilosort_results,
     import_binary_recording,
     import_device_recording,
     import_ibl_alf,
     import_ibl_trials_aggregate,
     import_kilosort_results,
     import_nwb_units,
+)
+from .nex5_adapter import (
+    import_nex5_sorting_into_project,
+    inspect_nex5_source,
 )
 from .decoding import (
     MODEL_DESCRIPTIONS,
@@ -188,6 +193,10 @@ FORMAT_TEXT_EN = {
         "Kilosort/Phy output",
         "Spike times, cluster assignments, and parameters",
     ),
+    "nex5": (
+        "NeuroExplorer / Offline Sorter output",
+        "Candidate units, spike timestamps, and waveforms stored in .nex5",
+    ),
 }
 
 ENTRY_ROUTE_TEXT = {
@@ -232,6 +241,14 @@ ENTRY_ROUTE_TEXT = {
             "无需重跑",
             "统一为秒制 Unit/spike 接口，可与本项目其他 sorter 结果并列比较。",
         ),
+        "nex5": (
+            "Offline Sorter / NeuroExplorer 结果",
+            "手里有人工或半自动筛选后导出的 .nex5",
+            "选择一个 .nex5 文件或包含多个文件的文件夹；可按文件名筛选同一动物",
+            "Unit 质控",
+            "无需重跑",
+            "保留原始 unit 名称、通道、spike 时间和波形摘要，并与其他 sorter 并列比较。",
+        ),
     },
     "en_US": {
         "simulated": (
@@ -273,6 +290,14 @@ ENTRY_ROUTE_TEXT = {
             "Unit QC",
             "No rerun needed",
             "Normalize to the seconds-based Unit/spike interface and compare with other sorter results.",
+        ),
+        "nex5": (
+            "Offline Sorter / NeuroExplorer results",
+            "You have manually or semi-automatically curated .nex5 output",
+            "Choose one .nex5 file or a folder; optionally filter filenames for one subject",
+            "Unit QC",
+            "No rerun needed",
+            "Preserve unit names, channels, spike times, and waveform summaries for side-by-side comparison.",
         ),
     },
 }
@@ -950,7 +975,8 @@ class ImportDialog(QDialog):
         self.import_formats = [
             item
             for item in SUPPORTED_FORMATS
-            if not own_data_only or item.key in {"binary", "device", "kilosort"}
+            if not own_data_only
+            or item.key in {"binary", "device", "kilosort", "nex5"}
         ]
         for item in self.import_formats:
             name = FORMAT_TEXT_EN[item.key][0] if english else item.name
@@ -978,6 +1004,7 @@ class ImportDialog(QDialog):
         self.pages.addWidget(self._device_page())
         self.pages.addWidget(self._alf_page())
         self.pages.addWidget(self._kilosort_page())
+        self.pages.addWidget(self._nex5_page())
         layout.addWidget(self.pages, 1)
 
         self.metadata_panel = self._metadata_and_behavior_panel()
@@ -994,7 +1021,7 @@ class ImportDialog(QDialog):
             if english
             else (
                 "带原始电压的数据可运行包含 sorting 的完整链路。IBL/ALF 与 "
-                "Kilosort/Phy 导入通常只有处理后的 spike，因此从下游阶段接入。"
+                "Kilosort/Phy 与 NEX5 导入通常只有处理后的 spike，因此从下游阶段接入。"
             )
         )
         note.setWordWrap(True)
@@ -1178,6 +1205,7 @@ class ImportDialog(QDialog):
             "device": 2,
             "ibl_alf": 3,
             "kilosort": 4,
+            "nex5": 5,
         }[item.key]
         self.pages.setCurrentIndex(page_index)
         english = self.language == "en_US"
@@ -1201,7 +1229,9 @@ class ImportDialog(QDialog):
                 f"<b>{item.name}</b> · {raw_text}<br>{item.description}<br>{route_text}"
             )
         self.source_explanation.setText(text)
-        self.metadata_panel.setVisible(item.key in {"simulated", "binary", "device", "kilosort"})
+        self.metadata_panel.setVisible(
+            item.key in {"simulated", "binary", "device", "kilosort"}
+        )
 
     @staticmethod
     def _identifier_list(text: str) -> list[str]:
@@ -1677,6 +1707,112 @@ class ImportDialog(QDialog):
         form.addRow(text)
         return page
 
+    def _nex5_page(self) -> QWidget:
+        page = QWidget()
+        form = QFormLayout(page)
+        english = self.language == "en_US"
+        holder = QWidget()
+        row = QHBoxLayout(holder)
+        row.setContentsMargins(0, 0, 0, 0)
+        self.nex5_path = QLineEdit()
+        nex5_file_button = QPushButton("NEX5 file…" if english else "NEX5 文件…")
+        nex5_folder_button = QPushButton(
+            "Folder…" if english else "包含 NEX5 的文件夹…"
+        )
+        nex5_file_button.clicked.connect(
+            lambda: self.nex5_path.setText(
+                QFileDialog.getOpenFileName(
+                    self,
+                    "Select NeuroExplorer file"
+                    if english
+                    else "选择 NeuroExplorer 文件",
+                    filter="NeuroExplorer 5 (*.nex5)",
+                )[0]
+            )
+        )
+        nex5_folder_button.clicked.connect(
+            lambda: self.nex5_path.setText(
+                QFileDialog.getExistingDirectory(
+                    self,
+                    "Select NEX5 folder" if english else "选择 NEX5 文件夹",
+                )
+            )
+        )
+        row.addWidget(self.nex5_path, 1)
+        row.addWidget(nex5_file_button)
+        row.addWidget(nex5_folder_button)
+        self.nex5_filter = QLineEdit()
+        self.nex5_filter.setPlaceholderText(
+            "Optional, e.g. SW#1"
+            if english
+            else "可选，例如 SW#1；仅导入文件名包含该文本的结果"
+        )
+        self.nex5_sorter_key = QLineEdit("offline_sorter_nex5")
+        self.nex5_alignment = QComboBox()
+        self.nex5_alignment.addItem(
+            "Align file end to the current recording"
+            if english
+            else "自动：把 NEX5 结束时间对齐到当前记录结束时间",
+            "auto_project_duration",
+        )
+        self.nex5_alignment.addItem(
+            "Keep source timestamps" if english else "保留 NEX5 原始时间",
+            "preserve",
+        )
+        self.nex5_alignment.addItem(
+            "Subtract a manual offset" if english else "手动减去固定时间偏移",
+            "manual",
+        )
+        self.nex5_manual_offset = QDoubleSpinBox()
+        self.nex5_manual_offset.setRange(-1_000_000, 1_000_000)
+        self.nex5_manual_offset.setDecimals(6)
+        self.nex5_manual_offset.setSuffix(" s")
+        self.nex5_manual_offset.setValue(0.0)
+        self.nex5_preview = QLabel(
+            "The source is inspected when the project is created."
+            if english
+            else "创建前会检查文件数、unit 名称、记录时长和波形变量。"
+        )
+        self.nex5_preview.setWordWrap(True)
+        self.nex5_preview.setObjectName("Muted")
+        form.addRow("NEX5 source" if english else "NEX5 来源", holder)
+        form.addRow(
+            "Filename filter" if english else "文件名筛选",
+            self.nex5_filter,
+        )
+        form.addRow(
+            "Result key" if english else "结果名称",
+            self.nex5_sorter_key,
+        )
+        form.addRow(
+            "Time alignment" if english else "时间对齐方式",
+            self.nex5_alignment,
+        )
+        form.addRow(
+            "Manual offset" if english else "手动时间偏移",
+            self.nex5_manual_offset,
+        )
+        form.addRow(self.nex5_preview)
+        explanation = QLabel(
+            (
+                "NeuroEphys AI reads candidate units and waveform summaries through "
+                "the official nex5file Python package. Original files remain read-only. "
+                "When added to an existing raw project, the result appears beside "
+                "Kilosort and other sorters for Unit QC and manual curation. The imported "
+                "result is a comparison reference, not ground truth."
+            )
+            if english
+            else (
+                "NeuroEphys AI 通过 NeuroExplorer 官方 nex5file Python 包读取候选 unit、"
+                "spike 时间和波形摘要，源文件保持只读。导入已有原始记录项目后，该结果"
+                "会与 Kilosort 等结果并列进入 Unit 质控、人工复核和一致性比较。外部"
+                "结果属于对照参考，不能自动当作 ground truth。"
+            )
+        )
+        explanation.setWordWrap(True)
+        form.addRow(explanation)
+        return page
+
     def _project_root(self) -> Path:
         if self.target_project_root is not None:
             return self.target_project_root
@@ -1749,12 +1885,65 @@ class ImportDialog(QDialog):
                         "所选文件与公开数据结构不匹配：请按上方类型选择 "
                         "ALF 文件夹、aggregate .pqt 或含 Units 的 .nwb"
                     )
-            else:
+            elif key == "kilosort":
                 source = Path(self.ks_path.text())
                 if not source.is_dir():
                     raise ValueError("请选择有效的 Kilosort/Phy 文件夹")
-                self.state = import_kilosort_results(
-                    root, source, float(self.ks_rate.value())
+                manifest = root / MANIFEST_NAME
+                if self.target_project_root is not None and manifest.exists():
+                    self.state = load_project(manifest)
+                    attach_kilosort_results(
+                        self.state,
+                        source,
+                        float(self.ks_rate.value()),
+                    )
+                else:
+                    self.state = import_kilosort_results(
+                        root, source, float(self.ks_rate.value())
+                    )
+            else:
+                source = Path(self.nex5_path.text())
+                filename_filter = self.nex5_filter.text().strip() or None
+                preview = inspect_nex5_source(
+                    source,
+                    filename_filter=filename_filter,
+                )
+                manifest = root / MANIFEST_NAME
+                if self.target_project_root is not None and manifest.exists():
+                    self.state = load_project(manifest)
+                else:
+                    first_file = preview["files"][0]
+                    self.state = ProjectState(
+                        root=root,
+                        name=self.project_name.text().strip()
+                        or "Imported NEX5 sorting",
+                        source_type="nex5_output",
+                        source_path=source,
+                        sampling_rate=float(
+                            first_file["timestamp_frequency_hz"]
+                        ),
+                        duration_seconds=max(
+                            float(item["end_seconds"])
+                            for item in preview["files"]
+                        ),
+                        metadata={
+                            "raw_signal_available": False,
+                            "data_imported": True,
+                        },
+                    )
+                sorter_key = (
+                    self.nex5_sorter_key.text().strip()
+                    or "offline_sorter_nex5"
+                )
+                import_nex5_sorting_into_project(
+                    self.state,
+                    source,
+                    sorter_key=sorter_key,
+                    filename_filter=filename_filter,
+                    alignment_mode=str(self.nex5_alignment.currentData()),
+                    manual_offset_seconds=float(
+                        self.nex5_manual_offset.value()
+                    ),
                 )
             self.state.name = self.project_name.text().strip() or self.state.name
             if key in {"simulated", "binary", "device", "kilosort"}:
@@ -2711,7 +2900,7 @@ class NeuroFlowWindow(QMainWindow):
         self.cap_title.setStyleSheet("font-size: 17px; font-weight: 700;")
         cap_layout.addWidget(self.cap_title)
         self.cap_intro = QLabel(
-            "下面列出五条数据入口。先按“我手里有什么”选择；"
+            "下面列出六条数据入口。先按“我手里有什么”选择；"
             "流程起点和能否重新sorting由文件中是否包含原始电压决定。"
         )
         self.cap_intro.setWordWrap(True)
@@ -3408,12 +3597,12 @@ class NeuroFlowWindow(QMainWindow):
         self.flow_title.setText(tr("full_chain", language))
         self.cap_intro.setText(
             (
-                "下面列出五条数据入口。先按“我手里有什么”选择；"
+                "下面列出六条数据入口。先按“我手里有什么”选择；"
                 "流程起点和能否重新sorting由文件中是否包含原始电压决定。"
             )
             if language == "zh_CN"
             else (
-                "These are five entry routes, not five algorithms. Choose by what "
+                "These are six entry routes, not six algorithms. Choose by what "
                 "you actually have; raw voltage determines the starting stage and "
                 "whether sorting can run."
             )
@@ -3830,7 +4019,8 @@ class NeuroFlowWindow(QMainWindow):
         else:
             self._show_import(
                 source_key,
-                own_data_only=source_key in {"binary", "device", "kilosort"},
+                own_data_only=source_key
+                in {"binary", "device", "kilosort", "nex5"},
             )
 
     def _create_blank_project(self) -> None:
@@ -3865,26 +4055,6 @@ class NeuroFlowWindow(QMainWindow):
         if not self.state:
             self._create_blank_project()
             return
-        has_data = self.state.source_type not in {"unknown", "unconfigured"}
-        if has_data:
-            answer = QMessageBox.question(
-                self,
-                "Replace project data"
-                if self.language == "en_US"
-                else "替换项目数据",
-                (
-                    "This project already has a data source. Importing another source "
-                    "will replace the project manifest while keeping the original files "
-                    "read-only. Continue?"
-                    if self.language == "en_US"
-                    else (
-                        "当前项目已经关联数据。继续导入会替换项目清单中的数据来源，"
-                        "原始文件仍保持只读。是否继续？"
-                    )
-                ),
-            )
-            if answer != QMessageBox.Yes:
-                return
         self._show_import(
             "binary",
             own_data_only=True,
@@ -5052,6 +5222,34 @@ class NeuroFlowWindow(QMainWindow):
             return
         sorter_name = self.sorting_workbench.selected_sorter()
         sorter_settings = self.sorting_workbench.settings()
+        selected_provenance = self.state.sorting_provenance.get(
+            sorter_name,
+            {},
+        )
+        if "sorting" in keys and selected_provenance.get(
+            "source_files_read_only"
+        ):
+            keys = [key for key in keys if key != "sorting"]
+            if not keys:
+                QMessageBox.information(
+                    self,
+                    (
+                        "Imported sorting result"
+                        if self.language == "en_US"
+                        else "已导入 sorting 结果"
+                    ),
+                    (
+                        "This result is already loaded through the common Unit/spike "
+                        "interface. Select Unit QC to compute diagnostics, or select "
+                        "an executable sorter row to create a new sorting result."
+                        if self.language == "en_US"
+                        else (
+                            "该结果已经通过统一 Unit/spike 接口载入。请进入 Unit 质控"
+                            "计算诊断，或选择一个可运行 sorter 生成新的 sorting 结果。"
+                        )
+                    ),
+                )
+                return
         model_name = "classification:Logistic regression"
         if self.current_step == "decoding" and self.option_combo.currentData():
             model_name = self.option_combo.currentData()

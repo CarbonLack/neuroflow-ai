@@ -942,6 +942,10 @@ def sorting_figure(matches: list[dict], state: ProjectState) -> Figure:
 
 def sorting_comparison_figure(state: ProjectState) -> Figure:
     comparison = state.sorting_comparison
+    external_references = comparison.get("external_references", {})
+    if external_references:
+        latest = next(reversed(external_references.values()))
+        return _external_sorting_comparison_figure(state, latest)
     fig, axes = _base_figure(1, 3, 3.2)
     if not comparison or not comparison.get("sorters"):
         for axis in axes.flat:
@@ -1128,6 +1132,150 @@ def sorting_comparison_figure(state: ProjectState) -> Figure:
         va="bottom",
         fontsize=7.2,
         color=CORAL,
+    )
+    return fig
+
+
+def _external_sorting_comparison_figure(
+    state: ProjectState,
+    comparison: dict,
+) -> Figure:
+    """Show one external-result comparison with explicit uncertainty."""
+    fig, axes = _base_figure(1, 3, 3.4)
+    pairwise = comparison.get("pairwise", [])
+    assigned = comparison.get("one_to_one_assignment", [])
+    reference_ids = sorted(
+        {int(row["reference_unit"]) for row in pairwise}
+    )
+    tested_ids = sorted({int(row["tested_unit"]) for row in pairwise})
+    reference_index = {
+        unit_id: index for index, unit_id in enumerate(reference_ids)
+    }
+    tested_index = {
+        unit_id: index for index, unit_id in enumerate(tested_ids)
+    }
+    matrix = np.zeros((len(reference_ids), len(tested_ids)), dtype=float)
+    reference_labels: dict[int, str] = {}
+    tested_labels: dict[int, str] = {}
+    for row in pairwise:
+        reference_id = int(row["reference_unit"])
+        tested_id = int(row["tested_unit"])
+        reference_labels[reference_id] = str(row["reference_label"])
+        tested_labels[tested_id] = str(row["tested_label"])
+        matrix[reference_index[reference_id], tested_index[tested_id]] = float(
+            row["f1"]
+        )
+    axes[0, 0].bar(
+        ["Reference", "Tested"],
+        [
+            int(comparison.get("reference_unit_count", 0)),
+            int(comparison.get("tested_unit_count", 0)),
+        ],
+        color=(GREEN, GOLD),
+    )
+    axes[0, 0].set_ylabel(_text(state, "候选 Unit 数", "Candidate unit count"))
+    axes[0, 0].set_title(
+        _text(state, "两个流程的输出规模", "Output size by workflow"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 0].text(
+        0.02,
+        0.92,
+        f"{comparison.get('reference_key')} → {comparison.get('tested_key')}",
+        transform=axes[0, 0].transAxes,
+        va="top",
+        fontsize=8,
+        color=MUTED,
+    )
+
+    image = axes[0, 1].imshow(
+        matrix,
+        cmap="viridis",
+        vmin=0,
+        vmax=1,
+        aspect="auto",
+    )
+    axes[0, 1].set_xticks(
+        range(len(tested_ids)),
+        [tested_labels[unit_id] for unit_id in tested_ids],
+        rotation=30,
+        ha="right",
+    )
+    axes[0, 1].set_yticks(
+        range(len(reference_ids)),
+        [reference_labels[unit_id] for unit_id in reference_ids],
+    )
+    axes[0, 1].set_title(
+        _text(state, "Spike 时间 F1 一致度", "Spike-time F1 agreement"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    fig.colorbar(image, ax=axes[0, 1], fraction=0.046, pad=0.04)
+
+    axes[0, 2].axis("off")
+    strong = [
+        row
+        for row in assigned
+        if row.get("interpretation") == "strong_temporal_agreement"
+    ]
+    embedded = [
+        row
+        for row in assigned
+        if row.get("interpretation")
+        == "reference_unit_embedded_in_high_rate_or_contaminated_cluster"
+    ]
+    lines = [
+        f"{row['reference_label']} → {row['tested_label']}: "
+        f"F1={float(row['f1']):.3f}, lag={float(row['estimated_lag_ms']):.3f} ms"
+        for row in assigned
+    ]
+    axes[0, 2].text(
+        0.02,
+        0.95,
+        _text(state, "一致性摘要", "Agreement summary"),
+        va="top",
+        fontsize=10,
+        fontweight="bold",
+        color=INK,
+    )
+    axes[0, 2].text(
+        0.02,
+        0.84,
+        _text(
+            state,
+            f"强匹配：{len(strong)}；疑似落入高放电率/污染 cluster：{len(embedded)}",
+            f"Strong matches: {len(strong)}; embedded in high-rate/contaminated "
+            f"clusters: {len(embedded)}",
+        ),
+        va="top",
+        fontsize=8,
+        color=INK,
+        wrap=True,
+    )
+    axes[0, 2].text(
+        0.02,
+        0.68,
+        "\n".join(lines[:8]),
+        va="top",
+        fontsize=7.2,
+        color=INK,
+    )
+    axes[0, 2].text(
+        0.02,
+        0.03,
+        _text(
+            state,
+            "外部结果属于对照参考。仍需检查波形、ISI、不应期、振幅稳定性和重复模板。",
+            "The external output is a comparison reference. Review waveforms, ISI, "
+            "refractory period, amplitude stability, and duplicate templates.",
+        ),
+        va="bottom",
+        fontsize=7.5,
+        color=MUTED,
+        wrap=True,
     )
     return fig
 

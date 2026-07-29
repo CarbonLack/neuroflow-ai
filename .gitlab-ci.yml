@@ -1,0 +1,15 @@
+pages:
+  stage: deploy
+  image: alpine:3.21
+  script:
+    - test -f docs/site/index.html
+    - mkdir public
+    - cp -R docs/site/. public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - docs/site/**/*
+        - .gitlab-ci.yml

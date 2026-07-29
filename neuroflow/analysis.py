@@ -490,6 +490,31 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
                 "label": label,
             }
         )
+    duplicate_screen = _screen_cross_unit_timestamp_overlap(
+        state.sorted_spikes,
+        metrics,
+    )
+    metric_by_unit = {
+        int(metric["unit_id"]): metric for metric in metrics
+    }
+    for pair in duplicate_screen["flagged_pairs"]:
+        for unit_key, partner_key in (
+            ("unit_a", "unit_b"),
+            ("unit_b", "unit_a"),
+        ):
+            unit_id = int(pair[unit_key])
+            partner_id = int(pair[partner_key])
+            metric = metric_by_unit[unit_id]
+            if float(pair["overlap_fraction"]) > float(
+                metric.get("max_cross_unit_overlap_fraction", 0.0)
+            ):
+                metric["max_cross_unit_overlap_fraction"] = float(
+                    pair["overlap_fraction"]
+                )
+                metric["duplicate_partner_unit"] = partner_id
+    state.metadata.setdefault("unit_qc_duplicate_screen", {})[
+        state.active_sorter_key or "unassigned"
+    ] = duplicate_screen
     state.unit_metrics = metrics
     state.unit_diagnostics = diagnostics
     if state.active_sorter_key:
@@ -500,6 +525,102 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
         f"and SNR computed for {len(metrics)} units"
     )
     return metrics
+
+
+def _one_to_one_timestamp_overlap(
+    first: np.ndarray,
+    second: np.ndarray,
+    tolerance_seconds: float,
+) -> int:
+    i = 0
+    j = 0
+    matches = 0
+    while i < first.size and j < second.size:
+        delta = second[j] - first[i]
+        if abs(delta) <= tolerance_seconds:
+            matches += 1
+            i += 1
+            j += 1
+        elif delta < -tolerance_seconds:
+            j += 1
+        else:
+            i += 1
+    return matches
+
+
+def _screen_cross_unit_timestamp_overlap(
+    spikes_by_unit: dict[int, np.ndarray],
+    metrics: list[dict],
+    *,
+    tolerance_seconds: float = 0.0001,
+    warning_fraction: float = 0.20,
+    exhaustive_unit_limit: int = 64,
+) -> dict:
+    """Flag possible duplicates without deleting or merging candidate units."""
+    unit_ids = sorted(spikes_by_unit)
+    peak_channels = {
+        int(metric["unit_id"]): int(metric.get("peak_channel", -1))
+        for metric in metrics
+    }
+    exhaustive = len(unit_ids) <= exhaustive_unit_limit
+    rows: list[dict] = []
+    flagged: list[dict] = []
+    skipped_pairs = 0
+    for first_index, first_id in enumerate(unit_ids):
+        first = np.asarray(spikes_by_unit[first_id], dtype=float)
+        for second_id in unit_ids[first_index + 1 :]:
+            first_channel = peak_channels.get(first_id, -1)
+            second_channel = peak_channels.get(second_id, -1)
+            comparable_channels = (
+                first_channel < 0
+                or second_channel < 0
+                or abs(first_channel - second_channel) <= 2
+            )
+            if not exhaustive and not comparable_channels:
+                skipped_pairs += 1
+                continue
+            second = np.asarray(spikes_by_unit[second_id], dtype=float)
+            matches = _one_to_one_timestamp_overlap(
+                first,
+                second,
+                tolerance_seconds,
+            )
+            fraction = matches / max(min(first.size, second.size), 1)
+            row = {
+                "unit_a": int(first_id),
+                "unit_b": int(second_id),
+                "unit_a_peak_channel": first_channel,
+                "unit_b_peak_channel": second_channel,
+                "matched_spike_count": int(matches),
+                "overlap_fraction": float(fraction),
+                "tolerance_seconds": float(tolerance_seconds),
+                "flagged_possible_duplicate": bool(
+                    fraction >= warning_fraction
+                ),
+            }
+            rows.append(row)
+            if row["flagged_possible_duplicate"]:
+                flagged.append(row)
+    return {
+        "schema": "neuroephys.unit-duplicate-screen.v1",
+        "mode": (
+            "all_unit_pairs"
+            if exhaustive
+            else "same_or_neighbor_peak_channel_pairs"
+        ),
+        "unit_count": len(unit_ids),
+        "tolerance_seconds": float(tolerance_seconds),
+        "warning_fraction": float(warning_fraction),
+        "evaluated_pair_count": len(rows),
+        "skipped_distant_channel_pair_count": skipped_pairs,
+        "pairs": rows,
+        "flagged_pairs": flagged,
+        "interpretation": (
+            "This is a screening flag. It does not delete or merge units. "
+            "Review waveforms, cross-correlograms, channel profiles, amplitudes, "
+            "and refractory-period evidence before a curation decision."
+        ),
+    }
 
 
 def match_ground_truth(

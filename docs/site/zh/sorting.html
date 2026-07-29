@@ -63,6 +63,13 @@
 <section data-searchable>
   <h2>统一结果与比较</h2>
   <p>每个后端保留原生目录。NeuroEphys AI 额外把 unit ID、秒级 spike times、采样率、版本、参数、日志和可用通道/模板字段写入统一下游结构。sorter 比较报告匹配、拆分、合并、独有和共识 unit；真实数据上这叫一致度，不叫准确率。</p>
+  <h3>接入只读外部结果</h3>
+  <p>Kilosort/Phy 和 NeuroExplorer NEX5 结果可附加到已有原始数据项目。程序保留外部 Unit 名称、原始文件、秒时间、波形摘要和来源标签，再生成内部连续 Unit ID。导入条目会出现在 sorter 列表中并标记为“只读结果”；点击运行不会伪造新的 sorting，用户可切换到可执行 sorter 后重新计算。</p>
+  <h3>比较指标怎么读</h3>
+  <table><thead><tr><th>指标</th><th>含义</th><th>使用限制</th></tr></thead>
+  <tbody><tr><td><b>Precision</b></td><td>测试 Unit 的 spike 中有多少能在容差窗口内与参考 Unit 一一匹配。</td><td>高放电率或污染 cluster 会降低该值。</td></tr><tr><td><b>Recall</b></td><td>参考 Unit 的 spike 中有多少被测试 Unit 找到。</td><td>一个大 cluster 可具有很高 recall，同时 precision 很低。</td></tr><tr><td><b>F1</b></td><td>Precision 与 recall 的调和平均。</td><td>只评价时间戳一致度。</td></tr><tr><td><b>Estimated lag</b></td><td>在受限时间窗内估计两份结果的固定时钟偏移。</td><td>不能替代同步脉冲或完整时钟审计。</td></tr><tr><td><b>Chance-corrected agreement</b></td><td>扣除由两列放电率预期产生的随机重合。</td><td>仍然需要波形、通道、ISI 和稳定性证据。</td></tr></tbody></table>
+  <h3>人工复核</h3>
+  <p>排序结束后进入“Unit 质控”。每个候选 Unit 依次查看平均波形、通道轮廓、ACG 与不应期、振幅分布、记录稳定性、sorter 原生诊断和跨 Unit 时间戳重合。审核者可标记“候选单 Unit”“Multi-unit activity”“噪声”“伪迹”或“待定”，填写置信度、检查清单和备注。程序保留全部候选与审核轨迹，不会因自动阈值静默删除 Unit。</p>
 </section>
 
         <footer class="footer">NeuroEphys AI · 原创说明文字，方法来源逐项标注</footer>

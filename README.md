@@ -4,6 +4,8 @@
 
 公开文档仓库：[CarbonLack/neuroephys-ai-docs](https://github.com/CarbonLack/neuroephys-ai-docs)
 
+主仓库同步手册：[NeuroEphys AI Manual](https://carbonlack.github.io/neuroflow-ai/)
+
 NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 平台调用经过验证的 sorter 和分析库，将数据导入、质量控制、sorting、人工 Unit
 复核、行为对齐、Neo/Elephant 神经分析、统计、机器学习、论文图和复现记录组织成
@@ -86,6 +88,8 @@ NeuroEphys AI 不复制其他软件或文章的界面、文案、截图、图表
 - 具有 Units、行为事件、位置、睡眠状态或 ripple 区间的 NWB，例如
   DANDI 上公开的 Buzsáki Lab 会话；
 - 已有 Kilosort/Phy sorting 结果。
+- NeuroExplorer/Offline Sorter `.nex5` 候选 Unit、spike 时间和波形摘要；可附加到
+  含原始电压的项目，并与 Kilosort 等结果按统一秒时间接口比较。
 
 公开验证入口锁定两套实际跑通的数据，用户可以直接建立或打开项目缓存：
 
@@ -116,8 +120,14 @@ Kilosort4 运行后可检查流程耗时、完整日志、深度-时间图、振
 
 每个 sorter 的原生文件保留不变，同时转换为统一的 Unit→秒级 spike times
 结构。多次运行不会覆盖其他 sorter：用户可切换当前结果，并在“Sorter 统一结果与
-比较”视图查看 Unit 匹配、一致度、算法独有 Unit 和共识 Unit。只有模拟或配对
-ground truth 数据才显示 precision、recall 与 F1。
+比较”视图查看 Unit 匹配、一致度、算法独有 Unit 和共识 Unit。模拟或配对
+ground truth 数据可以把 precision、recall 与 F1 解释为检测性能；真实外部结果
+只将这些数值用于描述两份输出的一致度。
+
+外部 NEX5 结果以只读对照接入。真实数据比较使用 precision、recall、F1、
+chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度；界面明确标记
+两份结果均非 ground truth。Unit QC 额外筛查跨 Unit 的近同时 spike 重合，并把
+可能重复、串扰或拆分风险交给人工复核，不自动删除候选。
 
 ## 启动
 

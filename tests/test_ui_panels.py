@@ -14,8 +14,37 @@ from neuroflow.sorting_results import (
     compare_sorting_results,
     register_sorting_result,
 )
+from neuroflow.sorting_workbench import SortingWorkbench
 from neuroflow.ui import ImportDialog, NeuroFlowWindow, PipelineWorker
 from neuroflow.unit_curation_ui import UnitCurationDialog
+
+
+def test_sorting_workbench_lists_imported_read_only_results():
+    QApplication.instance() or QApplication([])
+    workbench = SortingWorkbench("en_US")
+    workbench.set_catalog(
+        [
+            {
+                "key": "kilosort4",
+                "name": "Kilosort4",
+                "installed": True,
+                "hardware": "GPU",
+                "best_for": "Dense recordings",
+                "backend": "Kilosort",
+                "version": "4.1.7",
+                "error": None,
+            }
+        ]
+    )
+
+    workbench.set_results(
+        {"kilosort4", "offline_sorter_nex5"},
+        "offline_sorter_nex5",
+    )
+
+    assert workbench.select_sorter("offline_sorter_nex5")
+    assert workbench.selected_sorter() == "offline_sorter_nex5"
+    assert "read-only" in workbench.selected_description().lower()
 
 
 def test_gui_worker_writes_reloadable_structured_audit(tmp_path: Path):

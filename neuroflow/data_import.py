@@ -58,6 +58,13 @@ SUPPORTED_FORMATS = (
         False,
         True,
     ),
+    ImportFormat(
+        "nex5",
+        "NeuroExplorer / Offline Sorter 结果",
+        ".nex5 中的候选 unit、spike 时间与波形",
+        False,
+        True,
+    ),
 )
 
 
@@ -443,6 +450,56 @@ def import_kilosort_results(
     state.log(f"Sorting results imported: {len(sorted_spikes)} units")
     save_project(state)
     return state
+
+
+def attach_kilosort_results(
+    state: ProjectState,
+    source: Path,
+    sampling_rate: float,
+    *,
+    sorter_key: str = "imported_kilosort",
+    activate: bool = True,
+) -> dict[int, np.ndarray]:
+    """Attach Kilosort/Phy output without replacing an existing raw project."""
+    times_path = _find_one(source, ("spike_times.npy", "spikes.times.npy"))
+    clusters_path = _find_one(
+        source,
+        ("spike_clusters.npy", "spike_templates.npy", "spikes.clusters.npy"),
+    )
+    if not times_path or not clusters_path:
+        raise ValueError("未找到 spike_times 与 spike_clusters/spike_templates 文件")
+    times = np.load(times_path).reshape(-1)
+    clusters = np.load(clusters_path).reshape(-1).astype(int)
+    if times.size != clusters.size:
+        raise ValueError("spike times 与 cluster id 数量不一致")
+    is_seconds = times_path.name.startswith("spikes.times")
+    spike_seconds = (
+        times.astype(float) if is_seconds else times.astype(float) / sampling_rate
+    )
+    sorted_spikes = {
+        int(unit): spike_seconds[clusters == unit]
+        for unit in np.unique(clusters)
+    }
+    register_sorting_result(
+        state,
+        sorter_key,
+        sorted_spikes,
+        {
+            "sorter": "Kilosort/Phy import",
+            "backend": "External result import",
+            "source_directory": str(source),
+            "source_time_unit": "seconds" if is_seconds else "samples",
+            "source_files_read_only": True,
+            "external_result_role": "comparison_reference_not_ground_truth",
+        },
+        activate=activate,
+    )
+    state.log(
+        f"Kilosort/Phy output attached as {sorter_key}: "
+        f"{len(sorted_spikes)} candidate units"
+    )
+    save_project(state)
+    return sorted_spikes
 
 
 def _load_alf_object(root: Path, object_name: str) -> dict[str, np.ndarray]:

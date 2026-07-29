@@ -41,7 +41,7 @@ from .ai import (
     request_ai_advice,
 )
 from .ai_credentials import get_api_key, store_api_key
-from .ai_tools import AIMode, TOOL_REGISTRY, validate_tool_call
+from .ai_tools import AIMode, validate_tool_call
 from .models import ProjectState
 from .product import PRODUCT_NAME
 

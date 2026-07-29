@@ -132,6 +132,16 @@ def test_generated_documentation_is_complete_and_english_is_monolingual():
         path.read_text(encoding="utf-8") for path in (site / "en").glob("*.html")
     )
     assert not any("\u4e00" <= char <= "\u9fff" for char in english)
+    english_inputs = (site / "en" / "data-inputs.html").read_text(
+        encoding="utf-8"
+    )
+    chinese_inputs = (site / "zh" / "data-inputs.html").read_text(
+        encoding="utf-8"
+    )
+    assert "Existing NeuroExplorer NEX5 sorting" in english_inputs
+    assert "已有 NeuroExplorer NEX5 sorting" in chinese_inputs
+    assert "Automatic end alignment" in english_inputs
+    assert "自动结束对齐" in chinese_inputs
 
 
 def test_statistics_views_and_model_catalog(tmp_path: Path):

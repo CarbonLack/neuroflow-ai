@@ -8,13 +8,13 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from neuroflow.help_content import PAGE_CONTROLS, PAGE_CONTROLS_EN
-from neuroflow.tutorial_details import (
+from neuroflow.help_content import PAGE_CONTROLS, PAGE_CONTROLS_EN  # noqa: E402
+from neuroflow.tutorial_details import (  # noqa: E402
     TUTORIAL_DETAILS,
     localized,
     localized_rows,
 )
-from neuroflow.tutorials import TUTORIALS, tutorial_value
+from neuroflow.tutorials import TUTORIALS, tutorial_value  # noqa: E402
 
 SITE = ROOT / "docs" / "site"
 
@@ -518,7 +518,8 @@ def build_data_inputs(language: str) -> str:
         [
             ("Generic binary", ".bin/.dat/.raw plus rate, total channels, dtype, µV/bit, and optional events CSV.", "Raw QC", "Yes"),
             ("Acquisition system", "Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, or NWB ElectricalSeries.", "Raw QC", "Yes"),
-            ("Existing sorting", "Kilosort/Phy output with spike_times and cluster assignments.", "Unit QC", "No, unless raw voltage is also supplied"),
+            ("Existing Kilosort/Phy sorting", "Kilosort/Phy output directory with spike_times and cluster assignments.", "Unit QC", "Only when the project also has raw voltage"),
+            ("Existing NeuroExplorer NEX5 sorting", "One .nex5 file or a folder containing several .nex5 files; filenames may be filtered by subject.", "Unit QC and sorter comparison", "Only when the project also has raw voltage"),
             ("IBL ALF / BWM", "Processed spikes and trials, or a behavior aggregate.", "Unit/behavior", "No"),
             ("NWB Units", "Units table and available behavior/state objects.", "Unit/behavior", "Only if a raw ElectricalSeries is imported separately"),
             ("Teaching simulation", "Neuropixels-like, tetrode, or microwire-style deterministic recording with behavior and ground truth.", "Raw QC", "Yes"),
@@ -527,7 +528,8 @@ def build_data_inputs(language: str) -> str:
         else [
             ("通用二进制", ".bin/.dat/.raw，加采样率、总通道数、dtype、µV/bit 和可选事件 CSV。", "原始质控", "可以"),
             ("记录系统文件", "Intan、Open Ephys、SpikeGLX、Blackrock、Plexon、TDT 或 NWB ElectricalSeries。", "原始质控", "可以"),
-            ("已有 sorting", "含 spike_times 和 cluster 分配的 Kilosort/Phy 输出。", "Unit 质控", "不可以，除非另有原始电压"),
+            ("已有 Kilosort/Phy sorting", "含 spike_times 和 cluster 分配的 Kilosort/Phy 输出目录。", "Unit 质控", "仅在项目另有原始电压时可重新 sorting"),
+            ("已有 NeuroExplorer NEX5 sorting", "一个 .nex5 文件或包含多个 .nex5 文件的文件夹；可用文件名过滤同一动物。", "Unit 质控与 sorter 对比", "仅在项目另有原始电压时可重新 sorting"),
             ("IBL ALF / BWM", "处理后 spike 与 trials，或行为汇总。", "Unit/行为", "不可以"),
             ("NWB Units", "Units 表和可用行为/状态对象。", "Unit/行为", "只有另行导入原始 ElectricalSeries 才可以"),
             ("教学模拟", "带行为和 ground truth 的 Neuropixels-like、tetrode 或微丝风格确定性记录。", "原始质控", "可以"),
@@ -538,12 +540,44 @@ def build_data_inputs(language: str) -> str:
         if english
         else ["源路径保持可读取。", "文件大小、时长、通道数和 dtype 相互一致。", "探针几何和通道分组与记录匹配。", "事件单位和设备时钟明确。", "决定只索引还是把原始数据复制进项目。"]
     )
+    nex5_section = (
+        """
+<section data-searchable>
+  <h2>Attach NEX5 offline sorting to an existing project</h2>
+  <ol class="steps">
+    <li>Open the project that contains the raw voltage. From Home, choose “Import my data,” then “Existing NeuroExplorer NEX5 sorting.”</li>
+    <li>Select one <code>.nex5</code> file or a folder searched recursively. Use the filename filter to select one subject, session, or batch.</li>
+    <li>Enter a unique result key so several external results remain side by side.</li>
+    <li>Use end alignment only for a complete recording. Preserve timestamps for a shared clock, or enter a verified manual offset for a segment.</li>
+    <li>Review file count, Neuron variables, waveform variables, time range, and sampling rate before attaching the result.</li>
+    <li>Select the new read-only result on Spike sorting, then continue to Unit QC and manual curation.</li>
+  </ol>
+  <div class="callout warning">Candidate counts and agreement metrics are not ground truth. Import preserves original names, source groups, waveform summaries, alignment evidence, and read-only source links.</div>
+</section>
+"""
+        if english
+        else """
+<section data-searchable>
+  <h2>把 NEX5 离线 sorting 接入已有项目</h2>
+  <ol class="steps">
+    <li>打开含原始电压的项目；在首页选择“导入自己的数据”，再选择“已有 NeuroExplorer NEX5 sorting”。</li>
+    <li>选择单个 <code>.nex5</code> 文件或递归文件夹；用文件名筛选限定动物、session 或记录批次。</li>
+    <li>填写唯一结果键，让多个外部结果可以并列保存。</li>
+    <li>完整记录可使用结束时间对齐；同一时钟可保留原时间；截取片段必须填写经过验证的人工偏移。</li>
+    <li>接入前核对文件数、Neuron变量、波形变量、时间范围和采样率。</li>
+    <li>在Spike sorting页选择新增的只读结果，再进入Unit质控和人工复核。</li>
+  </ol>
+  <div class="callout warning">候选Unit数和一致度没有ground truth含义。导入会保留原名称、来源分组、波形摘要、对齐证据和只读源文件链接。</div>
+</section>
+"""
+    )
     body = f"""
 <section data-searchable>
   <h2>{'Choose by what you have' if english else '按手中数据选择入口'}</h2>
   <table><thead><tr><th>{'Route' if english else '入口'}</th><th>{'Required files' if english else '需要提供'}</th><th>{'Workflow starts at' if english else '从哪里开始'}</th><th>{'Can run sorting?' if english else '能否 sorting'}</th></tr></thead>
   <tbody>{''.join(f'<tr><td><b>{e(a)}</b></td><td>{e(b)}</td><td>{e(c)}</td><td>{e(d)}</td></tr>' for a,b,c,d in routes)}</tbody></table>
 </section>
+{nex5_section}
 <section data-searchable>
   <h2>{'Generic binary checklist' if english else '通用二进制导入检查'}</h2>
   <ol class="steps">{''.join(f'<li>{e(item)}</li>' for item in checklist)}</ol>
@@ -586,6 +620,25 @@ def build_sorting(language: str) -> str:
         ]
     )
     ks_params = localized_rows(TUTORIAL_DETAILS["sorting"], "parameters", language)
+    comparison_details = (
+        """
+  <h3>Attach read-only external results</h3>
+  <p>Kilosort/Phy and NeuroExplorer NEX5 results can be attached to a raw-data project. Original names, source files, timestamps in seconds, waveform summaries, and source labels remain available.</p>
+  <h3>Comparison evidence</h3>
+  <p>Precision, recall, F1, chance-corrected agreement, and bounded lag describe timestamp agreement. A high-recall, low-precision pair can indicate a reference unit embedded in a merged or contaminated cluster.</p>
+  <h3>Manual review</h3>
+  <p>Unit QC presents waveform, channel profile, ACG and refractory evidence, amplitude, stability, native sorter diagnostics, and cross-unit timestamp overlap. Reviewers classify every candidate and keep the decision trail.</p>
+"""
+        if english
+        else """
+  <h3>接入只读外部结果</h3>
+  <p>Kilosort/Phy和NeuroExplorer NEX5结果可附加到原始数据项目。原名称、源文件、秒时间、波形摘要和来源标签均会保留。</p>
+  <h3>比较证据</h3>
+  <p>Precision、recall、F1、chance-corrected agreement和受限lag描述时间戳一致度。高recall、低precision可能提示参考Unit被包含在合并或污染cluster中。</p>
+  <h3>人工复核</h3>
+  <p>Unit质控提供波形、通道轮廓、ACG与不应期、振幅、稳定性、原sorter诊断和跨Unit时间戳重合。审核者分类每个候选并保留决定轨迹。</p>
+"""
+    )
     body = f"""
 <section data-searchable>
   <h2>{'Backend selection' if english else '后端选择'}</h2>
@@ -605,8 +658,9 @@ def build_sorting(language: str) -> str:
   <tbody>{''.join(f"<tr><td><code>{e(row['name'])}</code></td><td>{e(row['meaning'])}</td><td>{e(row['default'])}</td><td>{e(row['recommended'])}</td><td>{e(row['effect'])}</td></tr>" for row in ks_params)}</tbody></table>
 </section>
 <section data-searchable>
-  <h2>{'Unified result and comparison' if english else '统一结果与比较'}</h2>
+  <h2>{'Unified results and comparison' if english else '统一结果与比较'}</h2>
   <p>{'Every backend keeps its native folder. NeuroEphys AI additionally records unit IDs, spike times in seconds, sampling rate, versions, parameters, logs, and optional channel/template fields in a common downstream schema. Sorter comparison reports matched, split, merged, unique, and consensus units. On real data this is agreement, not accuracy.' if english else '每个后端保留原生目录。NeuroEphys AI 额外把 unit ID、秒级 spike times、采样率、版本、参数、日志和可用通道/模板字段写入统一下游结构。sorter 比较报告匹配、拆分、合并、独有和共识 unit；真实数据上这叫一致度，不叫准确率。'}</p>
+  {comparison_details}
 </section>
 """
     return _layout(language, "sorting.html", title, lead, body)
@@ -819,10 +873,11 @@ def build_real_data_validation(language: str) -> str:
             ("Acquisition preprocessing", "250–8,000 Hz online filtering. LFP, low-frequency spectra, and spike-field coupling are blocked."),
             ("Raw QC", "99.21875/100. No channels were removed from the configured 1–32 selection."),
             ("Kilosort4", "Version 4.1.7, nblocks=0, thresholds 9/8, 12 candidate units, 2,195,626 spikes. Internal runtime 1,870.35 s; wrapper runtime 2,096.54 s."),
+            ("External offline sorting", "The official nex5file package read eight NEX5 candidate units from the same recording. Source files remained read-only; names, groups, waveform summaries, and alignment evidence were retained."),
             ("Behavior and synchronization", "4,654 MED-PC events; 744/744 synchronization anchors matched. Action-start analysis used event codes 17 and 19, 168 events total."),
             ("Statistics and decoding", "Outputs were generated as technical validation. The decoding result must not be interpreted as a biological claim."),
-            ("Project recovery", "Saved project was reloaded, existing Kilosort arrays were reused, downstream outputs and artifact indexes were regenerated."),
-            ("Manual review status", "All 12 clusters remain candidates until waveform, refractory, stability, duplication, and sorter evidence have been reviewed."),
+            ("Project recovery", "Saved project was reloaded, existing Kilosort and NEX5 arrays were reused, downstream outputs and artifact indexes were regenerated."),
+            ("Manual review status", "Both result sets remain candidates until waveform, refractory, stability, duplication, and sorter evidence have been reviewed."),
         ]
         if english
         else [
@@ -830,10 +885,11 @@ def build_real_data_validation(language: str) -> str:
             ("采集端处理", "在线250–8,000 Hz滤波；程序阻止LFP、低频频谱和spike-field coupling。"),
             ("原始质控", "99.21875/100；配置的1–32通道没有被自动剔除。"),
             ("Kilosort4", "版本4.1.7，nblocks=0，阈值9/8，12个候选unit，2,195,626个spike；内部用时1,870.35秒，含适配器总用时2,096.54秒。"),
+            ("外部离线 sorting", "使用官方nex5file读取同一记录的8个NEX5候选Unit；原始文件只读，名称、分组、波形摘要与时间对齐证据均保留。"),
             ("行为与同步", "MED-PC事件4,654条；744/744个同步锚点匹配。动作起始分析使用事件码17和19，共168个事件。"),
             ("统计与解码", "已生成技术验证输出；解码结果不得直接用于生物学结论。"),
-            ("项目恢复", "保存后重新加载，复用已有Kilosort数组，重新生成下游结果和产物索引。"),
-            ("人工复核状态", "12个cluster均保持候选状态，等待波形、不应期、稳定性、重复性和sorter证据的逐个检查。"),
+            ("项目恢复", "保存后重新加载，复用已有Kilosort和NEX5数组，重新生成下游结果和产物索引。"),
+            ("人工复核状态", "两份结果均保持候选状态，等待波形、不应期、稳定性、重复性和sorter证据的逐个检查。"),
         ]
     )
     body = f"""
@@ -844,12 +900,14 @@ def build_real_data_validation(language: str) -> str:
 </section>
 <section data-searchable>
   <h2>{'Sorter sensitivity and comparison' if english else 'Sorter敏感性与比较'}</h2>
-  <p>{'A separate 30-minute Kilosort run produced four candidates at thresholds 9/8 and five candidates at 6/5. MountainSort5, SpyKING CIRCUS 2, and Tridesclous 2 produced different candidate counts on the same segment. These differences trigger manual review and sorter-agreement analysis; they do not establish the neuron count.' if english else '独立30分钟Kilosort运行在阈值9/8下得到4个候选，在6/5下得到5个候选；MountainSort5、SpyKING CIRCUS 2和Tridesclous 2在相同片段给出不同候选数量。此差异用于触发人工复核和sorter一致度分析，无法直接确定真实神经元数量。'}</p>
+  <p>{'The full Kilosort4 result contains 12 candidate units and the external NEX5 result contains eight. Bounded lag search and one-to-one timestamp matching found one strong pair. The 30-minute Kilosort result contains four candidates; the clipped NEX5 result retains eight, again with one strong pair. Counts and agreement prioritize manual review and do not establish the neuron count.' if english else '整段Kilosort4结果含12个候选Unit，外部NEX5结果含8个候选Unit。受限lag搜索和一对一时间戳匹配只有1对达到强一致。30分钟Kilosort结果含4个候选，裁剪后NEX5仍含8个候选，其中1对达到强一致。候选数和一致度用于安排人工复核，不能确定真实神经元数量。'}</p>
+  <p>{'Cross-unit screening flagged several high timestamp-overlap pairs, including one above 80%. Every candidate remains available for waveform, channel, ACG, refractory, amplitude-stability, and native-sorter review.' if english else '跨Unit筛查标记了若干时间戳高重合对，其中一对超过80%。全部候选仍保留，等待波形、通道、ACG、不应期、振幅稳定性和原sorter证据复核。'}</p>
 </section>
 <section data-searchable>
   <h2>{'Scientific limits' if english else '科学限制'}</h2>
   <ul class="checks">
-    <li>{'The verbal report of eight cells is stored as an unverified external observation and cannot serve as ground truth.' if english else '数据提供者口头报告的8个细胞作为“未验证外部观察”保存，不能作为ground truth。'}</li>
+    <li>{'The external NEX5 files contain eight candidate units. Their selection method and manual decisions have not been fully audited, so they cannot serve as ground truth.' if english else '外部NEX5确认保存了8个候选Unit；其筛选方法和人工判断仍未完整审计，不能作为ground truth。'}</li>
+    <li>{'The SW#1-to-subject mapping remains a high-confidence inference pending final owner confirmation.' if english else 'SW#1与当前动物的对应关系作为高可信推断保存，仍等待数据拥有者最终确认。'}</li>
     <li>{'Online high-pass filtering prevents recovery of true low-frequency activity.' if english else '在线高通滤波使真实低频活动无法恢复。'}</li>
     <li>{'Event codes 21 and 22 were coincident in this recording; codes 17 and 19 supplied the distinct action-start comparison.' if english else '该记录中事件码21和22时间完全重合；条件比较改用具有独立时间的17和19动作起始事件。'}</li>
     <li>{'Single-session decoding can reflect session structure and requires independent replication.' if english else '单session解码可能反映session结构，需要独立数据验证。'}</li>
@@ -917,6 +975,7 @@ def build_sources(language: str) -> str:
         ("Elephant", "https://elephant.readthedocs.io/en/stable/modules.html", "Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects."),
         ("Neo", "https://neo.readthedocs.io/en/stable/read_and_analyze.html", "Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects."),
         ("Phy", "https://phy.readthedocs.io/en/latest/quickstart/", "Manual review of spike-sorting output."),
+        ("NeuroExplorer nex5file", "https://neuroexplorer.com/docs/python_packages/nex5file.html", "Read-only parsing of .nex5 Neuron, Waveform, sampling-rate, and timestamp fields through the MIT-licensed public Python API. MATLAB readers and third-party interfaces were not copied."),
         ("MountainSort5", "https://pypi.org/project/mountainsort5/", "CPU-oriented sorting schemes and package interface."),
         ("Respiration/PFC study", "https://pmc.ncbi.nlm.nih.gov/articles/PMC10312056/", "Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses."),
         ("GraphPad Prism graph controls", "https://www.graphpad.com/guides/prism/latest/user-guide/how_to_change_a_graph.htm", "Interaction expectations for editable graph objects, axes, grids, ticks, and exact size."),
@@ -931,7 +990,7 @@ def build_sources(language: str) -> str:
 <section data-searchable>
   <h2>{'Attribution table' if english else '来源与借鉴范围'}</h2>
   <table><thead><tr><th>{'Source' if english else '来源'}</th><th>{'How NeuroEphys AI uses it' if english else 'NeuroEphys AI 借鉴或调用的范围'}</th></tr></thead>
-  <tbody>{''.join(f'<tr><td><a href="{e(url)}">{e(name)}</a></td><td>{e(scope if english else {"Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial.":"文档层级、GUI 操作顺序、参数、导出文件、漂移检查和示例教程结构。","Data/probe selection, input preview, channel-count checks, run sequence.":"数据/探针选择、输入预览、通道数检查和运行顺序。","n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions.":"n_chan_bin、batch_size、nblocks、阈值、时间范围、几何和重复 spike 注意事项。","Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces.":"数据读取、预处理、sorter 适配、后处理、质量指标和比较接口。","Common sorter wrappers, native dependencies, and container execution.":"统一sorter wrapper、原生依赖和容器执行机制。","Definitions and implementation references for firing, refractory, amplitude, drift, and isolation-oriented metrics.":"放电、不应期、振幅、漂移和隔离相关指标的定义与实现依据。","Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects.":"基于Neo对象的spike train统计、频谱、相关、相位和信号分析API。","Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects.":"带单位的SpikeTrain、AnalogSignal、Event、Epoch、Segment和Block对象。","Manual review of spike-sorting output.":"spike sorting输出的人工复核工作流。","CPU-oriented sorting schemes and package interface.":"面向CPU的sorting scheme和包接口。","Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses.":"行为状态、呼吸、spike、LFP、相位和surrogate分析的方法结构。","Interaction expectations for editable graph objects, axes, grids, ticks, and exact size.":"图元、坐标轴、网格、刻度和精确尺寸的可编辑交互预期。","Public neural and behavioral validation context.":"公开神经与行为数据的验证背景。","Versioned NWB public-data access and provenance.":"版本化NWB公开数据访问与来源记录。","Provider endpoint, streaming response, usage fields, and request structure.":"模型服务地址、流式返回、用量字段和请求结构。","Structured function definitions and model-generated argument requests.":"结构化函数定义和模型参数请求。","Tool-call response handling and multi-turn tool result flow.":"工具调用返回处理和多轮工具结果流程。","Optional provider adapter and structured text generation.":"可选模型适配器和结构化文本生成。"}[scope])}</td></tr>' for name,url,scope in sources)}</tbody></table>
+  <tbody>{''.join(f'<tr><td><a href="{e(url)}">{e(name)}</a></td><td>{e(scope if english else {"Documentation organization, GUI operating order, parameters, exported files, drift checks, sample-data tutorial.":"文档层级、GUI 操作顺序、参数、导出文件、漂移检查和示例教程结构。","Data/probe selection, input preview, channel-count checks, run sequence.":"数据/探针选择、输入预览、通道数检查和运行顺序。","n_chan_bin, batch_size, nblocks, thresholds, time range, geometry, and duplicate-spike cautions.":"n_chan_bin、batch_size、nblocks、阈值、时间范围、几何和重复 spike 注意事项。","Extractors, preprocessing, sorter wrappers, postprocessing, quality metrics, and comparison interfaces.":"数据读取、预处理、sorter 适配、后处理、质量指标和比较接口。","Common sorter wrappers, native dependencies, and container execution.":"统一sorter wrapper、原生依赖和容器执行机制。","Definitions and implementation references for firing, refractory, amplitude, drift, and isolation-oriented metrics.":"放电、不应期、振幅、漂移和隔离相关指标的定义与实现依据。","Spike-train statistics, spectral analysis, correlation, phase, and signal-analysis APIs on Neo objects.":"基于Neo对象的spike train统计、频谱、相关、相位和信号分析API。","Unit-aware SpikeTrain, AnalogSignal, Event, Epoch, Segment, and Block objects.":"带单位的SpikeTrain、AnalogSignal、Event、Epoch、Segment和Block对象。","Manual review of spike-sorting output.":"spike sorting输出的人工复核工作流。","Read-only parsing of .nex5 Neuron, Waveform, sampling-rate, and timestamp fields through the MIT-licensed public Python API. MATLAB readers and third-party interfaces were not copied.":"使用MIT许可Python包的公开API只读解析.nex5中的Neuron、Waveform、采样率和时间戳；未复制MATLAB读取器或第三方界面。","CPU-oriented sorting schemes and package interface.":"面向CPU的sorting scheme和包接口。","Method structure for behavioral-state, respiration, spike, LFP, phase, and surrogate analyses.":"行为状态、呼吸、spike、LFP、相位和surrogate分析的方法结构。","Interaction expectations for editable graph objects, axes, grids, ticks, and exact size.":"图元、坐标轴、网格、刻度和精确尺寸的可编辑交互预期。","Public neural and behavioral validation context.":"公开神经与行为数据的验证背景。","Versioned NWB public-data access and provenance.":"版本化NWB公开数据访问与来源记录。","Provider endpoint, streaming response, usage fields, and request structure.":"模型服务地址、流式返回、用量字段和请求结构。","Structured function definitions and model-generated argument requests.":"结构化函数定义和模型参数请求。","Tool-call response handling and multi-turn tool result flow.":"工具调用返回处理和多轮工具结果流程。","Optional provider adapter and structured text generation.":"可选模型适配器和结构化文本生成。"}[scope])}</td></tr>' for name,url,scope in sources)}</tbody></table>
 </section>
 <section data-searchable>
   <h2>{'Non-copying rule' if english else '不直接抄袭原则'}</h2>

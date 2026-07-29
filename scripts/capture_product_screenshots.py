@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+# ruff: noqa: E402
+
 from pathlib import Path
+import sys
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from PySide6.QtGui import QFont
 from PySide6.QtTest import QTest
@@ -44,7 +51,7 @@ def _capture(window, path: Path) -> None:
 
 
 def main() -> int:
-    repository = Path(__file__).resolve().parents[1]
+    repository = REPOSITORY_ROOT
     output = repository / "docs" / "site" / "assets"
     workspace = repository / "docs_capture_workspace"
     app = QApplication.instance() or QApplication([])
@@ -176,7 +183,7 @@ def main() -> int:
         ai_dialog.settings.api_key = "preview-credential-not-saved"
         ai_dialog.settings.provider = "deepseek"
         ai_dialog.settings.base_url = "https://api.deepseek.com"
-        ai_dialog.settings.model = "deepseek-v4-flash"
+        ai_dialog.settings.model = "deepseek-chat"
         ai_dialog.settings.mode = AIMode.COLLABORATIVE.value
         mode_index = ai_dialog.mode_combo.findData(AIMode.COLLABORATIVE.value)
         ai_dialog.mode_combo.setCurrentIndex(mode_index)

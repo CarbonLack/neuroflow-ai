@@ -397,12 +397,41 @@ class SortingWorkbench(QFrame):
 
     def set_catalog(self, catalog: list[dict]) -> None:
         selected = self.selected_sorter()
-        self.catalog = list(catalog)
+        self.catalog = [
+            dict(item) for item in catalog if not item.get("imported_result")
+        ]
         self._populate(selected)
 
     def set_results(self, sorter_keys: set[str], active_key: str | None) -> None:
         self.completed_keys = set(sorter_keys)
         self.active_key = active_key
+        known_keys = {str(item["key"]) for item in self.catalog}
+        for sorter_key in sorted(self.completed_keys - known_keys):
+            self.catalog.append(
+                {
+                    "key": sorter_key,
+                    "name": sorter_key,
+                    "installed": False,
+                    "imported_result": True,
+                    "hardware": self._label(
+                        "无需重新运行",
+                        "No rerun",
+                    ),
+                    "best_for": self._label(
+                        "Unit 质控、人工复核与 sorter 一致性比较",
+                        "Unit QC, manual curation, and sorter comparison",
+                    ),
+                    "backend": self._label(
+                        "已导入只读结果",
+                        "Imported read-only result",
+                    ),
+                    "version": self._label(
+                        "来源记录见项目审计",
+                        "See project provenance",
+                    ),
+                    "error": None,
+                }
+            )
         self._populate(active_key or self.selected_sorter())
 
     def _populate(self, selected: str | None = None) -> None:
@@ -412,7 +441,9 @@ class SortingWorkbench(QFrame):
         self.table.setRowCount(len(self.catalog))
         for row, item in enumerate(self.catalog):
             status = (
-                self._label("可运行", "Available")
+                self._label("已导入", "Imported")
+                if item.get("imported_result")
+                else self._label("可运行", "Available")
                 if item["installed"]
                 else self._label("不可用", "Unavailable")
             )
@@ -432,7 +463,7 @@ class SortingWorkbench(QFrame):
             ):
                 table_item = QTableWidgetItem(str(value))
                 table_item.setData(Qt.UserRole, item["key"])
-                if not item["installed"]:
+                if not item["installed"] and not item.get("imported_result"):
                     table_item.setForeground(Qt.darkGray)
                 self.table.setItem(row, column, table_item)
             self.table.setRowHeight(row, 28)
@@ -450,9 +481,12 @@ class SortingWorkbench(QFrame):
         if row < 0 or row >= len(self.catalog):
             return
         item = self.catalog[row]
-        available = bool(item["installed"])
+        imported_result = bool(item.get("imported_result"))
+        available = bool(item["installed"]) or imported_result
         self.selected_badge.setText(
-            self._label("可运行", "Available")
+            self._label("已导入结果", "Imported result")
+            if imported_result
+            else self._label("可运行", "Available")
             if available
             else self._label("当前不可用", "Unavailable")
         )
@@ -466,7 +500,15 @@ class SortingWorkbench(QFrame):
         detail += "\n" + str(
             contract.get("en" if self.language == "en_US" else "zh", "")
         )
-        if item["key"] in self.completed_keys:
+        if imported_result:
+            detail += self._label(
+                "\n源结果保持只读。选择此行会激活统一秒制结果；"
+                "后续可运行 Unit 质控、人工复核和跨 sorter 比较。",
+                "\nThe source output remains read-only. Selecting this row activates "
+                "the normalized seconds-based result for Unit QC, manual curation, "
+                "and cross-sorter comparison.",
+            )
+        elif item["key"] in self.completed_keys:
             detail += self._label(
                 "\n已保存统一格式结果；选择此行可重新查看，重新运行会形成可追溯更新。",
                 "\nA normalized result is saved. Select this row to inspect it; reruns are audited.",

@@ -46,16 +46,18 @@
 <section data-searchable>
   <h2>已验证链路</h2>
   <table><thead><tr><th>阶段</th><th>验证结果</th></tr></thead>
-  <tbody><tr><td><b>记录</b></td><td>32根独立微丝，30 kHz，7,497.489秒；采集时使用外部参考。</td></tr><tr><td><b>采集端处理</b></td><td>在线250–8,000 Hz滤波；程序阻止LFP、低频频谱和spike-field coupling。</td></tr><tr><td><b>原始质控</b></td><td>99.21875/100；配置的1–32通道没有被自动剔除。</td></tr><tr><td><b>Kilosort4</b></td><td>版本4.1.7，nblocks=0，阈值9/8，12个候选unit，2,195,626个spike；内部用时1,870.35秒，含适配器总用时2,096.54秒。</td></tr><tr><td><b>行为与同步</b></td><td>MED-PC事件4,654条；744/744个同步锚点匹配。动作起始分析使用事件码17和19，共168个事件。</td></tr><tr><td><b>统计与解码</b></td><td>已生成技术验证输出；解码结果不得直接用于生物学结论。</td></tr><tr><td><b>项目恢复</b></td><td>保存后重新加载，复用已有Kilosort数组，重新生成下游结果和产物索引。</td></tr><tr><td><b>人工复核状态</b></td><td>12个cluster均保持候选状态，等待波形、不应期、稳定性、重复性和sorter证据的逐个检查。</td></tr></tbody></table>
+  <tbody><tr><td><b>记录</b></td><td>32根独立微丝，30 kHz，7,497.489秒；采集时使用外部参考。</td></tr><tr><td><b>采集端处理</b></td><td>在线250–8,000 Hz滤波；程序阻止LFP、低频频谱和spike-field coupling。</td></tr><tr><td><b>原始质控</b></td><td>99.21875/100；配置的1–32通道没有被自动剔除。</td></tr><tr><td><b>Kilosort4</b></td><td>版本4.1.7，nblocks=0，阈值9/8，12个候选unit，2,195,626个spike；内部用时1,870.35秒，含适配器总用时2,096.54秒。</td></tr><tr><td><b>外部离线 sorting</b></td><td>使用官方 nex5file 读取同一记录的8个 NEX5 候选 Unit；原始文件只读，名称、分组、波形摘要与时间对齐证据均保留。</td></tr><tr><td><b>行为与同步</b></td><td>MED-PC事件4,654条；744/744个同步锚点匹配。动作起始分析使用事件码17和19，共168个事件。</td></tr><tr><td><b>统计与解码</b></td><td>已生成技术验证输出；解码结果不得直接用于生物学结论。</td></tr><tr><td><b>项目恢复</b></td><td>保存后重新加载，复用已有Kilosort和 NEX5 数组，重新生成下游结果和产物索引。</td></tr><tr><td><b>人工复核状态</b></td><td>两份结果均保持候选状态，等待波形、不应期、稳定性、重复性和sorter证据的逐个检查。</td></tr></tbody></table>
 </section>
 <section data-searchable>
   <h2>Sorter敏感性与比较</h2>
-  <p>独立30分钟Kilosort运行在阈值9/8下得到4个候选，在6/5下得到5个候选；MountainSort5、SpyKING CIRCUS 2和Tridesclous 2在相同片段给出不同候选数量。此差异用于触发人工复核和sorter一致度分析，无法直接确定真实神经元数量。</p>
+  <p>整段 Kilosort4 结果含12个候选 Unit，外部 NEX5 结果含8个候选 Unit。经固定 lag 搜索和一对一时间戳匹配，只有1对达到强一致；部分外部 Unit 对一个高放电率 Kilosort cluster 具有高 recall、低 precision，提示合并、污染或单位定义差异。30分钟片段中，Kilosort4 含4个候选，裁剪后的 NEX5 仍含8个候选，其中1对达到强一致。候选数量和一致度均用于安排人工复核，不能直接确定真实神经元数量。</p>
+  <p>跨 Unit 重复筛查还发现若干时间戳高重合对，其中最高重合超过80%。程序只标记风险并保留原 Unit；最终判定需要同时查看波形、主通道、ACG、不应期、振幅稳定性和原 sorter 界面。</p>
 </section>
 <section data-searchable>
   <h2>科学限制</h2>
   <ul class="checks">
-    <li>数据提供者口头报告的8个细胞作为“未验证外部观察”保存，不能作为ground truth。</li>
+    <li>外部 NEX5 确认保存了8个候选 Unit；其筛选方法和人工判断仍未完整审计，不能作为ground truth。</li>
+    <li>SW#1 与该动物的对应关系来自文件顺序和提供者说明，当前作为高可信推断保存，仍等待数据拥有者最终确认。</li>
     <li>在线高通滤波使真实低频活动无法恢复。</li>
     <li>该记录中事件码21和22时间完全重合；条件比较改用具有独立时间的17和19动作起始事件。</li>
     <li>单session解码可能反映session结构，需要独立数据验证。</li>

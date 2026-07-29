@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QFrame,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -264,7 +263,11 @@ class UnitCurationDialog(QDialog):
                 f"Rate: {float(metric.get('firing_rate_hz', 0.0)):.3f} Hz\n"
                 f"ISI violations: {float(metric.get('isi_violation_rate', 0.0)):.4f}\n"
                 f"SNR: {float(metric.get('snr', float('nan'))):.2f}\n"
-                f"Peak channel: {metric.get('peak_channel', '—')}"
+                f"Peak channel: {metric.get('peak_channel', '—')}\n"
+                f"Maximum cross-unit timestamp overlap: "
+                f"{float(metric.get('max_cross_unit_overlap_fraction', 0.0)):.1%}\n"
+                f"Possible duplicate partner: "
+                f"{metric.get('duplicate_partner_unit', '—')}"
             )
         )
 

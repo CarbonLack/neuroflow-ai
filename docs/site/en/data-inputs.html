@@ -46,12 +46,32 @@
 <section data-searchable>
   <h2>Choose by what you have</h2>
   <table><thead><tr><th>Route</th><th>Required files</th><th>Workflow starts at</th><th>Can run sorting?</th></tr></thead>
-  <tbody><tr><td><b>Generic binary</b></td><td>.bin/.dat/.raw plus rate, total channels, dtype, µV/bit, and optional events CSV.</td><td>Raw QC</td><td>Yes</td></tr><tr><td><b>Acquisition system</b></td><td>Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, or NWB ElectricalSeries.</td><td>Raw QC</td><td>Yes</td></tr><tr><td><b>Existing sorting</b></td><td>Kilosort/Phy output with spike_times and cluster assignments.</td><td>Unit QC</td><td>No, unless raw voltage is also supplied</td></tr><tr><td><b>IBL ALF / BWM</b></td><td>Processed spikes and trials, or a behavior aggregate.</td><td>Unit/behavior</td><td>No</td></tr><tr><td><b>NWB Units</b></td><td>Units table and available behavior/state objects.</td><td>Unit/behavior</td><td>Only if a raw ElectricalSeries is imported separately</td></tr><tr><td><b>Teaching simulation</b></td><td>Neuropixels-like, tetrode, or microwire-style deterministic recording with behavior and ground truth.</td><td>Raw QC</td><td>Yes</td></tr></tbody></table>
+  <tbody><tr><td><b>Generic binary</b></td><td>.bin/.dat/.raw plus rate, total channels, dtype, µV/bit, and optional events CSV.</td><td>Raw QC</td><td>Yes</td></tr><tr><td><b>Acquisition system</b></td><td>Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, or NWB ElectricalSeries.</td><td>Raw QC</td><td>Yes</td></tr><tr><td><b>Existing Kilosort/Phy sorting</b></td><td>Kilosort/Phy output directory with spike_times and cluster assignments.</td><td>Unit QC</td><td>Only when the project also has raw voltage</td></tr><tr><td><b>Existing NeuroExplorer NEX5 sorting</b></td><td>One .nex5 file or a folder containing several .nex5 files; filenames may be filtered by subject.</td><td>Unit QC and sorter comparison</td><td>Only when the project also has raw voltage</td></tr><tr><td><b>IBL ALF / BWM</b></td><td>Processed spikes and trials, or a behavior aggregate.</td><td>Unit/behavior</td><td>No</td></tr><tr><td><b>NWB Units</b></td><td>Units table and available behavior/state objects.</td><td>Unit/behavior</td><td>Only if a raw ElectricalSeries is imported separately</td></tr><tr><td><b>Teaching simulation</b></td><td>Neuropixels-like, tetrode, or microwire-style deterministic recording with behavior and ground truth.</td><td>Raw QC</td><td>Yes</td></tr></tbody></table>
 </section>
 <section data-searchable>
   <h2>Generic binary checklist</h2>
   <ol class="steps"><li>Source path remains readable.</li><li>File size, duration, channels, and dtype are internally consistent.</li><li>Probe geometry and channel groups match the recording.</li><li>Event units and clocks are explicit.</li><li>Decide whether to link or copy the raw source.</li></ol>
   <div class="callout warning">A file that opens is not necessarily interpreted correctly. A wrong channel count or dtype can produce plausible-looking but invalid traces.</div>
+</section>
+<section data-searchable>
+  <h2>Attach NEX5 offline sorting to an existing project</h2>
+  <ol class="steps">
+    <li>Open the project that contains the raw voltage. From Home, choose “Import my data,” then “Existing NeuroExplorer NEX5 sorting.”</li>
+    <li>Select one <code>.nex5</code> file or a folder searched recursively. Use the filename filter to select one subject, session, or batch, such as <code>SW#1</code>.</li>
+    <li>Enter a unique result key. This keeps several external results side by side without overwriting an existing result.</li>
+    <li>Select time alignment. End alignment is available for a full recording; preserve timestamps when both sources already share one clock; enter a manual offset for a segment.</li>
+    <li>Review the preview for file count, Neuron variables, waveform variables, time range, and sampling rate before attaching the result.</li>
+    <li>Open Spike sorting and select the new read-only result. Continue to Unit QC for waveform, refractory, stability, and duplicate review.</li>
+  </ol>
+  <table class="parameter-table"><thead><tr><th>Control</th><th>Purpose</th><th>Default</th><th>When to change it</th></tr></thead>
+  <tbody>
+    <tr><td><b>Filename filter</b></td><td>Reads only NEX5 files whose path contains the supplied text.</td><td>Empty; read all</td><td>Required when one folder contains several subjects or sessions.</td></tr>
+    <tr><td><b>Result key</b></td><td>Unique sorter/result identifier stored in the project.</td><td>offline_sorter_nex5</td><td>Use a descriptive unique key when comparing several external results.</td></tr>
+    <tr><td><b>Automatic end alignment</b></td><td>Estimates clock offset from the NEX5 and raw-recording end times.</td><td>Preferred for a full recording</td><td>Use only for the same complete recording. The program rejects this inference for a clipped segment.</td></tr>
+    <tr><td><b>Preserve timestamps</b></td><td>Leaves NEX5 timestamps unchanged.</td><td>Off</td><td>Use when both results already use the same clock.</td></tr>
+    <tr><td><b>Manual offset</b></td><td>Subtracts the specified seconds from every NEX5 spike, then clips to the project range.</td><td>0 s</td><td>Use for a 30-minute segment, a known acquisition-start difference, or a sync-derived offset.</td></tr>
+  </tbody></table>
+  <div class="callout warning">Candidate counts and agreement metrics are not ground truth. Import keeps source files read-only and preserves original names, source groups, waveform summaries, and alignment evidence. Manual decisions are stored as separate project audit records.</div>
 </section>
 <section data-searchable>
   <h2>Behavior CSV example</h2>

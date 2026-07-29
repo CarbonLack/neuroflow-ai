@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import csv
+import json
 from itertools import combinations
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -332,3 +335,472 @@ def compare_sorting_results(
         f"{len(si_sortings)} result(s), {len(summary['pairwise'])} pair(s)"
     )
     return summary
+
+
+def _nearest_lag_seconds(
+    reference: np.ndarray,
+    tested: np.ndarray,
+    *,
+    search_window_seconds: float,
+    bin_seconds: float = 0.00005,
+    max_reference_spikes: int = 20_000,
+) -> float:
+    """Estimate a fixed sorter timestamp convention difference."""
+    if reference.size == 0 or tested.size == 0:
+        return 0.0
+    if reference.size > max_reference_spikes:
+        indices = np.linspace(
+            0,
+            reference.size - 1,
+            max_reference_spikes,
+            dtype=np.int64,
+        )
+        sampled = reference[indices]
+    else:
+        sampled = reference
+    positions = np.searchsorted(tested, sampled)
+    differences: list[np.ndarray] = []
+    for offset in (-1, 0):
+        candidates = np.clip(positions + offset, 0, tested.size - 1)
+        delta = tested[candidates] - sampled
+        differences.append(delta[np.abs(delta) <= search_window_seconds])
+    valid = np.concatenate(differences) if differences else np.array([])
+    if valid.size == 0:
+        return 0.0
+    edges = np.arange(
+        -search_window_seconds,
+        search_window_seconds + bin_seconds,
+        bin_seconds,
+    )
+    counts, _ = np.histogram(valid, bins=edges)
+    index = int(np.argmax(counts))
+    return float((edges[index] + edges[index + 1]) / 2.0)
+
+
+def _coincidence_count(
+    reference: np.ndarray,
+    tested: np.ndarray,
+    *,
+    lag_seconds: float,
+    tolerance_seconds: float,
+) -> int:
+    """Count one-to-one coincidences with linear memory and runtime."""
+    ref = reference + lag_seconds
+    i = 0
+    j = 0
+    matches = 0
+    while i < ref.size and j < tested.size:
+        delta = tested[j] - ref[i]
+        if abs(delta) <= tolerance_seconds:
+            matches += 1
+            i += 1
+            j += 1
+        elif delta < -tolerance_seconds:
+            j += 1
+        else:
+            i += 1
+    return matches
+
+
+def _unit_label(state: ProjectState, sorter_key: str, unit_id: int) -> str:
+    metadata = state.sorting_provenance.get(sorter_key, {}).get(
+        "unit_metadata",
+        {},
+    )
+    details = metadata.get(str(unit_id), metadata.get(unit_id, {}))
+    return str(details.get("source_variable") or unit_id)
+
+
+def _unit_channel(
+    state: ProjectState,
+    sorter_key: str,
+    unit_id: int,
+) -> int | None:
+    metadata = state.sorting_provenance.get(sorter_key, {}).get(
+        "unit_metadata",
+        {},
+    )
+    details = metadata.get(str(unit_id), metadata.get(unit_id, {}))
+    if details.get("channel_number") is not None:
+        return int(details["channel_number"])
+    metric = next(
+        (
+            row
+            for row in state.unit_metrics_by_sorter.get(sorter_key, [])
+            if int(row.get("unit_id", -1)) == int(unit_id)
+        ),
+        None,
+    )
+    if metric is None or metric.get("peak_channel") is None:
+        return None
+    peak_index = int(metric["peak_channel"])
+    channel_ids = (
+        state.metadata.get("recording_adapter", {}).get("channel_ids")
+        or state.metadata.get("selected_channel_ids")
+        or []
+    )
+    if 0 <= peak_index < len(channel_ids):
+        try:
+            return int(channel_ids[peak_index])
+        except (TypeError, ValueError):
+            return peak_index
+    return peak_index
+
+
+def _agreement_interpretation(
+    precision: float,
+    recall: float,
+    f1: float,
+    chance_corrected: float,
+) -> str:
+    if recall >= 0.75 and precision < 0.25:
+        return "reference_unit_embedded_in_high_rate_or_contaminated_cluster"
+    if f1 >= 0.70 and chance_corrected >= 0.60:
+        return "strong_temporal_agreement"
+    if f1 >= 0.40 and chance_corrected >= 0.25:
+        return "partial_temporal_agreement"
+    if f1 >= 0.15 and chance_corrected > 0.0:
+        return "weak_or_merged_temporal_agreement"
+    return "no_reliable_temporal_match"
+
+
+def compare_sorting_pair_with_lag(
+    state: ProjectState,
+    reference_key: str,
+    tested_key: str,
+    *,
+    tolerance_ms: float = 0.5,
+    lag_search_ms: float = 2.0,
+    output_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Compare two outputs while retaining offsets, labels, and uncertainty.
+
+    The reference name describes the comparison direction only. Neither result
+    is treated as biological ground truth.
+    """
+    from scipy.optimize import linear_sum_assignment
+
+    if reference_key not in state.sorting_results:
+        raise KeyError(f"Unknown reference sorting result: {reference_key}")
+    if tested_key not in state.sorting_results:
+        raise KeyError(f"Unknown tested sorting result: {tested_key}")
+    reference = state.sorting_results[reference_key]
+    tested = state.sorting_results[tested_key]
+    reference_ids = sorted(reference)
+    tested_ids = sorted(tested)
+    tolerance_seconds = float(tolerance_ms) / 1000.0
+    search_seconds = float(lag_search_ms) / 1000.0
+    duration = max(float(state.duration_seconds), 1e-9)
+    rows: list[dict[str, Any]] = []
+    score_matrix = np.zeros((len(reference_ids), len(tested_ids)), dtype=float)
+    for row_index, reference_id in enumerate(reference_ids):
+        ref_times = np.asarray(reference[reference_id], dtype=float)
+        for column_index, tested_id in enumerate(tested_ids):
+            tested_times = np.asarray(tested[tested_id], dtype=float)
+            lag = _nearest_lag_seconds(
+                ref_times,
+                tested_times,
+                search_window_seconds=search_seconds,
+            )
+            matches = _coincidence_count(
+                ref_times,
+                tested_times,
+                lag_seconds=lag,
+                tolerance_seconds=tolerance_seconds,
+            )
+            precision = matches / max(tested_times.size, 1)
+            recall = matches / max(ref_times.size, 1)
+            f1 = (
+                2.0 * precision * recall / (precision + recall)
+                if precision + recall
+                else 0.0
+            )
+            expected = min(
+                float(min(ref_times.size, tested_times.size)),
+                (
+                    ref_times.size
+                    * tested_times.size
+                    * (2.0 * tolerance_seconds)
+                    / duration
+                ),
+            )
+            possible = max(min(ref_times.size, tested_times.size) - expected, 1.0)
+            chance_corrected = float(
+                np.clip((matches - expected) / possible, -1.0, 1.0)
+            )
+            score_matrix[row_index, column_index] = max(f1, 0.0)
+            reference_channel = _unit_channel(
+                state,
+                reference_key,
+                reference_id,
+            )
+            tested_channel = _unit_channel(state, tested_key, tested_id)
+            rows.append(
+                {
+                    "reference_unit": int(reference_id),
+                    "reference_label": _unit_label(
+                        state,
+                        reference_key,
+                        reference_id,
+                    ),
+                    "reference_channel": reference_channel,
+                    "reference_spike_count": int(ref_times.size),
+                    "tested_unit": int(tested_id),
+                    "tested_label": _unit_label(state, tested_key, tested_id),
+                    "tested_channel": tested_channel,
+                    "tested_spike_count": int(tested_times.size),
+                    "channel_agreement": (
+                        reference_channel == tested_channel
+                        if reference_channel is not None
+                        and tested_channel is not None
+                        else None
+                    ),
+                    "estimated_lag_ms": float(lag * 1000.0),
+                    "tolerance_ms": float(tolerance_ms),
+                    "matched_spikes": int(matches),
+                    "expected_chance_matches": float(expected),
+                    "precision": float(precision),
+                    "recall": float(recall),
+                    "f1": float(f1),
+                    "chance_corrected_agreement": chance_corrected,
+                    "interpretation": _agreement_interpretation(
+                        precision,
+                        recall,
+                        f1,
+                        chance_corrected,
+                    ),
+                }
+            )
+    assigned: list[dict[str, Any]] = []
+    if score_matrix.size:
+        assigned_rows, assigned_columns = linear_sum_assignment(-score_matrix)
+        lookup = {
+            (row["reference_unit"], row["tested_unit"]): row
+            for row in rows
+        }
+        for row_index, column_index in zip(
+            assigned_rows,
+            assigned_columns,
+            strict=True,
+        ):
+            assigned.append(
+                dict(
+                    lookup[
+                        (
+                            reference_ids[int(row_index)],
+                            tested_ids[int(column_index)],
+                        )
+                    ]
+                )
+            )
+    summary: dict[str, Any] = {
+        "schema": "neuroephys.external-sorting-comparison.v1",
+        "reference_key": reference_key,
+        "tested_key": tested_key,
+        "reference_is_ground_truth": False,
+        "tolerance_ms": float(tolerance_ms),
+        "lag_search_ms": float(lag_search_ms),
+        "duration_seconds": float(state.duration_seconds),
+        "reference_unit_count": len(reference_ids),
+        "tested_unit_count": len(tested_ids),
+        "pairwise": rows,
+        "one_to_one_assignment": assigned,
+        "strong_match_count": sum(
+            row["interpretation"] == "strong_temporal_agreement"
+            for row in assigned
+        ),
+        "interpretation": (
+            "Temporal agreement measures reproducibility between two sorting "
+            "workflows. External manual/offline sorting remains a comparison "
+            "reference, not ground truth. All assigned units require waveform, "
+            "refractory-period, stability, and manual curation review."
+        ),
+    }
+    destination = output_dir or (
+        state.root
+        / "results"
+        / "sorting_comparison"
+        / f"{reference_key}_vs_{tested_key}"
+    )
+    destination.mkdir(parents=True, exist_ok=True)
+    pairwise_path = destination / "pairwise_agreement.csv"
+    assignment_path = destination / "one_to_one_assignment.csv"
+    summary_path = destination / "comparison_summary.json"
+    if rows:
+        with pairwise_path.open("w", newline="", encoding="utf-8-sig") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+    if assigned:
+        with assignment_path.open("w", newline="", encoding="utf-8-sig") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(assigned[0]))
+            writer.writeheader()
+            writer.writerows(assigned)
+    summary["outputs"] = {
+        "pairwise_csv": str(pairwise_path),
+        "assignment_csv": str(assignment_path),
+        "summary_json": str(summary_path),
+    }
+    summary_path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    summary["outputs"].update(
+        export_sorting_comparison_figures(summary, destination)
+    )
+    summary_path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    state.sorting_comparison.setdefault("external_references", {})[
+        f"{reference_key}_vs_{tested_key}"
+    ] = summary
+    state.log(
+        f"External sorter comparison completed: {reference_key} vs {tested_key}; "
+        f"{summary['strong_match_count']} strong one-to-one match(es)"
+    )
+    return summary
+
+
+def export_sorting_comparison_figures(
+    summary: dict[str, Any],
+    output_dir: Path,
+) -> dict[str, str]:
+    """Export readable comparison panels without claiming ground truth."""
+    import matplotlib.pyplot as plt
+
+    pairwise = summary.get("pairwise", [])
+    assigned = summary.get("one_to_one_assignment", [])
+    reference_units = sorted(
+        {int(row["reference_unit"]) for row in pairwise}
+    )
+    tested_units = sorted(
+        {int(row["tested_unit"]) for row in pairwise}
+    )
+    reference_labels = {
+        int(row["reference_unit"]): str(row["reference_label"])
+        for row in pairwise
+    }
+    tested_labels = {
+        int(row["tested_unit"]): str(row["tested_label"])
+        for row in pairwise
+    }
+    matrix = np.full((len(reference_units), len(tested_units)), np.nan)
+    reference_index = {
+        unit_id: index for index, unit_id in enumerate(reference_units)
+    }
+    tested_index = {
+        unit_id: index for index, unit_id in enumerate(tested_units)
+    }
+    for row in pairwise:
+        matrix[
+            reference_index[int(row["reference_unit"])],
+            tested_index[int(row["tested_unit"])],
+        ] = float(row["f1"])
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    heatmap_png = output_dir / "sorting_agreement_heatmap.png"
+    heatmap_svg = output_dir / "sorting_agreement_heatmap.svg"
+    figure, axis = plt.subplots(
+        figsize=(
+            max(8.5, len(tested_units) * 0.58),
+            max(5.0, len(reference_units) * 0.48),
+        )
+    )
+    image = axis.imshow(
+        matrix,
+        vmin=0,
+        vmax=1,
+        cmap="viridis",
+        aspect="auto",
+    )
+    axis.set_xticks(range(len(tested_units)))
+    axis.set_xticklabels(
+        [tested_labels[unit_id] for unit_id in tested_units],
+        rotation=45,
+        ha="right",
+    )
+    axis.set_yticks(range(len(reference_units)))
+    axis.set_yticklabels(
+        [reference_labels[unit_id] for unit_id in reference_units]
+    )
+    axis.set_xlabel(f"Tested result: {summary['tested_key']}")
+    axis.set_ylabel(f"Comparison reference: {summary['reference_key']}")
+    axis.set_title(
+        f"Spike-time agreement (F1, ±{summary['tolerance_ms']:.2f} ms)"
+    )
+    colorbar = figure.colorbar(image, ax=axis, pad=0.02)
+    colorbar.set_label("F1 agreement")
+    figure.text(
+        0.5,
+        0.005,
+        "Agreement measures reproducibility between outputs; neither result is ground truth.",
+        ha="center",
+        fontsize=8,
+        color="#4b5563",
+    )
+    figure.tight_layout(rect=(0, 0.03, 1, 1))
+    figure.savefig(heatmap_png, dpi=180, bbox_inches="tight")
+    figure.savefig(heatmap_svg, bbox_inches="tight")
+    plt.close(figure)
+
+    assigned_png = output_dir / "assigned_unit_agreement.png"
+    assigned_svg = output_dir / "assigned_unit_agreement.svg"
+    figure, axis = plt.subplots(
+        figsize=(9.5, max(4.8, len(assigned) * 0.52))
+    )
+    labels = [
+        f"{row['reference_label']} → {row['tested_label']}"
+        for row in assigned
+    ]
+    values = [float(row["f1"]) for row in assigned]
+    colors = [
+        (
+            "#157a6e"
+            if row["interpretation"] == "strong_temporal_agreement"
+            else "#e9a23b"
+            if row["interpretation"]
+            in {
+                "partial_temporal_agreement",
+                "weak_or_merged_temporal_agreement",
+            }
+            else "#c24f5d"
+        )
+        for row in assigned
+    ]
+    positions = np.arange(len(assigned))
+    axis.barh(positions, values, color=colors, height=0.7)
+    axis.set_yticks(positions)
+    axis.set_yticklabels(labels)
+    axis.invert_yaxis()
+    axis.set_xlim(0, 1)
+    axis.set_xlabel("F1 agreement")
+    axis.set_title("One-to-one assignment by spike-time agreement")
+    axis.grid(axis="x", color="#d6dde0", linewidth=0.7)
+    axis.set_axisbelow(True)
+    for position, value in zip(positions, values, strict=True):
+        axis.text(
+            min(value + 0.015, 0.97),
+            position,
+            f"{value:.3f}",
+            va="center",
+            fontsize=8,
+        )
+    figure.text(
+        0.5,
+        0.005,
+        "Manual waveform and refractory-period review remains required.",
+        ha="center",
+        fontsize=8,
+        color="#4b5563",
+    )
+    figure.tight_layout(rect=(0, 0.03, 1, 1))
+    figure.savefig(assigned_png, dpi=180, bbox_inches="tight")
+    figure.savefig(assigned_svg, bbox_inches="tight")
+    plt.close(figure)
+    return {
+        "agreement_heatmap_png": str(heatmap_png),
+        "agreement_heatmap_svg": str(heatmap_svg),
+        "assigned_units_png": str(assigned_png),
+        "assigned_units_svg": str(assigned_svg),
+    }

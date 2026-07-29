@@ -18,8 +18,12 @@ NeuroEphys AI 采用“复用成熟计算能力、保留原生输出、自主实
 | scikit-learn | 分类、回归、聚类、降维与交叉验证 | https://scikit-learn.org/stable/ |
 | Matplotlib | 交互图形与PNG/SVG/PDF导出 | https://matplotlib.org/stable/ |
 | PySide6 | 桌面界面 | https://doc.qt.io/qtforpython-6/ |
+| nex5file | NeuroExplorer `.nex5` 文件读取；保留原始候选 unit、spike 时间与波形摘要 | https://neuroexplorer.com/docs/python_packages/nex5file.html |
 
 完整依赖版本由项目导出的环境记录提供。发布可执行包前应再次核对实际打包组件的许可证与再分发要求。
+
+`nex5file` 采用 MIT 许可证。NeuroEphys AI 调用该软件包公开 API，
+没有复制 NeuroExplorer 示例脚本、第三方 MATLAB 读取器、软件界面或教程文字。
 
 ## 方法与教程来源
 

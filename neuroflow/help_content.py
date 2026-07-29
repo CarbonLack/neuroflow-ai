@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-# Long bilingual help strings are intentionally split across adjacent literals.
-# ruff: noqa: ISC004
-
 REFERENCES = (
     {
         "name": "Kilosort4 GUI and parameter guide",

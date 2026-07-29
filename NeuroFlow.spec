@@ -54,6 +54,7 @@ for package in (
     "one",
     "sklearn",
     "keyring",
+    "nex5file",
 ):
     package_datas, package_binaries, package_hidden = collect_all(
         package,
