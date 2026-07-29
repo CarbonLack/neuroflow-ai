@@ -10,16 +10,29 @@ from PyInstaller.utils.hooks import (
     collect_dynamic_libs,
 )
 
-python_dlls = Path(sys.base_prefix) / "DLLs"
+python_runtime_dirs = [
+    Path(sys.base_prefix) / "DLLs",
+    Path(sys.base_prefix),
+]
 lite_build = os.environ.get("NEUROEPHYS_LITE_BUILD", "").strip() == "1"
 # PyInstaller resolves transitive DLLs through PATH. Prefer the OpenSSL build
 # shipped with this Python runtime over unrelated Conda installations.
-os.environ["PATH"] = f"{python_dlls}{os.pathsep}{os.environ.get('PATH', '')}"
+runtime_path = os.pathsep.join(
+    str(directory) for directory in python_runtime_dirs if directory.exists()
+)
+os.environ["PATH"] = f"{runtime_path}{os.pathsep}{os.environ.get('PATH', '')}"
 
 datas = []
 binaries = [
-    (str(python_dlls / name), ".")
-    for name in ("libssl-3-x64.dll", "libcrypto-3-x64.dll")
+    (str(directory / name), ".")
+    for directory in python_runtime_dirs
+    for name in (
+        "libssl-3-x64.dll",
+        "libcrypto-3-x64.dll",
+        "libssl-3.dll",
+        "libcrypto-3.dll",
+    )
+    if (directory / name).is_file()
 ]
 hiddenimports = [
     "matplotlib.backends.backend_agg",
