@@ -9,6 +9,9 @@ from PyInstaller.utils.hooks import (
     collect_data_files,
     collect_dynamic_libs,
 )
+from neuroflow.product import PRODUCT_VERSION
+
+release_series = ".".join(PRODUCT_VERSION.split(".")[:2])
 
 python_runtime_dirs = [
     Path(sys.base_prefix) / "DLLs",
@@ -94,8 +97,8 @@ datas += [
     ("docs/site", "neuroflow_docs"),
     ("assets/brand", "neuroephys_brand"),
     ("README_FIRST.md", "."),
-    ("RELEASE_NOTES_1.0.md", "."),
-    ("RELEASE_VALIDATION_1.0.md", "."),
+    (f"RELEASE_NOTES_{release_series}.md", "."),
+    (f"RELEASE_VALIDATION_{release_series}.md", "."),
     ("THIRD_PARTY_SOURCES.md", "."),
     ("PROJECT_RIGHTS_NOTICE_ZH.md", "."),
 ]

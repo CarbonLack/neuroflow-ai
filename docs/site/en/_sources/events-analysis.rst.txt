@@ -32,6 +32,33 @@ condition membership. The PSTH shows condition mean and standard error;
 shaded regions mark the exact baseline and response windows. The population
 heatmap uses baseline z-scores and a diverging color scale.
 
+Single-trial and population dynamics
+------------------------------------
+
+Population-dynamics views on **08 Neural activity** open a settings review
+before execution. Choose the event condition, brain-region unit scope, analysis
+window, bin width, Gaussian smoothing :math:`\sigma`, baseline handling, and
+unit ordering. Baselines can be pooled per unit across trials or estimated
+separately for each trial. Ordering can use peak time, a PCA loading, or the
+optional Rastermap backend. The same auditable result drives the ordered
+heatmap, single-trial, condition-comparison, and PCA-trajectory views.
+
+For variable-reaction-time tasks, the Python API also accepts an explicit valid
+start/stop window for every trial so time outside a trial is not treated as zero
+firing. Continuous-behavior regression keeps entire trials together during
+train/test splitting and exposes neural-to-target lag and repeated neuron-count
+scaling.
+
+Fine-timing relationships
+-------------------------
+
+The fine-timing module does not label functional evidence as anatomical
+connectivity. Choose count, reference-rate, or trial/rate/lag-edge-normalized
+CCGs; fixed-interval or centered jitter; flank-SD or empirical-p inference;
+FDR, Bonferroni, or no multiplicity correction; and within-region,
+between-region, or spatial-distance filters. The run dialog estimates eligible
+pairs and surrogate CCG workload before analysis starts.
+
 Quality checks
 --------------
 

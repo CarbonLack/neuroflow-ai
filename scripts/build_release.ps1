@@ -27,6 +27,8 @@ try {
     if ($Version -notmatch '^\d+\.\d+\.\d+$') {
         throw "Invalid release version: $Version"
     }
+    $VersionParts = $Version -split '\.'
+    $ReleaseSeries = "$($VersionParts[0]).$($VersionParts[1])"
     $ReleaseRoot = Join-Path $Root "release"
     $ReleaseDir = Join-Path $ReleaseRoot "v$Version"
     $ResolvedReleaseRoot = [System.IO.Path]::GetFullPath($ReleaseRoot)
@@ -39,9 +41,9 @@ try {
     }
     New-Item -ItemType Directory -Path $ResolvedReleaseDir | Out-Null
 
-    & $Python -m pip install "pyinstaller>=6.10,<7" "build>=1.2,<2" "twine>=6,<7"
+    & $Python -m pip install -e ".[desktop,dev]" "pyinstaller>=6.10,<7"
     if ($LASTEXITCODE -ne 0) {
-        throw "Release tooling installation failed with exit code $LASTEXITCODE."
+        throw "Project and release tooling installation failed with exit code $LASTEXITCODE."
     }
 
     if (-not $SkipTests) {
@@ -130,8 +132,8 @@ try {
 
     foreach ($ReleaseDocument in @(
         "README_FIRST.md",
-        "RELEASE_NOTES_1.0.md",
-        "RELEASE_VALIDATION_1.0.md"
+        "RELEASE_NOTES_$ReleaseSeries.md",
+        "RELEASE_VALIDATION_$ReleaseSeries.md"
     )) {
         $SourceDocument = Join-Path $Root $ReleaseDocument
         if (-not (Test-Path -LiteralPath $SourceDocument)) {

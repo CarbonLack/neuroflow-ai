@@ -934,6 +934,7 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
             "event_alignment",
             "behavior",
             "spike_train_statistics",
+            "fine_timing_connectivity",
             "lfp_spectral_analysis",
             "spike_field_coupling",
             "method_validation_case",
@@ -1027,6 +1028,37 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         if state.spike_train_analysis
         else ""
     )
+    connectivity = state.spike_train_analysis.get("connectivity", {})
+    connectivity_sentence = ""
+    if connectivity:
+        configuration = connectivity.get("configuration", {})
+        connectivity_sentence = (
+            "Fine-timescale functional relationships were assessed with raw and "
+            "jitter-corrected cross-correlograms. The analysis used "
+            f"{float(configuration.get('bin_size_seconds', 0.001)) * 1_000:g} ms "
+            "bins, a "
+            f"{float(configuration.get('jitter_window_seconds', 0.025)) * 1_000:g} ms "
+            f"jitter window, {int(configuration.get('jitter_iterations', 0))} "
+            f"surrogates, {configuration.get('normalization', 'counts')} "
+            f"normalization, {configuration.get('significance_method', 'unspecified')} "
+            "inference, and "
+            f"{configuration.get('multiple_comparison', 'unspecified')} "
+            "multiple-comparison control. Significant timing relationships were "
+            "treated as functional evidence rather than anatomical connections. "
+        )
+    population = state.spike_train_analysis.get("population_dynamics", {})
+    population_sentence = ""
+    if population:
+        population_sentence = (
+            "Single-trial population activity was discretized in "
+            f"{float(population.get('bin_size_seconds', 0.001)) * 1_000:g} ms bins "
+            "and smoothed with a Gaussian kernel with "
+            f"sigma={float(population.get('smoothing_sigma_seconds', 0.025)) * 1_000:g} ms. "
+            f"Baseline handling was {population.get('baseline', {}).get('mode', 'none')}; "
+            "units were ordered using "
+            f"{population.get('ordering', {}).get('method', 'unspecified')}, and "
+            "condition-averaged population trajectories were summarized with PCA. "
+        )
     lfp_sentence = (
         "The LFP branch was resampled to 1 kHz and analyzed using Welch power "
         "spectral density, magnitude-squared coherence, cross-spectral phase lag, "
@@ -1063,7 +1095,8 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         "correction across units. Trial labels were decoded with a preprocessing "
         "pipeline fit inside stratified cross-validation, and evaluated against a "
         "label-permutation null distribution. "
-        f"{spike_train_sentence}{lfp_sentence}{coupling_sentence}{case_sentence}\n"
+        f"{spike_train_sentence}{connectivity_sentence}{population_sentence}{lfp_sentence}"
+        f"{coupling_sentence}{case_sentence}\n"
         "\n## Method sources\n\n"
         "- SpikeInterface: data interfaces, preprocessing and postprocessing architecture.\n"
         "- Neo: unit-aware electrophysiology data objects.\n"
@@ -1084,6 +1117,60 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         pd.DataFrame(state.spike_train_analysis["rows"]).to_csv(
             tables_dir / "spike_train_statistics.csv", index=False
         )
+    if connectivity.get("pairs"):
+        excluded = {"lags_seconds", "raw_values", "jitter_mean", "corrected_values"}
+        pd.DataFrame(
+            [
+                {key: value for key, value in pair.items() if key not in excluded}
+                for pair in connectivity["pairs"]
+            ]
+        ).to_csv(tables_dir / "spike_timing_connectivity.csv", index=False)
+    if population:
+        unit_ids = population.get("unit_ids", [])
+        ordering = population.get("ordering", {})
+        order = np.asarray(ordering.get("unit_order_indices", []), dtype=int)
+        scores = np.asarray(ordering.get("ordering_score", []), dtype=float)
+        if len(order) == len(unit_ids):
+            pd.DataFrame(
+                {
+                    "rank": np.arange(len(order)),
+                    "unit_id": [unit_ids[index] for index in order],
+                    "ordering_score": scores[order],
+                    "ordering_method": ordering.get("method"),
+                }
+            ).to_csv(tables_dir / "population_unit_order.csv", index=False)
+        rates = np.asarray(population.get("rates", []), dtype=float)
+        labels = np.asarray(population.get("event_labels", [])).astype(str)
+        times = np.asarray(population.get("time_seconds", []), dtype=float)
+        if rates.ndim == 3 and len(labels) == rates.shape[0]:
+            condition_rows = []
+            for condition in np.unique(labels):
+                selected = rates[labels == condition]
+                mean = np.nanmean(selected, axis=(0, 2))
+                for time, value in zip(times, mean):
+                    condition_rows.append(
+                        {
+                            "condition": condition,
+                            "time_seconds": float(time),
+                            "population_mean": float(value),
+                            "trial_count": int(len(selected)),
+                        }
+                    )
+            pd.DataFrame(condition_rows).to_csv(
+                tables_dir / "population_condition_timecourse.csv", index=False
+            )
+            arrays_dir = output_dir / "arrays"
+            arrays_dir.mkdir(exist_ok=True)
+            np.savez_compressed(
+                arrays_dir / "population_dynamics.npz",
+                rates=rates,
+                time_seconds=times,
+                event_times_seconds=np.asarray(
+                    population.get("event_times_seconds", []), dtype=float
+                ),
+                event_labels=labels,
+                unit_ids=np.asarray(unit_ids, dtype=int),
+            )
     if state.lfp_analysis.get("band_power"):
         band_power = state.lfp_analysis["band_power"]
         pd.DataFrame(
@@ -1136,9 +1223,11 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
 
     from .figures import (
         behavior_figure,
+        connectivity_figure,
         decoding_figure,
         event_analysis_figure,
         neural_toolkit_figure,
+        population_dynamics_figure,
         qc_figure,
         regression_figure,
         statistics_figure,
@@ -1156,7 +1245,7 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         figure_builders.append(
             ("raster_psth_population", lambda: event_analysis_figure(state))
         )
-    if state.spike_train_analysis:
+    if state.spike_train_analysis.get("rows"):
         figure_builders.extend(
             [
                 (
@@ -1166,6 +1255,44 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
                 (
                     "spike_train_relationships",
                     lambda: neural_toolkit_figure(state, "spike:relationships"),
+                ),
+            ]
+        )
+    if state.spike_train_analysis.get("connectivity"):
+        figure_builders.extend(
+            [
+                (
+                    "connectivity_ccg_examples",
+                    lambda: connectivity_figure(state, "examples"),
+                ),
+                (
+                    "connectivity_network",
+                    lambda: connectivity_figure(state, "network"),
+                ),
+                (
+                    "connectivity_distance",
+                    lambda: connectivity_figure(state, "distance"),
+                ),
+            ]
+        )
+    if population:
+        figure_builders.extend(
+            [
+                (
+                    "population_ordered_heatmap",
+                    lambda: population_dynamics_figure(state, "heatmap"),
+                ),
+                (
+                    "population_single_trial",
+                    lambda: population_dynamics_figure(state, "single_trial"),
+                ),
+                (
+                    "population_conditions",
+                    lambda: population_dynamics_figure(state, "conditions"),
+                ),
+                (
+                    "population_pca",
+                    lambda: population_dynamics_figure(state, "pca"),
                 ),
             ]
         )

@@ -21,6 +21,11 @@ NeuroEphys AI 通过公开接口调用成熟库，并自主开发项目、适配
   ——IBL 公开数据和 ALF 对象访问。
 * `DANDI Archive 文档 <https://docs.dandiarchive.org/>`_
   ——公开 NWB 数据查找与下载。
+* `Trautmann et al. 2025 <https://doi.org/10.1038/s41593-025-01976-5>`_ 与
+  `Fig. 7 公开数据/代码 <https://zenodo.org/records/7946011>`_
+  ——NHP 高密度记录的外部验收和单 trial/精细时序方法定义。
+* `Rastermap 论文与官方代码 <https://github.com/MouseLand/rastermap>`_
+  ——可选群体活动排序后端；未捆绑时使用内置峰值时间或 PCA 排序。
 * `DeepSeek API 文档 <https://api-docs.deepseek.com/>`_
   ——可选在线结构化生成和工具调用传输。
 * `Ollama OpenAI 兼容接口 <https://docs.ollama.com/api/openai-compatibility>`_

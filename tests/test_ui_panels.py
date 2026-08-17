@@ -15,7 +15,13 @@ from neuroflow.sorting_results import (
     register_sorting_result,
 )
 from neuroflow.sorting_workbench import SortingWorkbench
-from neuroflow.ui import ImportDialog, NeuroFlowWindow, PipelineWorker
+from neuroflow.ui import (
+    ConnectivitySettingsDialog,
+    ImportDialog,
+    NeuroFlowWindow,
+    PipelineWorker,
+    PopulationSettingsDialog,
+)
 from neuroflow.unit_curation_ui import UnitCurationDialog
 
 
@@ -80,6 +86,63 @@ def test_gui_worker_writes_reloadable_structured_audit(tmp_path: Path):
     restored = load_project(state.root)
     assert restored.metadata["structured_run_log"][-1]["stage"] == "import"
     assert restored.metadata["structured_run_log"][-1]["status"] == "completed"
+
+
+def test_connectivity_dialog_exposes_choices_and_estimates_work(tmp_path: Path):
+    QApplication.instance() or QApplication([])
+    state = ProjectState(
+        root=tmp_path / "connectivity_project",
+        duration_seconds=10.0,
+        sorted_spikes={
+            1: np.linspace(0.1, 9.9, 30),
+            2: np.linspace(0.2, 9.8, 30),
+            3: np.linspace(0.3, 9.7, 30),
+        },
+        metadata={"unit_regions": {"1": "M1", "2": "M1", "3": "PMd"}},
+    )
+    dialog = ConnectivitySettingsDialog(state, "en_US")
+    dialog.max_pairs.setValue(2)
+    dialog.iterations.setValue(10)
+    dialog._update_estimate()
+
+    settings = dialog.settings()
+    assert settings["pair_mode"] == "all"
+    assert settings["max_pairs"] == 2
+    assert settings["jitter_iterations"] == 10
+    assert "3" in dialog.estimate.text()
+    assert "20" in dialog.estimate.text()
+    dialog.close()
+
+
+def test_population_dialog_filters_events_and_regions(tmp_path: Path):
+    QApplication.instance() or QApplication([])
+    state = ProjectState(
+        root=tmp_path / "population_project",
+        duration_seconds=10.0,
+        events=[
+            {"time_seconds": 1.0, "condition": "left"},
+            {"time_seconds": 2.0, "condition": "right"},
+            {"time_seconds": 3.0, "condition": "left"},
+        ],
+        sorted_spikes={
+            1: np.array([0.9, 1.1]),
+            2: np.array([1.0, 2.0]),
+            3: np.array([2.1, 3.1]),
+        },
+        metadata={"unit_regions": {"1": "LIP", "2": "LIP", "3": "SC"}},
+    )
+    dialog = PopulationSettingsDialog(state, "en_US")
+    dialog.event_scope.setCurrentIndex(dialog.event_scope.findData("left"))
+    dialog.unit_scope.setCurrentIndex(dialog.unit_scope.findData("LIP"))
+    dialog.bin_ms.setValue(10.0)
+    settings = dialog.settings()
+
+    assert settings["event_times_seconds"] == [1.0, 3.0]
+    assert settings["event_labels"] == ["left", "left"]
+    assert settings["unit_ids"] == [1, 2]
+    assert settings["bin_size_seconds"] == 0.01
+    assert "2 trials" in dialog.estimate.text()
+    dialog.close()
 
 
 def test_scrollable_workspace_and_independent_panel_export(

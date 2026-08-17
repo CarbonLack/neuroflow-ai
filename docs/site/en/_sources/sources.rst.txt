@@ -23,6 +23,13 @@ Core sources
   — public IBL data access and ALF objects.
 * `DANDI Archive documentation <https://docs.dandiarchive.org/>`_
   — public NWB dataset discovery and access.
+* `Trautmann et al. 2025 <https://doi.org/10.1038/s41593-025-01976-5>`_ and
+  `public Fig. 7 data/code <https://zenodo.org/records/7946011>`_
+  — external NHP high-density-recording acceptance test and disclosed
+  single-trial/fine-timing method definitions.
+* `Rastermap paper and official code <https://github.com/MouseLand/rastermap>`_
+  — optional population-ordering backend; built-in peak-time and PCA ordering
+  remain available when it is not installed.
 * `DeepSeek API documentation <https://api-docs.deepseek.com/>`_
   — optional online structured generation and tool-call transport.
 * `Ollama OpenAI compatibility <https://docs.ollama.com/api/openai-compatibility>`_

@@ -98,6 +98,39 @@ PUBLIC_EXPORTS: dict[str, tuple[str, str]] = {
     "trial_feature_matrix": ("neuroflow.decoding", "trial_feature_matrix"),
     "run_decoding_suite": ("neuroflow.decoding", "run_decoding_suite"),
     "run_regression_suite": ("neuroflow.decoding", "run_regression_suite"),
+    # Single-trial and continuous population analysis
+    "POPULATION_ORDERING_METHODS": (
+        "neuroflow.population",
+        "POPULATION_ORDERING_METHODS",
+    ),
+    "CONTINUOUS_MODELS": (
+        "neuroflow.population",
+        "CONTINUOUS_MODELS",
+    ),
+    "bin_spike_population": (
+        "neuroflow.population",
+        "bin_spike_population",
+    ),
+    "align_spike_population": (
+        "neuroflow.population",
+        "align_spike_population",
+    ),
+    "order_population_activity": (
+        "neuroflow.population",
+        "order_population_activity",
+    ),
+    "population_pca_trajectories": (
+        "neuroflow.population",
+        "population_pca_trajectories",
+    ),
+    "continuous_population_regression": (
+        "neuroflow.population",
+        "continuous_population_regression",
+    ),
+    "run_population_dynamics_suite": (
+        "neuroflow.population",
+        "run_population_dynamics_suite",
+    ),
     # Neo / Elephant toolkit
     "provider_status": ("neuroflow.ephys_toolkit", "provider_status"),
     "to_neo_spike_trains": (
@@ -111,6 +144,34 @@ PUBLIC_EXPORTS: dict[str, tuple[str, str]] = {
     "run_spike_train_suite": (
         "neuroflow.ephys_toolkit",
         "run_spike_train_suite",
+    ),
+    "CONNECTIVITY_METHODS": (
+        "neuroflow.connectivity",
+        "CONNECTIVITY_METHODS",
+    ),
+    "SIGNIFICANCE_METHODS": (
+        "neuroflow.connectivity",
+        "SIGNIFICANCE_METHODS",
+    ),
+    "cross_correlogram": (
+        "neuroflow.connectivity",
+        "cross_correlogram",
+    ),
+    "jitter_corrected_correlogram": (
+        "neuroflow.connectivity",
+        "jitter_corrected_correlogram",
+    ),
+    "analyze_spike_connectivity": (
+        "neuroflow.connectivity",
+        "analyze_spike_connectivity",
+    ),
+    "project_interval_sets": (
+        "neuroflow.connectivity",
+        "project_interval_sets",
+    ),
+    "run_connectivity_suite": (
+        "neuroflow.connectivity",
+        "run_connectivity_suite",
     ),
     "run_lfp_suite": ("neuroflow.ephys_toolkit", "run_lfp_suite"),
     "run_spike_field_suite": (

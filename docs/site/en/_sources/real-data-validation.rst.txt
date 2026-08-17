@@ -152,6 +152,29 @@ outputs, warnings, errors, and recovery advice. Full authorized paths and the
 step-by-step runbook remain in the local project's ``exports/documentation``
 directory. The public manual contains only de-identified engineering evidence.
 
+Trautmann 2025 public single-trial acceptance test
+--------------------------------------------------
+
+The Fig. 7 data/code linked by Trautmann et al. (2025) are published in Zenodo
+record ``7946011`` under CC BY 4.0. The downloaded archive contained
+565,533,370 bytes; MD5 ``13d8995bf00160c332891c7abf8c3d1f`` matched the
+Zenodo record.
+
+The disclosed script retained completed trials with finite coherence, positive
+duration, and ``trialType == 20``. LIP retained 1,797 of 2,818 trials and the
+author-supplied 17 of 191 Tin units. SC retained 1,859 of 3,396 trials and 10
+of 16 supplied units. With 1 ms bins, Gaussian :math:`\sigma=25` ms,
+per-trial valid windows, and motion/saccade realignment, pointwise agreement
+between NeuroEphys AI and the disclosed MATLAB kernel was ``r=0.998685`` for
+LIP and ``r=0.998148`` for SC.
+
+This accepts generic single-trial alignment, smoothing, variable validity
+masks, and population averaging. Paper-specific MATLAB loading and panel
+layout remain in the separate validation workspace and are not product
+features. The article's stated Zenodo DOI ``10.5281/zenodo.14744139`` for
+Figs. 1--6/8 was unregistered/returned 404 on 2026-08-17, so those panels are
+not labelled reproduced.
+
 Validation labels
 -----------------
 

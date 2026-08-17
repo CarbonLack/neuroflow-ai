@@ -2914,3 +2914,404 @@ def regression_figure(state: ProjectState) -> Figure:
     axes[0, 2].set_xlabel("Unit", color=MUTED)
     axes[0, 2].set_ylabel("Importance", color=MUTED)
     return fig
+
+
+def connectivity_figure(state: ProjectState, view: str = "examples") -> Figure:
+    """Render selectable fine-timing connectivity views from a shared result."""
+
+    result = state.spike_train_analysis.get("connectivity", {})
+    pairs = result.get("pairs", [])
+    if view not in {"examples", "network", "distance"}:
+        raise ValueError("Connectivity view must be examples, network, or distance")
+    if view == "examples":
+        fig, axes = _base_figure(2, 2, 6.7)
+        ranked = sorted(
+            pairs,
+            key=lambda item: float(item.get("peak_z_flank", 0.0)),
+            reverse=True,
+        )[:4]
+        for axis, pair in zip(axes.flat, ranked):
+            lags_ms = np.asarray(pair.get("lags_seconds", []), dtype=float) * 1_000
+            raw = np.asarray(pair.get("raw_values", []), dtype=float)
+            jitter = np.asarray(pair.get("jitter_mean", []), dtype=float)
+            corrected = np.asarray(pair.get("corrected_values", []), dtype=float)
+            if len(lags_ms):
+                axis.plot(lags_ms, raw, color=MUTED, linewidth=1.0, label="Raw")
+                axis.plot(
+                    lags_ms,
+                    jitter,
+                    color=GOLD,
+                    linewidth=1.0,
+                    label="Jitter expectation",
+                )
+                axis.plot(
+                    lags_ms,
+                    corrected,
+                    color=GREEN,
+                    linewidth=1.4,
+                    label="Corrected",
+                )
+                axis.axvline(0, color=INK, linewidth=0.7)
+            status = "significant" if pair.get("significant") else "not significant"
+            axis.set_title(
+                f"Unit {pair['unit_a']} → {pair['unit_b']} · {status}\n"
+                f"lag={float(pair.get('peak_lag_seconds', 0)) * 1_000:.1f} ms · "
+                f"z={float(pair.get('peak_z_flank', 0)):.2f}",
+                loc="left",
+                fontsize=8.5,
+                color=INK,
+            )
+            axis.set_xlabel("Lag (ms)", color=MUTED)
+            axis.set_ylabel("CCG", color=MUTED)
+        for axis in list(axes.flat)[len(ranked) :]:
+            axis.axis("off")
+        if ranked:
+            axes[0, 0].legend(frameon=False, fontsize=7)
+        return fig
+
+    if view == "network":
+        fig, axes = _base_figure(1, 2, 5.2)
+        positions: dict[int, tuple[float, float]] = {}
+        significant = [pair for pair in pairs if pair.get("significant")]
+        for pair in pairs:
+            for key, position_key in (
+                ("unit_a", "position_a_um"),
+                ("unit_b", "position_b_um"),
+            ):
+                position = pair.get(position_key)
+                if position is not None and len(position) >= 2:
+                    positions[int(pair[key])] = (float(position[0]), float(position[1]))
+        axis = axes[0, 0]
+        if positions:
+            for pair in significant:
+                first = positions.get(int(pair["unit_a"]))
+                second = positions.get(int(pair["unit_b"]))
+                if first is not None and second is not None:
+                    color = BLUE if pair.get("relationship") == "synchronous" else CORAL
+                    axis.plot(
+                        [first[0], second[0]],
+                        [first[1], second[1]],
+                        color=color,
+                        alpha=0.55,
+                        linewidth=0.7,
+                    )
+            unit_ids = sorted(positions)
+            xy = np.asarray([positions[unit_id] for unit_id in unit_ids])
+            axis.scatter(xy[:, 0], xy[:, 1], s=17, color=INK, zorder=3)
+            axis.invert_yaxis()
+        else:
+            axis.text(
+                0.5,
+                0.5,
+                _text(state, "没有 Unit 空间位置", "Unit positions are unavailable"),
+                ha="center",
+                va="center",
+                transform=axis.transAxes,
+            )
+        axis.set_title(
+            _text(state, "显著时间关系空间图", "Spatial map of significant timing relationships"),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axis.set_xlabel("Probe x (µm)", color=MUTED)
+        axis.set_ylabel("Probe depth (µm)", color=MUTED)
+        second_axis = axes[0, 1]
+        counts = {
+            "synchronous": sum(
+                pair.get("relationship") == "synchronous" for pair in significant
+            ),
+            "asynchronous": sum(
+                pair.get("relationship") == "asynchronous" for pair in significant
+            ),
+        }
+        second_axis.bar(
+            list(counts),
+            list(counts.values()),
+            color=[BLUE, CORAL],
+        )
+        second_axis.set_title(
+            f"{len(significant)} / {len(pairs)} significant pairs",
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        second_axis.set_ylabel("Pair count", color=MUTED)
+        return fig
+
+    fig, axes = _base_figure(1, 3, 4.8)
+    distance_pairs = [
+        pair
+        for pair in pairs
+        if pair.get("distance_um") is not None
+        and np.isfinite(float(pair.get("peak_z_flank", np.nan)))
+    ]
+    if distance_pairs:
+        axes[0, 0].scatter(
+            [pair["distance_um"] for pair in distance_pairs],
+            [pair["peak_z_flank"] for pair in distance_pairs],
+            c=[CORAL if pair.get("significant") else MUTED for pair in distance_pairs],
+            s=20,
+            alpha=0.75,
+        )
+    axes[0, 0].set_title(
+        _text(state, "距离与 CCG 峰值", "Distance versus CCG peak"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 0].set_xlabel("Unit distance (µm)", color=MUTED)
+    axes[0, 0].set_ylabel("Peak z versus flank", color=MUTED)
+    significant = [pair for pair in pairs if pair.get("significant")]
+    axes[0, 1].hist(
+        [float(pair.get("peak_lag_seconds", 0)) * 1_000 for pair in significant],
+        bins=min(21, max(len(significant), 3)),
+        color=GREEN,
+        alpha=0.85,
+    )
+    axes[0, 1].set_title(
+        _text(state, "显著峰延迟分布", "Significant peak-lag distribution"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 1].set_xlabel("Peak lag (ms)", color=MUTED)
+    axes[0, 1].set_ylabel("Pair count", color=MUTED)
+    p_values = [float(pair.get("adjusted_p_value", 1.0)) for pair in pairs]
+    axes[0, 2].hist(p_values, bins=20, color=GOLD, alpha=0.85)
+    axes[0, 2].axvline(
+        float(result.get("configuration", {}).get("alpha", 0.05)),
+        color=INK,
+        linestyle="--",
+        linewidth=0.9,
+    )
+    axes[0, 2].set_title(
+        _text(state, "校正后 P 值", "Adjusted p-values"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 2].set_xlabel("Adjusted p", color=MUTED)
+    axes[0, 2].set_ylabel("Pair count", color=MUTED)
+    return fig
+
+
+def population_dynamics_figure(
+    state: ProjectState,
+    view: str = "heatmap",
+) -> Figure:
+    """Render generic selectable views of an event-aligned population result."""
+
+    result = state.spike_train_analysis.get("population_dynamics", {})
+    if view not in {"heatmap", "single_trial", "pca", "conditions"}:
+        raise ValueError(
+            "Population view must be heatmap, single_trial, pca, or conditions"
+        )
+    rates = np.asarray(result.get("rates", []), dtype=float)
+    times = np.asarray(result.get("time_seconds", []), dtype=float)
+    labels = np.asarray(result.get("event_labels", [])).astype(str)
+    ordering = result.get("ordering", {})
+    order = np.asarray(
+        ordering.get(
+            "unit_order_indices",
+            np.arange(rates.shape[2] if rates.ndim == 3 else 0),
+        ),
+        dtype=int,
+    )
+    if rates.ndim != 3 or not len(times):
+        return pending_step_figure(
+            state,
+            _text(state, "群体动态", "Population dynamics"),
+            _text(
+                state,
+                "先运行可配置的事件对齐群体分析。",
+                "Run the configurable event-aligned population analysis first.",
+            ),
+            [],
+            _text(state, "单 trial、排序热图和 PCA", "Single trials, ordered heatmaps, and PCA"),
+        )
+
+    if view == "heatmap":
+        fig, axes = _base_figure(1, 2, 5.4)
+        normalized = np.asarray(
+            ordering.get("normalized_mean_activity", np.mean(rates, axis=0)),
+            dtype=float,
+        )
+        image = axes[0, 0].imshow(
+            normalized[:, order].T,
+            aspect="auto",
+            origin="lower",
+            extent=[times[0], times[-1], 0, len(order)],
+            cmap="coolwarm",
+        )
+        axes[0, 0].axvline(0, color=INK, linewidth=0.8)
+        axes[0, 0].set_title(
+            _text(state, "trial 平均群体排序", "Trial-averaged population ordering"),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("Event time (s)", color=MUTED)
+        axes[0, 0].set_ylabel("Ordered unit", color=MUTED)
+        fig.colorbar(image, ax=axes[0, 0], fraction=0.046, pad=0.04)
+        mean_rate = np.nanmean(rates, axis=(0, 2))
+        sem_rate = (
+            np.nanstd(np.nanmean(rates, axis=2), axis=0, ddof=1)
+            / np.sqrt(rates.shape[0])
+            if rates.shape[0] > 1
+            else np.zeros_like(mean_rate)
+        )
+        axes[0, 1].plot(times, mean_rate, color=GREEN, linewidth=1.6)
+        axes[0, 1].fill_between(
+            times,
+            mean_rate - sem_rate,
+            mean_rate + sem_rate,
+            color=GREEN,
+            alpha=0.2,
+        )
+        axes[0, 1].axvline(0, color=INK, linewidth=0.8)
+        axes[0, 1].set_title(
+            _text(state, "群体平均 ± s.e.m.", "Population mean ± s.e.m."),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel("Event time (s)", color=MUTED)
+        axes[0, 1].set_ylabel(str(result.get("value_unit", "Hz")), color=MUTED)
+        return fig
+
+    if view == "single_trial":
+        fig, axes = _base_figure(1, 2, 5.4)
+        unit_mean = np.nanmean(rates, axis=(0, 1), keepdims=True)
+        unit_std = np.nanstd(rates, axis=(0, 1), ddof=1, keepdims=True)
+        normalized = np.divide(
+            rates - unit_mean,
+            unit_std,
+            out=np.zeros_like(rates),
+            where=unit_std > 0,
+        )
+        trial_index = int(
+            state.metadata.get("population_view_trial_index", 0)
+        ) % rates.shape[0]
+        image = axes[0, 0].imshow(
+            normalized[trial_index, :, order].T,
+            aspect="auto",
+            origin="lower",
+            extent=[times[0], times[-1], 0, len(order)],
+            cmap="coolwarm",
+        )
+        axes[0, 0].axvline(0, color=INK, linewidth=0.8)
+        axes[0, 0].set_title(
+            _text(
+                state,
+                f"单 trial {trial_index + 1} · {labels[trial_index]}",
+                f"Single trial {trial_index + 1} · {labels[trial_index]}",
+            ),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("Event time (s)", color=MUTED)
+        axes[0, 0].set_ylabel("Ordered unit", color=MUTED)
+        fig.colorbar(image, ax=axes[0, 0], fraction=0.046, pad=0.04)
+        trial_mean = np.nanmean(rates[trial_index], axis=1)
+        axes[0, 1].plot(times, trial_mean, color=CORAL, linewidth=1.5)
+        axes[0, 1].axvline(0, color=INK, linewidth=0.8)
+        axes[0, 1].set_title(
+            _text(state, "该 trial 的群体平均", "Population mean for this trial"),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel("Event time (s)", color=MUTED)
+        axes[0, 1].set_ylabel(str(result.get("value_unit", "Hz")), color=MUTED)
+        return fig
+
+    if view == "conditions":
+        fig, axes = _base_figure(1, 2, 5.2)
+        conditions = np.unique(labels)
+        for index, condition in enumerate(conditions):
+            selected = np.nanmean(rates[labels == condition], axis=2)
+            mean = np.nanmean(selected, axis=0)
+            sem = (
+                np.nanstd(selected, axis=0, ddof=1) / np.sqrt(len(selected))
+                if len(selected) > 1
+                else np.zeros_like(mean)
+            )
+            color = (GREEN, CORAL, BLUE, GOLD)[index % 4]
+            axes[0, 0].plot(times, mean, color=color, label=condition)
+            axes[0, 0].fill_between(times, mean - sem, mean + sem, color=color, alpha=0.15)
+        axes[0, 0].axvline(0, color=INK, linewidth=0.8)
+        axes[0, 0].legend(frameon=False, fontsize=7)
+        axes[0, 0].set_title(
+            _text(state, "条件群体响应", "Condition-level population response"),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 0].set_xlabel("Event time (s)", color=MUTED)
+        axes[0, 0].set_ylabel(str(result.get("value_unit", "Hz")), color=MUTED)
+        condition_matrix = np.stack(
+            [
+                np.nanmean(rates[labels == condition], axis=(0, 2))
+                for condition in conditions
+            ]
+        )
+        image = axes[0, 1].imshow(
+            condition_matrix,
+            aspect="auto",
+            extent=[times[0], times[-1], len(conditions), 0],
+            cmap="viridis",
+        )
+        axes[0, 1].set_yticks(
+            np.arange(len(conditions)) + 0.5,
+            conditions,
+        )
+        axes[0, 1].set_title(
+            _text(state, "条件 × 时间", "Condition × time"),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 1].set_xlabel("Event time (s)", color=MUTED)
+        fig.colorbar(image, ax=axes[0, 1], fraction=0.046, pad=0.04)
+        return fig
+
+    fig, axes = _base_figure(1, 2, 5.2)
+    pca = result.get("pca", {})
+    trajectories = np.asarray(pca.get("trajectories", []), dtype=float)
+    conditions = np.asarray(pca.get("conditions", [])).astype(str)
+    for index, condition in enumerate(conditions):
+        trajectory = trajectories[index]
+        color = (GREEN, CORAL, BLUE, GOLD)[index % 4]
+        if trajectory.shape[1] >= 2:
+            axes[0, 0].plot(
+                trajectory[:, 0], trajectory[:, 1], color=color, label=condition
+            )
+            axes[0, 0].scatter(
+                trajectory[[0, -1], 0],
+                trajectory[[0, -1], 1],
+                color=color,
+                s=[18, 34],
+            )
+        axes[0, 1].plot(times, trajectory[:, 0], color=color, label=condition)
+    axes[0, 0].set_title(
+        _text(state, "群体 PCA 轨迹", "Population PCA trajectories"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 0].set_xlabel("PC1", color=MUTED)
+    axes[0, 0].set_ylabel("PC2", color=MUTED)
+    axes[0, 0].legend(frameon=False, fontsize=7)
+    axes[0, 1].axvline(0, color=INK, linewidth=0.8)
+    axes[0, 1].set_title(
+        _text(state, "PC1 时间进程", "PC1 time course"),
+        loc="left",
+        fontsize=10,
+        color=INK,
+    )
+    axes[0, 1].set_xlabel("Event time (s)", color=MUTED)
+    axes[0, 1].set_ylabel("PC1", color=MUTED)
+    axes[0, 1].legend(frameon=False, fontsize=7)
+    return fig

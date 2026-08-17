@@ -16,9 +16,10 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/events-analysis.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/documentation_options.js?v=fc837d61"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -88,6 +89,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#import-and-map-events">Import and map events</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#alignment-quality">Alignment quality</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#raster-and-psth">Raster and PSTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single-trial-and-population-dynamics">Single-trial and population dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fine-timing-relationships">Fine-timing relationships</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#quality-checks">Quality checks</a></li>
 </ul>
 </li>
@@ -376,6 +379,7 @@
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#behavior-and-synchronization">Behavior and synchronization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#statistical-and-decoding-limits">Statistical and decoding limits</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#project-recovery-and-provenance">Project recovery and provenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#trautmann-2025-public-single-trial-acceptance-test">Trautmann 2025 public single-trial acceptance test</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-labels">Validation labels</a></li>
 </ul>
 </li>
@@ -446,6 +450,30 @@ each condition and records the retained count.</p>
 condition membership. The PSTH shows condition mean and standard error;
 shaded regions mark the exact baseline and response windows. The population
 heatmap uses baseline z-scores and a diverging color scale.</p>
+</section>
+<section id="single-trial-and-population-dynamics">
+<h2>Single-trial and population dynamics<a class="headerlink" href="#single-trial-and-population-dynamics" title="Link to this heading"></a></h2>
+<p>Population-dynamics views on <strong>08 Neural activity</strong> open a settings review
+before execution. Choose the event condition, brain-region unit scope, analysis
+window, bin width, Gaussian smoothing <span class="math notranslate nohighlight">\(\sigma\)</span>, baseline handling, and
+unit ordering. Baselines can be pooled per unit across trials or estimated
+separately for each trial. Ordering can use peak time, a PCA loading, or the
+optional Rastermap backend. The same auditable result drives the ordered
+heatmap, single-trial, condition-comparison, and PCA-trajectory views.</p>
+<p>For variable-reaction-time tasks, the Python API also accepts an explicit valid
+start/stop window for every trial so time outside a trial is not treated as zero
+firing. Continuous-behavior regression keeps entire trials together during
+train/test splitting and exposes neural-to-target lag and repeated neuron-count
+scaling.</p>
+</section>
+<section id="fine-timing-relationships">
+<h2>Fine-timing relationships<a class="headerlink" href="#fine-timing-relationships" title="Link to this heading"></a></h2>
+<p>The fine-timing module does not label functional evidence as anatomical
+connectivity. Choose count, reference-rate, or trial/rate/lag-edge-normalized
+CCGs; fixed-interval or centered jitter; flank-SD or empirical-p inference;
+FDR, Bonferroni, or no multiplicity correction; and within-region,
+between-region, or spatial-distance filters. The run dialog estimates eligible
+pairs and surrogate CCG workload before analysis starts.</p>
 </section>
 <section id="quality-checks">
 <h2>Quality checks<a class="headerlink" href="#quality-checks" title="Link to this heading"></a></h2>

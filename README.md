@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.0.0
+# NeuroEphys AI v1.1.0
 
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
@@ -141,7 +141,7 @@ chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度
 
 ## 启动
 
-普通用户安装 ``NeuroEphysAI-Setup-1.0.0.exe`` 后，双击桌面上的 **NeuroEphys AI**
+普通用户安装 ``NeuroEphysAI-Setup-1.1.0.exe`` 后，双击桌面上的 **NeuroEphys AI**
 快捷方式即可启动。便携版需完整解压 ZIP，然后双击
 ``NeuroEphysAI\NeuroEphysAI.exe``；不要只复制单独的 EXE。两种版本都不要求用户安装
 Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
@@ -149,7 +149,7 @@ Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
 Python 用户可以安装构建出的 wheel：
 
 ```powershell
-python -m pip install neuroephys_ai-1.0.0-py3-none-any.whl
+python -m pip install neuroephys_ai-1.1.0-py3-none-any.whl
 neuroephys info
 ```
 
@@ -162,6 +162,28 @@ import neuroephys as ne
 project = ne.create_simulated_project(Path("example_project"))
 quality = ne.run_raw_qc(project)
 print(quality["quality_score"])
+```
+
+新增的单 trial/群体动态和精细时序既可在 App 的 **08 神经活动** 中选参运行，
+也可从 Python API 或命令行批处理调用：
+
+```powershell
+neuroephys population example_project --bin-ms 1 --sigma-ms 25 --ordering pca_loading
+neuroephys connectivity example_project --normalization trial_rate --jitter-ms 25
+```
+
+```python
+aligned = ne.align_spike_population(
+    project.sorted_spikes,
+    [event["time_seconds"] for event in project.events],
+    bin_size_seconds=0.001,
+    smoothing_sigma_seconds=0.025,
+)
+connectivity = ne.run_connectivity_suite(
+    project,
+    normalization="trial_rate",
+    jitter_window_seconds=0.025,
+)
 ```
 
 桌面界面、MountainSort5 和 Kilosort 分别是可选组件：
@@ -189,12 +211,15 @@ powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1
 
 ## 真实公开数据验证
 
-NeuroEphys AI 已用两条互补的真实公开数据入口完成集成验证：
+NeuroEphys AI 已用三条互补的真实公开数据入口完成集成验证：
 
 - IBL Brain-Wide Map 的 ALF session：
   `EID 4ecb5d24-f5cc-402c-be28-9d0f7cb14b3a`、`probe00`；
 - Buzsáki Lab / DANDI `000552` 的 NWB session：
   `sub-e14-2m3_ses-e14-2m3-201121_behavior+ecephys.nwb`。
+- Trautmann et al. (2025) Fig. 7 所用的 LIP/SC 公开单 trial 数据：
+  Zenodo `7946011`；与作者 MATLAB 核的逐点一致性为 LIP `r=0.998685`、
+  SC `r=0.998148`。
 
 下载 IBL 处理后会话（不会下载巨大的原始 AP 文件）：
 
@@ -218,6 +243,9 @@ python scripts\validate_public_datasets.py
 [`docs/site/zh/real-data-validation.html`](docs/site/zh/real-data-validation.html)。这些结果用于证明
 导入、统一数据结构、事件分析、统计和解码链路能够运行，不等于复现原论文结论，
 也不把 20 次置换的 smoke test 当作正式显著性证据。
+
+Trautmann 2025 的方法映射、公开数据溯源、定量一致性和不可访问数据边界见
+[`docs/TRAUTMANN2025_VALIDATION.md`](docs/TRAUTMANN2025_VALIDATION.md)。
 
 ## 运行反馈
 

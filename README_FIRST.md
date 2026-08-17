@@ -1,8 +1,8 @@
-# NeuroEphys AI 1.0 — 首次使用 / First read
+# NeuroEphys AI 1.1 — 首次使用 / First read
 
 ## Windows 普通用户
 
-1. 推荐运行 `NeuroEphysAI-Setup-1.0.0.exe`，安装过程不需要管理员权限。
+1. 推荐运行 `NeuroEphysAI-Setup-1.1.0.exe`，安装过程不需要管理员权限。
 2. 安装完成后双击桌面或开始菜单中的 **NeuroEphys AI**。
 3. 也可以使用便携 ZIP：完整解压后双击
    `NeuroEphysAI\NeuroEphysAI.exe`。必须保留 `_internal` 等同目录内容，不能只复制 EXE。
@@ -25,7 +25,7 @@ Python 3.12：
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.0.0-py3-none-any.whl
+.\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.1.0-py3-none-any.whl
 .\.venv\Scripts\neuroephys.exe info
 ```
 
@@ -54,7 +54,7 @@ print(ne.__version__, qc["quality_score"])
 
 ## English quick start
 
-Run `NeuroEphysAI-Setup-1.0.0.exe`, then open **NeuroEphys AI** from the desktop
+Run `NeuroEphysAI-Setup-1.1.0.exe`, then open **NeuroEphys AI** from the desktop
 or Start menu. The installer is per-user and requires no administrator access.
 For the portable edition, extract the complete ZIP and run
 `NeuroEphysAI\NeuroEphysAI.exe`; do not copy the EXE by itself. Python and the

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neuroephys-ai"
-version = "1.0.0"
+version = "1.1.0"
 description = "Local-first extracellular electrophysiology analysis workbench and Python toolkit"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"

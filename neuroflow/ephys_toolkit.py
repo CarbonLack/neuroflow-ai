@@ -42,6 +42,29 @@ METHOD_CATALOG = (
         "requires": "at least two sorted units",
     },
     {
+        "key": "fine_timing_connectivity",
+        "stage": "connectivity",
+        "provider": "NeuroEphys AI",
+        "methods": (
+            "count or trial/rate/edge-normalized CCG, interval-jitter correction, "
+            "flank-SD or empirical significance"
+        ),
+        "status": "integrated",
+        "requires": "simultaneously recorded sorted units and an explicit duration",
+    },
+    {
+        "key": "single_trial_population",
+        "stage": "population",
+        "provider": "NeuroEphys AI + scikit-learn + optional Rastermap",
+        "methods": (
+            "configurable binning/Gaussian smoothing, baseline correction, "
+            "single-trial activity, peak/PCA/Rastermap ordering, PCA trajectories, "
+            "trial-held-out continuous regression"
+        ),
+        "status": "integrated",
+        "requires": "sorted spike times and explicit events or trial-aligned arrays",
+    },
+    {
         "key": "lfp_spectral",
         "stage": "lfp",
         "provider": "Elephant + SciPy",

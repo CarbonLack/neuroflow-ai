@@ -21,12 +21,12 @@ Minimum practical configuration
 Install the Windows application
 -------------------------------
 
-Download ``NeuroEphysAI-Setup-1.0.0.exe`` from GitHub **Releases** or the
+Download ``NeuroEphysAI-Setup-1.1.0.exe`` from GitHub **Releases** or the
 competition delivery folder. The per-user installer requires no administrator
 access and creates desktop and Start-menu shortcuts. Uninstalling the program
 does not delete projects under ``Documents\NeuroEphysAI``.
 
-The portable ``NeuroEphysAI-1.0.0-Windows-x64-portable.zip`` needs no
+The portable ``NeuroEphysAI-1.1.0-Windows-x64-portable.zip`` needs no
 installation. Extract the complete archive and run
 ``NeuroEphysAI\NeuroEphysAI.exe``; the EXE does not work by itself. This
 one-folder layout keeps scientific libraries inspectable and avoids unpacking
@@ -51,7 +51,7 @@ The validated Python distribution targets 64-bit Python 3.12:
 .. code-block:: powershell
 
    python -m venv .venv
-   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.0.0-py3-none-any.whl
+   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.1.0-py3-none-any.whl
    .\.venv\Scripts\neuroephys.exe info
 
 .. code-block:: python

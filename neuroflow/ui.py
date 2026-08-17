@@ -6,6 +6,7 @@ import sys
 import traceback
 from datetime import datetime, timezone
 from html import escape
+from importlib.util import find_spec
 from pathlib import Path
 
 import mplcursors
@@ -63,6 +64,7 @@ from .analysis import (
     run_raw_qc,
 )
 from .audit import audited_stage
+from .connectivity import project_interval_sets, run_connectivity_suite
 from .data_import import (
     DEVICE_READERS,
     SUPPORTED_FORMATS,
@@ -98,9 +100,11 @@ from .ephys_toolkit import (
 from .figure_studio import FigureStudioDialog
 from .figures import (
     behavior_figure,
+    connectivity_figure,
     decoding_figure,
     neural_toolkit_figure,
     pending_step_figure,
+    population_dynamics_figure,
     preprocessing_diagnostics_figure,
     qc_diagnostics_figure,
     raw_overview_figure,
@@ -115,6 +119,7 @@ from .help_content import REFERENCES, control_help, page_controls
 from .i18n import LANGUAGES, step_text, tr
 from .ibl import download_bwm_trials_aggregate
 from .models import ProjectState, WorkflowStep
+from .population import run_population_dynamics_suite
 from .medpc import import_medpc_behavior
 from .project import MANIFEST_NAME, load_project, save_project
 from .product import PRODUCT_NAME, PRODUCT_VERSION
@@ -563,6 +568,780 @@ class AxisEditorDialog(QDialog):
         self.axis.grid(self.grid.isChecked())
         self.axis.figure.canvas.draw_idle()
         self.accept()
+
+
+class ConnectivitySettingsDialog(QDialog):
+    """Expose scientific choices before an intentionally expensive analysis."""
+
+    def __init__(
+        self,
+        state: ProjectState,
+        language: str,
+        parent: QWidget | None = None,
+    ):
+        super().__init__(parent)
+        self.state = state
+        self.language = language
+        previous = state.spike_train_analysis.get("connectivity", {}).get(
+            "configuration", {}
+        )
+        self.setWindowTitle(
+            "精细时序与功能连接设置"
+            if language == "zh_CN"
+            else "Fine-timing connectivity settings"
+        )
+        self.resize(620, 720)
+        layout = QVBoxLayout(self)
+        heading = QLabel(
+            "精细时序与功能连接"
+            if language == "zh_CN"
+            else "Fine-timing connectivity"
+        )
+        heading.setStyleSheet("font-size: 20px; font-weight: 700;")
+        layout.addWidget(heading)
+        introduction = QLabel(
+            (
+                "这是可选的通用分析模块：先计算原始 CCG，再用时间抖动估计慢变/共同驱动背景，"
+                "最后按所选显著性和多重比较规则报告时间关系。它不把功能关系解释为解剖连接。"
+                if language == "zh_CN"
+                else (
+                    "This optional module computes raw CCGs, estimates slow/shared "
+                    "background with temporal jitter, and applies the selected "
+                    "inference and multiplicity rules. Functional timing evidence "
+                    "is not treated as anatomical connectivity."
+                )
+            )
+        )
+        introduction.setWordWrap(True)
+        introduction.setObjectName("Muted")
+        layout.addWidget(introduction)
+
+        form = QFormLayout()
+        self.pair_mode = QComboBox()
+        pair_modes = (
+            [
+                ("全部 Unit 对", "all"),
+                ("同脑区内", "within_region"),
+                ("跨脑区", "between_regions"),
+            ]
+            if language == "zh_CN"
+            else [
+                ("All unit pairs", "all"),
+                ("Within region", "within_region"),
+                ("Between regions", "between_regions"),
+            ]
+        )
+        for label, value in pair_modes:
+            self.pair_mode.addItem(label, value)
+        self.pair_mode.setCurrentIndex(
+            max(self.pair_mode.findData(previous.get("pair_mode", "all")), 0)
+        )
+        self.interval_sets = project_interval_sets(state)
+        self.interval_scope = QComboBox()
+        self.interval_scope.addItem(
+            "整段记录" if language == "zh_CN" else "Whole session",
+            "whole_session",
+        )
+        for key, intervals in self.interval_sets.items():
+            self.interval_scope.addItem(f"{key} ({len(intervals)})", key)
+        self.interval_scope.setCurrentIndex(
+            max(
+                self.interval_scope.findData(
+                    previous.get("interval_label", "whole_session")
+                ),
+                0,
+            )
+        )
+        self.pair_selection = QComboBox()
+        self.pair_selection.addItem(
+            "可复现随机抽样"
+            if language == "zh_CN"
+            else "Reproducible random sample",
+            "random",
+        )
+        self.pair_selection.addItem(
+            "空间距离从近到远"
+            if language == "zh_CN"
+            else "Nearest spatial pairs first",
+            "distance",
+        )
+        self.pair_selection.addItem(
+            "Unit ID 顺序" if language == "zh_CN" else "Unit-ID order",
+            "unit_id",
+        )
+        self.pair_selection.setCurrentIndex(
+            max(
+                self.pair_selection.findData(
+                    previous.get("pair_selection", "random")
+                ),
+                0,
+            )
+        )
+
+        self.max_pairs = QSpinBox()
+        self.max_pairs.setRange(1, 100_000)
+        self.max_pairs.setValue(int(previous.get("max_pairs") or 500))
+        self.min_rate = QDoubleSpinBox()
+        self.min_rate.setRange(0.0, 1_000.0)
+        self.min_rate.setDecimals(2)
+        self.min_rate.setValue(float(previous.get("min_rate_hz", 1.0)))
+        self.min_rate.setSuffix(" Hz")
+        self.max_distance = QDoubleSpinBox()
+        self.max_distance.setRange(0.0, 1_000_000.0)
+        self.max_distance.setDecimals(1)
+        self.max_distance.setSpecialValueText(
+            "不限" if language == "zh_CN" else "No limit"
+        )
+        self.max_distance.setValue(float(previous.get("max_distance_um") or 0.0))
+        self.max_distance.setSuffix(" µm")
+
+        self.bin_ms = QDoubleSpinBox()
+        self.bin_ms.setRange(0.1, 25.0)
+        self.bin_ms.setDecimals(2)
+        self.bin_ms.setValue(float(previous.get("bin_size_seconds", 0.001)) * 1_000)
+        self.bin_ms.setSuffix(" ms")
+        self.lag_ms = QDoubleSpinBox()
+        self.lag_ms.setRange(1.0, 1_000.0)
+        self.lag_ms.setDecimals(1)
+        self.lag_ms.setValue(float(previous.get("max_lag_seconds", 0.05)) * 1_000)
+        self.lag_ms.setSuffix(" ms")
+        self.jitter_ms = QDoubleSpinBox()
+        self.jitter_ms.setRange(0.2, 2_000.0)
+        self.jitter_ms.setDecimals(1)
+        self.jitter_ms.setValue(
+            float(previous.get("jitter_window_seconds", 0.025)) * 1_000
+        )
+        self.jitter_ms.setSuffix(" ms")
+        self.iterations = QSpinBox()
+        self.iterations.setRange(2, 10_000)
+        self.iterations.setValue(int(previous.get("jitter_iterations", 100)))
+        self.jitter_strategy = QComboBox()
+        self.jitter_strategy.addItem(
+            "固定时间窗内重采样"
+            if language == "zh_CN"
+            else "Resample within fixed intervals",
+            "interval",
+        )
+        self.jitter_strategy.addItem(
+            "以每个 spike 为中心抖动"
+            if language == "zh_CN"
+            else "Jitter around each spike",
+            "centered",
+        )
+        self.jitter_strategy.setCurrentIndex(
+            max(
+                self.jitter_strategy.findData(
+                    previous.get("jitter_strategy", "interval")
+                ),
+                0,
+            )
+        )
+        self.normalization = QComboBox()
+        self.normalization.addItem(
+            "Spike 对计数" if language == "zh_CN" else "Spike-pair counts",
+            "counts",
+        )
+        self.normalization.addItem(
+            "按参考 Unit 数和 bin 归一化"
+            if language == "zh_CN"
+            else "Normalize by reference spikes and bin width",
+            "reference_rate",
+        )
+        self.normalization.addItem(
+            "Trial / 放电率 / 时滞边缘校正"
+            if language == "zh_CN"
+            else "Trial/rate/lag-edge normalized",
+            "trial_rate",
+        )
+        self.normalization.setCurrentIndex(
+            max(
+                self.normalization.findData(previous.get("normalization", "counts")),
+                0,
+            )
+        )
+
+        self.significance = QComboBox()
+        self.significance.addItem(
+            "CCG 侧翼标准差阈值"
+            if language == "zh_CN"
+            else "CCG-flank standard-deviation threshold",
+            "flank_sd",
+        )
+        self.significance.addItem(
+            "抖动零分布经验 P 值"
+            if language == "zh_CN"
+            else "Empirical p-value from jitter null",
+            "jitter_percentile",
+        )
+        self.significance.setCurrentIndex(
+            max(
+                self.significance.findData(
+                    previous.get("significance_method", "flank_sd")
+                ),
+                0,
+            )
+        )
+        self.central_ms = QDoubleSpinBox()
+        self.central_ms.setRange(0.1, 500.0)
+        self.central_ms.setDecimals(1)
+        self.central_ms.setValue(
+            float(previous.get("central_window_seconds", 0.010)) * 1_000
+        )
+        self.central_ms.setSuffix(" ms")
+        self.threshold_sd = QDoubleSpinBox()
+        self.threshold_sd.setRange(0.0, 30.0)
+        self.threshold_sd.setDecimals(1)
+        self.threshold_sd.setValue(float(previous.get("threshold_sd", 7.0)))
+        self.alpha = QDoubleSpinBox()
+        self.alpha.setRange(0.0001, 0.25)
+        self.alpha.setDecimals(4)
+        self.alpha.setSingleStep(0.01)
+        self.alpha.setValue(float(previous.get("alpha", 0.05)))
+        self.multiplicity = QComboBox()
+        self.multiplicity.addItem("Benjamini-Hochberg FDR", "fdr_bh")
+        self.multiplicity.addItem("Bonferroni", "bonferroni")
+        self.multiplicity.addItem(
+            "不校正" if language == "zh_CN" else "No correction", "none"
+        )
+        self.multiplicity.setCurrentIndex(
+            max(
+                self.multiplicity.findData(
+                    previous.get("multiple_comparison", "fdr_bh")
+                ),
+                0,
+            )
+        )
+
+        rows = (
+            [
+                ("Unit 对范围", self.pair_mode),
+                ("分析时间段", self.interval_scope),
+                ("对数超限时的选择", self.pair_selection),
+                ("最多检验对数", self.max_pairs),
+                ("最低放电率", self.min_rate),
+                ("最大空间距离", self.max_distance),
+                ("CCG bin", self.bin_ms),
+                ("最大时滞", self.lag_ms),
+                ("抖动窗", self.jitter_ms),
+                ("抖动次数", self.iterations),
+                ("抖动方式", self.jitter_strategy),
+                ("归一化", self.normalization),
+                ("显著性方法", self.significance),
+                ("中心峰窗", self.central_ms),
+                ("侧翼阈值", self.threshold_sd),
+                ("Alpha", self.alpha),
+                ("多重比较", self.multiplicity),
+            ]
+            if language == "zh_CN"
+            else [
+                ("Unit-pair scope", self.pair_mode),
+                ("Analysis intervals", self.interval_scope),
+                ("Selection when capped", self.pair_selection),
+                ("Maximum tested pairs", self.max_pairs),
+                ("Minimum firing rate", self.min_rate),
+                ("Maximum spatial distance", self.max_distance),
+                ("CCG bin", self.bin_ms),
+                ("Maximum lag", self.lag_ms),
+                ("Jitter window", self.jitter_ms),
+                ("Jitter iterations", self.iterations),
+                ("Jitter strategy", self.jitter_strategy),
+                ("Normalization", self.normalization),
+                ("Significance method", self.significance),
+                ("Central peak window", self.central_ms),
+                ("Flank threshold", self.threshold_sd),
+                ("Alpha", self.alpha),
+                ("Multiple comparisons", self.multiplicity),
+            ]
+        )
+        for label, widget in rows:
+            form.addRow(label, widget)
+        layout.addLayout(form)
+
+        self.estimate = QLabel()
+        self.estimate.setWordWrap(True)
+        self.estimate.setObjectName("Muted")
+        layout.addWidget(self.estimate)
+        for widget in (
+            self.pair_mode,
+            self.interval_scope,
+            self.significance,
+            self.multiplicity,
+        ):
+            widget.currentIndexChanged.connect(self._update_estimate)
+        for widget in (self.max_pairs, self.iterations, self.min_rate):
+            widget.valueChanged.connect(self._update_estimate)
+        self._update_estimate()
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        buttons.button(QDialogButtonBox.Ok).setText(
+            "使用这些设置" if language == "zh_CN" else "Use these settings"
+        )
+        buttons.button(QDialogButtonBox.Cancel).setText(tr("cancel", language))
+        buttons.accepted.connect(self._accept_if_valid)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _eligible_pair_count(self) -> int:
+        duration = max(float(self.state.duration_seconds), 1e-12)
+        unit_ids = [
+            int(unit_id)
+            for unit_id, spikes in sorted(self.state.sorted_spikes.items())
+            if len(spikes) / duration >= self.min_rate.value()
+        ]
+        mode = str(self.pair_mode.currentData())
+        regions = {
+            int(unit_id): str(region)
+            for unit_id, region in self.state.metadata.get("unit_regions", {}).items()
+        }
+        count = 0
+        for index, first_id in enumerate(unit_ids):
+            for second_id in unit_ids[index + 1 :]:
+                first_region = regions.get(first_id)
+                second_region = regions.get(second_id)
+                if mode == "within_region" and (
+                    first_region is None or first_region != second_region
+                ):
+                    continue
+                if mode == "between_regions" and (
+                    first_region is None
+                    or second_region is None
+                    or first_region == second_region
+                ):
+                    continue
+                count += 1
+        return count
+
+    def _update_estimate(self, *_: object) -> None:
+        candidates = self._eligible_pair_count()
+        tested = min(candidates, self.max_pairs.value())
+        surrogate_runs = tested * self.iterations.value()
+        empirical_resolution = 1.0 / (self.iterations.value() + 1)
+        if self.language == "zh_CN":
+            text = (
+                f"预计 {candidates} 个候选对，本次最多检验 {tested} 对；"
+                f"需要约 {surrogate_runs:,} 次替代 CCG 计算。"
+            )
+            if self.significance.currentData() == "jitter_percentile":
+                text += f" 当前经验 P 值最小分辨率为 {empirical_resolution:.4g}。"
+            if self.pair_mode.currentData() != "all" and not self.state.metadata.get(
+                "unit_regions"
+            ):
+                text += " 当前项目没有 Unit 脑区标签，该筛选不会产生候选对。"
+        else:
+            text = (
+                f"Estimated candidates: {candidates}; up to {tested} pairs will be "
+                f"tested, requiring about {surrogate_runs:,} surrogate CCG runs."
+            )
+            if self.significance.currentData() == "jitter_percentile":
+                text += f" Minimum empirical-p resolution: {empirical_resolution:.4g}."
+            if self.pair_mode.currentData() != "all" and not self.state.metadata.get(
+                "unit_regions"
+            ):
+                text += " Unit-region labels are unavailable, so this scope has no candidates."
+        self.estimate.setText(text)
+
+    def _accept_if_valid(self) -> None:
+        if self.jitter_ms.value() <= self.bin_ms.value():
+            QMessageBox.warning(
+                self,
+                self.windowTitle(),
+                "抖动窗必须大于 CCG bin。"
+                if self.language == "zh_CN"
+                else "The jitter window must be larger than the CCG bin.",
+            )
+            return
+        if self.central_ms.value() >= self.lag_ms.value():
+            QMessageBox.warning(
+                self,
+                self.windowTitle(),
+                "中心峰窗必须小于最大时滞，以便保留 CCG 侧翼。"
+                if self.language == "zh_CN"
+                else "The central window must be smaller than the maximum lag so CCG flanks remain.",
+            )
+            return
+        self.accept()
+
+    def settings(self) -> dict:
+        interval_label = str(self.interval_scope.currentData())
+        return {
+            "pair_mode": str(self.pair_mode.currentData()),
+            "pair_selection": str(self.pair_selection.currentData()),
+            "max_pairs": int(self.max_pairs.value()),
+            "min_rate_hz": float(self.min_rate.value()),
+            "max_distance_um": (
+                None if self.max_distance.value() == 0 else float(self.max_distance.value())
+            ),
+            "bin_size_seconds": float(self.bin_ms.value() / 1_000),
+            "max_lag_seconds": float(self.lag_ms.value() / 1_000),
+            "jitter_window_seconds": float(self.jitter_ms.value() / 1_000),
+            "jitter_iterations": int(self.iterations.value()),
+            "jitter_strategy": str(self.jitter_strategy.currentData()),
+            "trial_intervals": (
+                None
+                if interval_label == "whole_session"
+                else self.interval_sets[interval_label]
+            ),
+            "interval_label": interval_label,
+            "normalization": str(self.normalization.currentData()),
+            "significance_method": str(self.significance.currentData()),
+            "central_window_seconds": float(self.central_ms.value() / 1_000),
+            "threshold_sd": float(self.threshold_sd.value()),
+            "alpha": float(self.alpha.value()),
+            "multiple_comparison": str(self.multiplicity.currentData()),
+            "seed": int(previous_seed)
+            if (previous_seed := self.state.spike_train_analysis.get("connectivity", {})
+                .get("configuration", {}).get("seed")) is not None
+            else 20260817,
+            "include_correlograms": True,
+        }
+
+
+class PopulationSettingsDialog(QDialog):
+    def __init__(
+        self,
+        state: ProjectState,
+        language: str,
+        parent: QWidget | None = None,
+    ):
+        super().__init__(parent)
+        self.state = state
+        self.language = language
+        previous = state.spike_train_analysis.get("population_dynamics", {})
+        self.setWindowTitle(
+            "单 trial 与群体动态设置"
+            if language == "zh_CN"
+            else "Single-trial and population-dynamics settings"
+        )
+        self.resize(590, 600)
+        layout = QVBoxLayout(self)
+        heading = QLabel(
+            "单 trial 与群体动态"
+            if language == "zh_CN"
+            else "Single-trial and population dynamics"
+        )
+        heading.setStyleSheet("font-size: 20px; font-weight: 700;")
+        layout.addWidget(heading)
+        note = QLabel(
+            (
+                "你可以选择事件、Unit 范围、时间精度、高斯平滑、基线处理和排序方法。"
+                "单 trial 轨迹、条件平均和 PCA 共用同一份可审计结果。"
+                if language == "zh_CN"
+                else (
+                    "Choose events, units, temporal resolution, Gaussian smoothing, "
+                    "baseline handling, and ordering. Single-trial traces, condition "
+                    "averages, and PCA share one auditable result."
+                )
+            )
+        )
+        note.setWordWrap(True)
+        note.setObjectName("Muted")
+        layout.addWidget(note)
+
+        self.event_groups: dict[str, list[int]] = {}
+        event_labels = []
+        for index, row in enumerate(state.events):
+            label = str(
+                row.get("condition", row.get("event", row.get("code", "all")))
+            )
+            event_labels.append(label)
+            self.event_groups.setdefault(label, []).append(index)
+        self.event_scope = QComboBox()
+        self.event_scope.addItem(
+            f"{'全部事件' if language == 'zh_CN' else 'All events'} ({len(state.events)})",
+            "__all__",
+        )
+        for label, indices in self.event_groups.items():
+            self.event_scope.addItem(f"{label} ({len(indices)})", label)
+
+        regions = {
+            int(unit_id): str(region)
+            for unit_id, region in state.metadata.get("unit_regions", {}).items()
+            if int(unit_id) in state.sorted_spikes
+        }
+        self.region_units: dict[str, list[int]] = {}
+        for unit_id, region in regions.items():
+            self.region_units.setdefault(region, []).append(unit_id)
+        self.unit_scope = QComboBox()
+        self.unit_scope.addItem(
+            f"{'全部 Unit' if language == 'zh_CN' else 'All units'} ({len(state.sorted_spikes)})",
+            "__all__",
+        )
+        for region, unit_ids in self.region_units.items():
+            self.unit_scope.addItem(f"{region} ({len(unit_ids)})", region)
+
+        self.window_start = QDoubleSpinBox()
+        self.window_stop = QDoubleSpinBox()
+        for widget in (self.window_start, self.window_stop):
+            widget.setRange(-60.0, 60.0)
+            widget.setDecimals(3)
+            widget.setSuffix(" s")
+        previous_window = previous.get("window_seconds", [-0.5, 1.0])
+        self.window_start.setValue(float(previous_window[0]))
+        self.window_stop.setValue(float(previous_window[1]))
+        self.bin_ms = QDoubleSpinBox()
+        self.bin_ms.setRange(0.1, 1_000.0)
+        self.bin_ms.setDecimals(2)
+        self.bin_ms.setValue(float(previous.get("bin_size_seconds", 0.001)) * 1_000)
+        self.bin_ms.setSuffix(" ms")
+        self.sigma_ms = QDoubleSpinBox()
+        self.sigma_ms.setRange(0.0, 2_000.0)
+        self.sigma_ms.setDecimals(1)
+        self.sigma_ms.setValue(
+            float(previous.get("smoothing_sigma_seconds", 0.025)) * 1_000
+        )
+        self.sigma_ms.setSuffix(" ms")
+        self.baseline_mode = QComboBox()
+        self.baseline_mode.addItem(
+            "不做基线校正" if language == "zh_CN" else "No baseline correction",
+            "none",
+        )
+        self.baseline_mode.addItem(
+            "减去基线均值" if language == "zh_CN" else "Subtract baseline mean",
+            "subtract",
+        )
+        self.baseline_mode.addItem(
+            "基线 Z-score" if language == "zh_CN" else "Baseline z-score",
+            "zscore",
+        )
+        self.baseline_mode.setCurrentIndex(
+            max(
+                self.baseline_mode.findData(
+                    previous.get("baseline", {}).get("mode", "none")
+                ),
+                0,
+            )
+        )
+        self.baseline_scope = QComboBox()
+        self.baseline_scope.addItem(
+            "各 Unit 跨 trial 统一基线"
+            if language == "zh_CN"
+            else "One pooled baseline per unit",
+            "pooled_units",
+        )
+        self.baseline_scope.addItem(
+            "每个 trial 单独基线"
+            if language == "zh_CN"
+            else "Separate baseline for each trial",
+            "per_trial",
+        )
+        self.baseline_scope.setCurrentIndex(
+            max(
+                self.baseline_scope.findData(
+                    previous.get("baseline", {}).get("scope", "pooled_units")
+                ),
+                0,
+            )
+        )
+        self.baseline_start = QDoubleSpinBox()
+        self.baseline_stop = QDoubleSpinBox()
+        for widget in (self.baseline_start, self.baseline_stop):
+            widget.setRange(-60.0, 60.0)
+            widget.setDecimals(3)
+            widget.setSuffix(" s")
+        previous_baseline = previous.get("baseline", {}).get(
+            "window_seconds", [-0.5, 0.0]
+        )
+        self.baseline_start.setValue(float(previous_baseline[0]))
+        self.baseline_stop.setValue(float(previous_baseline[1]))
+        self.ordering = QComboBox()
+        ordering_options = (
+            [
+                ("峰值时间", "peak_time"),
+                ("PCA 第一轴载荷", "pca_loading"),
+                ("Rastermap（可选后端）", "rastermap"),
+            ]
+            if language == "zh_CN"
+            else [
+                ("Peak response time", "peak_time"),
+                ("First PCA loading", "pca_loading"),
+                ("Rastermap (optional backend)", "rastermap"),
+            ]
+        )
+        for label, value in ordering_options:
+            self.ordering.addItem(label, value)
+        rastermap_index = self.ordering.findData("rastermap")
+        if rastermap_index >= 0 and find_spec("rastermap") is None:
+            item = self.ordering.model().item(rastermap_index)
+            if item is not None:
+                item.setEnabled(False)
+                item.setToolTip(
+                    "当前安装未包含 Rastermap；可使用峰值时间或 PCA。"
+                    if language == "zh_CN"
+                    else (
+                        "Rastermap is not installed in this distribution; use "
+                        "peak time or PCA."
+                    )
+                )
+        previous_ordering = previous.get("ordering", {}).get(
+            "method", "peak_time"
+        )
+        if previous_ordering == "rastermap" and find_spec("rastermap") is None:
+            previous_ordering = "peak_time"
+        self.ordering.setCurrentIndex(
+            max(
+                self.ordering.findData(previous_ordering),
+                0,
+            )
+        )
+
+        form = QFormLayout()
+        rows = (
+            [
+                ("事件范围", self.event_scope),
+                ("Unit 范围", self.unit_scope),
+                ("窗口起点", self.window_start),
+                ("窗口终点", self.window_stop),
+                ("时间 bin", self.bin_ms),
+                ("高斯平滑 σ", self.sigma_ms),
+                ("基线处理", self.baseline_mode),
+                ("基线层级", self.baseline_scope),
+                ("基线起点", self.baseline_start),
+                ("基线终点", self.baseline_stop),
+                ("Unit 排序", self.ordering),
+            ]
+            if language == "zh_CN"
+            else [
+                ("Event scope", self.event_scope),
+                ("Unit scope", self.unit_scope),
+                ("Window start", self.window_start),
+                ("Window stop", self.window_stop),
+                ("Time bin", self.bin_ms),
+                ("Gaussian smoothing σ", self.sigma_ms),
+                ("Baseline handling", self.baseline_mode),
+                ("Baseline scope", self.baseline_scope),
+                ("Baseline start", self.baseline_start),
+                ("Baseline stop", self.baseline_stop),
+                ("Unit ordering", self.ordering),
+            ]
+        )
+        for label, widget in rows:
+            form.addRow(label, widget)
+        layout.addLayout(form)
+        self.estimate = QLabel()
+        self.estimate.setWordWrap(True)
+        self.estimate.setObjectName("Muted")
+        layout.addWidget(self.estimate)
+        for widget in (self.event_scope, self.unit_scope):
+            widget.currentIndexChanged.connect(self._update_estimate)
+        for widget in (self.window_start, self.window_stop, self.bin_ms):
+            widget.valueChanged.connect(self._update_estimate)
+        self._update_estimate()
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        buttons.button(QDialogButtonBox.Ok).setText(
+            "使用这些设置" if language == "zh_CN" else "Use these settings"
+        )
+        buttons.button(QDialogButtonBox.Cancel).setText(tr("cancel", language))
+        buttons.accepted.connect(self._accept_if_valid)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _selected_event_indices(self) -> list[int]:
+        scope = str(self.event_scope.currentData())
+        return (
+            list(range(len(self.state.events)))
+            if scope == "__all__"
+            else self.event_groups.get(scope, [])
+        )
+
+    def _selected_unit_ids(self) -> list[int]:
+        scope = str(self.unit_scope.currentData())
+        return (
+            sorted(int(unit_id) for unit_id in self.state.sorted_spikes)
+            if scope == "__all__"
+            else sorted(self.region_units.get(scope, []))
+        )
+
+    def _update_estimate(self, *_: object) -> None:
+        duration = max(self.window_stop.value() - self.window_start.value(), 0.0)
+        bins = int(duration / max(self.bin_ms.value() / 1_000, 1e-12))
+        events = len(self._selected_event_indices())
+        units = len(self._selected_unit_ids())
+        memory_mb = events * bins * units * 8 / (1024**2)
+        self.estimate.setText(
+            (
+                f"预计生成 {events} trial × {bins} 时间 bin × {units} Unit，"
+                f"核心活动矩阵约 {memory_mb:.1f} MB。"
+                if self.language == "zh_CN"
+                else (
+                    f"Estimated matrix: {events} trials × {bins} time bins × "
+                    f"{units} units, about {memory_mb:.1f} MB for the core activity array."
+                )
+            )
+        )
+
+    def _accept_if_valid(self) -> None:
+        if not self._selected_event_indices() or not self._selected_unit_ids():
+            QMessageBox.warning(
+                self,
+                self.windowTitle(),
+                "至少需要一个事件和一个 Unit。"
+                if self.language == "zh_CN"
+                else "At least one event and one unit are required.",
+            )
+            return
+        if self.window_stop.value() <= self.window_start.value():
+            QMessageBox.warning(
+                self,
+                self.windowTitle(),
+                "窗口终点必须晚于起点。"
+                if self.language == "zh_CN"
+                else "Window stop must be later than window start.",
+            )
+            return
+        if self.baseline_mode.currentData() != "none" and (
+            self.baseline_stop.value() <= self.baseline_start.value()
+            or self.baseline_start.value() < self.window_start.value()
+            or self.baseline_stop.value() > self.window_stop.value()
+        ):
+            QMessageBox.warning(
+                self,
+                self.windowTitle(),
+                "基线窗必须是分析窗内的非空时间段。"
+                if self.language == "zh_CN"
+                else "The baseline must be a non-empty interval inside the analysis window.",
+            )
+            return
+        self.accept()
+
+    def settings(self) -> dict:
+        indices = self._selected_event_indices()
+        labels = [
+            str(
+                self.state.events[index].get(
+                    "condition",
+                    self.state.events[index].get(
+                        "event", self.state.events[index].get("code", "all")
+                    ),
+                )
+            )
+            for index in indices
+        ]
+        baseline_mode = str(self.baseline_mode.currentData())
+        return {
+            "event_times_seconds": [
+                float(self.state.events[index]["time_seconds"]) for index in indices
+            ],
+            "event_labels": labels,
+            "unit_ids": self._selected_unit_ids(),
+            "window_seconds": (
+                float(self.window_start.value()),
+                float(self.window_stop.value()),
+            ),
+            "bin_size_seconds": float(self.bin_ms.value() / 1_000),
+            "smoothing_sigma_seconds": float(self.sigma_ms.value() / 1_000),
+            "baseline_mode": baseline_mode,
+            "baseline_scope": str(self.baseline_scope.currentData()),
+            "baseline_window_seconds": (
+                None
+                if baseline_mode == "none"
+                else (
+                    float(self.baseline_start.value()),
+                    float(self.baseline_stop.value()),
+                )
+            ),
+            "ordering_method": str(self.ordering.currentData()),
+        }
 
 
 class SorterManagerDialog(QDialog):
@@ -2703,6 +3482,20 @@ class PipelineWorker(QThread):
                     value = {"event_aligned": event_aligned_analysis(self.state)}
             elif selection.startswith("spike:"):
                 value = {"spike_train": run_spike_train_suite(self.state)}
+            elif selection.startswith("connectivity:"):
+                value = {
+                    "connectivity": run_connectivity_suite(
+                        self.state,
+                        **self.tool_arguments,
+                    )
+                }
+            elif selection.startswith("population:"):
+                value = {
+                    "population_dynamics": run_population_dynamics_suite(
+                        self.state,
+                        **self.tool_arguments,
+                    )
+                }
             elif selection.startswith("lfp:"):
                 value = {"lfp": run_lfp_suite(self.state)}
             elif selection.startswith("coupling:"):
@@ -4820,6 +5613,13 @@ class NeuroFlowWindow(QMainWindow):
                 [
                     ("Spike train · 放电统计与 CCH", "spike:statistics"),
                     ("Spike train · 相关、STTC 与距离", "spike:relationships"),
+                    ("精细时序 · CCG 与抖动校正", "connectivity:examples"),
+                    ("精细时序 · 空间/跨区域网络", "connectivity:network"),
+                    ("精细时序 · 距离与延迟统计", "connectivity:distance"),
+                    ("群体动态 · 排序热图", "population:heatmap"),
+                    ("群体动态 · 单 trial", "population:single_trial"),
+                    ("群体动态 · 条件比较", "population:conditions"),
+                    ("群体动态 · PCA 轨迹", "population:pca"),
                     ("LFP · PSD 与频段功率", "lfp:psd"),
                     ("LFP · coherence 与相位延迟", "lfp:coherence"),
                     ("LFP · 时频图", "lfp:spectrogram"),
@@ -4831,6 +5631,13 @@ class NeuroFlowWindow(QMainWindow):
                 else [
                     ("Spike train · statistics and CCH", "spike:statistics"),
                     ("Spike train · correlation, STTC, distances", "spike:relationships"),
+                    ("Fine timing · CCG and jitter correction", "connectivity:examples"),
+                    ("Fine timing · spatial/cross-region network", "connectivity:network"),
+                    ("Fine timing · distance and latency statistics", "connectivity:distance"),
+                    ("Population dynamics · ordered heatmap", "population:heatmap"),
+                    ("Population dynamics · single trial", "population:single_trial"),
+                    ("Population dynamics · condition comparison", "population:conditions"),
+                    ("Population dynamics · PCA trajectory", "population:pca"),
                     ("LFP · PSD and band power", "lfp:psd"),
                     ("LFP · coherence and phase lag", "lfp:coherence"),
                     ("LFP · time-frequency map", "lfp:spectrogram"),
@@ -5077,6 +5884,8 @@ class NeuroFlowWindow(QMainWindow):
                     if selection.startswith(
                         {
                             "spike_train": "spike:",
+                            "connectivity": "connectivity:",
+                            "population": "population:",
                             "lfp": "lfp:",
                             "combined": "coupling:",
                         }.get(item["stage"], "__none__")
@@ -5206,6 +6015,14 @@ class NeuroFlowWindow(QMainWindow):
         elif key == "analysis" and (
             (option.startswith("event:") and self.state.analysis)
             or (option.startswith("spike:") and self.state.spike_train_analysis)
+            or (
+                option.startswith("connectivity:")
+                and self.state.spike_train_analysis.get("connectivity")
+            )
+            or (
+                option.startswith("population:")
+                and self.state.spike_train_analysis.get("population_dynamics")
+            )
             or (option.startswith("lfp:") and self.state.lfp_analysis)
             or (option.startswith("coupling:") and self.state.spike_field_analysis)
             or (
@@ -5213,9 +6030,14 @@ class NeuroFlowWindow(QMainWindow):
                 and self.state.case_studies.get("respiration")
             )
         ):
-            figure = neural_toolkit_figure(
-                self.state, option or "event:0"
-            )
+            if option.startswith("connectivity:"):
+                figure = connectivity_figure(self.state, option.partition(":")[2])
+            elif option.startswith("population:"):
+                figure = population_dynamics_figure(
+                    self.state, option.partition(":")[2]
+                )
+            else:
+                figure = neural_toolkit_figure(self.state, option or "event:0")
         elif key == "statistics" and self.state.statistics:
             figure = statistics_figure(
                 self.state, option or "effects"
@@ -5288,6 +6110,19 @@ class NeuroFlowWindow(QMainWindow):
             selection = str(self.option_combo.currentData() or "")
             if selection == "spike:statistics":
                 rows = self.state.spike_train_analysis.get("rows", [])
+            elif selection.startswith("connectivity:"):
+                excluded = {
+                    "lags_seconds",
+                    "raw_values",
+                    "jitter_mean",
+                    "corrected_values",
+                }
+                rows = [
+                    {key: value for key, value in row.items() if key not in excluded}
+                    for row in self.state.spike_train_analysis.get(
+                        "connectivity", {}
+                    ).get("pairs", [])
+                ]
             elif selection == "coupling:phase":
                 rows = self.state.spike_field_analysis.get("rows", [])
             elif selection.startswith("case:"):
@@ -5392,7 +6227,38 @@ class NeuroFlowWindow(QMainWindow):
         self._start_worker([step.key for step in STEPS])
 
     def _run_current_step(self) -> None:
-        self._start_worker([self.current_step])
+        tool_arguments = None
+        if (
+            self.state
+            and self.current_step == "analysis"
+            and str(self.option_combo.currentData() or "").startswith(
+                "connectivity:"
+            )
+        ):
+            dialog = ConnectivitySettingsDialog(
+                self.state,
+                self.language,
+                self,
+            )
+            if dialog.exec() != QDialog.Accepted:
+                return
+            tool_arguments = dialog.settings()
+        elif (
+            self.state
+            and self.current_step == "analysis"
+            and str(self.option_combo.currentData() or "").startswith(
+                "population:"
+            )
+        ):
+            dialog = PopulationSettingsDialog(
+                self.state,
+                self.language,
+                self,
+            )
+            if dialog.exec() != QDialog.Accepted:
+                return
+            tool_arguments = dialog.settings()
+        self._start_worker([self.current_step], tool_arguments=tool_arguments)
 
     def _start_worker(
         self,

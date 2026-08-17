@@ -29,6 +29,7 @@ application.
 | [Elephant module reference](https://elephant.readthedocs.io/en/stable/modules.html) | Spike-train, spectral, synchrony and spike-field APIs | Curated desktop analysis views, result storage, explanation and cross-stage validation |
 | [Folschweiller & Sauer, 2023](https://pmc.ncbi.nlm.nih.gov/articles/PMC10312056/) | Scientific example combining respiration, LFP, spikes, coherence, phase and PAC | Synthetic three-state validation case with different data and original figures; no numerical reproduction claim |
 | [IBL Brain-Wide Map](https://www.internationalbrainlab.com/brainwidemap) | Public-data organization and behavior/neural analysis examples | Local ALF import and method-to-panel mapping |
+| [Trautmann et al. 2025](https://doi.org/10.1038/s41593-025-01976-5) and [Fig. 7 public data/code](https://zenodo.org/records/7946011) | NHP high-density recording acceptance test; disclosed 1 ms binning, Gaussian smoothing, trial realignment and jitter-corrected CCG definitions | Generic single-trial population, variable-duration masks, selectable ordering/continuous regression, and selectable fine-timing connectivity; paper-specific loading remains external validation code |
 | [OpenAI Responses API](https://developers.openai.com/api/docs/guides/text) | Optional cloud text generation and high-priority assistant instructions | Path-free project summary, provider abstraction, request audit, and non-execution boundaries |
 | [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs) | Schema-constrained JSON responses | NeuroFlow's 11-stage advisory-plan schema and local validation |
 | [OpenAI model catalog](https://developers.openai.com/api/docs/models) | Current model identifiers and documented quality/cost roles | User-configurable model selection with a balanced default |
@@ -55,6 +56,9 @@ text, code, screenshots, or figures.
 | Across-trial count variability | Elephant `fanofactor` | Per-unit trial Fano factor |
 | Binned relationships | Elephant `BinnedSpikeTrain`, correlation and CCH | Correlation matrix and lag histogram |
 | Timing relationships | Elephant STTC, Victor-Purpura and van Rossum distances | Pairwise matrices |
+| Fine-timing connectivity | NeuroEphys AI implementation checked against the Trautmann et al. definition | Count or trial/rate/edge-normalized CCG; interval/centered jitter; flank-SD or empirical inference; FDR/Bonferroni |
+| Single-trial population | NeuroEphys AI + scikit-learn + optional Rastermap | Configurable binning/smoothing, per-trial masks, pooled/per-trial baseline, ordered heatmaps and PCA trajectories |
+| Continuous behavior | scikit-learn linear/ridge regression | Trial-held-out prediction, explicit neural/target lag, repeated neuron-count scaling |
 | LFP spectrum | Elephant Welch PSD | Frequency-by-channel power |
 | LFP relationship | Elephant Welch coherence and phase lag | Frequency curves |
 | Spike-field phase | Elephant Hilbert and spike-triggered phase | Preferred phase and vector strength |

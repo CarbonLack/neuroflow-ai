@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/requirements-install.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=34088549"></script>
+      <script src="_static/documentation_options.js?v=ab4a11d3"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -89,7 +89,9 @@
 <li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id2">导入和映射事件</a></li>
 <li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id3">判断对齐质量</a></li>
 <li class="toctree-l2"><a class="reference internal" href="events-analysis.html#raster-psth">Raster 与 PSTH</a></li>
-<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id4">必须检查</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#trial">单 trial 与群体动态</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id4">精细时序关系</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id5">必须检查</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">统计、机器学习与科学边界</a><ul>
@@ -377,6 +379,7 @@
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id4">行为与同步</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id5">统计和解码限制</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id6">项目恢复与可追溯性</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#trautmann-2025-trial">Trautmann 2025 公开单 trial 验收</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id7">如何解读验证状态</a></li>
 </ul>
 </li>
@@ -436,10 +439,10 @@
 <section id="windows-app">
 <h2>安装 Windows App<a class="headerlink" href="#windows-app" title="Link to this heading"></a></h2>
 <p>推荐从 GitHub <strong>Releases</strong> 或比赛交付目录下载
-<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.0.0.exe</span></code>。安装程序只安装到当前用户目录，不要求管理员权限，
+<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.1.0.exe</span></code>。安装程序只安装到当前用户目录，不要求管理员权限，
 并创建桌面和开始菜单快捷方式。卸载程序不会删除
 <code class="docutils literal notranslate"><span class="pre">Documents\NeuroEphysAI</span></code> 中的项目数据。</p>
-<p>便携版 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.0.0-Windows-x64-portable.zip</span></code> 无需安装。完整解压后启动
+<p>便携版 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.1.0-Windows-x64-portable.zip</span></code> 无需安装。完整解压后启动
 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI\NeuroEphysAI.exe</span></code>，不能只复制单独的 EXE。one-folder 结构让科学
 计算依赖可以检查，启动时也无需反复解压。</p>
 <p>安装版与便携版都在本机运行数据导入、质控、已有 sorting 导入、Unit 人工复核、
@@ -453,7 +456,7 @@
 <h2>Python 包<a class="headerlink" href="#python" title="Link to this heading"></a></h2>
 <p>正式 Python 发行物支持 64 位 Python 3.12。新建独立环境并安装 wheel：</p>
 <div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="n">venv</span>
-<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
+<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">0-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
 <span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">neuroephys</span><span class="p">.</span><span class="n">exe</span> <span class="n">info</span>
 </pre></div>
 </div>

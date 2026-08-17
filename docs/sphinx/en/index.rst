@@ -1,7 +1,7 @@
 NeuroEphys AI
 ==============
 
-**Production release · v1.0.0**
+**Production release · v1.1.0**
 
 NeuroEphys AI is a local-first workbench for extracellular multichannel
 electrophysiology. It keeps raw-data import, quality control, preprocessing,

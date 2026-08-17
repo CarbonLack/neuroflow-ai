@@ -16,10 +16,11 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/real-data-validation.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=34088549"></script>
+      <script src="_static/documentation_options.js?v=ab4a11d3"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="索引" href="genindex.html" />
     <link rel="search" title="搜索" href="search.html" />
@@ -89,7 +90,9 @@
 <li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id2">导入和映射事件</a></li>
 <li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id3">判断对齐质量</a></li>
 <li class="toctree-l2"><a class="reference internal" href="events-analysis.html#raster-psth">Raster 与 PSTH</a></li>
-<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id4">必须检查</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#trial">单 trial 与群体动态</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id4">精细时序关系</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#id5">必须检查</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">统计、机器学习与科学边界</a><ul>
@@ -377,6 +380,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#id4">行为与同步</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id5">统计和解码限制</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id6">项目恢复与可追溯性</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trautmann-2025-trial">Trautmann 2025 公开单 trial 验收</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id7">如何解读验证状态</a></li>
 </ul>
 </li>
@@ -546,6 +550,21 @@ Bug 发现记录，不作为有效条件分析结果。</p>
 <p>每次运行都记录阶段、输入、参数、工具版本、开始和结束时间、输出、警告、错误与
 恢复建议。授权验证的完整本地路径和逐步运行记录保存在项目
 <code class="docutils literal notranslate"><span class="pre">exports/documentation</span></code> 目录，公开文档仅保留脱敏后的工程证据。</p>
+</section>
+<section id="trautmann-2025-trial">
+<h2>Trautmann 2025 公开单 trial 验收<a class="headerlink" href="#trautmann-2025-trial" title="Link to this heading"></a></h2>
+<p>Trautmann 等 2025 论文 Fig. 7 指向的 Zenodo <code class="docutils literal notranslate"><span class="pre">7946011</span></code> 数据与代码以
+CC BY 4.0 发布。下载档案为 565,533,370 字节，MD5
+<code class="docutils literal notranslate"><span class="pre">13d8995bf00160c332891c7abf8c3d1f</span></code> 与 Zenodo 记录一致。</p>
+<p>按作者脚本筛选完成 trial、有限 coherence、正 duration 和 <code class="docutils literal notranslate"><span class="pre">trialType</span> <span class="pre">==</span> <span class="pre">20</span></code>。
+LIP 从 2,818 个 trial 中纳入 1,797 个，并使用作者给定的 17/191 个 Tin Unit；
+SC 从 3,396 个 trial 中纳入 1,859 个，使用 10/16 个给定 Unit。在 1 ms bin、
+Gaussian <span class="math notranslate nohighlight">\(\sigma=25\)</span> ms、逐 trial 有效窗、刺激/眼跳双对齐下，NeuroEphys AI 与
+披露的 MATLAB 核逐点一致性为 LIP <code class="docutils literal notranslate"><span class="pre">r=0.998685</span></code>、SC <code class="docutils literal notranslate"><span class="pre">r=0.998148</span></code>。</p>
+<p>这项结果验收的是通用的单 trial 对齐、平滑、可变有效窗和群体平均。论文专用
+MATLAB 载入和 panel 排布仅保留在独立验证目录，没有成为产品功能。论文声明用于
+Figs. 1--6/8 的 Zenodo DOI <code class="docutils literal notranslate"><span class="pre">10.5281/zenodo.14744139</span></code> 在 2026-08-17 验证时未注册/
+返回 404，因此这些 panel 不标记为已复现。</p>
 </section>
 <section id="id7">
 <h2>如何解读验证状态<a class="headerlink" href="#id7" title="Link to this heading"></a></h2>

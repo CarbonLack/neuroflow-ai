@@ -16,10 +16,11 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/events-analysis.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=34088549"></script>
+      <script src="_static/documentation_options.js?v=ab4a11d3"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="索引" href="genindex.html" />
     <link rel="search" title="搜索" href="search.html" />
@@ -89,7 +90,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#id2">导入和映射事件</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id3">判断对齐质量</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#raster-psth">Raster 与 PSTH</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id4">必须检查</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trial">单 trial 与群体动态</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">精细时序关系</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">必须检查</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">统计、机器学习与科学边界</a><ul>
@@ -377,6 +380,7 @@
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id4">行为与同步</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id5">统计和解码限制</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id6">项目恢复与可追溯性</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#trautmann-2025-trial">Trautmann 2025 公开单 trial 验收</a></li>
 <li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#id7">如何解读验证状态</a></li>
 </ul>
 </li>
@@ -442,8 +446,25 @@
 <p>Raster 每行对应一个纳入事件，颜色表示条件。PSTH 显示条件均值和标准误，淡色区域
 标出实际基线窗和响应窗。群体热图采用基线 z 分数和发散色带。</p>
 </section>
+<section id="trial">
+<h2>单 trial 与群体动态<a class="headerlink" href="#trial" title="Link to this heading"></a></h2>
+<p>在 <strong>08 神经活动</strong> 页面选择群体动态视图后，运行前可以明确选择事件条件、
+脑区 Unit 范围、时间窗、bin 宽、高斯平滑 <span class="math notranslate nohighlight">\(\sigma\)</span>、基线方式和 Unit 排序。
+基线可选“各 Unit 跨 trial 统一”或“每个 trial 单独”；排序可选峰值时间、PCA 载荷或
+可选 Rastermap 后端。结果可在排序热图、单 trial、条件比较和 PCA 轨迹之间切换。</p>
+<p>对可变反应时任务，Python API 还接受每个 trial 的有效起止时间，避免将 trial 外时段
+当成零放电。连续行为回归以完整 trial 为训练/测试分割单位，可设置神经—行为时滞和
+重复的神经元数量扫描。</p>
+</section>
 <section id="id4">
-<h2>必须检查<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<h2>精细时序关系<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<p>精细时序模块不默认解释为解剖连接。用户可选计数型、参考放电率归一化或
+trial/放电率/时滞边缘校正 CCG；选择固定窗或中心抖动、侧翼标准差或经验 P 值、
+FDR/Bonferroni/不校正，以及同区、跨区和距离限制。运行前界面会显示候选对数和替代
+CCG 计算量。</p>
+</section>
+<section id="id5">
+<h2>必须检查<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p>解释左右、成功/失败曲线前，核对事件码含义。</p></li>
 <li><p>查看两个条件的事件数量和排除原因。</p></li>

@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.1.0
+
+- Added generic single-trial population analysis with explicit event/unit scopes,
+  configurable binning and Gaussian smoothing, per-trial validity masks,
+  pooled/per-trial baseline handling, peak/PCA/optional Rastermap ordering,
+  condition views, and PCA trajectories.
+- Added trial-held-out continuous-signal regression with explicit neural-to-target
+  lag and repeated neuron-count scaling.
+- Added auditable fine-timing connectivity with three CCG normalizations,
+  interval/centered jitter, flank-SD/empirical inference, multiplicity control,
+  region/distance filtering, deterministic pair sampling, and workload estimates.
+- Exposed the new methods through the desktop App, stable Python API, reproducible
+  export bundle, and `neuroephys population` / `neuroephys connectivity` commands.
+- Validated the generic single-trial implementation on the public Trautmann et al.
+  (2025) Fig. 7 LIP/SC data with pointwise agreement above r=0.998.
+
 ## v1.0.0
 
 - Added the stable `neuroephys` Python API, lazy public exports, command-line
