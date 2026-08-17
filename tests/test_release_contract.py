@@ -25,6 +25,18 @@ def test_release_identity_is_consistent():
     assert metadata["project"]["version"] == PRODUCT_VERSION
 
 
+def test_release_workflow_does_not_hardcode_an_old_version():
+    workflow = (
+        Path(__file__).resolve().parents[1]
+        / ".github"
+        / "workflows"
+        / "release.yml"
+    ).read_text(encoding="utf-8")
+
+    assert "release/v1.0.0/*" not in workflow
+    assert workflow.count("release/v*/*") == 2
+
+
 def test_workspace_override_creates_stable_layout(tmp_path: Path, monkeypatch):
     requested = tmp_path / "managed-workspace"
     monkeypatch.setenv("NEUROEPHYS_HOME", str(requested))
