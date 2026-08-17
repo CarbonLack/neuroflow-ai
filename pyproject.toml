@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuroephys-ai"
+version = "1.0.0"
+description = "Local-first extracellular electrophysiology analysis workbench and Python toolkit"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "LicenseRef-Proprietary"
+license-files = ["PROJECT_RIGHTS_NOTICE_ZH.md"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "Operating System :: Microsoft :: Windows :: Windows 10",
+  "Operating System :: Microsoft :: Windows :: Windows 11",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+  "numpy==2.2.6",
+  "scipy==1.15.3",
+  "pandas==2.3.3",
+  "matplotlib==3.10.6",
+  "scikit-learn==1.7.2",
+  "statsmodels==0.14.6",
+  "xgboost==3.3.0",
+  "h5py==3.15.1",
+  "pynwb==3.1.3",
+  "remfile==0.1.14",
+  "pyarrow==25.0.0",
+  "spikeinterface==0.104.8",
+  "networkx==3.6.1",
+  "neo==0.14.5",
+  "quantities==0.16.4",
+  "elephant==1.2.1",
+  "hdbscan==0.8.41",
+  "ONE-api==3.4.1",
+  "mplcursors==0.7.1",
+  "jsonschema==4.25.1",
+  "keyring==25.6.0",
+  "nex5file==0.1.3",
+]
+
+[project.optional-dependencies]
+desktop = ["PySide6==6.9.2"]
+mountainsort = ["mountainsort5==0.5.9", "isosplit6==0.1.4"]
+kilosort = ["kilosort==4.1.7"]
+full = [
+  "PySide6==6.9.2",
+  "mountainsort5==0.5.9",
+  "isosplit6==0.1.4",
+  "kilosort==4.1.7",
+]
+dev = [
+  "build>=1.2,<2",
+  "pytest>=8,<9",
+  "twine>=6,<7",
+]
+
+[project.scripts]
+neuroephys = "neuroephys.cli:main"
+neuroephys-ai = "neuroephys.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/CarbonLack/neuroflow-ai"
+Documentation = "https://carbonlack.github.io/neuroflow-ai/zh/"
+Issues = "https://github.com/CarbonLack/neuroflow-ai/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["neuroflow*", "neuroephys*"]
+exclude = ["tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

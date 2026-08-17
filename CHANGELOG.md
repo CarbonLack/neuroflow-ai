@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.0.0
+
+- Added the stable `neuroephys` Python API, lazy public exports, command-line
+  environment inventory, deterministic demo creation, and offline self-tests.
+- Added Python wheel/sdist metadata with optional desktop, MountainSort5, and
+  Kilosort components while preserving the internal `neuroflow` import path.
+- Unified the application, project manifest, exported provenance, documentation,
+  and distribution metadata at version 1.0.0.
+- Separated the installed application from the writable user workspace and added
+  a `NEUROEPHYS_HOME` override for managed laboratory computers.
+- Added formal Windows portable and per-user installer release paths, first-read
+  instructions, checksums, and release verification contracts.
+
 ## v0.8.0
 
 - Added an optional cloud AI assistant without changing the manual or guided

@@ -1,4 +1,4 @@
-name: Build Windows development preview
+name: Build NeuroEphys AI release
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  windows-preview:
+  windows-release:
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
@@ -22,11 +22,14 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements-core.txt
-      - name: Install application dependencies
+      - name: Install application and release dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-core.txt
-          python -m pip install "pyinstaller>=6.10,<7" "pytest>=8,<9"
+          python -m pip install -r docs/requirements.txt
+          python -m pip install "pyinstaller>=6.10,<7" "pytest>=8,<9" "build>=1.2,<2" "twine>=6,<7"
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
       - name: Install and build documentation
         run: |
           python -m pip install -r docs/requirements.txt
@@ -35,24 +38,18 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: python -m pytest -q
-      - name: Build one-folder application
-        env:
-          NEUROEPHYS_LITE_BUILD: "1"
-        run: python -m PyInstaller --noconfirm --clean NeuroFlow.spec
-      - name: Add first-read file
-        run: Copy-Item DEVELOPMENT_PREVIEW.md dist\NeuroEphysAI\README_FIRST.md
-      - name: Compress preview
-        run: Compress-Archive -Path dist\NeuroEphysAI\* -DestinationPath NeuroEphysAI-Windows-x64-development-preview.zip -Force
-      - name: Upload workflow artifact
+      - name: Build and verify release artifacts
+        run: powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -SkipTests -SkipDocs
+      - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NeuroEphysAI-Windows-x64-development-preview
-          path: NeuroEphysAI-Windows-x64-development-preview.zip
+          name: NeuroEphysAI-release
+          path: release/v1.0.0/*
           if-no-files-found: error
       - name: Attach tagged build to GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: true
+          prerelease: false
           generate_release_notes: true
-          files: NeuroEphysAI-Windows-x64-development-preview.zip
+          files: release/v1.0.0/*

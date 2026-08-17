@@ -54,6 +54,11 @@ docs/site/assets/native_test.png
 # Build artifacts
 build/
 dist/
+release/
+*.egg-info/
+.installer-test/
+.release-validation*/
+.release-acceptance/
 
 # Credentials and local configuration
 .env

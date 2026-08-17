@@ -117,7 +117,7 @@ from .ibl import download_bwm_trials_aggregate
 from .models import ProjectState, WorkflowStep
 from .medpc import import_medpc_behavior
 from .project import MANIFEST_NAME, load_project, save_project
-from .product import PRODUCT_NAME
+from .product import PRODUCT_NAME, PRODUCT_VERSION
 from .public_examples import (
     PUBLIC_EXAMPLES,
     download_public_example,
@@ -594,13 +594,13 @@ class SorterManagerDialog(QDialog):
         self.table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.table, 1)
         self.note = QLabel(
-            "以上环境探测结果是当前电脑的实际可运行状态。公开核心预览包可能未包含数 GiB 的 "
-            "Kilosort/CUDA 运行库；完整分析环境可通过仓库安装脚本配置。缺失后端会保持不可用，"
+            "以上环境探测结果是当前电脑的实际可运行状态。便携核心版可能未包含数 GiB 的 "
+            "Kilosort/CUDA 运行库；GPU 组件可通过受管理的完整分析环境配置。缺失后端会保持不可用，"
             "不会自动替换成其他 sorter。"
             if language == "zh_CN"
             else "The environment probes above are authoritative for this computer. "
-            "The public core preview may omit the several-GiB Kilosort/CUDA runtime; "
-            "the repository setup script configures the full analysis environment. "
+            "The portable core edition may omit the several-GiB Kilosort/CUDA runtime; "
+            "a managed full analysis environment can provide the GPU component. "
             "A missing backend remains unavailable and is never replaced silently."
         )
         self.note.setWordWrap(True)
@@ -3651,7 +3651,9 @@ class NeuroFlowWindow(QMainWindow):
 
     def _update_window_title(self) -> None:
         suffix = " *" if self.project_dirty else ""
-        self.setWindowTitle(f"{tr('app_title', self.language)}{suffix}")
+        self.setWindowTitle(
+            f"{tr('app_title', self.language)} · v{PRODUCT_VERSION}{suffix}"
+        )
 
     def _mark_project_dirty(self) -> None:
         if not self.state or self._restoring_project:

@@ -10,6 +10,69 @@ from .simulation import generate_demo_recording
 from .sorting import kilosort_environment, refresh_sorter_catalog, run_sorter
 
 
+def run_packaged_startup_self_test(workspace: Path) -> int:
+    """Construct the real main window and verify bundled startup resources."""
+
+    workspace.mkdir(parents=True, exist_ok=True)
+    report_path = workspace / "packaged_startup_self_test.json"
+    window = None
+    try:
+        from PySide6.QtGui import QFont
+        from PySide6.QtWidgets import QApplication
+
+        from .i18n import tr
+        from .product import PRODUCT_NAME, PRODUCT_VERSION
+        from .ui import (
+            NeuroFlowWindow,
+            _brand_asset,
+            _documentation_index,
+        )
+
+        application = QApplication.instance() or QApplication([])
+        application.setApplicationName(PRODUCT_NAME)
+        application.setFont(QFont("Microsoft YaHei", 10))
+        window = NeuroFlowWindow(workspace)
+        window.show()
+        application.processEvents()
+        title = window.windowTitle()
+        documentation = _documentation_index()
+        brand_mark = _brand_asset("neuroephys-ai-mark.png")
+        checks = {
+            "window_visible": bool(window.isVisible()),
+            "window_title": title,
+            "page_count": int(window.pages.count()),
+            "documentation_available": documentation.is_file(),
+            "brand_mark_available": brand_mark.is_file(),
+        }
+        expected_title = f"{tr('app_title', 'zh_CN')} · v{PRODUCT_VERSION}"
+        if title != expected_title:
+            raise RuntimeError(
+                f"Unexpected main-window title: {title!r}; expected {expected_title!r}"
+            )
+        if checks["page_count"] < 2:
+            raise RuntimeError("The home and analysis workspaces were not created")
+        if not checks["documentation_available"]:
+            raise RuntimeError("The bundled product manual is missing")
+        if not checks["brand_mark_available"]:
+            raise RuntimeError("The bundled product mark is missing")
+        report = {"ok": True, **checks}
+    except Exception as exc:  # noqa: BLE001 - persist the complete packaged failure
+        report = {
+            "ok": False,
+            "error": f"{type(exc).__name__}: {exc}",
+            "traceback": traceback.format_exc(),
+        }
+    finally:
+        if window is not None:
+            window.close()
+            application.processEvents()
+    report_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return 0 if report["ok"] else 1
+
+
 def run_packaged_ai_self_test(workspace: Path) -> int:
     """Verify the packaged privacy summary and structured response path offline."""
     workspace.mkdir(parents=True, exist_ok=True)

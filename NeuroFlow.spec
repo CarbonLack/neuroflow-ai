@@ -46,6 +46,7 @@ def runtime_submodule(name):
     blocked_parts = (
         ".test",
         ".tests",
+        "._test",
         ".conftest",
         ".benchmark",
         ".bench",
@@ -92,7 +93,9 @@ for package in packages:
 datas += [
     ("docs/site", "neuroflow_docs"),
     ("assets/brand", "neuroephys_brand"),
-    ("DEVELOPMENT_PREVIEW.md", "."),
+    ("README_FIRST.md", "."),
+    ("RELEASE_NOTES_1.0.md", "."),
+    ("RELEASE_VALIDATION_1.0.md", "."),
     ("THIRD_PARTY_SOURCES.md", "."),
     ("PROJECT_RIGHTS_NOTICE_ZH.md", "."),
 ]
@@ -108,7 +111,21 @@ analysis = Analysis(
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
-    excludes=["torch", "kilosort"] if lite_build else [],
+    excludes=(
+        [
+            "torch",
+            "kilosort",
+            "tensorflow",
+            "pytest",
+            "_pytest",
+            "sphinx",
+            "docutils",
+            "twine",
+            "build",
+        ]
+        if lite_build
+        else []
+    ),
     noarchive=False,
 )
 pyz = PYZ(analysis.pure)
@@ -119,6 +136,7 @@ exe = EXE(
     exclude_binaries=True,
     name="NeuroEphysAI",
     icon="assets/brand/neuroephys-ai.ico",
+    version="assets/windows_version_info.txt",
     console=False,
 )
 collection = COLLECT(

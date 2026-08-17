@@ -8,6 +8,7 @@ import numpy as np
 from scipy import signal, stats
 
 from .models import ProjectState
+from .product import PRODUCT_NAME, PRODUCT_VERSION
 
 try:
     from numba import njit
@@ -953,6 +954,8 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         json.dumps(workflow, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     provenance = {
+        "application": PRODUCT_NAME,
+        "application_version": PRODUCT_VERSION,
         "data_type": state.source_type,
         "source_path": str(state.source_path) if state.source_path else None,
         "electrode_type": state.electrode_type,

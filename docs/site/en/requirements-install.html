@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/requirements-install.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=6f76189a"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -50,8 +50,9 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">System requirements and installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#minimum-practical-configuration">Minimum practical configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#development-preview-download">Development preview download</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#developer-installation">Developer installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-the-windows-application">Install the Windows application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#python-package">Python package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#source-development-installation">Source development installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#sorter-environments">Sorter environments</a></li>
 </ul>
 </li>
@@ -427,7 +428,8 @@ recording.</p>
 <section id="minimum-practical-configuration">
 <h2>Minimum practical configuration<a class="headerlink" href="#minimum-practical-configuration" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p>Windows 10/11 for the packaged development preview.</p></li>
+<li><p>64-bit Windows 10/11 for the packaged application. Users do not need Python
+or Conda.</p></li>
 <li><p>16 GB RAM for short teaching data; 32 GB or more for routine multichannel
 work.</p></li>
 <li><p>Sufficient free storage for the original recording, standardized cache,
@@ -436,34 +438,56 @@ sorter-native output, and exported figures.</p></li>
 compatible backend has passed the environment check.</p></li>
 </ul>
 </section>
-<section id="development-preview-download">
-<h2>Development preview download<a class="headerlink" href="#development-preview-download" title="Link to this heading"></a></h2>
-<p>Download the latest prerelease from the GitHub <strong>Releases</strong> page, extract the
-archive to a writable local folder, and run <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI.exe</span></code>. The one-folder
-layout keeps scientific libraries inspectable and avoids unpacking them at each
-launch.</p>
-<p>The public archive is the portable core preview. Its data import, QC, existing
-sorting import, Unit curation, behavior, statistics, machine learning,
-Elephant, figures, AI controls, and manual run locally. The CUDA-enabled
-PyTorch runtime required by Kilosort4 is several GiB, so it is provided by the
-repository’s full analysis environment rather than duplicated in the core
-archive. The Sorter page displays the actual state and never substitutes
-another sorter.</p>
+<section id="install-the-windows-application">
+<h2>Install the Windows application<a class="headerlink" href="#install-the-windows-application" title="Link to this heading"></a></h2>
+<p>Download <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.0.0.exe</span></code> from GitHub <strong>Releases</strong> or the
+competition delivery folder. The per-user installer requires no administrator
+access and creates desktop and Start-menu shortcuts. Uninstalling the program
+does not delete projects under <code class="docutils literal notranslate"><span class="pre">Documents\NeuroEphysAI</span></code>.</p>
+<p>The portable <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.0.0-Windows-x64-portable.zip</span></code> needs no
+installation. Extract the complete archive and run
+<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI\NeuroEphysAI.exe</span></code>; the EXE does not work by itself. This
+one-folder layout keeps scientific libraries inspectable and avoids unpacking
+them at every launch.</p>
+<p>Both editions run data import, QC, existing sorting import, Unit curation,
+behavior, statistics, machine learning, Elephant, figures, AI controls, and
+the manual locally. The CUDA-enabled PyTorch runtime required by Kilosort4 is
+several GiB and is therefore managed as a separate GPU component. The Sorter
+page displays the actual state and never substitutes another sorter.</p>
 <p>The first launch performs an environment inventory. Open <strong>Sorter manager</strong> to
 see the detected backend, version, device requirement, probe suitability, and
 actual runnable state. A listed sorter is not considered runnable until its
 probe succeeds.</p>
 </section>
-<section id="developer-installation">
-<h2>Developer installation<a class="headerlink" href="#developer-installation" title="Link to this heading"></a></h2>
+<section id="python-package">
+<h2>Python package<a class="headerlink" href="#python-package" title="Link to this heading"></a></h2>
+<p>The validated Python distribution targets 64-bit Python 3.12:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="n">venv</span>
+<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
+<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">neuroephys</span><span class="p">.</span><span class="n">exe</span> <span class="n">info</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">neuroephys</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ne</span>
+
+<span class="n">project</span> <span class="o">=</span> <span class="n">ne</span><span class="o">.</span><span class="n">create_simulated_project</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"example_project"</span><span class="p">))</span>
+<span class="n">qc</span> <span class="o">=</span> <span class="n">ne</span><span class="o">.</span><span class="n">run_raw_qc</span><span class="p">(</span><span class="n">project</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">desktop</span></code>, <code class="docutils literal notranslate"><span class="pre">mountainsort</span></code>, and <code class="docutils literal notranslate"><span class="pre">kilosort</span></code> extras are optional. The
+last two require a compatible C++ build environment or NVIDIA GPU/CUDA stack,
+respectively, and cannot block installation of the core package.</p>
+</section>
+<section id="source-development-installation">
+<h2>Source development installation<a class="headerlink" href="#source-development-installation" title="Link to this heading"></a></h2>
 <div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">://</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">CarbonLack</span><span class="p">/</span><span class="n">neuroflow-ai</span><span class="p">.</span><span class="n">git</span>
 <span class="nb">cd </span><span class="n">neuroflow-ai</span>
 <span class="n">powershell</span> <span class="n">-ExecutionPolicy</span> <span class="n">Bypass</span> <span class="o">-File</span> <span class="n">scripts</span><span class="p">\</span><span class="n">setup_windows</span><span class="p">.</span><span class="n">ps1</span>
-<span class="p">.\.</span><span class="n">venv312</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">app</span><span class="p">.</span><span class="n">py</span>
+<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">app</span><span class="p">.</span><span class="n">py</span>
 </pre></div>
 </div>
 <p>Run the tests before working with your own recording:</p>
-<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="p">.\.</span><span class="n">venv312</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pytest</span> <span class="n">-q</span>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pytest</span> <span class="n">-q</span>
 </pre></div>
 </div>
 </section>
@@ -474,14 +498,14 @@ SpikeInterface sorters can run on CPU. NeuroEphys AI records the backend
 selected by the user and preserves each native output directory. A failed
 backend remains failed; the application does not silently substitute another
 sorter.</p>
-<p>Developers can create the full local GPU build with
-<code class="docutils literal notranslate"><span class="pre">scripts\build_windows.ps1</span></code> or the smaller downloadable core preview with
-<code class="docutils literal notranslate"><span class="pre">scripts\build_windows_lite.ps1</span></code>.</p>
+<p>Developers can build the portable application, Python packages, installer, and
+checksums with <code class="docutils literal notranslate"><span class="pre">scripts\build_release.ps1</span></code>. The managed full GPU build remains
+available through <code class="docutils literal notranslate"><span class="pre">scripts\build_windows.ps1</span></code>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The packaged preview has been exercised on the development workstation. It
-has not yet completed a full compatibility matrix across clean Windows,
-macOS, and Linux machines.</p>
+<p>The v1.0 support boundary is 64-bit Windows 10/11 and Python 3.12. macOS,
+Linux, and other Python versions are not part of this release’s formal
+compatibility claim.</p>
 </div>
 </section>
 </section>

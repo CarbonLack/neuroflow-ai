@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 
 from .models import ProjectState
+from .product import PRODUCT_NAME, PRODUCT_VERSION
 
 MANIFEST_NAME = "neuroflow_project.json"
 
@@ -118,6 +119,8 @@ def save_project(state: ProjectState) -> Path:
 
     payload = {
         "schema_version": 5,
+        "application": PRODUCT_NAME,
+        "application_version": PRODUCT_VERSION,
         "name": state.name,
         "source_type": state.source_type,
         "source_path": str(state.source_path) if state.source_path else None,

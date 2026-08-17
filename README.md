@@ -1,19 +1,19 @@
-# NeuroEphys AI v0.10.0-dev
+# NeuroEphys AI v1.0.0
 
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
 </p>
 
-> **Development preview / 开发预览版**
+> **正式版 / Production release**
 >
-> 当前版本用于科研工作流演示、兼容性验证和用户测试，功能仍在持续完善。候选 Unit、
-> 统计结果和 AI 建议均需研究者审核，请勿将本预览版作为无人监督的正式分析终点。
+> v1.0 同时提供无需 Python 的 Windows App 与可脚本化的 ``neuroephys-ai`` Python
+> 包。候选 Unit、统计结果和 AI 建议仍属于科研证据，必须由研究者结合实验设计复核。
 
 - 教程网站：[中文](https://carbonlack.github.io/neuroflow-ai/zh/) ·
   [English](https://carbonlack.github.io/neuroflow-ai/en/)
 - 下载测试：[GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/releases)
 - 问题反馈：[GitHub Issues](https://github.com/CarbonLack/neuroflow-ai/issues)
-- 当前限制与测试范围：[DEVELOPMENT_PREVIEW.md](DEVELOPMENT_PREVIEW.md)
+- v1.0 发行说明：[RELEASE_NOTES_1.0.md](RELEASE_NOTES_1.0.md)
 
 NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 平台调用经过验证的 sorter 和分析库，将数据导入、质量控制、sorting、人工 Unit
@@ -141,26 +141,51 @@ chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度
 
 ## 启动
 
-双击 `run_demo.bat`。开发环境也可以运行：
+普通用户安装 ``NeuroEphysAI-Setup-1.0.0.exe`` 后，双击桌面上的 **NeuroEphys AI**
+快捷方式即可启动。便携版需完整解压 ZIP，然后双击
+``NeuroEphysAI\NeuroEphysAI.exe``；不要只复制单独的 EXE。两种版本都不要求用户安装
+Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
+
+Python 用户可以安装构建出的 wheel：
 
 ```powershell
-..\.venv312\Scripts\python.exe app.py
+python -m pip install neuroephys_ai-1.0.0-py3-none-any.whl
+neuroephys info
 ```
 
-在一台新 Windows 电脑上先运行：
+最小调用示例：
+
+```python
+from pathlib import Path
+import neuroephys as ne
+
+project = ne.create_simulated_project(Path("example_project"))
+quality = ne.run_raw_qc(project)
+print(quality["quality_score"])
+```
+
+桌面界面、MountainSort5 和 Kilosort 分别是可选组件：
+
+```powershell
+python -m pip install ".[desktop]"
+python -m pip install ".[mountainsort]"
+python -m pip install ".[kilosort]"
+```
+
+源码开发环境安装：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\setup_windows.ps1
+\.venv\Scripts\python.exe app.py
 ```
 
-构建可携带的 Windows one-folder 应用：
+构建完整正式发行物：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
+powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1
 ```
 
-结果位于 `dist\NeuroEphysAI\NeuroEphysAI.exe`。选择 one-folder 是为了让大型科研依赖
-保持可检查，并避免每次启动都重新解压。
+首次使用和分发方式见 [README_FIRST.md](README_FIRST.md)。
 
 ## 真实公开数据验证
 

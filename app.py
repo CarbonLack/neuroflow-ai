@@ -1,18 +1,17 @@
 import sys
 from pathlib import Path
 
+from neuroflow.paths import default_workspace, initialize_workspace
+
 if __name__ == "__main__":
     if getattr(sys, "frozen", False):
-        documents = Path.home() / "Documents"
-        preferred_workspace = documents / "NeuroEphysAI"
-        legacy_workspace = documents / "NeuroFlow"
-        workspace = (
-            preferred_workspace
-            if preferred_workspace.exists() or not legacy_workspace.exists()
-            else legacy_workspace
-        )
+        workspace = initialize_workspace(default_workspace())
     else:
         workspace = Path(__file__).resolve().parent
+    if "--self-test-startup" in sys.argv:
+        from neuroflow.self_test import run_packaged_startup_self_test
+
+        raise SystemExit(run_packaged_startup_self_test(workspace))
     if "--self-test-kilosort" in sys.argv:
         from neuroflow.self_test import run_packaged_kilosort_self_test
 

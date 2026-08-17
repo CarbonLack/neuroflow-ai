@@ -3,7 +3,7 @@ from pathlib import Path
 project = "NeuroEphys AI"
 author = "NeuroEphys AI 团队"
 copyright = "2026, NeuroEphys AI 团队"
-release = "0.10.0-dev"
+release = "1.0.0"
 
 extensions = [
     "sphinx.ext.autosectionlabel",

@@ -42,8 +42,10 @@ SCREENSHOT_FILES = (
 )
 
 PUBLIC_RECORDS = (
-    "DEVELOPMENT_PREVIEW.md",
     "DEPLOYMENT_STATUS_ZH.md",
+    "README_FIRST.md",
+    "RELEASE_NOTES_1.0.md",
+    "RELEASE_VALIDATION_1.0.md",
     "THIRD_PARTY_SOURCES.md",
     "PROJECT_RIGHTS_NOTICE_ZH.md",
     "AI_USER_GUIDE_ZH.md",
@@ -74,8 +76,10 @@ def copy_existing(source: Path, destination: Path) -> bool:
     return True
 
 
-def write_index(destination: Path, package_name: str | None) -> None:
-    zh = f"""# NeuroEphys AI 开发预览交付索引
+def write_index(destination: Path, package_names: tuple[str, ...]) -> None:
+    package_summary = "、".join(f"`{name}`" for name in package_names) or "待生成"
+    package_summary_en = ", ".join(f"`{name}`" for name in package_names) or "pending"
+    zh = f"""# NeuroEphys AI 1.0 正式版交付索引
 
 本目录汇总了当前可用于报名、演示、离线阅读和本机验证的材料。
 
@@ -84,7 +88,7 @@ def write_index(destination: Path, package_name: str | None) -> None:
 1. `01_Brand`：中英文封面、图标和矢量标志。
 2. `02_Screenshots`：软件界面、事件分析、统计与机器学习截图。
 3. `03_Documentation_Offline`：完整双语离线手册；中文请打开 `zh/index.html`。
-4. `04_Windows_Preview/{package_name or "待生成"}`：Windows 开发预览版。
+4. `04_Release_1.0`：正式发布物，包括 {package_summary}。
 5. `05_Public_Validation`：可公开的开发状态、来源、AI 安全和权利说明。
 6. `06_Private_Local_Validation`：真实数据运行记录，仅供团队本机核验，禁止上传公开仓库。
 7. `SHA256SUMS.txt`：交付文件的 SHA-256 校验值。
@@ -94,13 +98,13 @@ def write_index(destination: Path, package_name: str | None) -> None:
 - GitHub：https://github.com/CarbonLack/neuroflow-ai
 - 中文手册：https://carbonlack.github.io/neuroflow-ai/zh/
 - English manual：https://carbonlack.github.io/neuroflow-ai/en/
-- 开发预览下载：https://github.com/CarbonLack/neuroflow-ai/releases
+- 正式版下载：https://github.com/CarbonLack/neuroflow-ai/releases
 
 ## 状态说明
 
-当前版本属于开发预览。手册与验证报告分别标注真实数据验证、模拟数据验证和仅有接口的能力。原始电生理和行为数据没有复制到本目录。AI 界面预览只证明交互和安全控制；只有实际连接 Provider 并完成请求后生成的截图，才能标注为真实模型对话。
+当前版本为正式版 1.0。手册与验证报告分别标注真实数据验证、模拟数据验证和仅有接口的能力。原始电生理和行为数据没有复制到本目录。AI 界面截图只证明交互和安全控制；只有实际连接 Provider 并完成请求后生成的截图，才能标注为真实模型对话。
 """
-    en = f"""# NeuroEphys AI development-preview delivery index
+    en = f"""# NeuroEphys AI 1.0 release delivery index
 
 This folder collects material for submission, demonstration, offline reading,
 and local verification.
@@ -110,7 +114,7 @@ and local verification.
 1. `01_Brand`: English and Chinese covers, icons, and vector mark.
 2. `02_Screenshots`: application, event-analysis, statistics, and decoding views.
 3. `03_Documentation_Offline`: complete bilingual manual; open `en/index.html`.
-4. `04_Windows_Preview/{package_name or "pending"}`: Windows development preview.
+4. `04_Release_1.0`: release artifacts, including {package_summary_en}.
 5. `05_Public_Validation`: public development, attribution, AI safety, and rights records.
 6. `06_Private_Local_Validation`: local-path validation records for the team only.
 7. `SHA256SUMS.txt`: SHA-256 checksums.
@@ -120,11 +124,11 @@ and local verification.
 - GitHub: https://github.com/CarbonLack/neuroflow-ai
 - English manual: https://carbonlack.github.io/neuroflow-ai/en/
 - Chinese manual: https://carbonlack.github.io/neuroflow-ai/zh/
-- Preview downloads: https://github.com/CarbonLack/neuroflow-ai/releases
+- Release downloads: https://github.com/CarbonLack/neuroflow-ai/releases
 
 ## Status
 
-This is a development preview. The manual distinguishes real-data validation,
+This is the 1.0 production release. The manual distinguishes real-data validation,
 simulation-only validation, and interface-only work. No raw electrophysiology
 or behavior data is copied into this folder. An AI interface preview verifies
 layout and safety controls only; it must not be presented as a real model
@@ -170,21 +174,13 @@ def assemble(destination: Path, private_project: Path | None = None) -> None:
         destination / "03_Documentation_Offline",
     )
 
-    package_name: str | None = None
-    executable_dir = ROOT / "dist" / "NeuroEphysAI"
-    if executable_dir.exists():
-        preview_dir = destination / "04_Windows_Preview"
-        preview_dir.mkdir(parents=True)
-        archive_base = preview_dir / "NeuroEphysAI-0.10.0-dev-windows-x64"
-        archive_path = Path(
-            shutil.make_archive(
-                str(archive_base),
-                "zip",
-                executable_dir.parent,
-                executable_dir.name,
-            )
-        )
-        package_name = archive_path.name
+    release_dir = destination / "04_Release_1.0"
+    package_names: list[str] = []
+    source_release = ROOT / "release" / "v1.0.0"
+    if source_release.exists():
+        for source in sorted(source_release.iterdir()):
+            if source.is_file() and copy_existing(source, release_dir / source.name):
+                package_names.append(source.name)
 
     public_dir = destination / "05_Public_Validation"
     for name in PUBLIC_RECORDS:
@@ -225,7 +221,7 @@ def assemble(destination: Path, private_project: Path | None = None) -> None:
             selected / "ai_validation",
         )
 
-    write_index(destination, package_name)
+    write_index(destination, tuple(package_names))
     write_checksums(destination)
     print(destination)
 

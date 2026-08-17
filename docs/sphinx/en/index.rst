@@ -1,7 +1,7 @@
 NeuroEphys AI
 ==============
 
-**Development preview · v0.10.0-dev**
+**Production release · v1.0.0**
 
 NeuroEphys AI is a local-first workbench for extracellular multichannel
 electrophysiology. It keeps raw-data import, quality control, preprocessing,
@@ -9,9 +9,10 @@ spike sorting, manual unit curation, behavioral synchronization, neural
 analysis, statistics, decoding, figure editing, and provenance in one
 recoverable project.
 
-The current release is a research prototype. Use it to inspect workflows,
-evaluate interoperability, and provide reproducible feedback. Every candidate
-unit and statistical result still requires scientific review.
+Version 1.0 provides both a self-contained Windows application and the
+scriptable ``neuroephys-ai`` Python package. Every candidate unit, statistical
+result, machine-learning result, and biological interpretation still requires
+scientific review.
 
 .. raw:: html
 

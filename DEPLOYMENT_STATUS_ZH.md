@@ -1,13 +1,14 @@
 # NeuroEphys AI 公开仓库与文档部署状态
 
-最后检查日期：2026-07-29
+最后检查日期：2026-08-17
 
 ## 本轮发布范围
 
 - GitHub 仓库：`https://github.com/CarbonLack/neuroflow-ai`
 - 中文手册：`https://carbonlack.github.io/neuroflow-ai/zh/`
 - English manual: `https://carbonlack.github.io/neuroflow-ai/en/`
-- Windows 开发预览版：通过 GitHub Releases 发布
+- Windows 正式版 1.0：通过 GitHub Releases 发布安装版和便携版
+- Python 正式版 1.0：提供 wheel 和源码包
 
 本轮只更新 GitHub。GitLab 仓库和 GitLab Pages 暂不推送，待账户验证与发布流程单独处理。
 
@@ -16,7 +17,7 @@
 公开仓库包括：
 
 - 源代码与自动化测试；
-- GitHub Pages 和 Windows 预览版构建配置；
+- GitHub Pages、Windows 正式版和 Python 包构建配置；
 - 中英文操作手册；
 - 开源依赖、方法文献与授权来源；
 - 脱敏产品截图和教学模拟资源；
@@ -41,9 +42,9 @@
 
 仓库的 `Settings > Pages > Build and deployment > Source` 应设置为 **GitHub Actions**。
 
-## Windows 开发预览版
+## Windows 与 Python 正式版 1.0
 
-`.github/workflows/release.yml` 构建公开核心版。该版本包含桌面界面、数据导入、质控、sorting 结果导入、Unit curation、行为与事件分析、统计、机器学习、Elephant、出图和受控 AI 接口。
+`.github/workflows/release.yml` 构建公开核心版。Windows 发行物包括逐用户安装程序和完整便携 ZIP，均内置 Python 与核心科学运行环境；Python 发行物包括 `neuroephys-ai` wheel 和源码包。该版本包含桌面界面、数据导入、质控、sorting 结果导入、Unit curation、行为与事件分析、统计、机器学习、Elephant、出图和受控 AI 接口。
 
 Kilosort/CUDA 运行环境体积较大，并受显卡、驱动和 PyTorch 版本约束，因此由独立的完整分析环境管理。公开核心版不会把缺失的 Kilosort 悄悄替换成其他 sorter。
 
@@ -57,4 +58,4 @@ Kilosort/CUDA 运行环境体积较大，并受显卡、驱动和 PyTorch 版本
 4. 人工复核截图、日志、报告和压缩包；
 5. 扫描 API 密钥、访问令牌和凭据模式。
 
-大体积安装包通过 GitHub Releases 或比赛指定渠道发布，不写入普通 Git 历史。
+大体积安装包通过 GitHub Releases 或比赛指定渠道发布，不写入普通 Git 历史。发布前按 `RELEASE_VALIDATION_1.0.md` 完成安装、启动、核心流程、Python 包和卸载验收。

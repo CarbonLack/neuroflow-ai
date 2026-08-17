@@ -19,9 +19,9 @@ try {
     $env:NEUROEPHYS_LITE_BUILD = "1"
     & $Python -m PyInstaller --noconfirm --clean NeuroFlow.spec
     if ($LASTEXITCODE -ne 0) {
-        throw "NeuroEphys AI core-preview packaging failed with exit code $LASTEXITCODE."
+        throw "NeuroEphys AI core packaging failed with exit code $LASTEXITCODE."
     }
-    Write-Host "Core preview created at dist\NeuroEphysAI\NeuroEphysAI.exe" -ForegroundColor Green
+    Write-Host "Core application created at dist\NeuroEphysAI\NeuroEphysAI.exe" -ForegroundColor Green
     Write-Host "Kilosort/CUDA remains available through the managed full analysis environment." -ForegroundColor Yellow
 } finally {
     Remove-Item Env:NEUROEPHYS_LITE_BUILD -ErrorAction SilentlyContinue
