@@ -6,9 +6,19 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-$Python = Join-Path $Root ".venv\Scripts\python.exe"
-if (-not (Test-Path -LiteralPath $Python)) {
-    throw "Run scripts\setup_windows.ps1 before building a release."
+$VenvPython = Join-Path $Root ".venv\Scripts\python.exe"
+if (Test-Path -LiteralPath $VenvPython) {
+    $Python = $VenvPython
+} else {
+    $PythonCommand = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $PythonCommand) {
+        throw "Python 3.12 is required to build a release."
+    }
+    $Python = $PythonCommand.Source
+    $PythonVersion = (& $Python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')").Trim()
+    if ($PythonVersion -ne "3.12") {
+        throw "Python 3.12 is required to build a release; found $PythonVersion."
+    }
 }
 
 Push-Location $Root
