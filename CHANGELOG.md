@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- Simplified the home screen to a centered, single-background entry area with
+  New project, Open/import project, and one combined Example projects library
+  for simulations and verified public data.
+- Added standard File, Edit, View, Analysis, and Help menus with keyboard
+  shortcuts for common project and workflow actions.
+- Added a linear stage strip with Previous/Next navigation and compact,
+  first-visit step guides that can be disabled or reset.
+- Rebuilt the workspace as a resizable three-column splitter. The workflow rail
+  can compact to stage numbers, the AI/help/audit column remains available on
+  the right, and narrow windows preserve analysis content through adaptive
+  sizing and scrolling.
+- Preserved the existing purple-black visual identity while improving hierarchy
+  and reducing fixed minimum sizes for smaller windows.
+
 ## v1.1.0
 
 - Added generic single-trial population analysis with explicit event/unit scopes,

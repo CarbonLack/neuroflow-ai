@@ -58,6 +58,7 @@
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Create and reopen a project</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#create-the-project">Create the project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#layout-and-beginner-guidance">Layout and beginner guidance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#acquisition-metadata">Acquisition metadata</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#save-and-recover">Save and recover</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#visible-changes-after-import">Visible changes after import</a></li>
@@ -430,23 +431,37 @@ audit records. Original voltage files remain read-only.</p>
 <section id="create-the-project">
 <h2>Create the project<a class="headerlink" href="#create-the-project" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
-<li><p>Start the application and choose <strong>Create empty project</strong>.</p></li>
-<li><p>Enter a project name and a writable project folder.</p></li>
-<li><p>On <strong>01 Data and project</strong>, select <strong>Import my data</strong>.</p></li>
-<li><p>Choose the route that describes the files you actually hold:</p>
+<li><p>Start the application and choose <strong>New project</strong>.</p></li>
+<li><p>Enter a project name and choose the route that describes the files you
+actually hold:</p>
 <ul class="simple">
 <li><p>generic interleaved binary;</p></li>
 <li><p>acquisition-system files;</p></li>
 <li><p>an existing Kilosort/Phy result;</p></li>
 <li><p>an Offline Sorter/NeuroExplorer <code class="docutils literal notranslate"><span class="pre">.nex5</span></code> result;</p></li>
-<li><p>a verified public-data project;</p></li>
-<li><p>a teaching simulation.</p></li>
 </ul>
 </li>
 <li><p>Review the recognition preview before creating the data link. Confirm
 sampling rate, channel count, numeric type, voltage scale, recording
 duration, selected contacts, and event source.</p></li>
 </ol>
+<p>Use <strong>Open / import project</strong> for a previously saved
+<code class="docutils literal notranslate"><span class="pre">neuroflow_project.json</span></code>. <strong>Example projects</strong> combines teaching simulations
+and fixed verified public projects. The home screen no longer repeats the full
+input-route table; detailed format choices appear only while creating a project.</p>
+</section>
+<section id="layout-and-beginner-guidance">
+<h2>Layout and beginner guidance<a class="headerlink" href="#layout-and-beginner-guidance" title="Link to this heading"></a></h2>
+<p>The workspace shows three columns together by default: workflow navigation on
+the left, the analysis canvas in the center, and AI/help/audit on the right.
+Drag the dividers to resize them. The left control compacts the workflow into a
+narrow <code class="docutils literal notranslate"><span class="pre">01</span></code>–<code class="docutils literal notranslate"><span class="pre">11</span></code> rail, while the right close control temporarily hides the
+AI column. In a narrow window the workflow rail compacts automatically and the
+center retains scroll access instead of clipping wide controls or figures.</p>
+<p>A short step guide appears on the first visit to each stage. It explains the
+stage purpose, recommended order, and completion checks. Select <strong>Do not show
+step guides automatically</strong> to disable the prompts. Re-enable or reset them from
+the <strong>Help</strong> menu.</p>
 </section>
 <section id="acquisition-metadata">
 <h2>Acquisition metadata<a class="headerlink" href="#acquisition-metadata" title="Link to this heading"></a></h2>
@@ -459,7 +474,7 @@ later safeguards. For example, an acquisition already high-pass filtered at
 <h2>Save and recover<a class="headerlink" href="#save-and-recover" title="Link to this heading"></a></h2>
 <p>Use <strong>Save project</strong> after changing inputs, curation labels, analysis settings,
 or figure styles. Closing a modified project opens a save prompt. Choose
-<strong>Restore NeuroEphys AI project</strong> on the home screen to reopen the manifest.</p>
+<strong>Open / import project</strong> on the home screen to reopen the manifest.</p>
 <p>After recovery, check that the source link is reachable. Derived results remain
 visible when possible; stages that require a missing external file are disabled
 with a specific message.</p>

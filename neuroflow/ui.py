@@ -16,8 +16,8 @@ from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT,
 )
 from matplotlib.transforms import Bbox
-from PySide6.QtCore import QEvent, Qt, QThread, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QFont, QIcon, QPixmap
+from PySide6.QtCore import QEvent, QSettings, Qt, QThread, QTimer, QUrl, Signal
+from PySide6.QtGui import QAction, QDesktopServices, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -42,6 +43,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSpinBox,
+    QSplitter,
     QStackedWidget,
     QStyle,
     QTabWidget,
@@ -353,6 +355,19 @@ QMainWindow, QWidget {
     font-family: "Microsoft YaHei", "Segoe UI";
     font-size: 13px;
 }
+QMenuBar {
+    background: #0d0c14; color: #f7f3fa; border-bottom: 1px solid #3b354a;
+    padding: 3px 8px;
+}
+QMenuBar::item { background: transparent; padding: 6px 10px; border-radius: 4px; }
+QMenuBar::item:selected { background: #2b2537; color: #ffffff; }
+QMenu {
+    background: #171521; color: #f2edf5; border: 1px solid #4a425b;
+    padding: 6px;
+}
+QMenu::item { padding: 7px 30px 7px 24px; border-radius: 4px; }
+QMenu::item:selected { background: #5c3567; color: #ffffff; }
+QMenu::separator { height: 1px; background: #3b354a; margin: 5px 8px; }
 #Header, #HomeHeader {
     background: #0d0c14;
     color: #f7f3fa;
@@ -365,12 +380,14 @@ QMainWindow, QWidget {
 #Brand { font-size: 22px; font-weight: 700; color: #f7f3fa; }
 #Hero { font-size: 32px; font-weight: 700; color: #f7f3fa; }
 #HeroPanel {
-    background: #171521;
+    background: transparent;
     color: #f7f3fa;
-    border: 1px solid #3b354a;
-    border-radius: 7px;
+    border: none;
 }
 #HeroPanel QLabel#Muted { color: #bdb3cc; }
+#StageStrip {
+    background: #171521; border: 1px solid #3b354a; border-radius: 6px;
+}
 #Sidebar, #Assistant {
     background: #121019;
     color: #f2edf5;
@@ -1765,6 +1782,141 @@ class PublicExampleDialog(QDialog):
         self.accept()
 
 
+class ExampleLibraryDialog(QDialog):
+    """One entry point for teaching simulations and verified public projects."""
+
+    def __init__(
+        self,
+        workspace: Path,
+        parent: QWidget | None = None,
+        language: str = "zh_CN",
+    ):
+        super().__init__(parent)
+        self.workspace = workspace
+        self.language = language
+        self.example_kind = "demo"
+        self.example_key = next(iter(DEMO_PROFILES))
+        english = language == "en_US"
+        self.setWindowTitle("Example projects" if english else "示例项目")
+        self.resize(980, 600)
+        self.setMinimumSize(720, 480)
+        layout = QVBoxLayout(self)
+        title = QLabel(
+            "Learn the workflow or open a verified reference"
+            if english
+            else "从教学数据学习流程，或打开已验证公开项目"
+        )
+        title.setStyleSheet("font-size: 22px; font-weight: 700;")
+        layout.addWidget(title)
+        intro = QLabel(
+            (
+                "Teaching simulations are generated locally and are best for first-time "
+                "use. Verified public projects use fixed external datasets and may need "
+                "a one-time download. Both open as ordinary NeuroEphys AI projects."
+            )
+            if english
+            else (
+                "教学模拟在本机生成，适合第一次熟悉完整流程；已验证公开项目使用固定的"
+                "外部数据，首次打开可能需要下载。两类内容都会作为普通 NeuroEphys AI "
+                "项目打开。"
+            )
+        )
+        intro.setWordWrap(True)
+        intro.setObjectName("Muted")
+        layout.addWidget(intro)
+
+        rows: list[tuple[str, str, str, str, str, str]] = []
+        for key, profile in DEMO_PROFILES.items():
+            rows.append(
+                (
+                    f"demo:{key}",
+                    "Teaching" if english else "教学模拟",
+                    profile["name"] if english else profile["name_zh"],
+                    (
+                        f"{profile['channel_count']} channels · "
+                        f"{profile['behavior_paradigm'] if english else profile['behavior_paradigm_zh']}"
+                    ),
+                    ", ".join(profile["recommended_sorters"]),
+                    "Local generation" if english else "本机生成，无需下载",
+                )
+            )
+        for example in PUBLIC_EXAMPLES:
+            status = public_example_status(workspace, example.key)
+            rows.append(
+                (
+                    f"public:{example.key}",
+                    "Verified public" if english else "已验证公开",
+                    example.name_en if english else example.name_zh,
+                    example.contents_en if english else example.contents_zh,
+                    example.identifier,
+                    (
+                        "Ready locally"
+                        if status["downloaded"] and english
+                        else "本机已就绪"
+                        if status["downloaded"]
+                        else "Download on first open"
+                        if english
+                        else "首次打开时下载"
+                    ),
+                )
+            )
+
+        self.table = QTableWidget(len(rows), 5)
+        self.table.setHorizontalHeaderLabels(
+            ["Type", "Example", "Contents", "Method / identifier", "Availability"]
+            if english
+            else ["类型", "示例项目", "内容", "推荐方法／固定编号", "可用状态"]
+        )
+        self.table.verticalHeader().setVisible(False)
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.setSelectionMode(QTableWidget.SingleSelection)
+        self.table.setWordWrap(True)
+        for row_index, row in enumerate(rows):
+            route, kind, name, contents, method, availability = row
+            for column, value in enumerate(
+                (kind, name, contents, method, availability)
+            ):
+                item = QTableWidgetItem(value)
+                item.setData(Qt.UserRole, route)
+                self.table.setItem(row_index, column, item)
+            self.table.setRowHeight(row_index, 58)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self.table.selectRow(0)
+        self.table.cellDoubleClicked.connect(lambda _row, _column: self._accept())
+        layout.addWidget(self.table, 1)
+
+        note = QLabel(
+            "Tip: start with the 8-channel microwire example for the fastest tour."
+            if english
+            else "建议第一次选择 8 通道微丝示例，最快完成整套操作体验。"
+        )
+        note.setObjectName("InsetPanel")
+        note.setWordWrap(True)
+        note.setContentsMargins(12, 9, 12, 9)
+        layout.addWidget(note)
+        buttons = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        buttons.button(QDialogButtonBox.Ok).setText(
+            "Open selected example" if english else "打开所选示例"
+        )
+        buttons.accepted.connect(self._accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _accept(self) -> None:
+        row = self.table.currentRow()
+        if row < 0:
+            return
+        route = str(self.table.item(row, 0).data(Qt.UserRole))
+        self.example_kind, self.example_key = route.split(":", 1)
+        self.accept()
+
+
 class ImportDialog(QDialog):
     def __init__(
         self,
@@ -2798,10 +2950,12 @@ class TutorialDialog(QDialog):
         super().__init__(parent)
         self.language = language
         self.setWindowTitle(tr("tutorial", language))
-        self.resize(1280, 820)
+        self.resize(980, 720)
+        self.setMinimumSize(620, 480)
         layout = QHBoxLayout(self)
         self.list = QListWidget()
-        self.list.setFixedWidth(360)
+        self.list.setMinimumWidth(220)
+        self.list.setMaximumWidth(300)
         self.browser = QTextBrowser()
         self.browser.setOpenExternalLinks(True)
         self.browser.document().setDefaultStyleSheet(
@@ -2987,6 +3141,121 @@ class TutorialDialog(QDialog):
         manual = _documentation_page(self.language, "workflow.html")
         if manual.exists():
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(manual)))
+
+
+class StageGuideDialog(QDialog):
+    """Compact, first-visit guidance for one workflow stage."""
+
+    def __init__(
+        self,
+        stage_key: str,
+        parent: QWidget | None = None,
+        language: str = "zh_CN",
+    ):
+        super().__init__(parent)
+        self.stage_key = stage_key
+        self.language = language
+        self.disable_auto_guides = False
+        english = language == "en_US"
+        self.setWindowTitle(
+            "Step-by-step guide" if english else "分步骤新手引导"
+        )
+        self.resize(650, 560)
+        self.setMinimumSize(520, 430)
+        layout = QVBoxLayout(self)
+
+        index = next(
+            (
+                item_index
+                for item_index, item in enumerate(STEPS)
+                if item.key == stage_key
+            ),
+            0,
+        )
+        step = STEPS[index]
+        chapter = next(
+            item
+            for item in TUTORIALS
+            if item["key"] == STEP_TUTORIAL.get(stage_key, "import")
+        )
+        detail = TUTORIAL_DETAILS[STEP_TUTORIAL.get(stage_key, "import")]
+        operations = localized_rows(detail, "operations", language)
+        recommended = localized(detail, "recommended", language)
+        checks = tutorial_value(chapter, "checks", language)
+        operation_items = "".join(
+            f"<li><b>{escape(row['name'])}</b> — {escape(row['action'])}</li>"
+            for row in operations[:4]
+        )
+        recommended_items = "".join(
+            f"<li>{escape(text)}</li>" for text in recommended[:4]
+        )
+
+        heading = QLabel(
+            f"Step {index + 1} of {len(STEPS)} · {step.title.split('  ', 1)[-1]}"
+            if english
+            else f"第 {index + 1} / {len(STEPS)} 步 · {step.title.split('  ', 1)[-1]}"
+        )
+        heading.setStyleSheet("font-size: 22px; font-weight: 700;")
+        layout.addWidget(heading)
+        progress = QProgressBar()
+        progress.setRange(1, len(STEPS))
+        progress.setValue(index + 1)
+        progress.setTextVisible(False)
+        progress.setMaximumHeight(8)
+        layout.addWidget(progress)
+
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(True)
+        browser.document().setDefaultStyleSheet(
+            """
+            body { color: #f2edf5; font-family: 'Microsoft YaHei', 'Segoe UI';
+                   font-size: 14px; line-height: 1.55; }
+            h2 { color: #d885e9; font-size: 17px; margin: 15px 0 6px 0; }
+            ol, ul { margin-top: 4px; }
+            li { margin: 5px 0; }
+            .check { background: #211d2b; border-left: 4px solid #d885e9;
+                     padding: 10px 12px; }
+            """
+        )
+        browser.setHtml(
+            f"<h2>{'1. Why this step' if english else '1．为什么要做这一步'}</h2>"
+            f"<p>{escape(tutorial_value(chapter, 'why', language))}</p>"
+            f"<h2>{'2. What you will do' if english else '2．你需要做什么'}</h2>"
+            f"<ol>{operation_items}</ol>"
+            f"<h2>{'3. Recommended order' if english else '3．推荐操作顺序'}</h2>"
+            f"<ol>{recommended_items}</ol>"
+            f"<h2>{'4. Check before continuing' if english else '4．进入下一步前检查'}</h2>"
+            f"<div class='check'>{escape(checks)}</div>"
+        )
+        layout.addWidget(browser, 1)
+
+        self.disable_checkbox = QCheckBox(
+            "Do not show step guides automatically"
+            if english
+            else "不再自动弹出分步骤引导（可在“帮助”菜单重新开启）"
+        )
+        layout.addWidget(self.disable_checkbox)
+        actions = QHBoxLayout()
+        full = QPushButton(
+            "Open detailed chapter" if english else "打开本章详细教程"
+        )
+        full.clicked.connect(self._open_full_chapter)
+        close = QPushButton(
+            "Enter this step" if english else "知道了，进入本步骤"
+        )
+        close.setObjectName("Primary")
+        close.clicked.connect(self.accept)
+        actions.addWidget(full)
+        actions.addStretch()
+        actions.addWidget(close)
+        layout.addLayout(actions)
+
+    def done(self, result: int) -> None:
+        self.disable_auto_guides = self.disable_checkbox.isChecked()
+        super().done(result)
+
+    def _open_full_chapter(self) -> None:
+        TutorialDialog(self.stage_key, self, self.language).exec()
 
 
 class BehaviorSyncDialog(QDialog):
@@ -3630,6 +3899,16 @@ class NeuroFlowWindow(QMainWindow):
         self.current_step = "import"
         self.project_dirty = False
         self._restoring_project = False
+        self.sidebar_collapsed = False
+        self._responsive_compact = False
+        self.settings = QSettings("NeuroEphysAI", "NeuroEphysAI")
+        self.auto_stage_guides = self.settings.value(
+            "guidance/auto_stage_guides", True, type=bool
+        )
+        seen_value = str(self.settings.value("guidance/seen_steps", ""))
+        self.guide_seen_steps = {
+            value for value in seen_value.split(",") if value in STEP_TUTORIAL
+        }
         self.ai_dialog: AIAssistantDialog | None = None
         self.step_buttons: dict[str, QPushButton] = {}
         self.figure_cursor = None
@@ -3638,26 +3917,213 @@ class NeuroFlowWindow(QMainWindow):
         if application_icon.exists():
             self.setWindowIcon(QIcon(str(application_icon)))
         self.resize(1500, 920)
-        self.setMinimumSize(1180, 720)
+        self.setMinimumSize(820, 600)
         self.pages = QStackedWidget()
         self.home_page = self._home_page()
         self.workspace_page = self._workspace_page()
         self.pages.addWidget(self.home_page)
         self.pages.addWidget(self.workspace_page)
         self.setCentralWidget(self.pages)
+        self._build_menu_bar()
         self.setStyleSheet(APP_STYLE)
         self._apply_icons()
         self._register_help_controls()
         QApplication.instance().installEventFilter(self)
         self._apply_language()
 
+    def _build_menu_bar(self) -> None:
+        menu_bar = self.menuBar()
+        self.file_menu = menu_bar.addMenu("文件")
+        self.edit_menu = menu_bar.addMenu("编辑")
+        self.view_menu = menu_bar.addMenu("视图")
+        self.analysis_menu = menu_bar.addMenu("分析")
+        self.help_menu = menu_bar.addMenu("帮助")
+
+        def action(
+            parent,
+            text: str,
+            callback,
+            shortcut: str | None = None,
+            *,
+            checkable: bool = False,
+        ) -> QAction:
+            item = QAction(text, self)
+            item.setCheckable(checkable)
+            if shortcut:
+                item.setShortcut(shortcut)
+            item.triggered.connect(callback)
+            parent.addAction(item)
+            return item
+
+        self.menu_new_action = action(
+            self.file_menu,
+            "新建项目…",
+            lambda: self._show_import("binary", own_data_only=True),
+            "Ctrl+N",
+        )
+        self.menu_open_action = action(
+            self.file_menu, "打开／导入项目…", self._open_project, "Ctrl+O"
+        )
+        self.menu_examples_action = action(
+            self.file_menu, "示例项目…", self._open_examples, "Ctrl+Shift+O"
+        )
+        self.file_menu.addSeparator()
+        self.menu_save_action = action(
+            self.file_menu, "保存项目", self._save, "Ctrl+S"
+        )
+        self.menu_project_folder_action = action(
+            self.file_menu, "打开项目文件夹", self._open_current_project_folder
+        )
+        self.file_menu.addSeparator()
+        self.menu_exit_action = action(self.file_menu, "退出", self.close, "Alt+F4")
+
+        self.menu_figure_action = action(
+            self.edit_menu, "图形设置…", self._open_figure_settings
+        )
+        self.menu_ai_settings_action = action(
+            self.edit_menu, "AI 设置…", self._sidebar_ai_settings
+        )
+        self.menu_sorters_action = action(
+            self.edit_menu,
+            "Sorter 管理…",
+            lambda: SorterManagerDialog(self.language, self).exec(),
+        )
+
+        self.menu_home_action = action(
+            self.view_menu,
+            "返回首页",
+            lambda: self.pages.setCurrentWidget(self.home_page),
+        )
+        self.menu_sidebar_action = action(
+            self.view_menu,
+            "缩略左侧流程",
+            lambda: self._set_sidebar_collapsed(not self.sidebar_collapsed),
+            "Ctrl+B",
+            checkable=True,
+        )
+        self.menu_ai_panel_action = action(
+            self.view_menu,
+            "显示右侧 AI 助手",
+            self._toggle_ai_panel,
+            "Ctrl+J",
+            checkable=True,
+        )
+        self.menu_ai_panel_action.setChecked(True)
+        self.menu_reset_layout_action = action(
+            self.view_menu, "恢复三栏默认布局", self._reset_workspace_layout
+        )
+        self.menu_fullscreen_action = action(
+            self.view_menu, "全屏", self._toggle_fullscreen, "F11", checkable=True
+        )
+
+        self.menu_run_step_action = action(
+            self.analysis_menu,
+            "运行当前所选分析",
+            self._run_current_step,
+            "Ctrl+Enter",
+        )
+        self.menu_run_all_action = action(
+            self.analysis_menu,
+            "运行完整流程",
+            self._run_full_pipeline,
+            "Ctrl+Shift+Enter",
+        )
+
+        self.menu_stage_guide_action = action(
+            self.help_menu, "当前步骤新手引导", self._show_stage_guide, "F1"
+        )
+        self.menu_auto_guides_action = action(
+            self.help_menu,
+            "自动显示分步骤引导",
+            self._toggle_auto_stage_guides,
+            checkable=True,
+        )
+        self.menu_auto_guides_action.setChecked(self.auto_stage_guides)
+        self.menu_reset_guides_action = action(
+            self.help_menu, "重置新手引导", self._reset_stage_guides
+        )
+        self.help_menu.addSeparator()
+        self.menu_tutorial_action = action(
+            self.help_menu,
+            "教程中心…",
+            lambda: TutorialDialog(
+                STEP_TUTORIAL.get(self.current_step, "import"),
+                self,
+                self.language,
+            ).exec(),
+        )
+        self.menu_docs_action = action(
+            self.help_menu, "产品文档", self._open_documentation
+        )
+        self.menu_about_action = action(
+            self.help_menu, "关于 NeuroEphys AI", self._show_about
+        )
+
+    def _toggle_fullscreen(self) -> None:
+        if self.isFullScreen():
+            self.showNormal()
+            self.menu_fullscreen_action.setChecked(False)
+        else:
+            self.showFullScreen()
+            self.menu_fullscreen_action.setChecked(True)
+
+    def _show_about(self) -> None:
+        QMessageBox.information(
+            self,
+            "About NeuroEphys AI" if self.language == "en_US" else "关于 NeuroEphys AI",
+            (
+                f"NeuroEphys AI {PRODUCT_VERSION}\n\n"
+                "Local-first, modular extracellular electrophysiology workbench."
+                if self.language == "en_US"
+                else (
+                    f"NeuroEphys AI {PRODUCT_VERSION}\n\n"
+                    "本地优先、模块可替换、过程可追溯的细胞外电生理工作台。"
+                )
+            ),
+        )
+
+    def _update_menu_texts(self) -> None:
+        english = self.language == "en_US"
+        self.file_menu.setTitle("File" if english else "文件")
+        self.edit_menu.setTitle("Edit" if english else "编辑")
+        self.view_menu.setTitle("View" if english else "视图")
+        self.analysis_menu.setTitle("Analysis" if english else "分析")
+        self.help_menu.setTitle("Help" if english else "帮助")
+        labels = {
+            self.menu_new_action: "New project…" if english else "新建项目…",
+            self.menu_open_action: "Open / import project…" if english else "打开／导入项目…",
+            self.menu_examples_action: "Example projects…" if english else "示例项目…",
+            self.menu_save_action: "Save project" if english else "保存项目",
+            self.menu_project_folder_action: "Open project folder" if english else "打开项目文件夹",
+            self.menu_exit_action: "Exit" if english else "退出",
+            self.menu_figure_action: "Figure settings…" if english else "图形设置…",
+            self.menu_ai_settings_action: "AI settings…" if english else "AI 设置…",
+            self.menu_sorters_action: "Sorter manager…" if english else "Sorter 管理…",
+            self.menu_home_action: "Home" if english else "返回首页",
+            self.menu_sidebar_action: "Compact workflow rail" if english else "缩略左侧流程",
+            self.menu_ai_panel_action: "Show right AI assistant" if english else "显示右侧 AI 助手",
+            self.menu_reset_layout_action: "Reset three-column layout" if english else "恢复三栏默认布局",
+            self.menu_fullscreen_action: "Full screen" if english else "全屏",
+            self.menu_run_step_action: "Run selected analysis" if english else "运行当前所选分析",
+            self.menu_run_all_action: "Run full workflow" if english else "运行完整流程",
+            self.menu_stage_guide_action: "Current step guide" if english else "当前步骤新手引导",
+            self.menu_auto_guides_action: "Show step guides automatically" if english else "自动显示分步骤引导",
+            self.menu_reset_guides_action: "Reset beginner guidance" if english else "重置新手引导",
+            self.menu_tutorial_action: "Tutorial center…" if english else "教程中心…",
+            self.menu_docs_action: "Product documentation" if english else "产品文档",
+            self.menu_about_action: "About NeuroEphys AI" if english else "关于 NeuroEphys AI",
+        }
+        for item, label in labels.items():
+            item.setText(label)
+
     def _home_page(self) -> QWidget:
         page = QWidget()
         outer = QVBoxLayout(page)
         outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
         header = QWidget()
         header.setObjectName("HomeHeader")
-        header.setFixedHeight(68)
+        header.setFixedHeight(62)
         row = QHBoxLayout(header)
         row.setContentsMargins(24, 10, 24, 10)
         brand = QLabel(PRODUCT_NAME)
@@ -3681,6 +4147,8 @@ class NeuroFlowWindow(QMainWindow):
             lambda: TutorialDialog(parent=self, language=self.language).exec()
         )
         row.addWidget(self.home_tutorial_button)
+        self.home_ai_button.setVisible(False)
+        self.home_tutorial_button.setVisible(False)
         outer.addWidget(header)
 
         scroll = QScrollArea()
@@ -3688,20 +4156,23 @@ class NeuroFlowWindow(QMainWindow):
         scroll.setFrameShape(QFrame.NoFrame)
         body = QWidget()
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(70, 45, 70, 50)
+        layout.setContentsMargins(36, 30, 36, 30)
         layout.setSpacing(18)
+        layout.addStretch(1)
         hero_panel = QFrame()
         hero_panel.setObjectName("HeroPanel")
+        hero_panel.setMaximumWidth(960)
+        hero_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         hero_layout = QVBoxLayout(hero_panel)
-        hero_layout.setContentsMargins(36, 28, 36, 30)
-        hero_layout.setSpacing(14)
+        hero_layout.setContentsMargins(20, 12, 20, 18)
+        hero_layout.setSpacing(16)
         self.home_brand_mark = QLabel()
         mark_path = _brand_asset("neuroephys-ai-mark.png")
         if mark_path.exists():
             self.home_brand_mark.setPixmap(
                 QPixmap(str(mark_path)).scaled(
-                    112,
-                    112,
+                    92,
+                    92,
                     Qt.KeepAspectRatio,
                     Qt.SmoothTransformation,
                 )
@@ -3711,35 +4182,38 @@ class NeuroFlowWindow(QMainWindow):
         self.hero_label = QLabel("从自己的原始数据开始，\n逐步走到可复现的论文图。")
         self.hero_label.setObjectName("Hero")
         self.hero_label.setAlignment(Qt.AlignCenter)
+        self.hero_label.setWordWrap(True)
         hero_layout.addWidget(self.hero_label)
         self.hero_subtitle = QLabel(
-            "本地优先 · 模块可替换 · 每一步可解释 · Kilosort4 真实运行 · AI 非必需"
+            "选择一个入口即可开始；数据、参数、结果与人工决定始终保留在同一项目中。"
         )
         self.hero_subtitle.setObjectName("Muted")
         self.hero_subtitle.setStyleSheet("font-size: 15px;")
         self.hero_subtitle.setAlignment(Qt.AlignCenter)
+        self.hero_subtitle.setWordWrap(True)
         hero_layout.addWidget(self.hero_subtitle)
 
         primary_actions = QHBoxLayout()
         primary_actions.setSpacing(12)
-        self.new_project_button = QPushButton("新建空白项目")
+        self.new_project_button = QPushButton("新建项目")
         self.new_project_button.setObjectName("Primary")
         self.new_project_button.setMinimumHeight(48)
         self.new_project_button.setMinimumWidth(210)
         self.new_project_button.setProperty(
             "neuroflow_help_key", "home.new_project"
         )
-        self.new_project_button.clicked.connect(self._create_blank_project)
-        self.import_button = QPushButton("导入自己的数据")
-        self.import_button.setMinimumHeight(48)
-        self.import_button.setMinimumWidth(210)
-        self.import_button.setProperty("neuroflow_help_key", "home.import")
-        self.import_button.clicked.connect(
+        self.new_project_button.clicked.connect(
             lambda: self._show_import("binary", own_data_only=True)
         )
+        self.import_button = QPushButton("打开／导入项目")
+        self.import_button.setMinimumHeight(48)
+        self.import_button.setMinimumWidth(210)
+        self.import_button.setProperty("neuroflow_help_key", "home.restore")
+        self.import_button.clicked.connect(self._open_project)
         self.project_button = QPushButton("恢复 NeuroEphys AI 项目")
         self.project_button.setProperty("neuroflow_help_key", "home.restore")
         self.project_button.clicked.connect(self._open_project)
+        self.project_button.setVisible(False)
         primary_actions.addStretch()
         primary_actions.addWidget(self.new_project_button)
         primary_actions.addWidget(self.import_button)
@@ -3749,23 +4223,26 @@ class NeuroFlowWindow(QMainWindow):
 
         secondary_actions = QHBoxLayout()
         secondary_actions.setSpacing(12)
-        self.public_button = QPushButton("打开已验证公开项目")
-        self.public_button.setMinimumHeight(42)
-        self.public_button.setProperty("neuroflow_help_key", "home.public")
-        self.public_button.clicked.connect(self._open_public_examples)
+        self.public_button = QPushButton("示例项目")
+        self.public_button.setMinimumHeight(48)
+        self.public_button.setMinimumWidth(210)
+        self.public_button.setProperty("neuroflow_help_key", "home.demo")
+        self.public_button.clicked.connect(self._open_examples)
         self.sample_button = QPushButton("生成教学模拟项目")
         self.sample_button.setMinimumHeight(42)
         self.sample_button.setProperty("neuroflow_help_key", "home.demo")
         self.sample_button.clicked.connect(self._open_sample)
+        self.sample_button.setVisible(False)
         self.demo_folder_button = QPushButton("查看示例数据文件夹")
         self.demo_folder_button.clicked.connect(self._open_demo_folder)
+        self.demo_folder_button.setVisible(False)
+        primary_actions.insertWidget(3, self.public_button)
         secondary_actions.addStretch()
-        secondary_actions.addWidget(self.public_button)
         secondary_actions.addWidget(self.sample_button)
         secondary_actions.addWidget(self.demo_folder_button)
         secondary_actions.addStretch()
         hero_layout.addLayout(secondary_actions)
-        layout.addWidget(hero_panel)
+        layout.addWidget(hero_panel, 0, Qt.AlignHCenter)
 
         capability = QFrame()
         capability.setObjectName("Card")
@@ -3819,6 +4296,7 @@ class NeuroFlowWindow(QMainWindow):
         self.entry_hint.setObjectName("Muted")
         cap_layout.addWidget(self.entry_hint)
         layout.addWidget(capability)
+        capability.setVisible(False)
 
         flow = QFrame()
         flow.setObjectName("Card")
@@ -3834,7 +4312,13 @@ class NeuroFlowWindow(QMainWindow):
         self.flow_text.setStyleSheet("font-size: 15px; color: #1f7a63;")
         flow_layout.addWidget(self.flow_text)
         layout.addWidget(flow)
-        layout.addStretch()
+        flow.setVisible(False)
+        self.home_workspace_hint = QLabel(f"项目工作区：{self.workspace}")
+        self.home_workspace_hint.setObjectName("Muted")
+        self.home_workspace_hint.setAlignment(Qt.AlignCenter)
+        self.home_workspace_hint.setWordWrap(True)
+        layout.addWidget(self.home_workspace_hint)
+        layout.addStretch(1)
         scroll.setWidget(body)
         outer.addWidget(scroll, 1)
         return page
@@ -3860,41 +4344,54 @@ class NeuroFlowWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
         root.addWidget(self._header())
-        content = QHBoxLayout()
-        content.setContentsMargins(0, 0, 0, 0)
-        content.setSpacing(0)
-        content.addWidget(self._sidebar())
+        self.workspace_splitter = QSplitter(Qt.Horizontal)
+        self.workspace_splitter.setChildrenCollapsible(True)
+        self.workspace_splitter.setHandleWidth(5)
+        self.workflow_sidebar = self._sidebar()
+        self.workspace_splitter.addWidget(self.workflow_sidebar)
         self.main_scroll = QScrollArea()
         self.main_scroll.setWidgetResizable(True)
         self.main_scroll.setFrameShape(QFrame.NoFrame)
-        self.main_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.main_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.main_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.main_scroll.setWidget(self._main_area())
-        main_column = QWidget()
-        main_column_layout = QVBoxLayout(main_column)
+        self.main_column = QWidget()
+        self.main_column.setMinimumWidth(460)
+        main_column_layout = QVBoxLayout(self.main_column)
         main_column_layout.setContentsMargins(0, 0, 0, 0)
         main_column_layout.setSpacing(0)
         main_column_layout.addWidget(self.main_scroll, 1)
         main_column_layout.addWidget(self._run_footer())
-        content.addWidget(main_column, 1)
+        self.workspace_splitter.addWidget(self.main_column)
         self.assistant_panel = self._assistant()
-        content.addWidget(self.assistant_panel)
-        body = QWidget()
-        body.setLayout(content)
-        root.addWidget(body, 1)
+        self.workspace_splitter.addWidget(self.assistant_panel)
+        self.workspace_splitter.setStretchFactor(0, 0)
+        self.workspace_splitter.setStretchFactor(1, 1)
+        self.workspace_splitter.setStretchFactor(2, 0)
+        self.workspace_splitter.setSizes([270, 830, 360])
+        self.workspace_splitter.setCollapsible(1, False)
+        self.workspace_splitter.splitterMoved.connect(
+            lambda _position, _index: self._sync_splitter_layout()
+        )
+        root.addWidget(self.workspace_splitter, 1)
         return page
 
     def _header(self) -> QWidget:
         header = QWidget()
         header.setObjectName("Header")
-        header.setFixedHeight(72)
+        header.setFixedHeight(66)
         layout = QHBoxLayout(header)
-        layout.setContentsMargins(18, 9, 18, 9)
+        layout.setContentsMargins(14, 7, 14, 7)
         self.home_button = QPushButton("首页")
         self.home_button.clicked.connect(
             lambda: self.pages.setCurrentWidget(self.home_page)
         )
         layout.addWidget(self.home_button)
+        self.workflow_toggle_button = QPushButton("缩略流程")
+        self.workflow_toggle_button.clicked.connect(
+            lambda: self._set_sidebar_collapsed(not self.sidebar_collapsed)
+        )
+        layout.addWidget(self.workflow_toggle_button)
         title_box = QVBoxLayout()
         brand = QLabel(PRODUCT_NAME)
         brand.setObjectName("Brand")
@@ -3913,46 +4410,58 @@ class NeuroFlowWindow(QMainWindow):
         self.workspace_language_combo.currentIndexChanged.connect(
             lambda: self._set_language(self.workspace_language_combo.currentData())
         )
+        self.workspace_language_combo.setParent(header)
+        self.workspace_language_combo.setVisible(False)
         self.sorter_manager_button = QPushButton("Sorter 管理")
         self.sorter_manager_button.clicked.connect(
             lambda: SorterManagerDialog(self.language, self).exec()
         )
+        self.sorter_manager_button.setParent(header)
+        self.sorter_manager_button.setVisible(False)
         self.save_button = QPushButton("保存项目")
         self.save_button.setProperty("neuroflow_help_key", "global.save")
         self.save_button.clicked.connect(self._save)
         self.ai_button = QPushButton("AI 助手")
         self.ai_button.setProperty("neuroflow_help_key", "global.ai")
-        self.ai_button.clicked.connect(self._open_ai_assistant)
-        self.ai_panel_toggle = QPushButton("AI panel")
-        self.ai_panel_toggle.clicked.connect(self._toggle_ai_panel)
-        self.tutorial_button = QPushButton("教程")
-        self.tutorial_button.clicked.connect(self._open_context_tutorial)
+        self.ai_button.clicked.connect(self._toggle_ai_panel)
+        self.ai_panel_toggle = self.ai_button
+        self.tutorial_button = QPushButton("本步引导")
+        self.tutorial_button.clicked.connect(self._show_stage_guide)
         self.docs_button = QPushButton("产品文档")
         self.docs_button.clicked.connect(self._open_documentation)
+        self.docs_button.setParent(header)
+        self.docs_button.setVisible(False)
         self.run_button = QPushButton("运行完整流程")
         self.run_button.setObjectName("Primary")
         self.run_button.setProperty("neuroflow_help_key", "global.run_all")
         self.run_button.clicked.connect(self._run_full_pipeline)
         self.run_button.setEnabled(False)
-        layout.addWidget(self.workspace_language_combo)
-        layout.addWidget(self.sorter_manager_button)
         layout.addWidget(self.save_button)
-        layout.addWidget(self.ai_button)
-        layout.addWidget(self.ai_panel_toggle)
         layout.addWidget(self.tutorial_button)
-        layout.addWidget(self.docs_button)
+        layout.addWidget(self.ai_button)
         layout.addWidget(self.run_button)
         return header
 
     def _sidebar(self) -> QWidget:
         sidebar = QWidget()
         sidebar.setObjectName("Sidebar")
-        sidebar.setFixedWidth(340)
+        sidebar.setMinimumWidth(220)
+        sidebar.setMaximumWidth(330)
         layout = QVBoxLayout(sidebar)
         layout.setContentsMargins(0, 10, 0, 10)
-        self.workflow_label = QLabel("  分析流程")
+        sidebar_heading = QHBoxLayout()
+        sidebar_heading.setContentsMargins(10, 0, 8, 4)
+        self.workflow_label = QLabel("分析流程")
         self.workflow_label.setObjectName("Muted")
-        layout.addWidget(self.workflow_label)
+        sidebar_heading.addWidget(self.workflow_label, 1)
+        self.sidebar_collapse_button = QPushButton("‹")
+        self.sidebar_collapse_button.setFixedSize(32, 32)
+        self.sidebar_collapse_button.setToolTip("缩略左侧分析流程")
+        self.sidebar_collapse_button.clicked.connect(
+            lambda: self._set_sidebar_collapsed(not self.sidebar_collapsed)
+        )
+        sidebar_heading.addWidget(self.sidebar_collapse_button)
+        layout.addLayout(sidebar_heading)
         step_holder = QWidget()
         step_layout = QVBoxLayout(step_holder)
         step_layout.setContentsMargins(0, 0, 0, 0)
@@ -3990,6 +4499,30 @@ class NeuroFlowWindow(QMainWindow):
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(17, 14, 17, 12)
         layout.setSpacing(10)
+        self.stage_strip = QFrame()
+        self.stage_strip.setObjectName("StageStrip")
+        stage_layout = QHBoxLayout(self.stage_strip)
+        stage_layout.setContentsMargins(10, 7, 10, 7)
+        stage_layout.setSpacing(8)
+        self.previous_step_button = QPushButton("← 上一步")
+        self.previous_step_button.clicked.connect(lambda: self._move_step(-1))
+        stage_layout.addWidget(self.previous_step_button)
+        self.stage_position_label = QLabel("第 1 / 11 步")
+        self.stage_position_label.setObjectName("Muted")
+        stage_layout.addWidget(self.stage_position_label)
+        self.stage_progress = QProgressBar()
+        self.stage_progress.setRange(1, len(STEPS))
+        self.stage_progress.setValue(1)
+        self.stage_progress.setTextVisible(False)
+        self.stage_progress.setMaximumHeight(9)
+        stage_layout.addWidget(self.stage_progress, 1)
+        self.stage_guide_button = QPushButton("本步引导")
+        self.stage_guide_button.clicked.connect(self._show_stage_guide)
+        stage_layout.addWidget(self.stage_guide_button)
+        self.next_step_button = QPushButton("下一步 →")
+        self.next_step_button.clicked.connect(lambda: self._move_step(1))
+        stage_layout.addWidget(self.next_step_button)
+        layout.addWidget(self.stage_strip)
         title_row = QHBoxLayout()
         title_box = QVBoxLayout()
         self.page_title = QLabel("数据与项目")
@@ -4001,7 +4534,8 @@ class NeuroFlowWindow(QMainWindow):
         title_row.addLayout(title_box)
         title_row.addStretch()
         self.option_combo = QComboBox()
-        self.option_combo.setMinimumWidth(260)
+        self.option_combo.setMinimumWidth(170)
+        self.option_combo.setMaximumWidth(390)
         self.option_combo.setProperty("neuroflow_help_key", "page.option")
         self.option_combo.currentIndexChanged.connect(self._on_option_changed)
         title_row.addWidget(self.option_combo)
@@ -4029,13 +4563,14 @@ class NeuroFlowWindow(QMainWindow):
             "neuroflow_help_key", "home.import"
         )
         self.project_import_button.clicked.connect(self._import_into_current_project)
-        self.project_public_button = QPushButton("打开已验证公开项目")
+        self.project_public_button = QPushButton("示例项目")
         self.project_public_button.setProperty(
-            "neuroflow_help_key", "home.public"
+            "neuroflow_help_key", "home.demo"
         )
-        self.project_public_button.clicked.connect(self._open_public_examples)
+        self.project_public_button.clicked.connect(self._open_examples)
         self.project_simulation_button = QPushButton("生成教学模拟项目")
         self.project_simulation_button.clicked.connect(self._open_sample)
+        self.project_simulation_button.setVisible(False)
         self.project_source_folder_button = QPushButton("打开项目文件夹")
         self.project_source_folder_button.clicked.connect(self._open_current_project_folder)
         project_data_actions.addWidget(self.project_import_button)
@@ -4167,7 +4702,7 @@ class NeuroFlowWindow(QMainWindow):
         self.toolbar = NavigationToolbar2QT(self.canvas, self.figure_host)
         self.figure_layout.addWidget(self.toolbar)
         self.figure_layout.addWidget(self.canvas, 1)
-        self.figure_host.setMinimumHeight(600)
+        self.figure_host.setMinimumHeight(360)
         layout.addWidget(self.figure_host)
         self.plot_info_label = QLabel()
         self.plot_info_label.setObjectName("Muted")
@@ -4190,11 +4725,11 @@ class NeuroFlowWindow(QMainWindow):
         layout.setContentsMargins(16, 8, 16, 8)
         self.status_label = QLabel("请从首页打开或创建项目")
         self.status_label.setObjectName("Muted")
-        self.status_label.setMinimumWidth(220)
+        self.status_label.setMinimumWidth(120)
         layout.addWidget(self.status_label, 1)
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, len(STEPS))
-        self.progress_bar.setMinimumWidth(260)
+        self.progress_bar.setMinimumWidth(140)
         layout.addWidget(self.progress_bar, 1)
         run_box = QVBoxLayout()
         run_box.setContentsMargins(8, 0, 0, 0)
@@ -4205,7 +4740,7 @@ class NeuroFlowWindow(QMainWindow):
         layout.addLayout(run_box)
         self.run_step_button = QPushButton("运行当前所选分析")
         self.run_step_button.setObjectName("Primary")
-        self.run_step_button.setMinimumWidth(210)
+        self.run_step_button.setMinimumWidth(160)
         self.run_step_button.setProperty("neuroflow_help_key", "global.run_step")
         self.run_step_button.clicked.connect(self._run_current_step)
         self.run_step_button.setEnabled(False)
@@ -4215,9 +4750,9 @@ class NeuroFlowWindow(QMainWindow):
     def _assistant(self) -> QWidget:
         assistant = QWidget()
         assistant.setObjectName("Assistant")
-        assistant.setMinimumWidth(340)
-        assistant.setMaximumWidth(460)
-        assistant.resize(390, assistant.height())
+        assistant.setMinimumWidth(280)
+        assistant.setMaximumWidth(430)
+        assistant.resize(360, assistant.height())
         layout = QVBoxLayout(assistant)
         layout.setContentsMargins(12, 12, 12, 10)
         layout.setSpacing(8)
@@ -4232,6 +4767,12 @@ class NeuroFlowWindow(QMainWindow):
         self.close_ai_panel_button.clicked.connect(self._toggle_ai_panel)
         title_row.addWidget(self.close_ai_panel_button)
         layout.addLayout(title_row)
+        self.ai_layout_hint = QLabel(
+            "拖动左侧分隔线可调整 AI 宽度；左侧流程可缩略，中间图表会自适应，不会裁掉分析内容。"
+        )
+        self.ai_layout_hint.setObjectName("Muted")
+        self.ai_layout_hint.setWordWrap(True)
+        layout.addWidget(self.ai_layout_hint)
 
         self.assistant_tabs = QTabWidget()
         self.assistant_tabs.setDocumentMode(True)
@@ -4470,6 +5011,7 @@ class NeuroFlowWindow(QMainWindow):
     def _apply_language(self) -> None:
         language = self.language
         self._update_window_title()
+        self._update_menu_texts()
         for combo in (self.home_language_combo, self.workspace_language_combo):
             combo.blockSignals(True)
             index = combo.findData(language)
@@ -4481,11 +5023,6 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.ai_button.setText(
             "AI assistant" if language == "en_US" else "AI 助手"
-        )
-        self.ai_panel_toggle.setText(
-            "Hide/show AI panel"
-            if language == "en_US"
-            else "隐藏/显示 AI 侧栏"
         )
         self.assistant_title.setText(
             "AI, guidance and evidence"
@@ -4513,17 +5050,22 @@ class NeuroFlowWindow(QMainWindow):
         self.sidebar_ai_mode_combo.blockSignals(False)
         self.home_tutorial_button.setText(tr("tutorial", language))
         self.hero_label.setText(tr("hero", language))
-        self.hero_subtitle.setText(tr("hero_subtitle", language))
+        self.hero_subtitle.setText(
+            (
+                "Choose one entry to begin. Data, parameters, results, and human "
+                "decisions stay together in one project."
+                if language == "en_US"
+                else "选择一个入口即可开始；数据、参数、结果与人工决定始终保留在同一项目中。"
+            )
+        )
         self.new_project_button.setText(
-            "Create empty project" if language == "en_US" else "新建空白项目"
+            "New project" if language == "en_US" else "新建项目"
         )
         self.import_button.setText(
-            "Import my data" if language == "en_US" else "导入自己的数据"
+            "Open / import project" if language == "en_US" else "打开／导入项目"
         )
         self.public_button.setText(
-            "Open verified public project"
-            if language == "en_US"
-            else "打开已验证公开项目"
+            "Example projects" if language == "en_US" else "示例项目"
         )
         self.sample_button.setText(
             "Generate teaching simulation"
@@ -4533,6 +5075,11 @@ class NeuroFlowWindow(QMainWindow):
         self.project_button.setText(tr("restore", language))
         self.demo_folder_button.setText(
             "Open demo data folder" if language == "en_US" else "查看示例数据文件夹"
+        )
+        self.home_workspace_hint.setText(
+            f"Project workspace: {self.workspace}"
+            if language == "en_US"
+            else f"项目工作区：{self.workspace}"
         )
         self.cap_title.setText(tr("verified_inputs", language))
         self.flow_title.setText(tr("full_chain", language))
@@ -4589,16 +5136,24 @@ class NeuroFlowWindow(QMainWindow):
         self.ai_button.setText(
             "AI assistant" if language == "en_US" else "AI 助手"
         )
-        self.tutorial_button.setText(tr("tutorial", language))
+        self.tutorial_button.setText(
+            "Step guide" if language == "en_US" else "本步引导"
+        )
         self.docs_button.setText(
             "Product docs" if language == "en_US" else "产品文档"
         )
         self.sorter_manager_button.setText(tr("sorter_manager", language))
         self.run_button.setText(tr("run_all", language))
-        self.workflow_label.setText(f"  {tr('workflow', language)}")
+        self.workflow_label.setText(tr("workflow", language))
+        self.workflow_toggle_button.setText(
+            ("Expand workflow" if language == "en_US" else "展开流程")
+            if self.sidebar_collapsed
+            else ("Compact workflow" if language == "en_US" else "缩略流程")
+        )
         for step in STEPS:
             title, subtitle = step_text(step.key, language)
-            self.step_buttons[step.key].setText(f"{title}\n    {subtitle}")
+            if not self.sidebar_collapsed:
+                self.step_buttons[step.key].setText(f"{title}\n    {subtitle}")
             chapter = next(
                 item for item in TUTORIALS if item["key"] == STEP_TUTORIAL[step.key]
             )
@@ -4606,6 +5161,16 @@ class NeuroFlowWindow(QMainWindow):
                 tutorial_value(chapter, "why", language)
             )
         self.run_step_button.setText(tr("run_step", language))
+        self.previous_step_button.setText(
+            "← Previous" if language == "en_US" else "← 上一步"
+        )
+        self.next_step_button.setText(
+            "Next →" if language == "en_US" else "下一步 →"
+        )
+        self.stage_guide_button.setText(
+            "Step guide" if language == "en_US" else "本步引导"
+        )
+        self._update_stage_navigation()
         self._update_run_context()
         self.project_data_title.setText(
             "Project data" if language == "en_US" else "项目数据"
@@ -4616,9 +5181,7 @@ class NeuroFlowWindow(QMainWindow):
             else "导入我的电生理数据"
         )
         self.project_public_button.setText(
-            "Open verified public project"
-            if language == "en_US"
-            else "打开已验证公开项目"
+            "Example projects" if language == "en_US" else "示例项目"
         )
         self.project_simulation_button.setText(
             "Generate teaching simulation"
@@ -4688,6 +5251,14 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.close_ai_panel_button.setToolTip(
             "Close right panel" if language == "en_US" else "关闭右侧面板"
+        )
+        self.ai_layout_hint.setText(
+            (
+                "Drag the left divider to resize AI. The workflow rail can be compacted; "
+                "the analysis canvas adapts without discarding content."
+                if language == "en_US"
+                else "拖动左侧分隔线可调整 AI 宽度；左侧流程可缩略，中间图表会自适应，不会裁掉分析内容。"
+            )
         )
         self.assistant_tabs.setTabText(0, "AI")
         self.assistant_tabs.setTabText(
@@ -5053,11 +5624,30 @@ class NeuroFlowWindow(QMainWindow):
             project_name=self.state.name,
         )
 
-    def _open_public_examples(self) -> None:
-        dialog = PublicExampleDialog(self.workspace, self, self.language)
+    def _open_examples(self) -> None:
+        dialog = ExampleLibraryDialog(self.workspace, self, self.language)
         if dialog.exec() != QDialog.Accepted:
             return
-        key = dialog.example_key
+        if dialog.example_kind == "demo":
+            try:
+                profile = DEMO_PROFILES[dialog.example_key]
+                root = self.workspace / "DemoData" / str(profile["folder"])
+                state = load_or_generate_demo(root, dialog.example_key)
+                state.metadata["language"] = self.language
+                save_project(state)
+                self._load_state(state)
+            except Exception as exc:  # noqa: BLE001 - user-facing dataset creation
+                QMessageBox.warning(
+                    self,
+                    "Demo data unavailable"
+                    if self.language == "en_US"
+                    else "示例数据不可用",
+                    str(exc),
+                )
+            return
+        self._open_public_example_key(dialog.example_key)
+
+    def _open_public_example_key(self, key: str) -> None:
         status = public_example_status(self.workspace, key)
         if not status["downloaded"]:
             answer = QMessageBox.question(
@@ -5066,12 +5656,12 @@ class NeuroFlowWindow(QMainWindow):
                 if self.language == "en_US"
                 else "下载公开验证数据",
                 (
-                    "The fixed source is not in the local NeuroEphys AI library. Download "
-                    "the official version now and open it after validation?"
+                    "The fixed source is not in the local NeuroEphys AI library. "
+                    "Download the official version now and open it after validation?"
                     if self.language == "en_US"
                     else (
-                        "本机 NeuroEphys AI 资料库中还没有这套固定数据。是否立即从官方来源"
-                        "下载，完成文件检查后打开？"
+                        "本机 NeuroEphys AI 资料库中还没有这套固定数据。是否立即从官方"
+                        "来源下载，完成文件检查后打开？"
                     )
                 ),
             )
@@ -5105,6 +5695,12 @@ class NeuroFlowWindow(QMainWindow):
             )
         finally:
             QApplication.restoreOverrideCursor()
+
+    def _open_public_examples(self) -> None:
+        dialog = PublicExampleDialog(self.workspace, self, self.language)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        self._open_public_example_key(dialog.example_key)
 
     def _open_current_project_folder(self) -> None:
         if not self.state:
@@ -5485,6 +6081,166 @@ class NeuroFlowWindow(QMainWindow):
             f"Elephant {toolkit['elephant']} · Neo {toolkit['neo']}"
         )
 
+    def _set_sidebar_collapsed(self, collapsed: bool) -> None:
+        if not hasattr(self, "workflow_sidebar"):
+            return
+        self.sidebar_collapsed = bool(collapsed)
+        if self.sidebar_collapsed:
+            self.workflow_sidebar.setMinimumWidth(62)
+            self.workflow_sidebar.setMaximumWidth(62)
+            self.workflow_label.setVisible(False)
+            self.environment_label.setVisible(False)
+            self.sidebar_collapse_button.setText("›")
+            self.sidebar_collapse_button.setToolTip("展开左侧分析流程")
+            for index, step in enumerate(STEPS, start=1):
+                self.step_buttons[step.key].setText(f"{index:02d}")
+            target = 62
+        else:
+            self.workflow_sidebar.setMinimumWidth(220)
+            self.workflow_sidebar.setMaximumWidth(330)
+            self.workflow_label.setVisible(True)
+            self.environment_label.setVisible(True)
+            self.sidebar_collapse_button.setText("‹")
+            self.sidebar_collapse_button.setToolTip("缩略左侧分析流程")
+            for step in STEPS:
+                title, subtitle = step_text(step.key, self.language)
+                self.step_buttons[step.key].setText(f"{title}\n    {subtitle}")
+            target = 270
+        self.workflow_toggle_button.setText(
+            ("Expand workflow" if self.language == "en_US" else "展开流程")
+            if self.sidebar_collapsed
+            else ("Compact workflow" if self.language == "en_US" else "缩略流程")
+        )
+        if hasattr(self, "menu_sidebar_action"):
+            self.menu_sidebar_action.blockSignals(True)
+            self.menu_sidebar_action.setChecked(self.sidebar_collapsed)
+            self.menu_sidebar_action.blockSignals(False)
+        if hasattr(self, "workspace_splitter"):
+            sizes = self.workspace_splitter.sizes()
+            if len(sizes) == 3:
+                difference = target - sizes[0]
+                sizes[0] = target
+                sizes[1] = max(460, sizes[1] - difference)
+                self.workspace_splitter.setSizes(sizes)
+
+    def _reset_workspace_layout(self) -> None:
+        self._set_sidebar_collapsed(False)
+        self.assistant_panel.setVisible(True)
+        total = max(self.workspace_splitter.width(), 1_050)
+        left = 270
+        right = 360
+        self.workspace_splitter.setSizes([left, max(total - left - right, 460), right])
+        if hasattr(self, "menu_ai_panel_action"):
+            self.menu_ai_panel_action.setChecked(True)
+
+    def _move_step(self, offset: int) -> None:
+        current_index = next(
+            (
+                index
+                for index, step in enumerate(STEPS)
+                if step.key == self.current_step
+            ),
+            0,
+        )
+        target = min(max(current_index + offset, 0), len(STEPS) - 1)
+        if target != current_index:
+            self._select_step(STEPS[target].key)
+
+    def _update_stage_navigation(self) -> None:
+        index = next(
+            (
+                item_index
+                for item_index, step in enumerate(STEPS)
+                if step.key == self.current_step
+            ),
+            0,
+        )
+        self.stage_progress.setValue(index + 1)
+        self.stage_position_label.setText(
+            f"Step {index + 1} of {len(STEPS)}"
+            if self.language == "en_US"
+            else f"第 {index + 1} / {len(STEPS)} 步"
+        )
+        self.previous_step_button.setEnabled(index > 0)
+        self.next_step_button.setEnabled(index < len(STEPS) - 1)
+
+    def _show_stage_guide(self) -> None:
+        key = self.current_step if self.current_step in STEP_TUTORIAL else "import"
+        dialog = StageGuideDialog(key, self, self.language)
+        dialog.exec()
+        self.guide_seen_steps.add(key)
+        self.settings.setValue(
+            "guidance/seen_steps", ",".join(sorted(self.guide_seen_steps))
+        )
+        if dialog.disable_auto_guides:
+            self.auto_stage_guides = False
+            self.settings.setValue("guidance/auto_stage_guides", False)
+            self.menu_auto_guides_action.setChecked(False)
+
+    def _maybe_show_stage_guide(self, key: str) -> None:
+        if (
+            not self.auto_stage_guides
+            or key in self.guide_seen_steps
+            or self._restoring_project
+            or not self.state
+            or not self.isVisible()
+            or QApplication.platformName().lower() == "offscreen"
+            or self.pages.currentWidget() is not self.workspace_page
+        ):
+            return
+        self._show_stage_guide()
+
+    def _toggle_auto_stage_guides(self, checked: bool) -> None:
+        self.auto_stage_guides = bool(checked)
+        self.settings.setValue("guidance/auto_stage_guides", self.auto_stage_guides)
+
+    def _reset_stage_guides(self) -> None:
+        self.guide_seen_steps.clear()
+        self.auto_stage_guides = True
+        self.settings.setValue("guidance/seen_steps", "")
+        self.settings.setValue("guidance/auto_stage_guides", True)
+        self.menu_auto_guides_action.setChecked(True)
+        QMessageBox.information(
+            self,
+            "Guidance reset" if self.language == "en_US" else "新手引导已重置",
+            (
+                "Step guides will appear again when each workflow stage is opened."
+                if self.language == "en_US"
+                else "之后第一次进入每个分析阶段时，会重新显示分步骤引导。"
+            ),
+        )
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        compact = self.width() < 1_060
+        if compact and not self.sidebar_collapsed and hasattr(self, "workflow_sidebar"):
+            self._set_sidebar_collapsed(True)
+        if hasattr(self, "tutorial_button"):
+            header_room = self.width() >= 980
+            self.tutorial_button.setVisible(header_room)
+            self.run_button.setVisible(header_room)
+        self._sync_splitter_layout()
+        self._responsive_compact = compact
+
+    def _sync_splitter_layout(self) -> None:
+        if not all(
+            hasattr(self, name)
+            for name in (
+                "main_column",
+                "status_label",
+                "run_context_label",
+                "stage_position_label",
+                "stage_guide_button",
+            )
+        ):
+            return
+        width = self.main_column.width()
+        footer_room = width >= 700
+        self.status_label.setVisible(footer_room)
+        self.run_context_label.setVisible(footer_room)
+        self.stage_position_label.setVisible(width >= 610)
+        self.stage_guide_button.setVisible(width >= 560)
+
     def _select_step(self, key: str) -> None:
         previous_option = (
             self.option_combo.currentData()
@@ -5690,6 +6446,8 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_figure()
         self._refresh_table()
         self._refresh_warnings()
+        self._update_stage_navigation()
+        QTimer.singleShot(0, lambda stage_key=key: self._maybe_show_stage_guide(stage_key))
 
     def _open_unit_curation(self) -> None:
         if not self.state or not self.state.sorted_spikes:
@@ -6620,11 +7378,28 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_ai_sidebar()
 
     def _toggle_ai_panel(self) -> None:
-        visible = not self.assistant_panel.isVisible()
-        self.assistant_panel.setVisible(visible)
+        visible = self.assistant_panel.isHidden()
         if visible:
+            self.assistant_panel.setVisible(True)
+            sizes = self.workspace_splitter.sizes()
+            total = max(sum(sizes), self.workspace_splitter.width())
+            left = sizes[0] if sizes else (62 if self.sidebar_collapsed else 270)
+            right = min(360, max(280, total - left - 460))
+            center = max(460, total - left - right)
+            self.workspace_splitter.setSizes([left, center, right])
             self.assistant_tabs.setCurrentIndex(0)
             self.ai_sidebar_question.setFocus()
+        else:
+            sizes = self.workspace_splitter.sizes()
+            if len(sizes) == 3:
+                self.workspace_splitter.setSizes(
+                    [sizes[0], sizes[1] + sizes[2], 0]
+                )
+            self.assistant_panel.setVisible(False)
+        if hasattr(self, "menu_ai_panel_action"):
+            self.menu_ai_panel_action.blockSignals(True)
+            self.menu_ai_panel_action.setChecked(visible)
+            self.menu_ai_panel_action.blockSignals(False)
 
     def _sidebar_ai_mode_changed(self) -> None:
         settings = (

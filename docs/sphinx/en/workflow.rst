@@ -4,6 +4,11 @@ Complete workflow
 The eleven stages form a recoverable sequence. Each stage can also be opened
 independently when its required input already exists.
 
+The workspace header shows the current step out of eleven, a progress strip,
+**Previous**, **Next**, and **Step guide**. The left workflow rail still allows
+direct access to any stage whose inputs already exist. This preserves a clear
+linear main path without blocking valid intermediate-entry workflows.
+
 01 Data and project
 -------------------
 

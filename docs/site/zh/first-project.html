@@ -59,9 +59,10 @@
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">新建、导入和恢复项目</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id2">创建项目</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id3">填写采集信息</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id4">保存和恢复</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id5">导入后的可见变化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">界面布局与新手引导</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">填写采集信息</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">保存和恢复</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">导入后的可见变化</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">完整分析流程</a><ul>
@@ -430,39 +431,48 @@
 <section id="id2">
 <h2>创建项目<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
-<li><p>启动软件，点击 <strong>新建空白项目</strong>。</p></li>
-<li><p>填写项目名称和可写的项目目录。</p></li>
-<li><p>进入 <strong>01 数据与项目</strong>，点击 <strong>导入我的数据</strong>。</p></li>
-<li><p>按手头文件选择入口：</p>
+<li><p>启动软件，点击 <strong>新建项目</strong>。</p></li>
+<li><p>填写项目名称，并按手头文件选择入口：</p>
 <ul class="simple">
 <li><p>通用交错二进制；</p></li>
 <li><p>记录系统文件；</p></li>
 <li><p>已有 Kilosort/Phy 结果；</p></li>
 <li><p>Offline Sorter/NeuroExplorer <code class="docutils literal notranslate"><span class="pre">.nex5</span></code> 结果；</p></li>
-<li><p>已验证公开项目；</p></li>
-<li><p>教学模拟。</p></li>
 </ul>
 </li>
 <li><p>创建数据链接前检查识别预览。重点核对采样率、通道数、数字类型、电压换算、
 记录时长、选中 contact 和事件来源。</p></li>
 </ol>
+<p>首页的 <strong>打开／导入项目</strong> 用于选择以前保存的 <code class="docutils literal notranslate"><span class="pre">neuroflow_project.json</span></code>；
+<strong>示例项目</strong> 同时包含教学模拟和固定的已验证公开项目。首页不再重复展示完整数据入口表，
+详细格式选择只在新建项目时出现。</p>
 </section>
 <section id="id3">
-<h2>填写采集信息<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<h2>界面布局与新手引导<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<p>工作区默认同时显示三栏：左侧分析流程、中间分析画布、右侧 AI/帮助/日志。拖动栏间
+分隔线可调整宽度。点击左侧顶部的收起按钮，流程栏会缩略成 <code class="docutils literal notranslate"><span class="pre">01</span></code>–<code class="docutils literal notranslate"><span class="pre">11</span></code> 的窄栏；
+点击右侧关闭按钮可暂时隐藏 AI 栏。窗口较窄时，左栏会自动缩略，中间页面保留滚动，
+不会直接裁掉超出宽度的参数或图表。</p>
+<p>第一次进入每个阶段时会显示简短的分步骤引导。引导解释本阶段目的、推荐顺序和完成前
+检查。勾选 <strong>不再自动弹出分步骤引导</strong> 可关闭自动提示；之后可从 <strong>帮助 → 自动显示
+分步骤引导</strong> 或 <strong>帮助 → 重置新手引导</strong> 恢复。</p>
+</section>
+<section id="id4">
+<h2>填写采集信息<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
 <p>填写电极类型、脑区、contact 组织方式、参考方式、采集时在线滤波和已知坏道。
 这些字段会参与后续安全检查。例如，采集时已经进行 250 Hz 高通的数据无法恢复真实
 低频成分，LFP 分支会被禁用。</p>
 </section>
-<section id="id4">
-<h2>保存和恢复<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<section id="id5">
+<h2>保存和恢复<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
 <p>修改输入、Unit 标签、分析参数或图表样式后点击 <strong>保存项目</strong>。关闭存在未保存修改的
-项目时，程序弹窗询问是否保存。回到首页后点击 <strong>恢复 NeuroEphys AI 项目</strong>，选择
+项目时，程序弹窗询问是否保存。回到首页后点击 <strong>打开／导入项目</strong>，选择
 项目清单即可继续。</p>
 <p>恢复后先检查源文件链接是否仍然有效。可以读取的派生结果会继续显示；依赖缺失源文件
 的阶段会禁用并给出原因。</p>
 </section>
-<section id="id5">
-<h2>导入后的可见变化<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<section id="id6">
+<h2>导入后的可见变化<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
 <p>“数据与项目”页面会显示来源类型、通道数、时长、信号单位、探针信息、行为事件清单
 和工作流起点。右侧审计页记录输入位置和项目产物位置。</p>
 </section>

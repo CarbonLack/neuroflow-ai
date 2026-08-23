@@ -6,7 +6,14 @@ import numpy as np
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox, QScrollArea
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QMessageBox,
+    QScrollArea,
+    QSplitter,
+)
 
 from neuroflow.models import ProjectState
 from neuroflow.project import MANIFEST_NAME, load_project
@@ -179,7 +186,7 @@ def test_scrollable_workspace_and_independent_panel_export(
     assert isinstance(window.main_scroll, QScrollArea)
     assert not window.main_scroll.widget().isAncestorOf(window.progress_bar)
     assert not window.main_scroll.widget().isAncestorOf(window.run_step_button)
-    assert window.figure_host.minimumHeight() >= 600
+    assert window.figure_host.minimumHeight() >= 360
     assert window.panel_combo.count() == 3
     assert "performance" in window.panel_combo.itemText(0).lower()
 
@@ -200,6 +207,74 @@ def test_scrollable_workspace_and_independent_panel_export(
 
     window._toggle_panel_focus()
     assert sum(axis.get_visible() for axis in window.canvas.figure.axes) == visible_before
+    window.close()
+    app.processEvents()
+
+
+def test_home_is_reduced_to_new_open_and_examples(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    window = NeuroFlowWindow(tmp_path / "workspace")
+
+    assert not window.new_project_button.isHidden()
+    assert not window.import_button.isHidden()
+    assert not window.public_button.isHidden()
+    assert window.project_button.isHidden()
+    assert window.sample_button.isHidden()
+    assert window.input_table.parentWidget().isHidden()
+    assert window.file_menu.title() == "文件"
+    assert window.edit_menu.title() == "编辑"
+
+    window.close()
+    app.processEvents()
+
+
+def test_three_column_workspace_resizes_without_removing_analysis(
+    tmp_path: Path,
+):
+    app = QApplication.instance() or QApplication([])
+    window = NeuroFlowWindow(tmp_path / "workspace")
+    state = ProjectState(
+        root=tmp_path / "project",
+        name="Responsive project",
+        source_type="binary",
+        recording_path=tmp_path / "recording.bin",
+        channel_count=4,
+        sampling_rate=1_000,
+        duration_seconds=0.1,
+    )
+    state.recording_path.write_bytes(b"\0" * (100 * 4 * 2))
+    window.auto_stage_guides = False
+    window._load_state(state)
+    window.resize(1_500, 900)
+    window.show()
+    app.processEvents()
+
+    assert isinstance(window.workspace_splitter, QSplitter)
+    assert window.workspace_splitter.count() == 3
+    assert window.workflow_sidebar.isVisible()
+    assert window.main_column.isVisible()
+    assert window.assistant_panel.isVisible()
+    assert all(size > 0 for size in window.workspace_splitter.sizes())
+
+    window._set_sidebar_collapsed(True)
+    app.processEvents()
+    assert window.workflow_sidebar.width() == 62
+    assert window.main_column.width() >= 460
+
+    window._toggle_ai_panel()
+    app.processEvents()
+    assert not window.assistant_panel.isVisible()
+    assert window.main_column.isVisible()
+    window._toggle_ai_panel()
+    app.processEvents()
+    assert window.assistant_panel.isVisible()
+    assert window.main_column.isVisible()
+
+    window.resize(900, 650)
+    app.processEvents()
+    assert window.sidebar_collapsed is True
+    assert window.main_scroll.horizontalScrollBarPolicy() == Qt.ScrollBarAsNeeded
+
     window.close()
     app.processEvents()
 

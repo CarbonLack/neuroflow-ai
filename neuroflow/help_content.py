@@ -91,30 +91,28 @@ REFERENCES = (
 CONTROL_HELP = {
     "home.new_project": {
         "zh_CN": (
-            "新建空白项目",
-            "先选择项目名称和保存位置，只建立项目清单、参数区、结果区和审计记录。"
-            "不会生成模拟数据，也不会复制原始文件。项目打开后在“数据与项目”页"
-            "明确导入自己的电生理数据。",
+            "新建项目",
+            "打开自己的数据向导并建立新的 NeuroEphys AI 项目。选择通用二进制、"
+            "记录系统原始文件或已有 sorting 结果；源文件保持只读。",
         ),
         "en_US": (
-            "Create empty project",
-            "Choose a project name and location. NeuroEphys AI creates only the manifest, "
-            "parameter, result, and audit structure; it does not generate simulated "
-            "data or copy raw files. Import your recording explicitly afterward.",
+            "New project",
+            "Open the own-data wizard and create a new NeuroEphys AI project from "
+            "generic binary, acquisition-system data, or an existing sorting result. "
+            "Source files remain read-only.",
         ),
     },
     "home.demo": {
         "zh_CN": (
-            "打开示例数据",
-            "在固定的 DemoData 文件夹生成或复用一份 int16 多通道原始记录，"
-            "同时包含 metadata.json、events.csv 和 ground_truth.npz。"
-            "打开后可从原始质控一直运行到统计、机器学习和导出。",
+            "示例项目",
+            "在同一个资料库中选择教学模拟或已验证公开项目。教学模拟在本机生成；"
+            "固定公开项目首次使用时会明确询问是否下载。",
         ),
         "en_US": (
-            "Open demo data",
-            "Create or reuse an int16 multichannel recording in the fixed DemoData "
-            "folder, together with metadata.json, events.csv, and ground_truth.npz. "
-            "It supports the complete workflow from raw QC through export.",
+            "Example projects",
+            "Choose a teaching simulation or verified public project from one library. "
+            "Simulations are generated locally; fixed public data asks before its "
+            "first download.",
         ),
     },
     "home.import": {
@@ -147,12 +145,12 @@ CONTROL_HELP = {
     },
     "home.restore": {
         "zh_CN": (
-            "恢复项目",
+            "打开／导入项目",
             "打开已有 neuroflow_project.json，恢复数据索引、参数、运行状态和结果。"
             "它不会重新复制原始数据。",
         ),
         "en_US": (
-            "Restore project",
+            "Open / import project",
             "Open an existing neuroflow_project.json and restore source links, "
             "parameters, workflow state, and results without copying raw data again.",
         ),
@@ -183,13 +181,15 @@ CONTROL_HELP = {
     "global.ai": {
         "zh_CN": (
             "AI 助手",
-            "打开可选云端助手。AI 只接收可预览、去路径的项目摘要，用于解释当前"
+            "显示或隐藏右侧 AI/帮助/日志栏；拖动分隔线可调整宽度，展开按钮可进入"
+            "完整 AI 对话。AI 只接收可预览、去路径的项目摘要，用于解释当前"
             "阶段、审查项目、生成候选流程和解释异常。原始电压不发送；候选流程"
             "不会自动运行，应用前和实际运行时都需要用户确认。",
         ),
         "en_US": (
             "AI assistant",
-            "Open the optional cloud assistant. It receives only a previewable, "
+            "Show or hide the right AI/help/audit column; drag its divider to resize it "
+            "or expand to the full dialog. It receives only a previewable, "
             "path-free project summary to explain a stage, review the project, propose "
             "a workflow, or explain a failure. Raw voltage is never sent; candidate "
             "plans do not run automatically and remain subject to user confirmation.",
