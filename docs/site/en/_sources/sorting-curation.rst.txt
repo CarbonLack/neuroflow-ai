@@ -22,6 +22,22 @@ Sorter-specific files remain untouched. Comparison views report matched,
 split, merged, unique, and consensus candidates. Agreement between two sorter
 outputs on real data is not ground-truth accuracy.
 
+Using the side-by-side comparison
+---------------------------------
+
+1. Save at least two sorting results from the same recording and time window.
+2. On stage 04, select **Normalized sorter comparison** as the post-run view.
+3. Select a pair in **Side-by-side sorting comparison**. The two columns show
+   Units, spikes, unique Units, backend, and version.
+4. Inspect mean matched agreement and the Unit agreement matrix. CSV and full
+   JSON exports are saved under ``results/sorting_comparison/``.
+
+The calculation uses SpikeInterface ``compare_two_sorters`` and
+``compare_multiple_sorters``. A symmetric pair comparison treats neither result
+as truth, and a consensus can inherit weaknesses from its component algorithms.
+See the official `SpikeInterface comparison module
+<https://spikeinterface.readthedocs.io/en/latest/modules/comparison.html>`_.
+
 Kilosort4 workflow
 ------------------
 

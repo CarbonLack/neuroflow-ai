@@ -17,7 +17,12 @@ from neo.rawio.openephysrawio import (
 
 from neuroflow.analysis import load_recording, preprocessing_preview, run_raw_qc
 from neuroflow.audit import audit_log_path, audited_stage
-from neuroflow.data_import import import_device_recording
+from neuroflow.data_import import (
+    _device_reader_kwargs,
+    import_binary_recording,
+    import_device_recording,
+    inspect_binary_sidecars,
+)
 from neuroflow.ephys_toolkit import _linear_sttc
 from neuroflow.medpc import import_medpc_behavior, parse_medpc_file
 from neuroflow.models import ProjectState
@@ -76,6 +81,93 @@ def _write_events(path: Path) -> None:
             )
         )
         rows.tofile(handle)
+
+
+def test_open_ephys_binary_automatically_selects_unambiguous_ap_stream(tmp_path: Path):
+    class FakeExtractors:
+        @staticmethod
+        def get_neo_streams(_name, _source):
+            return (
+                ["Record Node 101#Neuropix-PXI-100.ProbeA-AP", "Record Node 101#Neuropix-PXI-100.ProbeA-LFP"],
+                ["0", "1"],
+            )
+
+    def reader(_folder_path, **kwargs):
+        return kwargs
+
+    kwargs, details = _device_reader_kwargs(
+        FakeExtractors,
+        reader,
+        tmp_path,
+        "Open Ephys",
+        None,
+    )
+
+    assert kwargs == {"stream_id": "0"}
+    assert details["resolved_stream_name"].endswith("ProbeA-AP")
+    assert details["stream_selection"] == "automatic_ap_stream"
+
+
+def test_open_ephys_binary_keeps_manual_stream_choice(tmp_path: Path):
+    class FakeExtractors:
+        @staticmethod
+        def get_neo_streams(_name, _source):
+            return (["ProbeA-AP", "ProbeA-LFP"], ["0", "1"])
+
+    def reader(_folder_path, **kwargs):
+        return kwargs
+
+    kwargs, details = _device_reader_kwargs(
+        FakeExtractors,
+        reader,
+        tmp_path,
+        "Open Ephys",
+        "1",
+    )
+
+    assert kwargs == {"stream_id": "1"}
+    assert details["stream_selection"] == "user_selected"
+
+
+def test_generic_binary_detects_kilosort_params_and_probe_geometry(tmp_path: Path):
+    source = tmp_path / "recording.bin"
+    np.zeros((100, 4), dtype=np.int16).tofile(source)
+    kilosort = tmp_path / "kilosort4"
+    kilosort.mkdir()
+    (kilosort / "params.py").write_text(
+        "n_channels_dat = 4\nsample_rate = 20000\ndtype = 'int16'\n",
+        encoding="utf-8",
+    )
+    (kilosort / "probe.json").write_text(
+        json.dumps(
+            {
+                "chanMap": [2, 0, 3, 1],
+                "xc": [20, 0, 30, 10],
+                "yc": [200, 0, 300, 100],
+                "kcoords": [2, 1, 2, 1],
+                "n_chan": 4,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    detected = inspect_binary_sidecars(source)
+    state = import_binary_recording(
+        tmp_path / "project",
+        source,
+        sampling_rate=20_000,
+        channel_count=4,
+    )
+
+    assert detected["sampling_rate"] == 20_000
+    assert detected["channel_count"] == 4
+    assert state.metadata["contact_positions_um"] == [
+        [0.0, 0.0],
+        [10.0, 100.0],
+        [20.0, 200.0],
+        [30.0, 300.0],
+    ]
+    assert state.metadata["contact_shank_ids"] == [1, 1, 2, 2]
 
 
 def test_open_ephys_legacy_is_linked_and_read_on_demand(tmp_path: Path):

@@ -1,9 +1,16 @@
-# NeuroEphys AI 1.1.0 发行说明
+# NeuroEphys AI 1.1.1 发行说明
 
 NeuroEphys AI 1.1 将公开发表数据作为外部压力测试，增强的仍然是通用的
 细胞外电生理工作平台，而不是论文抓取或一键复现工具。
 
 ## 新增功能
+
+- 首页 Logo 增加同色系品牌边框、层次与阴影，保持既有紫黑配色。
+- Open Ephys AP/LFP 自动流识别，并兼容 SpikeInterface 新旧通道选择接口。
+- 通用二进制自动读取安全的 Kilosort ``params.py`` 与探针 JSON sidecar。
+- 每个项目自动维护来源、参数、中文实验日志、中间结果、Sorter 原生结果、横向比较和最终导出目录。
+- Sorting 页面新增可选配对的并排比较表，并输出 SpikeInterface 两两/多 Sorter CSV 与 JSON。
+- 在两批本地真实记录上完成四个只读项目验收；本地数据和含隐私路径的项目不进入仓库。
 
 - 单 trial/群体动态：按事件和脑区选择，可调 bin、Gaussian sigma、
   基线层级与峰值/PCA/可选 Rastermap 排序。
@@ -31,8 +38,8 @@ Trautmann et al. (2025) Fig. 7 公开 LIP/SC 数据（Zenodo 7946011）通过了
 
 ## 发行物
 
-- `NeuroEphysAI-Setup-1.1.0.exe`；
-- `NeuroEphysAI-1.1.0-Windows-x64-portable.zip`；
-- `neuroephys_ai-1.1.0-py3-none-any.whl`；
-- `neuroephys_ai-1.1.0.tar.gz`；
+- `NeuroEphysAI-Setup-1.1.1.exe`；
+- `NeuroEphysAI-1.1.1-Windows-x64-portable.zip`；
+- `neuroephys_ai-1.1.1-py3-none-any.whl`；
+- `neuroephys_ai-1.1.1.tar.gz`；
 - `SHA256SUMS.txt`。

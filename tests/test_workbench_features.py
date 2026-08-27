@@ -407,6 +407,9 @@ def test_normalized_multi_sorter_comparison_and_roundtrip(tmp_path: Path):
 
     activate_sorting_result(state, "sorter_a")
     restored = load_project(save_project(state))
+    assert (state.root / "00_README_项目说明.md").is_file()
+    assert (state.root / "logs" / "实验日志_中文.md").is_file()
+    assert (state.root / "results" / "sorting_comparison" / "pairwise_summary.csv").is_file()
     assert set(restored.sorting_results) == {"sorter_a", "sorter_b"}
     assert restored.active_sorter_key == "sorter_a"
     assert set(restored.sorted_spikes) == {10, 11, 12}

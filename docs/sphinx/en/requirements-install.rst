@@ -21,12 +21,12 @@ Minimum practical configuration
 Install the Windows application
 -------------------------------
 
-Download ``NeuroEphysAI-Setup-1.1.0.exe`` from GitHub **Releases** or the
+Download ``NeuroEphysAI-Setup-1.1.1.exe`` from GitHub **Releases** or the
 competition delivery folder. The per-user installer requires no administrator
 access and creates desktop and Start-menu shortcuts. Uninstalling the program
 does not delete projects under ``Documents\NeuroEphysAI``.
 
-The portable ``NeuroEphysAI-1.1.0-Windows-x64-portable.zip`` needs no
+The portable ``NeuroEphysAI-1.1.1-Windows-x64-portable.zip`` needs no
 installation. Extract the complete archive and run
 ``NeuroEphysAI\NeuroEphysAI.exe``; the EXE does not work by itself. This
 one-folder layout keeps scientific libraries inspectable and avoids unpacking
@@ -51,7 +51,7 @@ The validated Python distribution targets 64-bit Python 3.12:
 .. code-block:: powershell
 
    python -m venv .venv
-   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.1.0-py3-none-any.whl
+   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.1.1-py3-none-any.whl
    .\.venv\Scripts\neuroephys.exe info
 
 .. code-block:: python
@@ -65,6 +65,18 @@ The validated Python distribution targets 64-bit Python 3.12:
 The ``desktop``, ``mountainsort``, and ``kilosort`` extras are optional. The
 last two require a compatible C++ build environment or NVIDIA GPU/CUDA stack,
 respectively, and cannot block installation of the core package.
+
+After creating ``.venv``, a Windows research workstation can install and probe
+all six entries in the curated product catalog in one operation:
+
+.. code-block:: powershell
+
+   powershell -ExecutionPolicy Bypass -File scripts\setup_all_sorters.ps1
+
+The script installs CUDA PyTorch, Kilosort4, MountainSort5/isosplit6, and the
+SpikeInterface internal sorters, then reports their actual availability. Other
+SpikeInterface wrappers can require MATLAB, containers, separate licenses, or
+platform tools and are not shown as runnable without a tested product adapter.
 
 Source development installation
 -------------------------------

@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/sorting-curation.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ab4a11d3"></script>
+      <script src="_static/documentation_options.js?v=b98c2dc9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -82,8 +82,9 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Spike sorting 与 Unit 人工复核</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">统一结果接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">横向比较怎么操作</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kilosort4">Kilosort4 操作</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id2">人工复核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">人工复核</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="events-analysis.html">行为同步与事件对齐分析</a><ul>
@@ -443,6 +444,20 @@
 <p>Sorter 特有文件保持不变。比较视图报告匹配、拆分、合并、独有和共识候选。真实数据
 上的两种 sorter 一致度不能当作 ground truth 准确率。</p>
 </section>
+<section id="id2">
+<h2>横向比较怎么操作<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>在同一项目、同一原始记录和同一时间窗上保存至少两个 Sorting 结果。</p></li>
+<li><p>在第 04 页把“运行后诊断视图”切换为 <strong>Sorter 统一结果与比较</strong>。</p></li>
+<li><p>在“Sorting 结果横向对比”中选择一组 Sorter；两列会并排显示 Unit 数、spike 数、
+独有 Unit、来源和版本。</p></li>
+<li><p>图中检查匹配后平均一致度和 Unit 匹配矩阵；项目的
+<code class="docutils literal notranslate"><span class="pre">results/sorting_comparison/</span></code> 同时保存 CSV 与完整 JSON。</p></li>
+</ol>
+<p>计算使用 SpikeInterface 的 <code class="docutils literal notranslate"><span class="pre">compare_two_sorters</span></code> 和 <code class="docutils literal notranslate"><span class="pre">compare_multiple_sorters</span></code>。
+两两比较不假定任一结果是真值，多 Sorter 共识也会受到单个算法弱点影响。官方说明见
+<a class="reference external" href="https://spikeinterface.readthedocs.io/en/latest/modules/comparison.html">SpikeInterface comparison 模块</a>。</p>
+</section>
 <section id="kilosort4">
 <h2>Kilosort4 操作<a class="headerlink" href="#kilosort4" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
@@ -454,8 +469,8 @@
 <li><p>进入 Unit 质控后再做事件相关解释。</p></li>
 </ol>
 </section>
-<section id="id2">
-<h2>人工复核<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<section id="id3">
+<h2>人工复核<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
 <p>各种 sorter 都需要人工检查，具体指标权重由探针和记录条件决定，最终决定应进入
 项目审计记录。</p>
 <ul class="simple">

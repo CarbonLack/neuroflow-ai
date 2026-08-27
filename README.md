@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.1.0
+# NeuroEphys AI v1.1.1
 
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
@@ -91,9 +91,11 @@ NeuroEphys AI 不复制其他软件或文章的界面、文案、截图、图表
 - 三套可选择的完整模拟项目：Neuropixels-like 二选一任务、tetrode 空间探索与奖励、独立微丝感觉刺激；
 - 每套项目均包含原始电压、真实探针接触位置、行为事件、TTL、条件/选择/结果/反应时以及 ground truth；
 - “导入自己的数据”只显示用户文件入口，不再默认显示模拟数据；
-- 自己的交错通道二进制记录，可附带事件 CSV；
+- 自己的交错通道二进制记录，可附带事件 CSV；若同目录存在 Kilosort
+  ``params.py`` 与探针 JSON，会自动识别采样率、通道数、dtype、chanMap 和 shank 几何；
 - Intan、Open Ephys、SpikeGLX/Neuropixels、Blackrock、Plexon、TDT、NWB，
-  通过 SpikeInterface extractor 转成项目缓存；
+  通过 SpikeInterface extractor 只读链接；Open Ephys 同时含 AP/LFP 时会自动选择
+  唯一 AP 流，只有 sorter 需要时才建立项目缓存；
 - IBL ALF 的 trials、spikes 和 clusters；
 - 具有 Units、行为事件、位置、睡眠状态或 ripple 区间的 NWB，例如
   DANDI 上公开的 Buzsáki Lab 会话；
@@ -108,8 +110,13 @@ NeuroEphys AI 不复制其他软件或文章的界面、文案、截图、图表
 
 数据已下载时，首页双击“已验证公开项目”即可查看本机状态并直接建立或打开项目缓存。
 
-原始文件保持只读。只有明确选择复制时才复制通用二进制；记录系统适配器生成
-项目级标准缓存。缺少原始电压时，原始质控与 sorting 会明确显示为跳过，不会伪造。
+原始文件保持只读。只有明确选择复制时才复制通用二进制；记录系统适配器仅在
+sorter 需要时生成项目级标准缓存。缺少原始电压时，原始质控与 sorting 会明确显示为跳过，不会伪造。
+
+每个项目根目录会生成 ``00_README_项目说明.md``；``inputs`` 保存原始数据索引，
+``config`` 保存参数，``logs`` 保存中文实验日志与人工笔记，``cache`` 和 ``derived``
+保存可重建中间结果，``results`` 保存 sorter 原生输出与横向比较 CSV/JSON，``exports``
+保存最终图、表和可复现导出。项目保存不会在原始数据目录写入分析文件。
 
 ## Sorter
 
@@ -130,7 +137,8 @@ Kilosort4 运行后可检查流程耗时、完整日志、深度-时间图、振
 
 每个 sorter 的原生文件保留不变，同时转换为统一的 Unit→秒级 spike times
 结构。多次运行不会覆盖其他 sorter：用户可切换当前结果，并在“Sorter 统一结果与
-比较”视图查看 Unit 匹配、一致度、算法独有 Unit 和共识 Unit。模拟或配对
+比较”视图选择任意一对结果，并排查看 Unit 数、spike 数、独有 Unit、版本、匹配与
+一致度；同一结果同时导出到 ``results/sorting_comparison``。模拟或配对
 ground truth 数据可以把 precision、recall 与 F1 解释为检测性能；真实外部结果
 只将这些数值用于描述两份输出的一致度。
 
@@ -141,7 +149,7 @@ chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度
 
 ## 启动
 
-普通用户安装 ``NeuroEphysAI-Setup-1.1.0.exe`` 后，双击桌面上的 **NeuroEphys AI**
+普通用户安装 ``NeuroEphysAI-Setup-1.1.1.exe`` 后，双击桌面上的 **NeuroEphys AI**
 快捷方式即可启动。便携版需完整解压 ZIP，然后双击
 ``NeuroEphysAI\NeuroEphysAI.exe``；不要只复制单独的 EXE。两种版本都不要求用户安装
 Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
@@ -149,7 +157,7 @@ Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
 Python 用户可以安装构建出的 wheel：
 
 ```powershell
-python -m pip install neuroephys_ai-1.1.0-py3-none-any.whl
+python -m pip install neuroephys_ai-1.1.1-py3-none-any.whl
 neuroephys info
 ```
 
@@ -193,6 +201,16 @@ python -m pip install ".[desktop]"
 python -m pip install ".[mountainsort]"
 python -m pip install ".[kilosort]"
 ```
+
+Windows 源码/科研工作站可一次安装并核对 NeuroEphys AI 明确支持的六个 Sorter：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup_all_sorters.ps1
+```
+
+“全部”指 Sorter 管理器中经过适配、版本探测和测试的六项；SpikeInterface 还能封装
+其他依赖 MATLAB、Docker、独立许可证或平台专用程序的工具，NeuroEphys AI 不会在
+没有真实适配和验证时把它们伪标成已安装。
 
 源码开发环境安装：
 

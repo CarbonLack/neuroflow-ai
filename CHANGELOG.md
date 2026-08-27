@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## v1.1.1
+
+- Added automatic Open Ephys AP/LFP stream resolution and current/legacy
+  SpikeInterface channel-selection compatibility.
+- Added safe Kilosort sidecar/probe-geometry discovery for generic binaries.
+- Added scientist-readable project folders, Chinese experiment logs, and
+  explicit side-by-side sorting comparison exports.
+- Added a bordered layered homepage brand mark without changing the purple-black palette.
+- Validated four local recordings from two acquisition batches without modifying raw sources.
 
 - Simplified the home screen to a centered, single-background entry area with
   New project, Open/import project, and one combined Example projects library

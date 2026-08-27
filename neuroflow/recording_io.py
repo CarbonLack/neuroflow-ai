@@ -371,7 +371,14 @@ def _spikeinterface_recording(
     if channel_ids:
         available = {str(value): value for value in recording.channel_ids}
         resolved = [available[value] for value in channel_ids]
-        recording = recording.channel_slice(channel_ids=resolved)
+        if hasattr(recording, "select_channels"):
+            recording = recording.select_channels(resolved)
+        elif hasattr(recording, "channel_slice"):
+            recording = recording.channel_slice(channel_ids=resolved)
+        else:
+            raise RuntimeError(
+                "The installed SpikeInterface recording does not expose a channel-selection API"
+            )
     if start_frame or end_frame is not None:
         recording = recording.frame_slice(
             start_frame=start_frame,

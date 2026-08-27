@@ -16,11 +16,11 @@
 ----------------
 
 推荐从 GitHub **Releases** 或比赛交付目录下载
-``NeuroEphysAI-Setup-1.1.0.exe``。安装程序只安装到当前用户目录，不要求管理员权限，
+``NeuroEphysAI-Setup-1.1.1.exe``。安装程序只安装到当前用户目录，不要求管理员权限，
 并创建桌面和开始菜单快捷方式。卸载程序不会删除
 ``Documents\NeuroEphysAI`` 中的项目数据。
 
-便携版 ``NeuroEphysAI-1.1.0-Windows-x64-portable.zip`` 无需安装。完整解压后启动
+便携版 ``NeuroEphysAI-1.1.1-Windows-x64-portable.zip`` 无需安装。完整解压后启动
 ``NeuroEphysAI\NeuroEphysAI.exe``，不能只复制单独的 EXE。one-folder 结构让科学
 计算依赖可以检查，启动时也无需反复解压。
 
@@ -40,7 +40,7 @@ Python 包
 .. code-block:: powershell
 
    python -m venv .venv
-   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.1.0-py3-none-any.whl
+   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.1.1-py3-none-any.whl
    .\.venv\Scripts\neuroephys.exe info
 
 .. code-block:: python
@@ -53,6 +53,16 @@ Python 包
 
 ``desktop``、``mountainsort`` 和 ``kilosort`` 是可选 extra。后两者分别需要兼容的
 C++ 构建环境或 NVIDIA GPU/CUDA 环境，普通核心包安装不会被这些条件阻塞。
+
+Windows 科研工作站可在建立 ``.venv`` 后一次安装并核对产品目录中的六个 Sorter：
+
+.. code-block:: powershell
+
+   powershell -ExecutionPolicy Bypass -File scripts\setup_all_sorters.ps1
+
+脚本安装 CUDA PyTorch、Kilosort4、MountainSort5/isosplit6 与 SpikeInterface 内部
+Sorter，并在结束时逐项输出真实可用状态。SpikeInterface 中另有需要 MATLAB、容器、
+独立许可证或平台程序的封装；未完成产品适配和真实运行测试前不会显示为可运行。
 
 源码开发环境
 ------------

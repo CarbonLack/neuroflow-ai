@@ -137,6 +137,7 @@ class SortingWorkbench(QFrame):
         self.catalog: list[dict] = []
         self.completed_keys: set[str] = set()
         self.active_key: str | None = None
+        self.comparison: dict = {}
         self.setObjectName("SortingWorkbench")
         root = QVBoxLayout(self)
         root.setContentsMargins(12, 11, 12, 11)
@@ -306,6 +307,39 @@ class SortingWorkbench(QFrame):
         result_layout.addStretch()
         settings_row.addWidget(result_frame, 2)
         root.addLayout(settings_row)
+
+        self.comparison_panel = QFrame()
+        self.comparison_panel.setObjectName("InsetPanel")
+        comparison_layout = QVBoxLayout(self.comparison_panel)
+        comparison_layout.setContentsMargins(12, 10, 12, 10)
+        comparison_header = QHBoxLayout()
+        self.comparison_heading = QLabel()
+        self.comparison_heading.setObjectName("PanelTitle")
+        comparison_header.addWidget(self.comparison_heading)
+        comparison_header.addStretch()
+        self.comparison_pair = QComboBox()
+        self.comparison_pair.currentIndexChanged.connect(
+            self._populate_comparison_pair
+        )
+        comparison_header.addWidget(self.comparison_pair)
+        comparison_layout.addLayout(comparison_header)
+        self.comparison_table = QTableWidget(4, 2)
+        self.comparison_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.comparison_table.setSelectionMode(QAbstractItemView.NoSelection)
+        self.comparison_table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Stretch
+        )
+        self.comparison_table.verticalHeader().setSectionResizeMode(
+            QHeaderView.ResizeToContents
+        )
+        self.comparison_table.setMaximumHeight(170)
+        comparison_layout.addWidget(self.comparison_table)
+        self.comparison_result = QLabel()
+        self.comparison_result.setObjectName("Muted")
+        self.comparison_result.setWordWrap(True)
+        comparison_layout.addWidget(self.comparison_result)
+        self.comparison_panel.setVisible(False)
+        root.addWidget(self.comparison_panel)
         self.set_language(language)
 
     def _label(self, zh: str, en: str) -> str:
@@ -353,6 +387,15 @@ class SortingWorkbench(QFrame):
                 "real Kilosort/SpikeInterface outputs here.",
             )
         )
+        self.comparison_heading.setText(
+            self._label("Sorting 结果横向对比", "Side-by-side sorting comparison")
+        )
+        self.comparison_table.setVerticalHeaderLabels(
+            ["Unit 数", "Spike 数", "独有 Unit", "来源 / 版本"]
+            if language == "zh_CN"
+            else ["Units", "Spikes", "Unique units", "Backend / version"]
+        )
+        self._populate_comparison_pair()
         self._refresh_diagnostic_views(self.selected_sorter())
         for widget in (
             self.table,
@@ -374,7 +417,69 @@ class SortingWorkbench(QFrame):
     def _diagnostic_selected(self) -> None:
         view = str(self.diagnostic_combo.currentData() or "pipeline")
         self.parameter_stack.setVisible(view != "comparison")
+        self.comparison_panel.setVisible(view == "comparison")
         self.diagnostic_changed.emit(view)
+
+    def set_comparison(self, comparison: dict | None) -> None:
+        """Expose the saved SpikeInterface comparison as an explicit pair view."""
+        self.comparison = dict(comparison or {})
+        previous = self.comparison_pair.currentData()
+        self.comparison_pair.blockSignals(True)
+        self.comparison_pair.clear()
+        for index, item in enumerate(self.comparison.get("pairwise", [])):
+            label = f"{item.get('sorter_a', '?')}  ↔  {item.get('sorter_b', '?')}"
+            self.comparison_pair.addItem(label, index)
+        if previous is not None:
+            index = self.comparison_pair.findData(previous)
+            if index >= 0:
+                self.comparison_pair.setCurrentIndex(index)
+        self.comparison_pair.blockSignals(False)
+        self._populate_comparison_pair()
+
+    def _populate_comparison_pair(self) -> None:
+        pairs = self.comparison.get("pairwise", [])
+        index = int(self.comparison_pair.currentData() or 0)
+        if not pairs or index >= len(pairs):
+            self.comparison_table.clearContents()
+            self.comparison_table.setHorizontalHeaderLabels(
+                [self._label("结果 A", "Result A"), self._label("结果 B", "Result B")]
+            )
+            self.comparison_result.setText(
+                self._label(
+                    "至少保存两个 Sorting 结果后，这里会并排显示 Unit、spike、独有 Unit 和匹配一致度。",
+                    "Save at least two sorting results to compare units, spikes, unique units, and agreement side by side.",
+                )
+            )
+            return
+        pair = pairs[index]
+        key_a = str(pair.get("sorter_a", "A"))
+        key_b = str(pair.get("sorter_b", "B"))
+        sorters = self.comparison.get("sorters", {})
+        item_a = sorters.get(key_a, {})
+        item_b = sorters.get(key_b, {})
+        provenance_a = item_a.get("provenance", {})
+        provenance_b = item_b.get("provenance", {})
+        self.comparison_table.setHorizontalHeaderLabels([key_a, key_b])
+        values = (
+            (item_a.get("unit_count", 0), item_b.get("unit_count", 0)),
+            (item_a.get("spike_count", 0), item_b.get("spike_count", 0)),
+            (pair.get("unique_units_a", 0), pair.get("unique_units_b", 0)),
+            (
+                f"{provenance_a.get('backend', 'unknown')} · {provenance_a.get('version', 'unknown')}",
+                f"{provenance_b.get('backend', 'unknown')} · {provenance_b.get('version', 'unknown')}",
+            ),
+        )
+        for row, row_values in enumerate(values):
+            for column, value in enumerate(row_values):
+                self.comparison_table.setItem(row, column, QTableWidgetItem(str(value)))
+        self.comparison_result.setText(
+            self._label(
+                f"匹配 {pair.get('matched_unit_count', 0)} 个 Unit；匹配后平均一致度 "
+                f"{float(pair.get('mean_matched_agreement', 0)):.3f}。真实数据的一致度不是准确率。",
+                f"{pair.get('matched_unit_count', 0)} matched units; mean matched agreement "
+                f"{float(pair.get('mean_matched_agreement', 0)):.3f}. Agreement on real data is not accuracy.",
+            )
+        )
 
     def _refresh_diagnostic_views(self, sorter_key: str | None) -> None:
         previous = self.diagnostic_combo.currentData()
@@ -402,9 +507,16 @@ class SortingWorkbench(QFrame):
         ]
         self._populate(selected)
 
-    def set_results(self, sorter_keys: set[str], active_key: str | None) -> None:
+    def set_results(
+        self,
+        sorter_keys: set[str],
+        active_key: str | None,
+        comparison: dict | None = None,
+    ) -> None:
         self.completed_keys = set(sorter_keys)
         self.active_key = active_key
+        if comparison is not None:
+            self.set_comparison(comparison)
         known_keys = {str(item["key"]) for item in self.catalog}
         for sorter_key in sorted(self.completed_keys - known_keys):
             self.catalog.append(

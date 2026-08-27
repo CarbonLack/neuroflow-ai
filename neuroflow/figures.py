@@ -989,6 +989,17 @@ def sorting_comparison_figure(state: ProjectState) -> Figure:
 
     sorters = comparison["sorters"]
     keys = list(sorters)
+    display_labels: dict[str, str] = {}
+    for key in keys:
+        base = str(sorters[key].get("provenance", {}).get("sorter") or key)
+        if key.endswith("_existing_same_window"):
+            suffix = _text(state, "既有", "existing")
+            display_labels[key] = f"{base} ({suffix})"
+        elif key.endswith("_local_same_window"):
+            suffix = _text(state, "本机", "local")
+            display_labels[key] = f"{base} ({suffix})"
+        else:
+            display_labels[key] = base
     units = [sorters[key]["unit_count"] for key in keys]
     spikes = [sorters[key]["spike_count"] for key in keys]
     x = np.arange(len(keys))
@@ -1039,7 +1050,9 @@ def sorting_comparison_figure(state: ProjectState) -> Figure:
         )
         axes[0, 0].legend(frameon=False, fontsize=7)
     axes[0, 0].set_xticks(x)
-    axes[0, 0].set_xticklabels(keys, rotation=18, ha="right", fontsize=8)
+    axes[0, 0].set_xticklabels(
+        [display_labels[key] for key in keys], rotation=18, ha="right", fontsize=8
+    )
 
     agreement = np.eye(len(keys), dtype=float)
     for row in comparison.get("pairwise", []):
@@ -1064,8 +1077,15 @@ def sorting_comparison_figure(state: ProjectState) -> Figure:
                 color="white" if agreement[i, j] < 0.65 else INK,
                 fontsize=8,
             )
-    axes[0, 1].set_xticks(np.arange(len(keys)), keys, rotation=25, ha="right")
-    axes[0, 1].set_yticks(np.arange(len(keys)), keys)
+    axes[0, 1].set_xticks(
+        np.arange(len(keys)),
+        [display_labels[key] for key in keys],
+        rotation=25,
+        ha="right",
+    )
+    axes[0, 1].set_yticks(
+        np.arange(len(keys)), [display_labels[key] for key in keys]
+    )
     axes[0, 1].set_title(
         _text(state, "匹配 Unit 的平均一致度", "Mean agreement of matched units"),
         loc="left",
@@ -1076,12 +1096,12 @@ def sorting_comparison_figure(state: ProjectState) -> Figure:
     axes[0, 2].axis("off")
     consensus = comparison.get("consensus", {})
     result_lines = [
-        f"{key}: {sorters[key]['unit_count']} U / {sorters[key]['spike_count']} spikes"
+        f"{display_labels[key]}: {sorters[key]['unit_count']} U / {sorters[key]['spike_count']} spikes"
         for key in keys
     ]
     pair_lines = [
         (
-            f"{row['sorter_a']} / {row['sorter_b']}: "
+            f"{display_labels[row['sorter_a']]} / {display_labels[row['sorter_b']]}: "
             f"{row['matched_unit_count']} match | "
             f"{row['unique_units_a']}/{row['unique_units_b']} unique"
         )

@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/sorting-curation.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fc837d61"></script>
+      <script src="_static/documentation_options.js?v=58fbf978"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -81,6 +81,7 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Spike sorting and manual unit curation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#common-result-interface">Common result interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-the-side-by-side-comparison">Using the side-by-side comparison</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kilosort4-workflow">Kilosort4 workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#manual-curation">Manual curation</a></li>
 </ul>
@@ -443,6 +444,21 @@ native results and converts only the common downstream fields.</p>
 <p>Sorter-specific files remain untouched. Comparison views report matched,
 split, merged, unique, and consensus candidates. Agreement between two sorter
 outputs on real data is not ground-truth accuracy.</p>
+</section>
+<section id="using-the-side-by-side-comparison">
+<h2>Using the side-by-side comparison<a class="headerlink" href="#using-the-side-by-side-comparison" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Save at least two sorting results from the same recording and time window.</p></li>
+<li><p>On stage 04, select <strong>Normalized sorter comparison</strong> as the post-run view.</p></li>
+<li><p>Select a pair in <strong>Side-by-side sorting comparison</strong>. The two columns show
+Units, spikes, unique Units, backend, and version.</p></li>
+<li><p>Inspect mean matched agreement and the Unit agreement matrix. CSV and full
+JSON exports are saved under <code class="docutils literal notranslate"><span class="pre">results/sorting_comparison/</span></code>.</p></li>
+</ol>
+<p>The calculation uses SpikeInterface <code class="docutils literal notranslate"><span class="pre">compare_two_sorters</span></code> and
+<code class="docutils literal notranslate"><span class="pre">compare_multiple_sorters</span></code>. A symmetric pair comparison treats neither result
+as truth, and a consensus can inherit weaknesses from its component algorithms.
+See the official <a class="reference external" href="https://spikeinterface.readthedocs.io/en/latest/modules/comparison.html">SpikeInterface comparison module</a>.</p>
 </section>
 <section id="kilosort4-workflow">
 <h2>Kilosort4 workflow<a class="headerlink" href="#kilosort4-workflow" title="Link to this heading"></a></h2>

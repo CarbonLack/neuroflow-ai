@@ -17,7 +17,7 @@ from matplotlib.backends.backend_qtagg import (
 )
 from matplotlib.transforms import Bbox
 from PySide6.QtCore import QEvent, QSettings, Qt, QThread, QTimer, QUrl, Signal
-from PySide6.QtGui import QAction, QDesktopServices, QFont, QIcon, QPixmap
+from PySide6.QtGui import QAction, QColor, QDesktopServices, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QFrame,
     QGridLayout,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -77,6 +78,7 @@ from .data_import import (
     import_ibl_trials_aggregate,
     import_kilosort_results,
     import_nwb_units,
+    inspect_binary_sidecars,
 )
 from .nex5_adapter import (
     import_nex5_sorting_into_project,
@@ -384,6 +386,12 @@ QMenu::separator { height: 1px; background: #3b354a; margin: 5px 8px; }
     color: #f7f3fa;
     border: none;
 }
+#BrandMarkFrame {
+    background: #171521;
+    border: 2px solid #756681;
+    border-radius: 24px;
+}
+#BrandMarkFrame:hover { border-color: #d885e9; background: #1d1926; }
 #HeroPanel QLabel#Muted { color: #bdb3cc; }
 #StageStrip {
     background: #171521; border: 1px solid #3b354a; border-radius: 6px;
@@ -2414,6 +2422,11 @@ class ImportDialog(QDialog):
             if english
             else "复制原始文件到项目（默认只建立只读索引）"
         )
+        self.binary_sidecar_status = QLabel()
+        self.binary_sidecar_status.setObjectName("Muted")
+        self.binary_sidecar_status.setWordWrap(True)
+        self.binary_path.textChanged.connect(self._inspect_binary_sidecars)
+        self._inspect_binary_sidecars("")
         self.binary_rate.setToolTip(
             "Required. Converts sample index to seconds."
             if english
@@ -2442,6 +2455,10 @@ class ImportDialog(QDialog):
         form.addRow("Channels" if english else "通道数", self.binary_channels)
         form.addRow("Data type" if english else "数据类型", self.binary_dtype)
         form.addRow("μV / bit", self.binary_scale)
+        form.addRow(
+            "Automatic metadata" if english else "自动识别元数据",
+            self.binary_sidecar_status,
+        )
         form.addRow(self.copy_source)
         binary_help = QLabel(
             (
@@ -2464,6 +2481,47 @@ class ImportDialog(QDialog):
         binary_help.setObjectName("Muted")
         form.addRow(binary_help)
         return page
+
+    def _inspect_binary_sidecars(self, value: str) -> None:
+        source = Path(value)
+        if not source.is_file():
+            self.binary_sidecar_status.setText(
+                "选择文件后会自动查找旁边的 Kilosort params.py 和探针 JSON。"
+                if self.language == "zh_CN"
+                else "Select a file to detect nearby Kilosort params.py and probe JSON metadata."
+            )
+            return
+        details = inspect_binary_sidecars(source)
+        detected: list[str] = []
+        sampling_rate = details.get("sampling_rate")
+        channel_count = details.get("channel_count")
+        dtype = details.get("dtype")
+        if sampling_rate:
+            self.binary_rate.setValue(int(float(sampling_rate)))
+            detected.append(f"{float(sampling_rate):g} Hz")
+        if channel_count:
+            self.binary_channels.setValue(int(channel_count))
+            detected.append(f"{int(channel_count)} channels")
+        if dtype:
+            index = self.binary_dtype.findText(str(dtype))
+            if index >= 0:
+                self.binary_dtype.setCurrentIndex(index)
+            detected.append(str(dtype))
+        if details.get("geometry_path"):
+            detected.append("probe geometry")
+        if self.language == "zh_CN":
+            text = (
+                "已自动识别：" + " · ".join(detected)
+                if detected
+                else "没有找到可识别的 sidecar；请人工核对下面参数。"
+            )
+        else:
+            text = (
+                "Detected automatically: " + " · ".join(detected)
+                if detected
+                else "No recognized sidecar was found; verify the parameters manually."
+            )
+        self.binary_sidecar_status.setText(text)
 
     def _alf_page(self) -> QWidget:
         page = QWidget()
@@ -2648,9 +2706,9 @@ class ImportDialog(QDialog):
             self.device_channels,
         )
         self.stream_id.setPlaceholderText(
-            "For multi-stream recordings, e.g. imec0.ap"
+            "Optional override; AP is selected automatically when unambiguous"
             if english
-            else "多流记录时填写，例如 imec0.ap"
+            else "通常留空；AP 流可唯一识别时会自动选择"
         )
         form.addRow("Acquisition system" if english else "记录系统", self.device_combo)
         form.addRow("File or folder" if english else "文件或文件夹", holder)
@@ -2659,13 +2717,14 @@ class ImportDialog(QDialog):
         )
         text = QLabel(
             (
-                "NeuroEphys AI uses SpikeInterface extractors and creates a normalized "
-                "interleaved int16 cache. Source files are never modified."
+                "NeuroEphys AI uses SpikeInterface extractors and links source files read-only. "
+                "For Open Ephys AP/LFP recordings, the AP stream is selected automatically when "
+                "unambiguous; a sorter cache is created only when required."
             )
             if english
             else (
-                "NeuroEphys AI 使用 SpikeInterface 的官方 extractor 读取源格式，并在项目缓存中"
-                "生成统一的 int16 交错二进制；源文件不会被修改。"
+                "NeuroEphys AI 通过 SpikeInterface 只读链接源格式。Open Ephys 同时含 AP/LFP "
+                "时会优先自动选择唯一 AP 流；只有 Sorter 确实需要时才建立缓存，原始文件不修改。"
             )
         )
         text.setWordWrap(True)
@@ -4166,6 +4225,16 @@ class NeuroFlowWindow(QMainWindow):
         hero_layout = QVBoxLayout(hero_panel)
         hero_layout.setContentsMargins(20, 12, 20, 18)
         hero_layout.setSpacing(16)
+        self.home_brand_frame = QFrame()
+        self.home_brand_frame.setObjectName("BrandMarkFrame")
+        self.home_brand_frame.setFixedSize(132, 132)
+        brand_mark_layout = QVBoxLayout(self.home_brand_frame)
+        brand_mark_layout.setContentsMargins(18, 18, 18, 18)
+        shadow = QGraphicsDropShadowEffect(self.home_brand_frame)
+        shadow.setBlurRadius(30)
+        shadow.setOffset(0, 7)
+        shadow.setColor(QColor(216, 133, 233, 76))
+        self.home_brand_frame.setGraphicsEffect(shadow)
         self.home_brand_mark = QLabel()
         mark_path = _brand_asset("neuroephys-ai-mark.png")
         if mark_path.exists():
@@ -4178,7 +4247,8 @@ class NeuroFlowWindow(QMainWindow):
                 )
             )
         self.home_brand_mark.setAlignment(Qt.AlignCenter)
-        hero_layout.addWidget(self.home_brand_mark)
+        brand_mark_layout.addWidget(self.home_brand_mark)
+        hero_layout.addWidget(self.home_brand_frame, 0, Qt.AlignHCenter)
         self.hero_label = QLabel("从自己的原始数据开始，\n逐步走到可复现的论文图。")
         self.hero_label.setObjectName("Hero")
         self.hero_label.setAlignment(Qt.AlignCenter)
@@ -5904,6 +5974,7 @@ class NeuroFlowWindow(QMainWindow):
         self.sorting_workbench.set_results(
             set(state.sorting_results),
             state.active_sorter_key,
+            state.sorting_comparison,
         )
         for key, status in state.workflow_status.items():
             if key in self.step_buttons:
@@ -6426,6 +6497,7 @@ class NeuroFlowWindow(QMainWindow):
             self.sorting_workbench.set_results(
                 set(self.state.sorting_results) if self.state else set(),
                 self.state.active_sorter_key if self.state else None,
+                self.state.sorting_comparison if self.state else {},
             )
         self.trace_controls.setVisible(key in {"import", "qc"})
         self.option_combo.setVisible(key != "sorting" and self.option_combo.count() > 0)
@@ -6587,6 +6659,7 @@ class NeuroFlowWindow(QMainWindow):
         self.sorting_workbench.set_results(
             set(self.state.sorting_results),
             self.state.active_sorter_key,
+            self.state.sorting_comparison,
         )
         save_project(self.state)
         self._set_project_clean()
@@ -7181,6 +7254,7 @@ class NeuroFlowWindow(QMainWindow):
                 self.sorting_workbench.set_results(
                     set(self.state.sorting_results),
                     self.state.active_sorter_key,
+                    self.state.sorting_comparison,
                 )
         if self.state:
             self.state.metadata["last_open_step"] = key

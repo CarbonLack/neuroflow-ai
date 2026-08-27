@@ -44,8 +44,9 @@ from neuroflow.unit_curation_ui import UnitCurationDialog
 def _capture(window, path: Path) -> None:
     QApplication.processEvents()
     QTest.qWait(350)
-    screen = window.screen()
-    pixmap = screen.grabWindow(int(window.winId()))
+    # QWidget.grab() keeps text rendering intact in Remote Desktop/headless
+    # sessions, where screen.grabWindow() can replace glyphs with tofu boxes.
+    pixmap = window.grab()
     path.parent.mkdir(parents=True, exist_ok=True)
     if not pixmap.save(str(path)):
         raise RuntimeError(f"Could not save screenshot: {path}")

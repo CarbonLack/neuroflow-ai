@@ -194,7 +194,12 @@ def _attach_probe(recording, state: ProjectState):
         shank_ids = np.arange(channel_count).astype(str)
     else:
         locations = _channel_locations(channel_count, stored_locations)
-        shank_ids = np.zeros(channel_count, dtype=str)
+        stored_shanks = state.metadata.get("contact_shank_ids")
+        shank_ids = (
+            np.asarray(stored_shanks).astype(str)
+            if stored_shanks is not None and len(stored_shanks) == channel_count
+            else np.zeros(channel_count, dtype=str)
+        )
     try:
         from probeinterface import Probe
 
@@ -446,7 +451,12 @@ def _probe(state: ProjectState) -> dict[str, np.ndarray | int]:
         kcoords = np.arange(channel_count, dtype=np.float32)
     else:
         locations = _channel_locations(channel_count, stored_locations)
-        kcoords = np.zeros(channel_count, dtype=np.float32)
+        stored_shanks = state.metadata.get("contact_shank_ids")
+        kcoords = (
+            np.asarray(stored_shanks, dtype=np.float32)
+            if stored_shanks is not None and len(stored_shanks) == channel_count
+            else np.zeros(channel_count, dtype=np.float32)
+        )
     return {
         "chanMap": np.arange(channel_count, dtype=np.int32),
         "xc": locations[:, 0].astype(np.float32),
@@ -553,6 +563,11 @@ def load_kilosort4_result(
     provenance = {
         "sorter": "Kilosort4",
         "sorter_key": sorter_key,
+        "backend": (
+            "Existing Kilosort4 / Phy-compatible output"
+            if recovered
+            else "Native NeuroEphys AI adapter"
+        ),
         "version": environment.get("kilosort_version", "unknown"),
         "device": environment.get("device_name", "unknown"),
         "settings": settings,
@@ -658,6 +673,7 @@ def run_kilosort4(
     provenance = {
         "sorter": "Kilosort4",
         "sorter_key": sorter_key,
+        "backend": "Native NeuroEphys AI adapter",
         "version": env["kilosort_version"],
         "device": env["device_name"],
         "settings": settings,

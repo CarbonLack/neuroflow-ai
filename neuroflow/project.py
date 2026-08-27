@@ -87,9 +87,11 @@ def _jsonable(value: Any) -> Any:
 
 def save_project(state: ProjectState) -> Path:
     from .sorting_results import ensure_sorting_registry
+    from .project_records import update_human_project_records
 
     ensure_sorting_registry(state)
     state.root.mkdir(parents=True, exist_ok=True)
+    update_human_project_records(state)
     derived = state.root / "derived"
     derived.mkdir(exist_ok=True)
     sortings_dir = derived / "sortings"

@@ -2,5 +2,5 @@ from __future__ import annotations
 
 PRODUCT_NAME = "NeuroEphys AI"
 PRODUCT_SLUG = "neuroephys-ai"
-PRODUCT_VERSION = "1.1.0"
+PRODUCT_VERSION = "1.1.1"
 LEGACY_PROJECT_NAME = "NeuroFlow"

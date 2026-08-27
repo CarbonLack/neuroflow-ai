@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/requirements-install.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fc837d61"></script>
+      <script src="_static/documentation_options.js?v=58fbf978"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -81,6 +81,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="sorting-curation.html">Spike sorting and manual unit curation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#common-result-interface">Common result interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#using-the-side-by-side-comparison">Using the side-by-side comparison</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#kilosort4-workflow">Kilosort4 workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#manual-curation">Manual curation</a></li>
 </ul>
@@ -444,11 +445,11 @@ compatible backend has passed the environment check.</p></li>
 </section>
 <section id="install-the-windows-application">
 <h2>Install the Windows application<a class="headerlink" href="#install-the-windows-application" title="Link to this heading"></a></h2>
-<p>Download <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.1.0.exe</span></code> from GitHub <strong>Releases</strong> or the
+<p>Download <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.1.1.exe</span></code> from GitHub <strong>Releases</strong> or the
 competition delivery folder. The per-user installer requires no administrator
 access and creates desktop and Start-menu shortcuts. Uninstalling the program
 does not delete projects under <code class="docutils literal notranslate"><span class="pre">Documents\NeuroEphysAI</span></code>.</p>
-<p>The portable <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.1.0-Windows-x64-portable.zip</span></code> needs no
+<p>The portable <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.1.1-Windows-x64-portable.zip</span></code> needs no
 installation. Extract the complete archive and run
 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI\NeuroEphysAI.exe</span></code>; the EXE does not work by itself. This
 one-folder layout keeps scientific libraries inspectable and avoids unpacking
@@ -467,7 +468,7 @@ probe succeeds.</p>
 <h2>Python package<a class="headerlink" href="#python-package" title="Link to this heading"></a></h2>
 <p>The validated Python distribution targets 64-bit Python 3.12:</p>
 <div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="n">venv</span>
-<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">0-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
+<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">1-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
 <span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">neuroephys</span><span class="p">.</span><span class="n">exe</span> <span class="n">info</span>
 </pre></div>
 </div>
@@ -481,6 +482,15 @@ probe succeeds.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">desktop</span></code>, <code class="docutils literal notranslate"><span class="pre">mountainsort</span></code>, and <code class="docutils literal notranslate"><span class="pre">kilosort</span></code> extras are optional. The
 last two require a compatible C++ build environment or NVIDIA GPU/CUDA stack,
 respectively, and cannot block installation of the core package.</p>
+<p>After creating <code class="docutils literal notranslate"><span class="pre">.venv</span></code>, a Windows research workstation can install and probe
+all six entries in the curated product catalog in one operation:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">powershell</span> <span class="n">-ExecutionPolicy</span> <span class="n">Bypass</span> <span class="o">-File</span> <span class="n">scripts</span><span class="p">\</span><span class="n">setup_all_sorters</span><span class="p">.</span><span class="n">ps1</span>
+</pre></div>
+</div>
+<p>The script installs CUDA PyTorch, Kilosort4, MountainSort5/isosplit6, and the
+SpikeInterface internal sorters, then reports their actual availability. Other
+SpikeInterface wrappers can require MATLAB, containers, separate licenses, or
+platform tools and are not shown as runnable without a tested product adapter.</p>
 </section>
 <section id="source-development-installation">
 <h2>Source development installation<a class="headerlink" href="#source-development-installation" title="Link to this heading"></a></h2>

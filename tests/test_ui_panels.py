@@ -60,6 +60,42 @@ def test_sorting_workbench_lists_imported_read_only_results():
     assert "read-only" in workbench.selected_description().lower()
 
 
+def test_sorting_workbench_shows_pair_results_side_by_side():
+    QApplication.instance() or QApplication([])
+    workbench = SortingWorkbench("zh_CN")
+    comparison = {
+        "sorters": {
+            "kilosort4": {
+                "unit_count": 125,
+                "spike_count": 752999,
+                "provenance": {"backend": "Kilosort", "version": "4.1.7"},
+            },
+            "spykingcircus2": {
+                "unit_count": 108,
+                "spike_count": 701000,
+                "provenance": {"backend": "SpikeInterface", "version": "0.104.8"},
+            },
+        },
+        "pairwise": [
+            {
+                "sorter_a": "kilosort4",
+                "sorter_b": "spykingcircus2",
+                "matched_unit_count": 91,
+                "mean_matched_agreement": 0.78,
+                "unique_units_a": 34,
+                "unique_units_b": 17,
+            }
+        ],
+    }
+
+    workbench.set_comparison(comparison)
+
+    assert workbench.comparison_table.horizontalHeaderItem(0).text() == "kilosort4"
+    assert workbench.comparison_table.item(0, 0).text() == "125"
+    assert workbench.comparison_table.item(2, 1).text() == "17"
+    assert "不是准确率" in workbench.comparison_result.text()
+
+
 def test_gui_worker_writes_reloadable_structured_audit(tmp_path: Path):
     QApplication.instance() or QApplication([])
     state = ProjectState(
@@ -223,6 +259,9 @@ def test_home_is_reduced_to_new_open_and_examples(tmp_path: Path):
     assert window.input_table.parentWidget().isHidden()
     assert window.file_menu.title() == "文件"
     assert window.edit_menu.title() == "编辑"
+    assert window.home_brand_frame.objectName() == "BrandMarkFrame"
+    assert window.home_brand_frame.graphicsEffect() is not None
+    assert "#BrandMarkFrame" in window.styleSheet()
 
     window.close()
     app.processEvents()

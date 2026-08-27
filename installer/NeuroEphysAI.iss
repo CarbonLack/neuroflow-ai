@@ -1,6 +1,6 @@
 #define MyAppName "NeuroEphys AI"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.1.0"
+  #define MyAppVersion "1.1.1"
 #endif
 #define MyAppPublisher "NeuroEphys AI team"
 #define MyAppURL "https://github.com/CarbonLack/neuroflow-ai"
@@ -22,7 +22,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
-OutputDir=..\release\v1.1.0
+OutputDir=..\release\v1.1.1
 OutputBaseFilename=NeuroEphysAI-Setup-{#MyAppVersion}
 SetupIconFile=..\assets\brand\neuroephys-ai.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}

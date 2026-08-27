@@ -20,6 +20,20 @@ Sorting 把细胞外 spike 事件分配给候选 Unit。不同 sorter 在检测�
 Sorter 特有文件保持不变。比较视图报告匹配、拆分、合并、独有和共识候选。真实数据
 上的两种 sorter 一致度不能当作 ground truth 准确率。
 
+横向比较怎么操作
+------------------
+
+1. 在同一项目、同一原始记录和同一时间窗上保存至少两个 Sorting 结果。
+2. 在第 04 页把“运行后诊断视图”切换为 **Sorter 统一结果与比较**。
+3. 在“Sorting 结果横向对比”中选择一组 Sorter；两列会并排显示 Unit 数、spike 数、
+   独有 Unit、来源和版本。
+4. 图中检查匹配后平均一致度和 Unit 匹配矩阵；项目的
+   ``results/sorting_comparison/`` 同时保存 CSV 与完整 JSON。
+
+计算使用 SpikeInterface 的 ``compare_two_sorters`` 和 ``compare_multiple_sorters``。
+两两比较不假定任一结果是真值，多 Sorter 共识也会受到单个算法弱点影响。官方说明见
+`SpikeInterface comparison 模块 <https://spikeinterface.readthedocs.io/en/latest/modules/comparison.html>`_。
+
 Kilosort4 操作
 --------------
 

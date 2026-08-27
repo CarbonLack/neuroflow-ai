@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import ast
 import csv
 import inspect
+import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -79,6 +81,172 @@ DEVICE_READERS = {
 }
 
 
+def _reader_accepts_keyword(reader, keyword: str) -> bool:
+    """Return whether a SpikeInterface reader accepts a keyword directly or via **kwargs."""
+    parameters = inspect.signature(reader).parameters
+    return keyword in parameters or any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
+    )
+
+
+def _select_recording_channels(recording, channel_ids: list[Any]):
+    """Select channels across current and older SpikeInterface APIs."""
+    if hasattr(recording, "select_channels"):
+        return recording.select_channels(channel_ids)
+    if hasattr(recording, "channel_slice"):
+        return recording.channel_slice(channel_ids=channel_ids)
+    raise RuntimeError(
+        "The installed SpikeInterface recording does not expose a channel-selection API"
+    )
+
+
+def _device_reader_kwargs(
+    extractors,
+    reader,
+    source: Path,
+    device_name: str,
+    requested_stream: str | None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Resolve acquisition streams while keeping an explicit user choice authoritative.
+
+    Open Ephys Binary commonly exposes both an AP and an LFP stream. A blank
+    stream field used to fail with SpikeInterface's "several streams" error.
+    NeuroEphys AI now selects the single AP stream when it is unambiguous, while
+    still accepting either a stream ID or the full stream name from advanced users.
+
+    SpikeInterface extractor source:
+    https://spikeinterface.readthedocs.io/en/latest/modules/extractors.html
+    """
+    kwargs: dict[str, Any] = {}
+    details: dict[str, Any] = {
+        "requested_stream": requested_stream,
+        "available_stream_names": [],
+        "available_stream_ids": [],
+        "stream_selection": "not_required",
+    }
+    stream_names: list[str] = []
+    stream_ids: list[str] = []
+    if device_name == "Open Ephys":
+        try:
+            names, ids = extractors.get_neo_streams("openephysbinary", source)
+            stream_names = [str(value) for value in names]
+            stream_ids = [str(value) for value in ids]
+            details["available_stream_names"] = stream_names
+            details["available_stream_ids"] = stream_ids
+        except Exception as exc:  # noqa: BLE001 - legacy folders have no stream table
+            details["stream_probe_error"] = f"{type(exc).__name__}: {exc}"
+
+    if requested_stream:
+        requested = str(requested_stream).strip()
+        if requested in stream_names and _reader_accepts_keyword(reader, "stream_name"):
+            kwargs["stream_name"] = requested
+            details["resolved_stream_name"] = requested
+        elif _reader_accepts_keyword(reader, "stream_id"):
+            kwargs["stream_id"] = requested
+            details["resolved_stream_id"] = requested
+        details["stream_selection"] = "user_selected"
+        return kwargs, details
+
+    if len(stream_ids) == 1 and _reader_accepts_keyword(reader, "stream_id"):
+        kwargs["stream_id"] = stream_ids[0]
+        details["resolved_stream_id"] = stream_ids[0]
+        details["resolved_stream_name"] = stream_names[0]
+        details["stream_selection"] = "automatic_single_stream"
+        return kwargs, details
+
+    ap_candidates = [
+        (name, stream_ids[index])
+        for index, name in enumerate(stream_names)
+        if index < len(stream_ids) and name.upper().endswith("-AP")
+    ]
+    if len(ap_candidates) == 1 and _reader_accepts_keyword(reader, "stream_id"):
+        name, stream_id = ap_candidates[0]
+        kwargs["stream_id"] = stream_id
+        details["resolved_stream_id"] = stream_id
+        details["resolved_stream_name"] = name
+        details["stream_selection"] = "automatic_ap_stream"
+    return kwargs, details
+
+
+def inspect_binary_sidecars(source: Path) -> dict[str, Any]:
+    """Safely inspect Kilosort/Phy sidecars beside a generic binary recording."""
+    source = Path(source)
+    candidates = [
+        source.parent / "params.py",
+        source.parent / "kilosort4" / "params.py",
+        source.parent / "kilosort" / "params.py",
+    ]
+    params_path = next((path for path in candidates if path.is_file()), None)
+    result: dict[str, Any] = {
+        "source": str(source),
+        "params_path": str(params_path) if params_path else None,
+    }
+    if params_path:
+        try:
+            tree = ast.parse(params_path.read_text(encoding="utf-8-sig"))
+            values: dict[str, Any] = {}
+            for node in tree.body:
+                if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+                    continue
+                target = node.targets[0]
+                if not isinstance(target, ast.Name):
+                    continue
+                try:
+                    values[target.id] = ast.literal_eval(node.value)
+                except (ValueError, TypeError):
+                    continue
+            result.update(
+                {
+                    "sampling_rate": values.get("sample_rate"),
+                    "channel_count": values.get("n_channels_dat"),
+                    "dtype": values.get("dtype"),
+                    "declared_data_path": values.get("dat_path"),
+                }
+            )
+        except (OSError, UnicodeDecodeError, SyntaxError) as exc:
+            result["params_error"] = f"{type(exc).__name__}: {exc}"
+
+    geometry_roots = [source.parent / "kilosort4", source.parent / "kilosort"]
+    geometry_candidates = [
+        path
+        for root in geometry_roots
+        if root.is_dir()
+        for path in root.glob("*.json")
+        if not path.name.startswith(".")
+    ]
+    for geometry_path in geometry_candidates:
+        try:
+            payload = json.loads(geometry_path.read_text(encoding="utf-8-sig"))
+            chan_map = np.asarray(payload.get("chanMap", []), dtype=int)
+            xc = np.asarray(payload.get("xc", []), dtype=float)
+            yc = np.asarray(payload.get("yc", []), dtype=float)
+            shanks = np.asarray(payload.get("kcoords", []), dtype=int)
+            count = int(payload.get("n_chan", len(chan_map)))
+            if not (
+                count > 0
+                and len(chan_map) == len(xc) == len(yc) == count
+                and np.array_equal(np.sort(chan_map), np.arange(count))
+            ):
+                continue
+            positions = np.zeros((count, 2), dtype=float)
+            positions[chan_map] = np.column_stack((xc, yc))
+            ordered_shanks = np.zeros(count, dtype=int)
+            if len(shanks) == count:
+                ordered_shanks[chan_map] = shanks
+            result.update(
+                {
+                    "geometry_path": str(geometry_path),
+                    "contact_positions_um": positions.tolist(),
+                    "contact_shank_ids": ordered_shanks.tolist(),
+                }
+            )
+            break
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
+            continue
+    return result
+
+
 def create_simulated_project(
     project_root: Path,
     electrode_type: str = "Neuropixels-like",
@@ -151,6 +319,21 @@ def import_binary_recording(
             event["time_seconds"] = float(event["time_seconds"])
             event.setdefault("trial", index + 1)
             event.setdefault("condition", "all")
+    sidecars = inspect_binary_sidecars(source)
+    metadata: dict[str, Any] = {
+        "copy_source": copy_source,
+        "can_run_sorting": dtype == "int16",
+        "behavior_source": str(events_path) if events_path else None,
+        "detected_sidecars": sidecars,
+    }
+    detected_positions = sidecars.get("contact_positions_um")
+    if detected_positions and len(detected_positions) == channel_count:
+        metadata["contact_positions_um"] = detected_positions
+        metadata["contact_shank_ids"] = sidecars.get("contact_shank_ids", [])
+        metadata["probe"] = {
+            "geometry_mode": "sidecar_geometry",
+            "geometry_source": sidecars.get("geometry_path"),
+        }
     state = ProjectState(
         root=project_root,
         name=source.stem,
@@ -164,13 +347,14 @@ def import_binary_recording(
         scale_uv_per_bit=scale_uv_per_bit,
         electrode_type=electrode_type,
         events=events,
-        metadata={
-            "copy_source": copy_source,
-            "can_run_sorting": dtype == "int16",
-            "behavior_source": str(events_path) if events_path else None,
-        },
+        metadata=metadata,
     )
     state.log(f"Generic binary recording imported: {source.name}")
+    if sidecars.get("params_path"):
+        state.log(
+            "Kilosort/Phy sidecar detected: sampling rate, channel count, dtype, "
+            "and available probe geometry were recorded"
+        )
     save_project(state)
     return state
 
@@ -193,9 +377,13 @@ def _import_device_recording_converted(
     if not expects_directory and not source.is_file():
         raise ValueError(f"{device_name} 需要选择记录文件")
     reader = getattr(se, reader_name)
-    kwargs = {}
-    if stream_id and "stream_id" in inspect.signature(reader).parameters:
-        kwargs["stream_id"] = stream_id
+    kwargs, stream_details = _device_reader_kwargs(
+        se,
+        reader,
+        source,
+        device_name,
+        stream_id,
+    )
     recording = reader(source, **kwargs)
     if recording.get_num_segments() != 1:
         raise ValueError("当前版本要求选择单一 recording segment")
@@ -229,7 +417,8 @@ def _import_device_recording_converted(
             "reader": f"SpikeInterface {reader_name}",
             "source_dtype": source_dtype,
             "normalized_dtype": "int16",
-            "stream_id": stream_id,
+            "stream_id": stream_details.get("resolved_stream_id", stream_id),
+            "stream_details": stream_details,
             "conversion_notice": "缓存为交错 int16，原始文件保持只读且不修改。",
         },
     )
@@ -266,6 +455,8 @@ def import_device_recording(
     )
     digital_events: list[dict[str, Any]] = []
     acquisition_preprocessing: dict[str, Any] = {}
+    contact_positions: list[list[float]] | None = None
+    contact_shank_ids: list[int] | None = None
     if legacy_folder is not None:
         inspected = inspect_open_ephys_legacy(
             legacy_folder,
@@ -317,9 +508,13 @@ def import_device_recording(
         }
     else:
         reader = getattr(se, reader_name)
-        kwargs: dict[str, Any] = {}
-        if stream_id and "stream_id" in inspect.signature(reader).parameters:
-            kwargs["stream_id"] = stream_id
+        kwargs, stream_details = _device_reader_kwargs(
+            se,
+            reader,
+            source,
+            device_name,
+            stream_id,
+        )
         recording = reader(source, **kwargs)
         if recording.get_num_segments() != 1:
             raise ValueError("Select a source containing one recording segment")
@@ -327,8 +522,9 @@ def import_device_recording(
         selected_ids = parse_channel_selection(channel_selection, available)
         if selected_ids != available:
             resolved = {str(value): value for value in recording.channel_ids}
-            recording = recording.channel_slice(
-                channel_ids=[resolved[value] for value in selected_ids]
+            recording = _select_recording_channels(
+                recording,
+                [resolved[value] for value in selected_ids],
             )
         sampling_rate = float(recording.get_sampling_frequency())
         channel_count = int(recording.get_num_channels())
@@ -338,12 +534,25 @@ def import_device_recording(
             gains = np.asarray(recording.get_channel_gains(), dtype=float)
         except Exception:  # noqa: BLE001 - not every extractor exposes gains
             gains = np.ones(channel_count, dtype=float)
+        try:
+            positions = np.asarray(recording.get_channel_locations(), dtype=float)
+            if positions.shape == (channel_count, 2) and np.all(np.isfinite(positions)):
+                contact_positions = positions.tolist()
+        except Exception:  # noqa: BLE001 - geometry is optional for some readers
+            contact_positions = None
+        try:
+            groups = np.asarray(recording.get_channel_groups(), dtype=int)
+            if groups.shape == (channel_count,):
+                contact_shank_ids = groups.tolist()
+        except Exception:  # noqa: BLE001 - not every reader exposes channel groups
+            contact_shank_ids = None
         adapter = {
             "type": "spikeinterface",
             "format": reader_name,
             "reader_name": reader_name,
             "source_path": str(source),
-            "stream_id": stream_id,
+            "stream_id": stream_details.get("resolved_stream_id", stream_id),
+            "stream_details": stream_details,
             "channel_ids": selected_ids,
             "start_frame": 0,
             "end_frame": None,
@@ -371,7 +580,11 @@ def import_device_recording(
             "device": device_name,
             "reader": f"SpikeInterface {reader_name}",
             "source_dtype": source_dtype,
-            "stream_id": stream_id,
+            "stream_id": adapter.get("stream_id"),
+            "stream_details": stream_details if legacy_folder is None else {
+                "requested_stream": stream_id,
+                "stream_selection": "legacy_channel_files",
+            },
             "selected_channel_ids": selected_ids,
             "recording_adapter": adapter,
             "digital_events": digital_events,
@@ -382,6 +595,8 @@ def import_device_recording(
                 "an interleaved cache is created only when a sorter requires it."
             ),
             "can_run_sorting": source_dtype == "int16",
+            "contact_positions_um": contact_positions,
+            "contact_shank_ids": contact_shank_ids,
         },
     )
     state.log(

@@ -19,7 +19,7 @@ def test_release_identity_is_consistent():
     )
 
     assert PRODUCT_NAME == "NeuroEphys AI"
-    assert PRODUCT_VERSION == "1.1.0"
+    assert PRODUCT_VERSION == "1.1.1"
     assert ne.__version__ == PRODUCT_VERSION
     assert metadata["project"]["name"] == "neuroephys-ai"
     assert metadata["project"]["version"] == PRODUCT_VERSION

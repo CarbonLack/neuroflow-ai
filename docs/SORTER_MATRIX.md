@@ -16,6 +16,13 @@ That function probes every registered external backend, including unrelated MATL
 and compiled tools. NeuroFlow probes only the six entries above and catches every
 backend failure independently.
 
+These six entries are the deliberately supported NeuroEphys AI catalog, and the
+formal Windows analysis environment installs all six. SpikeInterface also wraps
+additional research sorters, but several require MATLAB, Docker/Singularity,
+platform-specific compiled binaries, or separate licenses. They are not labeled
+"installed" in NeuroEphys AI unless an explicit adapter, environment check,
+provenance contract, and real run test have been added.
+
 ## Reproducibility
 
 Every successful run stores sorter name, key, package version, execution backend,
