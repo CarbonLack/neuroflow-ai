@@ -20,7 +20,7 @@
 | 默认分析工作区 | `D:\PhD\AI大赛\NeuroEphysAI_Workspace` |
 | 完整安装程序 | `D:\PhD\AI大赛\本地正式版\v1.2.0\NeuroEphysAI-Setup-1.2.0-Full.exe` |
 | Python wheel 和源码包 | `D:\PhD\AI大赛\本地正式版\v1.2.0\python-package` |
-| 从 GitHub 下载并核对的 Python 包及说明 | `D:\PhD\AI大赛\本地正式版\v1.2.0\github-artifacts` |
+| 从 GitHub 下载并核对的核心安装版、便携版、Python 包及说明 | `D:\PhD\AI大赛\本地正式版\v1.2.0\github-artifacts` |
 | 本轮测试报告及生成结果 | `D:\PhD\AI大赛\发布验证\v1.2.0` |
 | 当前已安装 App | `C:\Users\admin\AppData\Local\Programs\NeuroEphysAI\NeuroEphysAI.exe` |
 | 保留的旧安装包 | `D:\PhD\AI大赛\本地正式版\v1.1.1\NeuroEphysAI-Setup-1.1.1-Full.exe` |
@@ -45,9 +45,10 @@ App 安装在 Windows 用户程序目录，不代表实验项目保存在 C 盘�
 - 教学数据实际运行六个 sorter：Kilosort 4、MountainSort5、SpyKING CIRCUS 2、Tridesclous 2、Simple、Lupin；结果与比较输出保存在测试目录。
 - Kilosort 检查使用本机 RTX 3080，不能据此保证任意显卡或驱动兼容。
 - Python 包元数据检查通过；脱离源码目录安装 wheel 后，创建教学项目、原始信号质控和保存通过。该检查使用现有科学计算依赖，不等同于全新电脑安装验证。
-- 已从公开下载地址取回 GitHub Python 包和说明，文件大小及 SHA256 与服务器一致；wheel 中 46 个 Python 源文件与本机运行源码一致（忽略平台换行符差异）。
+- 已从公开下载地址取回 GitHub Python 包和说明，文件大小及 SHA256 与服务器一致；wheel 中 52 个 Python 源文件与本机运行源码一致（含公共调用接口，忽略平台换行符差异）。
 - 完整安装程序退出码为 0；安装后启动检查通过，版本为 1.2.0；已安装程序与验收打包程序的 SHA256 一致。
 - 安装后程序窗口已出现且标题为 v1.2.0；最后一次交互截图因桌面接口“GetCursorPos failed: 拒绝访问 (0x80070005)”无法获取，未将此项计为通过。
+- GitHub 公开便携版已下载、校验和独立解压，本机启动、SVG/PDF/PNG 导出及离线 AI 确认保护检查均通过；报告位于 `D:\PhD\AI大赛\发布验证\v1.2.0\public-core-check`。
 
 ## GitHub 与网页
 
@@ -56,6 +57,7 @@ App 安装在 Windows 用户程序目录，不代表实验项目保存在 C 盘�
 - [网页部署](https://github.com/CarbonLack/neuroflow-ai/actions/runs/34190956246)成功。
 - 公开中文手册 HTTP 200，页面包含新版任务指南入口。
 - [下载页](https://github.com/CarbonLack/neuroflow-ai/releases/tag/v1.2.0)；[中文操作手册](https://carbonlack.github.io/neuroflow-ai/zh/)。
+- 完整包本地校验已通过。完整包的云端上传单独进行，只有下载页出现 `NeuroEphysAI-Setup-1.2.0-Full.exe` 且服务器 SHA256 与下列值一致，才算完整包云端交付完成：`dcf676ff2abb99768a594569160903631ad5759874d7027c1c8ac252c4b244c6`。不要把核心包构建成功误认为完整包已上传。
 
 ## 边界
 
