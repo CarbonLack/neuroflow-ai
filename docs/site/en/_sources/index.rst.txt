@@ -1,67 +1,79 @@
-NeuroEphys AI
-==============
-
-**Production release · v1.1.1**
-
-NeuroEphys AI is a local-first workbench for extracellular multichannel
-electrophysiology. It keeps raw-data import, quality control, preprocessing,
-spike sorting, manual unit curation, behavioral synchronization, neural
-analysis, statistics, decoding, figure editing, and provenance in one
-recoverable project.
-
-Version 1.0 provides both a self-contained Windows application and the
-scriptable ``neuroephys-ai`` Python package. Every candidate unit, statistical
-result, machine-learning result, and biological interpretation still requires
-scientific review.
+NeuroEphys AI user manual
+==================================================
 
 .. raw:: html
 
-   <img class="product-shot" src="../assets/neuroflow-analysis.png"
-        alt="NeuroEphys AI analysis workspace">
+   <p class="manual-kicker">Local electrophysiology workbench · v1.2.0</p>
 
-What is currently working
--------------------------
+Work from the files you have: inspect raw recordings, sort spikes, review units,
+align events, and export results. These guides follow the application's controls.
+For a first visit, use a teaching example to run QC, save a figure, and reopen the project.
 
-* Teaching simulations for Neuropixels-like probes, tetrodes, and independent
-  microwires, including behavior, TTL, and known spike times.
-* Direct import routes for generic binary and supported acquisition systems.
-* Replaceable sorter outputs normalized to seconds-based unit/spike records.
-* Manual unit review with waveform, refractory-period, amplitude, and stability
-  evidence.
-* Event-aligned raster, PSTH, population heatmaps, statistics, decoding, and
-  editable vector-figure export.
-* Optional controlled AI assistance. Manual analysis remains available when no
-  model service is configured.
+.. raw:: html
 
-Language
---------
+   <nav class="task-links" aria-label="Start with your task">
+     <a class="task-link" href="quick-start.html"><strong>Try your first project</strong><span>Open the 8-channel example, run QC, save a figure, and reopen your work.</span></a>
+     <a class="task-link" href="first-project.html"><strong>Use your own data</strong><span>Choose an entry for raw recordings, existing sorting, or a saved project.</span></a>
+     <a class="task-link" href="workspace.html"><strong>Find a control</strong><span>Adjust three columns, select an analysis, use help, and find shortcuts.</span></a>
+     <a class="task-link" href="troubleshooting.html"><strong>Resolve a problem</strong><span>Check unavailable analyses, incorrect inputs, missing plots, and moved files.</span></a>
+   </nav>
 
-`Chinese documentation <../zh/index.html>`_ · English documentation
+.. raw:: html
+
+   <a href="../assets/neuroephys-workspace-zh.png"><img class="product-shot" src="../assets/neuroephys-workspace-zh.png" alt="NeuroEphys AI workspace with workflow navigation, analysis, and assistance"></a>
+   <p class="figure-note">Click the screenshot to inspect it at full size. This overview uses the Chinese UI; control names below use the English UI.</p>
+
+Choose a route
+--------------
+
+**Raw voltage available:** import and inspect the recording before choosing
+preprocessing and a sorter. Review candidate units before downstream analyses.
+
+**Kilosort, Phy, or manually sorted output available:** import the result, check
+units and time conversion, and continue from unit QC. Sorting output alone cannot
+replace raw voltage for rerunning sorting or recovering missing waveforms.
+
+**Saved NeuroEphys AI project available:** choose **Open / import project** and
+select ``neuroflow_project.json``. Keep the project folder and its linked source recording.
+
+The eleven stages describe the workflow. Available analyses depend on the project's
+inputs: event analyses need events; LFP analyses need preserved low frequencies.
+Check the selected analysis in the bottom run bar before starting it.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Getting started
+   :maxdepth: 1
+   :caption: Start and work with projects
 
+   quick-start
    requirements-install
    first-project
+   workspace
+   task-guide
    workflow
+   provenance
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Scientific workflow
+   :maxdepth: 1
+   :caption: Find an analysis guide
 
    sorting-curation
    events-analysis
    statistics-ml
+   figures
+   ai-assistant
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Product guide
+   :maxdepth: 1
+   :caption: Parameters, validation, and support
 
-   ai-assistant
-   figures
    parameter-reference
-   provenance
    real-data-validation
    troubleshooting
    sources
+
+The Windows application and Python package share analysis capabilities; some script
+options do not have an application control. See :doc:`real-data-validation` for the
+tested scope of each module. Review candidate units and interpretations in the context
+of the experiment.
+
+`Chinese manual <../zh/index.html>`_ · `Download releases <https://github.com/CarbonLack/neuroflow-ai/releases>`_

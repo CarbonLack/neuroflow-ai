@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.2.0
+
+- Rebuilt bilingual help around 18 searchable tasks with steps, checks, saved
+  output locations, readable method references, text zoom, and read history.
+- Kept the purple-black palette and bordered logo while simplifying the home,
+  navigation, line icons, workbench hierarchy, and narrow-window controls.
+- Added Ctrl+K command search, recent projects, and unsaved-work checks when
+  switching projects. The run bar now reports progress for the selected task.
+- Collapsed optional plot tools without removing editing/export capabilities;
+  preserved all three resizable columns and scientific analysis choices.
+- Shared actual operating instructions between offline help and bilingual web
+  manuals; separated method reference values from adjustable App controls.
+
 ## v1.1.1
 
 - Added automatic Open Ephys AP/LFP stream resolution and current/legacy

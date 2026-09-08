@@ -23,6 +23,7 @@ validation_artifacts/
 local_projects/
 private_data/
 structured_runs.jsonl
+neuroflow_runtime.log
 ui_*.png
 *.bin
 *.dat

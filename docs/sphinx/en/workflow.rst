@@ -27,9 +27,11 @@ decision.
 03 Preprocessing
 ----------------
 
-Preview a short segment before processing a long record. The spike branch
-exposes filtering and referencing choices. The LFP branch is enabled only when
-low-frequency content exists in the acquisition.
+Inspect the spike-processing chain and its preview before running sorting.
+The current App uses a predefined spike-band filter and reference; not every
+parameter described in the method reference has a desktop control. Advanced
+configuration is available through the Python interface. LFP analysis requires
+low-frequency content to have been preserved in the acquisition.
 
 04 Spike sorting
 ----------------

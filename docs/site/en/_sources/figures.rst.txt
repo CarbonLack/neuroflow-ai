@@ -3,7 +3,8 @@ Figure inspection and publication export
 
 Every scientific page exposes the current figure as an interactive Matplotlib
 canvas. Use the toolbar to reset, move, zoom, inspect points, and save. Select a
-panel to enlarge, edit, or export it without cropping a screenshot.
+panel to enlarge, edit, or export it without cropping a screenshot. Expand
+**Plot tools** above the figure to reveal style, panel selection, and export controls.
 
 Figure Studio
 -------------

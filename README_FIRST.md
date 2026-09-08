@@ -1,8 +1,8 @@
-# NeuroEphys AI 1.1 — 首次使用 / First read
+# NeuroEphys AI 1.2 — 首次使用 / First read
 
 ## Windows 普通用户
 
-1. 推荐运行 `NeuroEphysAI-Setup-1.1.1.exe`，安装过程不需要管理员权限。
+1. 推荐运行 `NeuroEphysAI-Setup-1.2.0.exe`，安装过程不需要管理员权限。
 2. 安装完成后双击桌面或开始菜单中的 **NeuroEphys AI**。
 3. 也可以使用便携 ZIP：完整解压后双击
    `NeuroEphysAI\NeuroEphysAI.exe`。必须保留 `_internal` 等同目录内容，不能只复制 EXE。
@@ -11,6 +11,9 @@
 5. App 已包含 Python 与核心科学依赖，不要求另装 Python、Conda 或编译器。
 
 首次启动可进入 **示例项目**，选择一套教学模拟，确认界面、图表和导出都能工作。
+按 **Ctrl+K** 查找功能；**Ctrl+Shift+H** 打开新版教程中心，按 **Ctrl+F** 搜索操作。
+教程分“操作步骤 / 参数说明 / 遇到问题”，字号可调，并可跳转到对应页面。
+在 **图表工具** 中展开绘图样式、子图与波形设置；**文件 → 最近的项目** 继续上次工作。
 工作区默认同时显示左侧流程、中间分析和右侧 AI/帮助/日志；三栏可拖动调宽，左栏可
 缩略为步骤编号。每个阶段第一次打开时会显示可关闭的新手引导。Sorter 管理页显示当前
 电脑上每个后端的真实状态。核心发行版包含 CPU 分析链；Kilosort4 依赖兼容的 NVIDIA
@@ -27,7 +30,7 @@ Python 3.12：
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.1.1-py3-none-any.whl
+.\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.2.0-py3-none-any.whl
 .\.venv\Scripts\neuroephys.exe info
 ```
 
@@ -56,7 +59,7 @@ print(ne.__version__, qc["quality_score"])
 
 ## English quick start
 
-Run `NeuroEphysAI-Setup-1.1.1.exe`, then open **NeuroEphys AI** from the desktop
+Run `NeuroEphysAI-Setup-1.2.0.exe`, then open **NeuroEphys AI** from the desktop
 or Start menu. The installer is per-user and requires no administrator access.
 For the portable edition, extract the complete ZIP and run
 `NeuroEphysAI\NeuroEphysAI.exe`; do not copy the EXE by itself. Python and the

@@ -1,29 +1,36 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>NeuroEphys AI Documentation</title>
-    <link rel="stylesheet" href="styles.css?v=0.8.0">
-  </head>
-  <body class="language-gateway">
-    <main class="gateway-panel">
-      <p class="eyebrow">NeuroEphys AI Documentation</p>
-      <h1>选择操作手册语言</h1>
-      <p class="lead">每套手册只显示一种语言；专有软件名和参数名保持原名。</p>
-      <div class="gateway-actions">
-        <a class="gateway-button primary" data-language-link="zh" href="zh/index.html">中文</a>
-        <a class="gateway-button" data-language-link="en" href="en/index.html">English</a>
-      </div>
-    </main>
-    <script>
-      const preferred = localStorage.getItem("neuroflow-docs-language");
-      if (preferred === "zh" || preferred === "en") {
-        location.replace(`${preferred}/index.html`);
-      }
-      document.querySelectorAll("[data-language-link]").forEach((link) => {
-        link.addEventListener("click", () => localStorage.setItem("neuroflow-docs-language", link.dataset.languageLink));
-      });
-    </script>
-  </body>
-</html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="NeuroEphys AI 电生理工作台：操作手册、教学练习、Windows App 与 Python 包。">
+<title>NeuroEphys AI · 使用手册</title>
+<link rel="icon" href="zh/_static/neuroephys-ai-mark.svg">
+<style>
+:root{color-scheme:dark;font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:#0d0c14;color:#f2edf5}
+*{box-sizing:border-box}body{margin:0}a{color:inherit;text-decoration:none}a:focus-visible{outline:2px solid #d885e9;outline-offset:5px}
+header{max-width:1160px;margin:auto;padding:26px 30px;display:flex;justify-content:space-between;border-bottom:1px solid #302a3c;font-size:14px}header span{font-weight:600}header a{color:#bdb3cc}
+main{max-width:1020px;margin:auto;padding:72px 30px 48px}.intro{display:flex;align-items:center;gap:28px}.mark{width:94px;height:94px;padding:15px;border:1px solid #756681;border-radius:22px;background:#171521;box-shadow:0 8px 28px #d885e91a}
+.kicker{font-size:12px;color:#bdb3cc;letter-spacing:.12em}h1{font-size:40px;font-weight:600;letter-spacing:-.03em;margin:10px 0}.lead{color:#bdb3cc;line-height:1.8;max-width:680px;font-size:17px;margin:26px 0 40px}
+.languages{display:grid;grid-template-columns:1fr 1fr;gap:18px}.entry{padding:24px 26px;border:1px solid #4a425b;background:#171521;border-radius:12px;transition:background .15s,border-color .15s,transform .15s}.entry:hover{background:#211d2b;border-color:#b08bbc;transform:translateY(-2px)}
+.entry strong{font-size:23px;font-weight:600;display:flex;justify-content:space-between;margin-bottom:12px}.entry span{color:#c7b9d0;line-height:1.7;font-size:14px}.entry b{color:#d885e9;font-weight:400}
+.links{display:flex;gap:26px;flex-wrap:wrap;margin:26px 0 52px;font-size:14px;color:#c7b9d0}.links a:hover{color:#d885e9}.preview{width:100%;height:auto;border:1px solid #4a425b;border-radius:12px;display:block}.caption{font-size:12px;color:#a79db5;line-height:1.8}
+footer{max-width:1020px;margin:auto;padding:20px 30px 35px;color:#a79db5;font-size:12px;border-top:1px solid #302a3c}
+@media(max-width:640px){main{padding-top:40px}.intro{gap:18px}.mark{width:72px;height:72px}h1{font-size:29px}.languages{grid-template-columns:1fr}.lead{font-size:15px}}
+@media(prefers-reduced-motion:reduce){.entry{transition:none}.entry:hover{transform:none}}
+</style>
+</head>
+<body>
+<header><span>NeuroEphys AI</span><a href="https://github.com/CarbonLack/neuroflow-ai/releases/latest">下载 / Downloads ↗</a></header>
+<main>
+<div class="intro"><img class="mark" src="zh/_static/neuroephys-ai-mark.svg" alt="NeuroEphys AI"><div><div class="kicker">THE WORKBENCH GUIDE · 1.2</div><h1>NeuroEphys AI 使用手册</h1></div></div>
+<p class="lead">从采集记录到质控、排序和结果导出。按手头的数据选择起点，在同一项目里保存参数、图表和实验判断。</p>
+<nav class="languages" aria-label="手册语言 / Manual language">
+<a class="entry" href="zh/index.html"><strong>中文手册 <b>↗</b></strong><span>第一次使用、真实数据入口、逐项操作与问题排查。</span></a>
+<a class="entry" href="en/index.html" lang="en"><strong>English manual <b>↗</b></strong><span>Getting started, data inputs, working guides and troubleshooting.</span></a>
+</nav>
+<nav class="links" aria-label="快捷入口"><a href="zh/quick-start.html">完成第一个小项目 →</a><a href="zh/workspace.html">认识工作区 →</a><a href="zh/task-guide.html">按操作查阅 →</a><a href="zh/requirements-install.html">App 与 Python 包 →</a></nav>
+<a href="zh/workspace.html"><img class="preview" src="assets/neuroephys-workspace-zh.png" alt="三栏工作区：分析流程、图表、助手"></a>
+<p class="caption">教学数据界面。Windows App 支持离线分析；在线 AI 按需要配置。</p>
+</main>
+<footer>NeuroEphys AI · 本地电生理分析工作台</footer>
+</body></html>

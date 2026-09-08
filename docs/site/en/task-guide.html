@@ -1,0 +1,793 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task guide &mdash; NeuroEphys AI Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
+
+
+    <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
+    <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/task-guide.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=6efca38a"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Complete workflow" href="workflow.html" />
+    <link rel="prev" title="Using the workspace" href="workspace.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+
+          <a href="index.html" class="icon icon-home">
+            NeuroEphys AI
+              <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Start and work with projects</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">First use: complete a small project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#open-a-teaching-example">1. Open a teaching example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#run-raw-qc">2. Run raw QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#save-one-figure">3. Save one figure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#save-and-reopen">4. Save and reopen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#continue-with-sorting">Continue with sorting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="requirements-install.html">System requirements and installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#minimum-practical-configuration">Minimum practical configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#install-the-windows-application">Install the Windows application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#python-package">Python package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#source-development-installation">Source development installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements-install.html#sorter-environments">Sorter environments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="first-project.html">Create and reopen a project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#create-the-project">Create the project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#layout-and-beginner-guidance">Layout and beginner guidance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#acquisition-metadata">Acquisition metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#save-and-recover">Save and recover</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first-project.html#visible-changes-after-import">Visible changes after import</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workspace.html">Using the workspace</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workspace.html#find-an-action">Find an action</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workspace.html#arrange-the-columns">Arrange the columns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workspace.html#help-while-working">Help while working</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workspace.html#run-and-save">Run and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workspace.html#shortcuts">Shortcuts</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Task guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#try-an-example">Try an example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#import-a-raw-recording">Import a raw recording</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#continue-from-sorted-units">Continue from sorted units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resume-a-saved-project">Resume a saved project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inspect-traces-and-channel-quality">Inspect traces and channel quality</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preview-ap-and-lfp-preprocessing">Preview AP and LFP preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#select-and-run-a-sorter">Select and run a sorter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compare-sorting-results">Compare sorting results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#review-and-label-units">Review and label units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#align-behavior-to-the-recording">Align behavior to the recording</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inspect-behavior-and-trials">Inspect behavior and trials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#choose-a-neural-analysis">Choose a neural analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compare-population-responses">Compare population responses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inspect-fine-spike-timing">Inspect fine spike timing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inspect-statistical-evidence">Inspect statistical evidence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-classification-or-regression">Run classification or regression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#save-projects-figures-and-records">Save projects, figures, and records</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#arrange-panels-ai-and-guidance">Arrange panels, AI, and guidance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Complete workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#data-and-project">01 Data and project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#raw-qc">02 Raw QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#preprocessing">03 Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#spike-sorting">04 Spike sorting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#unit-qc">05 Unit QC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#synchronization-and-behavior">06–07 Synchronization and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#neural-analysis">08 Neural analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#statistics-and-decoding">09–10 Statistics and decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#publication-and-reproducibility">11 Publication and reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="provenance.html">Intermediate products, logs, and provenance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#run-record-fields">Run record fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#project-recovery">Project recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#ai-evidence">AI evidence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="provenance.html#output-status">Output status</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Find an analysis guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sorting-curation.html">Spike sorting and manual unit curation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#common-result-interface">Common result interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#using-the-side-by-side-comparison">Using the side-by-side comparison</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#kilosort4-workflow">Kilosort4 workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sorting-curation.html#manual-curation">Manual curation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="events-analysis.html">Behavior synchronization and event-aligned analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#import-and-map-events">Import and map events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#alignment-quality">Alignment quality</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#raster-and-psth">Raster and PSTH</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#single-trial-and-population-dynamics">Single-trial and population dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#fine-timing-relationships">Fine-timing relationships</a></li>
+<li class="toctree-l2"><a class="reference internal" href="events-analysis.html#quality-checks">Quality checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="statistics-ml.html">Statistics, machine learning, and scientific limits</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#statistical-suite">Statistical suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#decoding">Decoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#interpreting-the-figure">Interpreting the figure</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="figures.html">Figure inspection and publication export</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#figure-studio">Figure Studio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#export-choices">Export choices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#publication-checks">Publication checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">Controlled AI assistant</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#operating-modes">Operating modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#providers">Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#cloud-data-preview">Cloud-data preview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#scientific-response-structure">Scientific response structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#local-ollama">Local Ollama</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Parameters, validation, and support</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="parameter-reference.html">Controls and method parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#import-a-raw-recording">Import a raw recording</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#sampling-rate">01 · Sampling rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#channel-count">01 · Channel count</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#dtype">01 · dtype</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#v-bit">01 · µV / bit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#copy-source">01 · Copy source</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#inspect-traces-and-channel-quality">Inspect traces and channel quality</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#time-start">02 · Time start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#window">02 · Window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#channel-range">02 · Channel range</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#display-gain">02 · Display gain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#line-frequency">02 · Line frequency</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#preview-ap-and-lfp-preprocessing">Preview AP and LFP preprocessing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#ap-band">03 · AP band</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#lfp-low-pass">03 · LFP low-pass</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#lfp-sampling-rate">03 · LFP sampling rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#reference">03 · Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#notch">03 · Notch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#select-and-run-a-sorter">Select and run a sorter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#sorter">04 · Sorter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#n-chan-bin">04 · n_chan_bin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#batch-size">04 · batch_size</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#nblocks">04 · nblocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#th-universal-th-learned">04 · Th_universal / Th_learned</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#tmin-tmax">04 · tmin / tmax</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#duplicate-spike-ms">04 · duplicate_spike_ms</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#review-and-label-units">Review and label units</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#firing-rate">05 · Firing rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#isi-violation-window">05 · ISI violation window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#snr">05 · SNR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#amplitude-stability">05 · Amplitude stability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#contamination-threshold">05 · Contamination threshold</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#align-behavior-to-the-recording">Align behavior to the recording</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#behavior-time-column">06 · Behavior time column</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#ttl-pairing">06 · TTL pairing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#clock-model">06 · Clock model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#residual-tolerance">06 · Residual tolerance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#shared-clock-assumption">06 · Shared-clock assumption</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#inspect-behavior-and-trials">Inspect behavior and trials</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#condition-column">07 · Condition column</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#reaction-time-start-end">07 · Reaction-time start/end</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#minimum-trials">07 · Minimum trials</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#outlier-rule">07 · Outlier rule</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#choose-a-neural-analysis">Choose a neural analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#alignment-event">08 · Alignment event</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#id1">08 · Window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#bin-size">08 · Bin size</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#smoothing">08 · Smoothing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#psd-method">08 · PSD method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#surrogates">08 · Surrogates</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#inspect-statistical-evidence">Inspect statistical evidence</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#sampling-unit">09 · Sampling unit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#paired">09 · Paired</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#alpha">09 · Alpha</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#multiple-comparison">09 · Multiple comparison</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#resamples">09 · Resamples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#run-classification-or-regression">Run classification or regression</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#feature-window">10 · Feature window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#cross-validation">10 · Cross-validation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#scaling">10 · Scaling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#class-weighting">10 · Class weighting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#permutation-count">10 · Permutation count</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#save-projects-figures-and-records">Save projects, figures, and records</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#format">11 · Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#figure-size">11 · Figure size</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#dpi">11 · DPI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#axis-grid-spine">11 · Axis/grid/spine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#project-source-mode">11 · Project source mode</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="real-data-validation.html">Real-data validation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-questions">Validation questions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#data-and-acquisition-limits">Data and acquisition limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#sorter-cross-check">Sorter cross-check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#external-offline-sorter-results">External Offline Sorter results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#behavior-and-synchronization">Behavior and synchronization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#statistical-and-decoding-limits">Statistical and decoding limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#project-recovery-and-provenance">Project recovery and provenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#trautmann-2025-public-single-trial-acceptance-test">Trautmann 2025 public single-trial acceptance test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real-data-validation.html#validation-labels">Validation labels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#missing-figure-controls-or-a-cramped-window">Missing figure controls or a cramped window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#small-help-text-or-repeated-walkthrough-prompts">Small help text or repeated walkthrough prompts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#a-recent-project-is-disabled-or-a-recording-is-missing">A recent project is disabled or a recording is missing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#application-does-not-start">Application does not start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#sorter-appears-unavailable">Sorter appears unavailable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#psth-conditions-look-identical">PSTH conditions look identical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#lfp-controls-are-disabled">LFP controls are disabled</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#ai-service-fails">AI service fails</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#useful-issue-report">Useful issue report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">Methods, software, and sources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#core-sources">Core sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sources.html#attribution-and-data">Attribution and data</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">NeuroEphys AI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Task guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/task-guide.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="task-guide">
+<h1>Task guide<a class="headerlink" href="#task-guide" title="Link to this heading"></a></h1>
+<p>These instructions also appear in the desktop Tutorial center.</p>
+<nav class="contents local" id="on-this-page">
+<p class="topic-title">On this page</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#try-an-example" id="id1">Try an example</a></p></li>
+<li><p><a class="reference internal" href="#import-a-raw-recording" id="id2">Import a raw recording</a></p></li>
+<li><p><a class="reference internal" href="#continue-from-sorted-units" id="id3">Continue from sorted units</a></p></li>
+<li><p><a class="reference internal" href="#resume-a-saved-project" id="id4">Resume a saved project</a></p></li>
+<li><p><a class="reference internal" href="#inspect-traces-and-channel-quality" id="id5">Inspect traces and channel quality</a></p></li>
+<li><p><a class="reference internal" href="#preview-ap-and-lfp-preprocessing" id="id6">Preview AP and LFP preprocessing</a></p></li>
+<li><p><a class="reference internal" href="#select-and-run-a-sorter" id="id7">Select and run a sorter</a></p></li>
+<li><p><a class="reference internal" href="#compare-sorting-results" id="id8">Compare sorting results</a></p></li>
+<li><p><a class="reference internal" href="#review-and-label-units" id="id9">Review and label units</a></p></li>
+<li><p><a class="reference internal" href="#align-behavior-to-the-recording" id="id10">Align behavior to the recording</a></p></li>
+<li><p><a class="reference internal" href="#inspect-behavior-and-trials" id="id11">Inspect behavior and trials</a></p></li>
+<li><p><a class="reference internal" href="#choose-a-neural-analysis" id="id12">Choose a neural analysis</a></p></li>
+<li><p><a class="reference internal" href="#compare-population-responses" id="id13">Compare population responses</a></p></li>
+<li><p><a class="reference internal" href="#inspect-fine-spike-timing" id="id14">Inspect fine spike timing</a></p></li>
+<li><p><a class="reference internal" href="#inspect-statistical-evidence" id="id15">Inspect statistical evidence</a></p></li>
+<li><p><a class="reference internal" href="#run-classification-or-regression" id="id16">Run classification or regression</a></p></li>
+<li><p><a class="reference internal" href="#save-projects-figures-and-records" id="id17">Save projects, figures, and records</a></p></li>
+<li><p><a class="reference internal" href="#arrange-panels-ai-and-guidance" id="id18">Arrange panels, AI, and guidance</a></p></li>
+</ul>
+</nav>
+<section id="try-an-example">
+<span id="task-examples"></span><h2><a class="toc-backref" href="#id1" role="doc-backlink">Try an example</a><a class="headerlink" href="#try-an-example" title="Link to this heading"></a></h2>
+<p>Start without your own recording. The 8-channel microwire teaching example is a good first run.</p>
+<p><strong>Have ready</strong></p>
+<p>Teaching data are generated locally. A verified public project may need a download on first use.</p>
+<ol class="arabic">
+<li><p><strong>Open the example library</strong></p>
+<p>Choose File → Example projects… or Example projects on the home page.</p>
+</li>
+<li><p><strong>Choose a dataset</strong></p>
+<p>Select a teaching row and click Open selected example. Public projects are in the same list; check their contents and availability.</p>
+</li>
+<li><p><strong>Run your first analysis</strong></p>
+<p>Inspect Raw QC, then select an available sorter in Spike sorting and run that stage. Review each result before moving on.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>The left workflow provides direct navigation. Next changes the page; Run performs a calculation.</p>
+<p><strong>Saved output</strong></p>
+<p>The example opens as an ordinary project. Use File → Open project folder to find its location.</p>
+<p><strong>No raw traces in an example</strong></p>
+<p>Some public projects contain sorted units and behavior only. Start at Unit QC or downstream analysis.</p>
+</section>
+<section id="import-a-raw-recording">
+<span id="task-import"></span><h2><a class="toc-backref" href="#id2" role="doc-backlink">Import a raw recording</a><a class="headerlink" href="#import-a-raw-recording" title="Link to this heading"></a></h2>
+<p>Create a project from acquisition files or generic binary, then check recording metadata and traces.</p>
+<p><strong>Have ready</strong></p>
+<p>Recording files, sampling rate, channel count, dtype, gain, and probe information. Acquisition files often supply some metadata.</p>
+<ol class="arabic">
+<li><p><strong>Choose an input</strong></p>
+<p>Click New project on the home page and select acquisition files or generic binary. In an open empty project, use Data and project → Import my electrophysiology data.</p>
+</li>
+<li><p><strong>Verify reading parameters</strong></p>
+<p>Select the acquisition reader. For .bin/.dat, verify rate, channels, dtype, and μV/bit, including values detected from params.py. Open Ephys attempts AP selection when no stream is specified.</p>
+</li>
+<li><p><strong>Inspect the imported recording</strong></p>
+<p>Check the source, duration, and channel count in Data and project. Move through the trace time window and verify channels before opening Raw QC.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Check parameters against the acquisition software. An incorrect rate or channel count distorts timing and traces.</p>
+<p><strong>Saved output</strong></p>
+<p>The project stores source links, reading parameters, and available caches. Find them with File → Open project folder.</p>
+<p><strong>Multiple Open Ephys streams</strong></p>
+<p>Enter the required stream_id in the import dialog. Use AP for spikes and the LFP stream for low-frequency analysis.</p>
+<p><a class="reference external" href="https://spikeinterface.readthedocs.io/en/latest/modules/extractors.html">Method reference</a></p>
+</section>
+<section id="continue-from-sorted-units">
+<span id="task-import-sorting"></span><h2><a class="toc-backref" href="#id3" role="doc-backlink">Continue from sorted units</a><a class="headerlink" href="#continue-from-sorted-units" title="Link to this heading"></a></h2>
+<p>Import Kilosort/Phy or Offline Sorter output and continue with Unit QC.</p>
+<p><strong>Have ready</strong></p>
+<p>A Kilosort/Phy output folder and its original sampling rate, or a .nex5 file. Event analysis also requires event times.</p>
+<ol class="arabic">
+<li><p><strong>Choose the result format</strong></p>
+<p>In the import dialog, choose existing sorting results or Offline Sorter / NeuroExplorer results.</p>
+</li>
+<li><p><strong>Check files and timing</strong></p>
+<p>For Kilosort/Phy, select the folder containing spike_times.npy and cluster assignments. For NEX5, check Time alignment; use end alignment or a manual offset only when justified by the recording.</p>
+</li>
+<li><p><strong>Inspect candidate units</strong></p>
+<p>After import, run Unit QC. To compare results for one recording, first open that recording’s project, then import the result into it.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Unit count and duration should agree with the source software. Spike times alone do not provide raw-signal or LFP analysis.</p>
+<p><strong>Saved output</strong></p>
+<p>The project retains normalized spike times, provenance, and available waveform information for curation, event analysis, and export.</p>
+<p><strong>Duration differs substantially</strong></p>
+<p>Check the original sampling rate and NEX5 time offset first. Do not adjust sampling rate just to make a plot look right.</p>
+</section>
+<section id="resume-a-saved-project">
+<span id="task-resume"></span><h2><a class="toc-backref" href="#id4" role="doc-backlink">Resume a saved project</a><a class="headerlink" href="#resume-a-saved-project" title="Link to this heading"></a></h2>
+<p>Resume from the project manifest with saved results and the last saved page.</p>
+<p><strong>Have ready</strong></p>
+<p>The project’s neuroflow_project.json and the raw data or caches it references.</p>
+<ol class="arabic">
+<li><p><strong>Open the manifest</strong></p>
+<p>Press Ctrl+O or choose File → Open / import project… and select neuroflow_project.json.</p>
+</li>
+<li><p><strong>Check the restored state</strong></p>
+<p>Check the project name, source path, and stage status. View completed results directly and run only the stages you need to update.</p>
+</li>
+<li><p><strong>Save your work</strong></p>
+<p>Press Ctrl+S. Use File → Open project folder to inspect notes, logs, results, and exports.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>The manifest records file locations; copying the JSON alone does not copy the dataset.</p>
+<p><strong>Saved output</strong></p>
+<p>Work continues in the original project folder, with the last saved workflow page recorded.</p>
+<p><strong>Source missing after moving computers</strong></p>
+<p>Check the source in inputs/source_index.json. Restore the referenced data location and verify required files can be read before rerunning analysis.</p>
+</section>
+<section id="inspect-traces-and-channel-quality">
+<span id="task-qc"></span><h2><a class="toc-backref" href="#id5" role="doc-backlink">Inspect traces and channel quality</a><a class="headerlink" href="#inspect-traces-and-channel-quality" title="Link to this heading"></a></h2>
+<p>Use traces, power maps, and a timeline to identify noisy channels and periods.</p>
+<p><strong>Have ready</strong></p>
+<p>A project with readable raw voltage.</p>
+<ol class="arabic">
+<li><p><strong>Run Raw QC</strong></p>
+<p>Open Raw QC and click Run selected analysis. Wait for completion in the bottom status area.</p>
+</li>
+<li><p><strong>Switch diagnostic views</strong></p>
+<p>Use the dropdown beside the title to inspect QC metric summary, Channel-by-frequency power, and Quality timeline.</p>
+</li>
+<li><p><strong>Verify with traces</strong></p>
+<p>Return to Multichannel raw traces and adjust the time window and channels. Verify noise, clipping, or suspicious periods and record decisions in the project notes.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>The score is a summary. Check the evaluated periods; one score cannot establish full-session quality.</p>
+<p><strong>Saved output</strong></p>
+<p>QC is saved with the project. Logs and manual notes are under logs.</p>
+<p><strong>No raw voltage available</strong></p>
+<p>Use Unit QC for a project containing sorted units only. Import the acquisition recording when raw QC is needed.</p>
+<p><a class="reference external" href="https://spikeinterface.readthedocs.io/en/latest/modules/preprocessing.html">Method reference</a></p>
+</section>
+<section id="preview-ap-and-lfp-preprocessing">
+<span id="task-preprocess"></span><h2><a class="toc-backref" href="#id6" role="doc-backlink">Preview AP and LFP preprocessing</a><a class="headerlink" href="#preview-ap-and-lfp-preprocessing" title="Link to this heading"></a></h2>
+<p>Compare a short segment before and after processing and inspect the recorded processing chain.</p>
+<p><strong>Have ready</strong></p>
+<p>Raw voltage and verified acquisition metadata. Complete Raw QC first.</p>
+<ol class="arabic">
+<li><p><strong>Generate the preview</strong></p>
+<p>Open Preprocessing and click Run selected analysis to generate a short-segment preview.</p>
+</li>
+<li><p><strong>Choose the signal branch</strong></p>
+<p>Switch between AP / sorting branch and LFP branch and compare traces and spectra.</p>
+</li>
+<li><p><strong>Check the processing chain</strong></p>
+<p>Open Auditable chain and safeguards. On the sorting page, also read the selected sorter’s input contract and internal processing.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>This preview does not feed pre-whitened data to Kilosort4. The processing-chain record lists the preview parameters.</p>
+<p><strong>Saved output</strong></p>
+<p>Preview results and processing parameters are stored in the project for later inspection.</p>
+<p><strong>Need different filter or reference settings</strong></p>
+<p>Inspect the chain first. The desktop preview is not a general processing-chain editor; advanced parameters can be set through the Python interface and recorded with the results.</p>
+<p><a class="reference external" href="https://spikeinterface.readthedocs.io/en/latest/modules/preprocessing.html">Method reference</a></p>
+</section>
+<section id="select-and-run-a-sorter">
+<span id="task-sorting"></span><h2><a class="toc-backref" href="#id7" role="doc-backlink">Select and run a sorter</a><a class="headerlink" href="#select-and-run-a-sorter" title="Link to this heading"></a></h2>
+<p>Check the environment and probe requirements, then run a sorter and retain its output for comparison.</p>
+<p><strong>Have ready</strong></p>
+<p>Raw voltage, the correct rate and channel geometry, and an available sorter environment.</p>
+<ol class="arabic">
+<li><p><strong>Check availability</strong></p>
+<p>Open Spike sorting and inspect Environment, Hardware, and Best suited recordings. Use Edit → Sorter manager… if dependencies are missing.</p>
+</li>
+<li><p><strong>Select and verify parameters</strong></p>
+<p>Select the sorter row. Kilosort4 exposes presets, batch_size, drift blocks, and thresholds; MountainSort5 exposes scheme, detection threshold, and training duration.</p>
+</li>
+<li><p><strong>Run and inspect diagnostics</strong></p>
+<p>Click the bottom Run button and verify the sorter in the confirmation dialog. After completion, use Post-run diagnostic view and continue to Unit QC.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Simple is useful for quick workflow checks. Choose a method suited to the recording and curate its units for analysis.</p>
+<p><strong>Saved output</strong></p>
+<p>Native results and logs are under the sorter’s folder in results. Normalized output is saved with the project.</p>
+<p><strong>Failure or insufficient GPU memory</strong></p>
+<p>Read the error and log first. For Kilosort, check the GPU environment and batch_size; an available CPU sorter can also help verify the input.</p>
+<p><a class="reference external" href="https://kilosort.readthedocs.io/en/latest/">Method reference</a></p>
+</section>
+<section id="compare-sorting-results">
+<span id="task-comparison"></span><h2><a class="toc-backref" href="#id8" role="doc-backlink">Compare sorting results</a><a class="headerlink" href="#compare-sorting-results" title="Link to this heading"></a></h2>
+<p>Compare unit counts, spike counts, unique units, and matched agreement to locate method differences.</p>
+<p><strong>Have ready</strong></p>
+<p>At least two sorting results in one project. Verify recording identity, channels, and time range first.</p>
+<ol class="arabic">
+<li><p><strong>Add a second result</strong></p>
+<p>Run another sorter in the same recording project or import an external sorting result for that recording.</p>
+</li>
+<li><p><strong>Open the comparison view</strong></p>
+<p>In Spike sorting, choose the comparison under Post-run diagnostic view, then select a result pair.</p>
+</li>
+<li><p><strong>Inspect differences</strong></p>
+<p>Inspect matches and agreement, then each result’s unique units. Select the result in the sorter list and use Unit QC to check waveforms and stability.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Matching output windows do not imply identical training durations. Without ground truth, agreement is not an accuracy estimate.</p>
+<p><strong>Saved output</strong></p>
+<p>results/sorting_comparison contains sorter_summary.csv, pairwise_summary.csv, and interpretation notes.</p>
+<p><strong>No result pairs listed</strong></p>
+<p>Confirm both results are saved in the current project. Do not combine unrelated recordings for comparison.</p>
+<p><a class="reference external" href="https://spikeinterface.readthedocs.io/en/latest/modules/comparison.html">Method reference</a></p>
+</section>
+<section id="review-and-label-units">
+<span id="task-unit-qc"></span><h2><a class="toc-backref" href="#id9" role="doc-backlink">Review and label units</a><a class="headerlink" href="#review-and-label-units" title="Link to this heading"></a></h2>
+<p>Review automated metrics alongside waveforms, ISIs, and stability, then save a curation decision.</p>
+<p><strong>Have ready</strong></p>
+<p>A completed or imported sorting result. Waveform diagnostics depend on available data.</p>
+<ol class="arabic">
+<li><p><strong>Calculate Unit metrics</strong></p>
+<p>Open Unit QC and run the stage. Use the title dropdown for Unit metric overview or one unit’s waveform/ACG/ISI/stability.</p>
+</li>
+<li><p><strong>Open manual curation</strong></p>
+<p>Click Open manual Unit curation. Select a unit on the left, inspect the center plots, and set Decision, Confidence, and Reviewer on the right.</p>
+</li>
+<li><p><strong>Save the evidence</strong></p>
+<p>Check the evidence you reviewed, enter Notes, click Save decision, and move to the next unit.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Labels and notes are saved. This workbench does not merge or split clusters; missing metrics are not passing evidence.</p>
+<p><strong>Saved output</strong></p>
+<p>Curation records are saved with the project and can be included in exported results.</p>
+<p><strong>Curation button unavailable</strong></p>
+<p>Confirm a sorting result is loaded, then run Unit QC to calculate metrics.</p>
+<p><a class="reference external" href="https://spikeinterface.readthedocs.io/en/latest/modules/qualitymetrics.html">Method reference</a></p>
+</section>
+<section id="align-behavior-to-the-recording">
+<span id="task-sync"></span><h2><a class="toc-backref" href="#id10" role="doc-backlink">Align behavior to the recording</a><a class="headerlink" href="#align-behavior-to-the-recording" title="Link to this heading"></a></h2>
+<p>Import behavior and synchronization pulses, then verify timing before event-response analysis.</p>
+<p><strong>Have ready</strong></p>
+<p>A generic event CSV or MED-PC C/D arrays. A separate behavior clock also needs corresponding TTL pulses.</p>
+<ol class="arabic">
+<li><p><strong>Import behavior and TTLs</strong></p>
+<p>Open Event synchronization and click Import / replace behavior and TTL. Select the format and files; Open Ephys can supply recorded digital inputs.</p>
+</li>
+<li><p><strong>Check clock sources</strong></p>
+<p>Check CSV time units. For MED-PC, verify the behavior synchronization code and recorded TTL channel, then save and run this stage.</p>
+</li>
+<li><p><strong>Inspect alignment</strong></p>
+<p>Inspect pulse counts, matches, offset, drift, and residuals. Verify that events fall within the recording.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Missing or duplicate pulses and an incorrect channel affect ordered pairing. Correct event inputs before interpreting neural responses.</p>
+<p><strong>Saved output</strong></p>
+<p>Import settings, alignment records, events, and defined trials are stored in the project.</p>
+<p><strong>Events without trials</strong></p>
+<p>An event list may lack trial boundaries. Check whether the behavior file defines trials; event timing alone does not supply every behavioral measure.</p>
+</section>
+<section id="inspect-behavior-and-trials">
+<span id="task-behavior"></span><h2><a class="toc-backref" href="#id11" role="doc-backlink">Inspect behavior and trials</a><a class="headerlink" href="#inspect-behavior-and-trials" title="Link to this heading"></a></h2>
+<p>Check behavioral completeness before choosing conditions for neural comparisons.</p>
+<p><strong>Have ready</strong></p>
+<p>Imported behavior events. Reaction time, choice, and psychometrics require their corresponding trial fields.</p>
+<ol class="arabic">
+<li><p><strong>Generate the summary</strong></p>
+<p>Open Behavior analysis and run this stage. Inspect event count, trial count, and the behavior plots.</p>
+</li>
+<li><p><strong>Check conditions and sample sizes</strong></p>
+<p>Review trial counts by condition and available reaction times and choices. Check the source behavior file when samples or fields are missing.</p>
+</li>
+<li><p><strong>Choose the neural analysis</strong></p>
+<p>After identifying the alignment event and conditions, continue to Neural activity.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Event times alone do not supply choices, accuracy, or reaction times. Check source fields when a panel is empty.</p>
+<p><strong>Saved output</strong></p>
+<p>Behavior summaries are saved with the project; run Publication and reproducibility for related exports.</p>
+<p><strong>Empty reaction-time or psychometric plot</strong></p>
+<p>Check trial definitions and required fields. With discrete events only, start with event-related neural analysis.</p>
+</section>
+<section id="choose-a-neural-analysis">
+<span id="task-analysis"></span><h2><a class="toc-backref" href="#id12" role="doc-backlink">Choose a neural analysis</a><a class="headerlink" href="#choose-a-neural-analysis" title="Link to this heading"></a></h2>
+<p>One page offers several analyses. Use the dropdown beside the title to choose the question for this run.</p>
+<p><strong>Have ready</strong></p>
+<p>Spike analysis needs units, event responses need event times, and LFP or spike-field analysis needs available voltage.</p>
+<ol class="arabic">
+<li><p><strong>Select the analysis</strong></p>
+<p>Choose Event · Unit … for a unit’s event response; choose spike-train statistics or relationships for spike analyses. Population, fine timing, and LFP have separate entries.</p>
+</li>
+<li><p><strong>Run the selected analysis</strong></p>
+<p>Click Run selected analysis. Population dynamics and fine timing open settings dialogs; other choices use current project and method parameters.</p>
+</li>
+<li><p><strong>Inspect plots and tables</strong></p>
+<p>For event responses, inspect the raster and PSTH, alignment zero, and valid trial count. Switch views for related results and zoom with the plot toolbar.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>The dropdown selects analyses and result views. Check the bottom Current description after changing it before running.</p>
+<p><strong>Saved output</strong></p>
+<p>Completed analyses are retained in the project; export plots through Publication and reproducibility.</p>
+<p><strong>A view still shows pending</strong></p>
+<p>Check that this analysis category has run and has the required input. Event responses do not automatically calculate LFP, population, or fine-timing results.</p>
+</section>
+<section id="compare-population-responses">
+<span id="task-population"></span><h2><a class="toc-backref" href="#id13" role="doc-backlink">Compare population responses</a><a class="headerlink" href="#compare-population-responses" title="Link to this heading"></a></h2>
+<p>Inspect multi-unit heatmaps, single-trial responses, and population trajectories by event or condition.</p>
+<p><strong>Have ready</strong></p>
+<p>Units and events; condition comparisons require condition labels.</p>
+<ol class="arabic">
+<li><p><strong>Open population analysis</strong></p>
+<p>In Neural activity, choose a Population dynamics entry and click Run selected analysis.</p>
+</li>
+<li><p><strong>Set the analysis scope</strong></p>
+<p>In the settings dialog, check events, unit scope, analysis window, bins, and baseline. The ordering rule controls heatmap rows.</p>
+</li>
+<li><p><strong>Inspect the result views</strong></p>
+<p>After running, switch among Ordered heatmap, Single trial, Condition comparison, and PCA trajectory. Check conditions and time ranges across views.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Normalized heatmap colors represent relative changes. Check the legend before interpreting them as Hz.</p>
+<p><strong>Saved output</strong></p>
+<p>Population results and run settings are saved in the project. Individual figure panels can also be saved.</p>
+<p><strong>Some events are excluded</strong></p>
+<p>Check whether windows around early or late events exceed the recording, and verify event and unit filters.</p>
+</section>
+<section id="inspect-fine-spike-timing">
+<span id="task-connectivity"></span><h2><a class="toc-backref" href="#id14" role="doc-backlink">Inspect fine spike timing</a><a class="headerlink" href="#inspect-fine-spike-timing" title="Link to this heading"></a></h2>
+<p>Compare unit-pair CCGs and jitter-corrected results, then inspect spatial or cross-region patterns.</p>
+<p><strong>Have ready</strong></p>
+<p>Multiple units. Spatial analysis also needs trustworthy positions and region labels.</p>
+<ol class="arabic">
+<li><p><strong>Choose fine timing</strong></p>
+<p>In Neural activity, select Fine timing · CCG and jitter correction and click Run.</p>
+</li>
+<li><p><strong>Check pair settings</strong></p>
+<p>Check unit pairs, time range, bins, jitter, and significance in the settings dialog. Restrict the scope first when many units are present.</p>
+</li>
+<li><p><strong>Inspect pairs before the network</strong></p>
+<p>Inspect individual CCGs and corrected results before switching to Spatial/cross-region network and Distance and latency statistics.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Shared input and firing-rate changes affect timing relationships. A significant CCG alone does not establish a synapse.</p>
+<p><strong>Saved output</strong></p>
+<p>Pair results, run settings, and network summaries are saved with the project.</p>
+<p><strong>Missing distance or region information</strong></p>
+<p>Check probe geometry and region labels. Temporal relationships may still be examined, but missing metadata prevents spatial interpretation.</p>
+</section>
+<section id="inspect-statistical-evidence">
+<span id="task-statistics"></span><h2><a class="toc-backref" href="#id15" role="doc-backlink">Inspect statistical evidence</a><a class="headerlink" href="#inspect-statistical-evidence" title="Link to this heading"></a></h2>
+<p>Review condition differences, effect sizes, and sample structure together to assess the test’s suitability.</p>
+<p><strong>Have ready</strong></p>
+<p>Completed neural analysis with comparable conditions or paired responses.</p>
+<ol class="arabic">
+<li><p><strong>Run the statistical suite</strong></p>
+<p>Open Statistical tests and click Run selected analysis.</p>
+</li>
+<li><p><strong>Inspect the design first</strong></p>
+<p>Choose Sampling hierarchy and test decisions. Check whether samples are trials, units, sessions, or animals and whether measurements are paired.</p>
+</li>
+<li><p><strong>Inspect effects and tests</strong></p>
+<p>Use Condition tests and effects and Effects and multiplicity to inspect effect direction, confidence intervals, and corrected values; inspect distribution or phase tests as needed.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>The dropdown switches result views; it is not an editor for every test parameter. Verify grouping for multi-animal or multi-session designs.</p>
+<p><strong>Saved output</strong></p>
+<p>Statistics are saved with the project; full export includes related tables and method records.</p>
+<p><strong>A test cannot be computed</strong></p>
+<p>Check valid sample counts, conditions, constant columns, and missing values. Use the reported reason to correct inputs.</p>
+</section>
+<section id="run-classification-or-regression">
+<span id="task-decoding"></span><h2><a class="toc-backref" href="#id16" role="doc-backlink">Run classification or regression</a><a class="headerlink" href="#run-classification-or-regression" title="Link to this heading"></a></h2>
+<p>Test whether neural features predict a task variable and inspect cross-validation and baseline results.</p>
+<p><strong>Have ready</strong></p>
+<p>Valid trials, neural features, and classification labels or a continuous behavior target.</p>
+<ol class="arabic">
+<li><p><strong>Choose the task and model</strong></p>
+<p>Open Machine learning and select Classification · … or Regression · … beside the title. Classification predicts categories; regression predicts continuous values.</p>
+</li>
+<li><p><strong>Run the model</strong></p>
+<p>Click Run selected analysis and verify the model name in the confirmation dialog.</p>
+</li>
+<li><p><strong>Check validation results</strong></p>
+<p>For classification, inspect confusion, cross-validation, and permutation baseline; for regression, inspect predictions versus observations and errors. Compare models on the same data scope.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Verify the actual features, sample count, and split strategy in the results. Neither a PCA plot nor a high score establishes causality.</p>
+<p><strong>Saved output</strong></p>
+<p>Model evaluations and parameters are saved with the project and exported through Publication and reproducibility.</p>
+<p><strong>Insufficient samples or labels</strong></p>
+<p>Return to Behavior analysis and check valid trials and conditions. Do not duplicate trials to meet cross-validation sample requirements.</p>
+<p><a class="reference external" href="https://scikit-learn.org/stable/common_pitfalls.html">Method reference</a></p>
+</section>
+<section id="save-projects-figures-and-records">
+<span id="task-export"></span><h2><a class="toc-backref" href="#id17" role="doc-backlink">Save projects, figures, and records</a><a class="headerlink" href="#save-projects-figures-and-records" title="Link to this heading"></a></h2>
+<p>Save to resume later; export figures, tables, and records for review, editing, and sharing.</p>
+<p><strong>Have ready</strong></p>
+<p>An open project with the analyses you want to export completed.</p>
+<ol class="arabic">
+<li><p><strong>Save the project</strong></p>
+<p>Press Ctrl+S or choose File → Save project. After saving, reopen the manifest to continue later.</p>
+</li>
+<li><p><strong>Prepare figures</strong></p>
+<p>Use Figure settings on analysis pages to adjust plots, or select and save an individual panel. For the full export, run Publication and reproducibility.</p>
+</li>
+<li><p><strong>Find outputs and logs</strong></p>
+<p>Choose File → Open project folder. Read the file beginning with 00_README_; exports holds figures and tables, results holds analysis output, and logs holds experiment logs and notes.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Before delivery, inspect exported titles, axes, units, and statistical annotations. Back up external source data when the project depends on them.</p>
+<p><strong>Saved output</strong></p>
+<p>neuroflow_project.json, inputs, config, logs, cache, derived, results, and exports form the project record.</p>
+<p><strong>Only the JSON is present</strong></p>
+<p>Saving the project and running Publication and reproducibility are separate actions. Complete the analysis, run export, and inspect exports.</p>
+</section>
+<section id="arrange-panels-ai-and-guidance">
+<span id="task-layout-ai"></span><h2><a class="toc-backref" href="#id18" role="doc-backlink">Arrange panels, AI, and guidance</a><a class="headerlink" href="#arrange-panels-ai-and-guidance" title="Link to this heading"></a></h2>
+<p>Allocate space to workflow, figures, and AI, and collapse or restore panels as needed.</p>
+<p><strong>Have ready</strong></p>
+<p>Open a project to arrange the three columns. Online AI requires a configured service in AI settings.</p>
+<ol class="arabic">
+<li><p><strong>Resize the columns</strong></p>
+<p>Drag the separators. Press Ctrl+B to compact the workflow rail and Ctrl+J to show or hide the right AI panel. All three columns can remain open.</p>
+</li>
+<li><p><strong>Use AI when needed</strong></p>
+<p>Choose Review project, Suggest workflow, or type a question on the right. Settings selects the service. Check the project and stage in the AI context before using a suggestion.</p>
+</li>
+<li><p><strong>Control guidance and layout</strong></p>
+<p>Press F1 for the current step guide. Uncheck Help → Show step guides automatically to stop automatic popups. Use View → Reset three-column layout to restore panel sizes.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Use plot zoom tools or F11 full screen for small plots. Check AI suggestions against experiment records and actual outputs.</p>
+<p><strong>Saved output</strong></p>
+<p>Selected analysis operations produce results; AI replies appear in the right conversation panel.</p>
+<p><strong>Cannot find the Run button</strong></p>
+<p>Hide the right panel or compact the left rail and adjust window height. The Analysis menu also provides Run selected analysis.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="workspace.html" class="btn btn-neutral float-left" title="Using the workspace" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="workflow.html" class="btn btn-neutral float-right" title="Complete workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, NeuroEphys AI team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

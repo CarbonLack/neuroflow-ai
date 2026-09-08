@@ -222,12 +222,14 @@ def test_scrollable_workspace_and_independent_panel_export(
     assert isinstance(window.main_scroll, QScrollArea)
     assert not window.main_scroll.widget().isAncestorOf(window.progress_bar)
     assert not window.main_scroll.widget().isAncestorOf(window.run_step_button)
-    assert window.figure_host.minimumHeight() >= 360
+    # The compact viewport leaves room for the fixed run bar in small windows.
+    assert window.figure_host.minimumHeight() >= 280
     assert window.panel_combo.count() == 3
     assert "performance" in window.panel_combo.itemText(0).lower()
 
     visible_before = sum(axis.get_visible() for axis in window.canvas.figure.axes)
     window._toggle_panel_focus()
+    assert not window.plot_tools_panel.isHidden()
     visible_focused = sum(axis.get_visible() for axis in window.canvas.figure.axes)
     assert visible_focused < visible_before
 

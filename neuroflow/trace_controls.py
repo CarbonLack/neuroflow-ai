@@ -8,9 +8,11 @@ from PySide6.QtWidgets import (
     QLabel,
     QSlider,
     QSpinBox,
+    QWidget,
 )
 
 from .help_content import control_help
+from .ui_components import FlowLayout
 
 
 class TraceControls(QFrame):
@@ -20,7 +22,7 @@ class TraceControls(QFrame):
         super().__init__(parent)
         self.language = language
         self.setObjectName("TraceControls")
-        layout = QHBoxLayout(self)
+        layout = FlowLayout(self)
         layout.setContentsMargins(10, 6, 10, 6)
         layout.setSpacing(8)
         self.heading = QLabel()
@@ -75,11 +77,18 @@ class TraceControls(QFrame):
             (self.first_label, self.first_channel),
             (self.count_label, self.channel_count),
         ):
-            layout.addWidget(label)
-            layout.addWidget(widget)
-        layout.addWidget(self.gain_label)
-        layout.addWidget(self.gain)
-        layout.addWidget(self.gain_value)
+            pair = QWidget()
+            pair_layout = QHBoxLayout(pair)
+            pair_layout.setContentsMargins(0, 0, 0, 0)
+            pair_layout.addWidget(label)
+            pair_layout.addWidget(widget)
+            layout.addWidget(pair)
+        gain_pair = QWidget()
+        gain_layout = QHBoxLayout(gain_pair)
+        gain_layout.setContentsMargins(0, 0, 0, 0)
+        for widget in (self.gain_label, self.gain, self.gain_value):
+            gain_layout.addWidget(widget)
+        layout.addWidget(gain_pair)
         layout.addStretch()
         self.set_language(language)
 

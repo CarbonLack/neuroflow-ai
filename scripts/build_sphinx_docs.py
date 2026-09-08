@@ -32,9 +32,13 @@ def build(language: str) -> None:
         ],
         check=True,
     )
+    for page in target.glob("*.html"):
+        page.write_text("\n".join(line.rstrip() for line in page.read_text(encoding="utf-8").splitlines()) + "\n", encoding="utf-8")
 
 
 def main() -> int:
+    from generate_task_manual import build_task_manual
+    build_task_manual()
     subprocess.run(
         [
             sys.executable,

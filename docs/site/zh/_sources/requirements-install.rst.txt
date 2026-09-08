@@ -16,11 +16,11 @@
 ----------------
 
 推荐从 GitHub **Releases** 或比赛交付目录下载
-``NeuroEphysAI-Setup-1.1.1.exe``。安装程序只安装到当前用户目录，不要求管理员权限，
+``NeuroEphysAI-Setup-1.2.0.exe``。安装程序只安装到当前用户目录，不要求管理员权限，
 并创建桌面和开始菜单快捷方式。卸载程序不会删除
 ``Documents\NeuroEphysAI`` 中的项目数据。
 
-便携版 ``NeuroEphysAI-1.1.1-Windows-x64-portable.zip`` 无需安装。完整解压后启动
+便携版 ``NeuroEphysAI-1.2.0-Windows-x64-portable.zip`` 无需安装。完整解压后启动
 ``NeuroEphysAI\NeuroEphysAI.exe``，不能只复制单独的 EXE。one-folder 结构让科学
 计算依赖可以检查，启动时也无需反复解压。
 
@@ -40,7 +40,7 @@ Python 包
 .. code-block:: powershell
 
    python -m venv .venv
-   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.1.1-py3-none-any.whl
+   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.2.0-py3-none-any.whl
    .\.venv\Scripts\neuroephys.exe info
 
 .. code-block:: python
@@ -92,5 +92,5 @@ sorter 可使用 CPU。NeuroEphys AI 记录用户选择的后端，并分别保�
 
 .. warning::
 
-   v1.0 正式支持范围是 64 位 Windows 10/11 与 Python 3.12。macOS、Linux 和其他
+   v1.2 正式支持范围是 64 位 Windows 10/11 与 Python 3.12。macOS、Linux 和其他
    Python 版本尚未列入本版正式兼容范围。

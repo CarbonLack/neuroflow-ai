@@ -153,8 +153,11 @@ from .synchronization import import_behavior_events, synchronize_existing_events
 from .trace_controls import TraceControls
 from .tutorial_details import TUTORIAL_DETAILS, localized, localized_rows
 from .tutorials import TUTORIALS, tutorial_value
+from .tutorial_center import HELP_DOCUMENT_STYLE, TutorialDialog, task_html
+from .tutorial_catalog import catalog_text, tutorial_for_id
 from .unit_curation import curation_summary
 from .unit_curation_ui import UnitCurationDialog
+from .ui_components import FlowLayout, line_icon
 
 STEPS = [
     WorkflowStep("import", "01  数据与项目", "格式、探针、事件和来源"),
@@ -379,8 +382,8 @@ QMenu::separator { height: 1px; background: #3b354a; margin: 5px 8px; }
 #Sidebar QLabel, #Assistant QLabel, #RunFooter QLabel {
     background: transparent;
 }
-#Brand { font-size: 22px; font-weight: 700; color: #f7f3fa; }
-#Hero { font-size: 32px; font-weight: 700; color: #f7f3fa; }
+#Brand { font-size: 16px; font-weight: 600; color: #f7f3fa; }
+#Hero { font-size: 30px; font-weight: 600; color: #f7f3fa; }
 #HeroPanel {
     background: transparent;
     color: #f7f3fa;
@@ -394,7 +397,7 @@ QMenu::separator { height: 1px; background: #3b354a; margin: 5px 8px; }
 #BrandMarkFrame:hover { border-color: #d885e9; background: #1d1926; }
 #HeroPanel QLabel#Muted { color: #bdb3cc; }
 #StageStrip {
-    background: #171521; border: 1px solid #3b354a; border-radius: 6px;
+    background: transparent; border: none; border-bottom: 1px solid #3b354a;
 }
 #Sidebar, #Assistant {
     background: #121019;
@@ -410,12 +413,12 @@ QMenu::separator { height: 1px; background: #3b354a; margin: 5px 8px; }
     border-top: 1px solid #3b354a;
 }
 QPushButton {
-    min-height: 36px;
+    min-height: 32px;
     color: #f7f3fa;
     border: 1px solid #4a425b;
     background: #211d2b;
     padding: 0 14px;
-    border-radius: 5px;
+    border-radius: 7px;
 }
 QPushButton:hover { border-color: #d885e9; background: #2b2537; }
 QPushButton:disabled { color: #766e82; background: #171521; border-color: #332d3f; }
@@ -423,12 +426,16 @@ QPushButton:checked, QPushButton#Primary {
     color: #140d17; background: #d885e9; border-color: #d885e9; font-weight: 700;
 }
 QPushButton#StepButton {
-    text-align: left; min-height: 53px; border: none; border-left: 3px solid transparent;
-    border-radius: 0; padding: 2px 12px 2px 14px; color: #c9c1d2; background: #121019;
+    text-align: left; min-height: 38px; border: none; border-left: 2px solid transparent;
+    border-radius: 6px; padding: 2px 10px 2px 12px; color: #c9c1d2; background: #121019;
 }
 QPushButton#StepButton:checked {
-    color: #f7f3fa; background: #292333; border-left: 3px solid #d885e9; font-weight: 650;
+    color: #f7f3fa; background: #292333; border-left: 2px solid #d885e9; font-weight: 600;
 }
+QPushButton#StepButton:hover { background: #211d2b; }
+QPushButton#Quiet { background: transparent; border: none; color: #bdb3cc; }
+QPushButton#Quiet:hover { background: #211d2b; color: #f7f3fa; }
+QPushButton#SearchTrigger { text-align: left; color: #a79db5; background: #171521; }
 QPushButton#StepButton[status="completed"] { color: #62d8a4; }
 QPushButton#StepButton[status="failed"] { color: #f58b82; }
 QFrame#Card, QFrame#Metric, QFrame#SortingWorkbench, QFrame#TraceControls {
@@ -437,7 +444,8 @@ QFrame#Card, QFrame#Metric, QFrame#SortingWorkbench, QFrame#TraceControls {
 QFrame#InsetPanel {
     background: #211d2b; border: 1px solid #3b354a; border-radius: 5px;
 }
-QLabel#MetricValue { font-size: 19px; font-weight: 700; }
+QFrame#Metric { background: transparent; border: none; border-top: 1px solid #3b354a; border-radius: 0; }
+QLabel#MetricValue { font-size: 17px; font-weight: 600; }
 QLabel#Muted, QLabel#MetricLabel { color: #a79db5; }
 QLabel#PanelTitle { font-size: 15px; font-weight: 700; }
 QLabel#FieldLabel { color: #d0c8d8; font-weight: 600; }
@@ -467,19 +475,22 @@ QProgressBar {
     text-align: center; min-height: 18px;
 }
 QProgressBar::chunk { background: #d885e9; border-radius: 3px; }
-QTabWidget::pane { border: 1px solid #3b354a; background: #171521; }
+QTabWidget::pane { border: none; background: #171521; }
 QTabBar::tab {
     background: #171521; color: #bdb3cc; padding: 7px 12px;
-    border: 1px solid #3b354a; border-bottom: none;
+    border: none; border-bottom: 2px solid #3b354a;
 }
-QTabBar::tab:selected { color: #f7f3fa; border-top: 2px solid #d885e9; }
+QTabBar::tab:selected { color: #f7f3fa; border-bottom: 2px solid #d885e9; }
+QPushButton:focus, QLineEdit:focus, QComboBox:focus { border-color: #d885e9; }
+QSplitter::handle { background: #211d2b; }
+QSplitter::handle:hover { background: #756681; }
 QToolBar {
-    background: #f7f3fa; border: 1px solid #d8d1dd; spacing: 2px;
+    background: #211d2b; border: none; spacing: 4px; padding: 4px;
 }
 QToolBar QToolButton {
-    background: #f7f3fa; color: #16242c; border: none; padding: 3px;
+    background: #211d2b; color: #f2edf5; border: none; padding: 4px;
 }
-QToolBar QToolButton:hover { background: #eee8f2; }
+QToolBar QToolButton:hover { background: #4a425b; }
 QScrollBar:vertical {
     background: #121019; width: 12px; margin: 0;
 }
@@ -2999,207 +3010,6 @@ class ImportDialog(QDialog):
             QMessageBox.warning(self, "无法创建项目", str(exc))
 
 
-class TutorialDialog(QDialog):
-    def __init__(
-        self,
-        initial_key: str = "import",
-        parent: QWidget | None = None,
-        language: str = "zh_CN",
-    ):
-        super().__init__(parent)
-        self.language = language
-        self.setWindowTitle(tr("tutorial", language))
-        self.resize(980, 720)
-        self.setMinimumSize(620, 480)
-        layout = QHBoxLayout(self)
-        self.list = QListWidget()
-        self.list.setMinimumWidth(220)
-        self.list.setMaximumWidth(300)
-        self.browser = QTextBrowser()
-        self.browser.setOpenExternalLinks(True)
-        self.browser.document().setDefaultStyleSheet(
-            """
-            body { color: #17211e; font-family: "Microsoft YaHei", "Segoe UI";
-                   font-size: 14px; line-height: 1.65; }
-            h1 { font-size: 27px; margin: 0 0 12px 0; }
-            h2 { font-size: 19px; margin: 24px 0 8px 0; color: #185f4d; }
-            h3 { font-size: 16px; margin: 14px 0 5px 0; }
-            p { margin: 6px 0 10px 0; }
-            table { border-collapse: collapse; width: 100%; margin: 8px 0 14px 0; }
-            th { background: #edf3f0; text-align: left; }
-            th, td { border: 1px solid #cfd9d4; padding: 8px; vertical-align: top; }
-            .intro { background: #f1f6f4; border-left: 4px solid #1f7a63;
-                     padding: 12px 14px; }
-            .warning { background: #fff7ed; border-left: 4px solid #c06b34;
-                       padding: 10px 14px; }
-            .next { background: #eef5ff; border-left: 4px solid #4a77a8;
-                    padding: 10px 14px; }
-            code { background: #f1f3f2; padding: 1px 4px; }
-            """
-        )
-        layout.addWidget(self.list)
-        right = QWidget()
-        right_layout = QVBoxLayout(right)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.addWidget(self.browser, 1)
-        full_manual = QPushButton(
-            "在浏览器打开详细操作手册"
-            if language == "zh_CN"
-            else "Open the detailed operation manual"
-        )
-        full_manual.clicked.connect(self._open_full_manual)
-        right_layout.addWidget(full_manual)
-        layout.addWidget(right, 1)
-        for chapter in TUTORIALS:
-            title = tutorial_value(chapter, "title", language)
-            self.list.addItem(title)
-            self.list.item(self.list.count() - 1).setToolTip(title)
-        self.list.currentRowChanged.connect(self._show)
-        index = next(
-            (
-                index
-                for index, item in enumerate(TUTORIALS)
-                if item["key"] == initial_key
-            ),
-            0,
-        )
-        self.list.setCurrentRow(index)
-
-    def _show(self, index: int) -> None:
-        if index < 0:
-            return
-        item = TUTORIALS[index]
-        detail = TUTORIAL_DETAILS[item["key"]]
-        english = self.language == "en_US"
-        controls = page_controls(item["key"], self.language)
-        operations = localized_rows(detail, "operations", self.language)
-        parameters = localized_rows(detail, "parameters", self.language)
-        recommended = localized(detail, "recommended", self.language)
-        pitfalls = localized(detail, "pitfalls", self.language)
-        controls_html = "".join(
-            (
-                "<tr>"
-                f"<td><b>{escape(name)}</b></td>"
-                f"<td>{escape(description)}</td>"
-                "</tr>"
-            )
-            for name, description in controls
-        )
-        operations_html = "".join(
-            (
-                "<tr>"
-                f"<td><b>{escape(row['name'])}</b></td>"
-                f"<td>{escape(row['action'])}</td>"
-                f"<td>{escape(row['purpose'])}</td>"
-                f"<td>{escape(row['result'])}</td>"
-                "</tr>"
-            )
-            for row in operations
-        )
-        parameters_html = "".join(
-            (
-                "<tr>"
-                f"<td><b><code>{escape(row['name'])}</code></b></td>"
-                f"<td>{escape(row['meaning'])}</td>"
-                f"<td>{escape(row['default'])}</td>"
-                f"<td>{escape(row['recommended'])}</td>"
-                f"<td>{escape(row['effect'])}</td>"
-                "</tr>"
-            )
-            for row in parameters
-        )
-        recommended_html = "".join(
-            f"<li>{escape(text)}</li>" for text in recommended
-        )
-        pitfalls_html = "".join(
-            f"<li>{escape(text)}</li>" for text in pitfalls
-        )
-        references_html = "".join(
-            f"<li><a href='{escape(reference['url'])}'>{escape(reference['name'])}</a></li>"
-            for reference in REFERENCES
-        )
-        headings = (
-            {
-                "problem": "What this stage is solving",
-                "before": "Before you begin",
-                "operations": "Operations: what to do and why",
-                "op_headers": ("Operation", "What you do", "Purpose", "Result"),
-                "parameters": "Parameter reference",
-                "param_headers": (
-                    "Parameter",
-                    "Meaning",
-                    "Default",
-                    "Recommendation",
-                    "Effect of changing it",
-                ),
-                "controls": "Every control on this page",
-                "recommended": "Recommended path",
-                "pitfalls": "Common mistakes",
-                "io": "Inputs and outputs",
-                "checks": "Acceptance checks",
-                "sources": "Methods and sources",
-                "next": "What happens next",
-            }
-            if english
-            else {
-                "problem": "这一阶段在解决什么问题",
-                "before": "开始前要准备什么",
-                "operations": "可以做哪些操作，为什么这样做",
-                "op_headers": ("操作", "你要做什么", "目的", "运行后得到什么"),
-                "parameters": "参数逐项说明",
-                "param_headers": (
-                    "参数",
-                    "含义",
-                    "默认值",
-                    "推荐设置",
-                    "改变参数会发生什么",
-                ),
-                "controls": "本页每个控件的作用",
-                "recommended": "推荐操作顺序",
-                "pitfalls": "常见错误",
-                "io": "输入与输出",
-                "checks": "完成本阶段前必须检查",
-                "sources": "方法与资料来源",
-                "next": "下一步",
-            }
-        )
-        op_headers = "".join(f"<th>{text}</th>" for text in headings["op_headers"])
-        param_headers = "".join(
-            f"<th>{text}</th>" for text in headings["param_headers"]
-        )
-        self.browser.setHtml(
-            f"<h1>{tutorial_value(item, 'title', self.language)}</h1>"
-            f"<h2>{headings['problem']}</h2>"
-            f"<div class='intro'>{escape(localized(detail, 'narrative', self.language))}</div>"
-            f"<h2>{headings['before']}</h2>"
-            f"<p>{escape(localized(detail, 'before', self.language))}</p>"
-            f"<h2>{headings['operations']}</h2>"
-            f"<table><thead><tr>{op_headers}</tr></thead><tbody>{operations_html}</tbody></table>"
-            f"<h2>{headings['parameters']}</h2>"
-            f"<table><thead><tr>{param_headers}</tr></thead><tbody>{parameters_html}</tbody></table>"
-            f"<h2>{headings['controls']}</h2>"
-            f"<table><tbody>{controls_html}</tbody></table>"
-            f"<h2>{headings['recommended']}</h2><ol>{recommended_html}</ol>"
-            f"<h2>{headings['pitfalls']}</h2><div class='warning'><ul>{pitfalls_html}</ul></div>"
-            f"<h2>{headings['io']}</h2>"
-            f"<p><b>{'Input' if english else '输入'}：</b>"
-            f"{escape(tutorial_value(item, 'input', self.language))}</p>"
-            f"<p><b>{'Output' if english else '输出'}：</b>"
-            f"{escape(tutorial_value(item, 'output', self.language))}</p>"
-            f"<h2>{headings['checks']}</h2>"
-            f"<p>{escape(tutorial_value(item, 'checks', self.language))}</p>"
-            f"<h2>{headings['sources']}</h2>"
-            f"<p>{escape(item['reference'])}</p>"
-            f"<ul>{references_html}</ul>"
-            f"<h2>{headings['next']}</h2>"
-            f"<div class='next'>{escape(localized(detail, 'next', self.language))}</div>"
-        )
-        self.browser.verticalScrollBar().setValue(0)
-
-    def _open_full_manual(self) -> None:
-        manual = _documentation_page(self.language, "workflow.html")
-        if manual.exists():
-            QDesktopServices.openUrl(QUrl.fromLocalFile(str(manual)))
 
 
 class StageGuideDialog(QDialog):
@@ -3237,55 +3047,16 @@ class StageGuideDialog(QDialog):
             for item in TUTORIALS
             if item["key"] == STEP_TUTORIAL.get(stage_key, "import")
         )
-        detail = TUTORIAL_DETAILS[STEP_TUTORIAL.get(stage_key, "import")]
-        operations = localized_rows(detail, "operations", language)
-        recommended = localized(detail, "recommended", language)
-        checks = tutorial_value(chapter, "checks", language)
-        operation_items = "".join(
-            f"<li><b>{escape(row['name'])}</b> — {escape(row['action'])}</li>"
-            for row in operations[:4]
-        )
-        recommended_items = "".join(
-            f"<li>{escape(text)}</li>" for text in recommended[:4]
-        )
-
-        heading = QLabel(
-            f"Step {index + 1} of {len(STEPS)} · {step.title.split('  ', 1)[-1]}"
-            if english
-            else f"第 {index + 1} / {len(STEPS)} 步 · {step.title.split('  ', 1)[-1]}"
-        )
-        heading.setStyleSheet("font-size: 22px; font-weight: 700;")
+        task = tutorial_for_id(stage_key)
+        heading = QLabel(catalog_text(task, "title", language))
+        heading.setWordWrap(True)
+        heading.setStyleSheet("font-size: 21px; font-weight: 600; color: #f2edf5;")
         layout.addWidget(heading)
-        progress = QProgressBar()
-        progress.setRange(1, len(STEPS))
-        progress.setValue(index + 1)
-        progress.setTextVisible(False)
-        progress.setMaximumHeight(8)
-        layout.addWidget(progress)
-
         browser = QTextBrowser()
         browser.setOpenExternalLinks(True)
-        browser.document().setDefaultStyleSheet(
-            """
-            body { color: #f2edf5; font-family: 'Microsoft YaHei', 'Segoe UI';
-                   font-size: 14px; line-height: 1.55; }
-            h2 { color: #d885e9; font-size: 17px; margin: 15px 0 6px 0; }
-            ol, ul { margin-top: 4px; }
-            li { margin: 5px 0; }
-            .check { background: #211d2b; border-left: 4px solid #d885e9;
-                     padding: 10px 12px; }
-            """
-        )
-        browser.setHtml(
-            f"<h2>{'1. Why this step' if english else '1．为什么要做这一步'}</h2>"
-            f"<p>{escape(tutorial_value(chapter, 'why', language))}</p>"
-            f"<h2>{'2. What you will do' if english else '2．你需要做什么'}</h2>"
-            f"<ol>{operation_items}</ol>"
-            f"<h2>{'3. Recommended order' if english else '3．推荐操作顺序'}</h2>"
-            f"<ol>{recommended_items}</ol>"
-            f"<h2>{'4. Check before continuing' if english else '4．进入下一步前检查'}</h2>"
-            f"<div class='check'>{escape(checks)}</div>"
-        )
+        browser.document().setDefaultStyleSheet(HELP_DOCUMENT_STYLE)
+        browser.document().setDefaultFont(QFont("Microsoft YaHei", 11))
+        browser.setHtml(task_html(task, language))
         layout.addWidget(browser, 1)
 
         self.disable_checkbox = QCheckBox(
@@ -3969,6 +3740,7 @@ class NeuroFlowWindow(QMainWindow):
             value for value in seen_value.split(",") if value in STEP_TUTORIAL
         }
         self.ai_dialog: AIAssistantDialog | None = None
+        self.tutorial_dialog: TutorialDialog | None = None
         self.step_buttons: dict[str, QPushButton] = {}
         self.figure_cursor = None
         self._update_window_title()
@@ -4023,6 +3795,8 @@ class NeuroFlowWindow(QMainWindow):
         self.menu_open_action = action(
             self.file_menu, "打开／导入项目…", self._open_project, "Ctrl+O"
         )
+        self.recent_menu = self.file_menu.addMenu("最近的项目")
+        self.recent_menu.aboutToShow.connect(self._refresh_recent_menu)
         self.menu_examples_action = action(
             self.file_menu, "示例项目…", self._open_examples, "Ctrl+Shift+O"
         )
@@ -4105,17 +3879,17 @@ class NeuroFlowWindow(QMainWindow):
         self.menu_tutorial_action = action(
             self.help_menu,
             "教程中心…",
-            lambda: TutorialDialog(
-                STEP_TUTORIAL.get(self.current_step, "import"),
-                self,
-                self.language,
-            ).exec(),
+            self._open_context_tutorial,
+            "Ctrl+Shift+H",
         )
         self.menu_docs_action = action(
             self.help_menu, "产品文档", self._open_documentation
         )
         self.menu_about_action = action(
             self.help_menu, "关于 NeuroEphys AI", self._show_about
+        )
+        self.menu_search_action = action(
+            self.view_menu, "查找操作…", self._open_command_palette, "Ctrl+K"
         )
 
     def _toggle_fullscreen(self) -> None:
@@ -4148,6 +3922,8 @@ class NeuroFlowWindow(QMainWindow):
         self.view_menu.setTitle("View" if english else "视图")
         self.analysis_menu.setTitle("Analysis" if english else "分析")
         self.help_menu.setTitle("Help" if english else "帮助")
+        self.recent_menu.setTitle("Recent projects" if english else "最近的项目")
+        self.menu_search_action.setText("Find an action…" if english else "查找操作…")
         labels = {
             self.menu_new_action: "New project…" if english else "新建项目…",
             self.menu_open_action: "Open / import project…" if english else "打开／导入项目…",
@@ -4202,12 +3978,13 @@ class NeuroFlowWindow(QMainWindow):
         self.home_ai_button.clicked.connect(self._open_ai_assistant)
         row.addWidget(self.home_ai_button)
         self.home_tutorial_button = QPushButton("教程中心")
+        self.home_tutorial_button.setObjectName("Quiet")
         self.home_tutorial_button.clicked.connect(
-            lambda: TutorialDialog(parent=self, language=self.language).exec()
+            lambda: self._open_tutorial_center("import")
         )
         row.addWidget(self.home_tutorial_button)
         self.home_ai_button.setVisible(False)
-        self.home_tutorial_button.setVisible(False)
+        self.home_tutorial_button.setVisible(True)
         outer.addWidget(header)
 
         scroll = QScrollArea()
@@ -4263,6 +4040,13 @@ class NeuroFlowWindow(QMainWindow):
         self.hero_subtitle.setWordWrap(True)
         hero_layout.addWidget(self.hero_subtitle)
 
+        self.home_search_button = QPushButton("查找功能与操作                         Ctrl+K")
+        self.home_search_button.setObjectName("SearchTrigger")
+        self.home_search_button.setMinimumHeight(38)
+        self.home_search_button.setFixedWidth(440)
+        self.home_search_button.clicked.connect(self._open_command_palette)
+        hero_layout.addWidget(self.home_search_button, 0, Qt.AlignHCenter)
+
         primary_actions = QHBoxLayout()
         primary_actions.setSpacing(12)
         self.new_project_button = QPushButton("新建项目")
@@ -4312,6 +4096,10 @@ class NeuroFlowWindow(QMainWindow):
         secondary_actions.addWidget(self.demo_folder_button)
         secondary_actions.addStretch()
         hero_layout.addLayout(secondary_actions)
+        self.home_recent_button = QPushButton("最近的项目")
+        self.home_recent_button.setObjectName("Quiet")
+        self.home_recent_button.clicked.connect(self._show_recent_projects)
+        hero_layout.addWidget(self.home_recent_button, 0, Qt.AlignHCenter)
         layout.addWidget(hero_panel, 0, Qt.AlignHCenter)
 
         capability = QFrame()
@@ -4467,6 +4255,8 @@ class NeuroFlowWindow(QMainWindow):
         brand.setObjectName("Brand")
         self.project_label = QLabel("尚未打开项目")
         self.project_label.setObjectName("Muted")
+        self.project_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self.project_label.setMinimumWidth(80)
         title_box.addWidget(brand)
         title_box.addWidget(self.project_label)
         layout.addLayout(title_box)
@@ -4502,7 +4292,7 @@ class NeuroFlowWindow(QMainWindow):
         self.docs_button.setParent(header)
         self.docs_button.setVisible(False)
         self.run_button = QPushButton("运行完整流程")
-        self.run_button.setObjectName("Primary")
+        self.run_button.setObjectName("Quiet")
         self.run_button.setProperty("neuroflow_help_key", "global.run_all")
         self.run_button.clicked.connect(self._run_full_pipeline)
         self.run_button.setEnabled(False)
@@ -4534,8 +4324,8 @@ class NeuroFlowWindow(QMainWindow):
         layout.addLayout(sidebar_heading)
         step_holder = QWidget()
         step_layout = QVBoxLayout(step_holder)
-        step_layout.setContentsMargins(0, 0, 0, 0)
-        step_layout.setSpacing(0)
+        step_layout.setContentsMargins(8, 0, 8, 0)
+        step_layout.setSpacing(3)
         step_scroll = QScrollArea()
         step_scroll.setWidgetResizable(True)
         step_scroll.setFrameShape(QFrame.NoFrame)
@@ -4543,7 +4333,7 @@ class NeuroFlowWindow(QMainWindow):
         group = QButtonGroup(self)
         group.setExclusive(True)
         for step in STEPS:
-            button = QPushButton(f"{step.title}\n    {step.subtitle}")
+            button = QPushButton(step.title)
             button.setObjectName("StepButton")
             button.setCheckable(True)
             button.setProperty("status", "pending")
@@ -4584,7 +4374,8 @@ class NeuroFlowWindow(QMainWindow):
         self.stage_progress.setRange(1, len(STEPS))
         self.stage_progress.setValue(1)
         self.stage_progress.setTextVisible(False)
-        self.stage_progress.setMaximumHeight(9)
+        self.stage_progress.setMaximumHeight(4)
+        self.stage_progress.setStyleSheet("QProgressBar { min-height: 4px; border: none; }")
         stage_layout.addWidget(self.stage_progress, 1)
         self.stage_guide_button = QPushButton("本步引导")
         self.stage_guide_button.clicked.connect(self._show_stage_guide)
@@ -4596,9 +4387,11 @@ class NeuroFlowWindow(QMainWindow):
         title_row = QHBoxLayout()
         title_box = QVBoxLayout()
         self.page_title = QLabel("数据与项目")
-        self.page_title.setStyleSheet("font-size: 21px; font-weight: 700;")
+        self.page_title.setStyleSheet("font-size: 21px; font-weight: 600;")
+        self.page_title.setWordWrap(True)
         self.page_subtitle = QLabel("先从首页导入数据")
         self.page_subtitle.setObjectName("Muted")
+        self.page_subtitle.setWordWrap(True)
         title_box.addWidget(self.page_title)
         title_box.addWidget(self.page_subtitle)
         title_row.addLayout(title_box)
@@ -4606,6 +4399,8 @@ class NeuroFlowWindow(QMainWindow):
         self.option_combo = QComboBox()
         self.option_combo.setMinimumWidth(170)
         self.option_combo.setMaximumWidth(390)
+        self.option_combo.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.option_combo.setMinimumContentsLength(16)
         self.option_combo.setProperty("neuroflow_help_key", "page.option")
         self.option_combo.currentIndexChanged.connect(self._on_option_changed)
         title_row.addWidget(self.option_combo)
@@ -4702,11 +4497,21 @@ class NeuroFlowWindow(QMainWindow):
         self.sync_workbench.setVisible(False)
         layout.addWidget(self.sync_workbench)
 
-        plot_controls = QHBoxLayout()
+        self.plot_tools_toggle = QPushButton("图表工具  ▸")
+        self.plot_tools_toggle.setObjectName("Quiet")
+        self.plot_tools_toggle.setCheckable(True)
+        layout.addWidget(self.plot_tools_toggle, 0, Qt.AlignLeft)
+        self.plot_tools_panel = QWidget()
+        tools_layout = QVBoxLayout(self.plot_tools_panel)
+        tools_layout.setContentsMargins(0, 0, 0, 0)
+        self.plot_tools_panel.setVisible(False)
+        self.plot_tools_toggle.toggled.connect(self.plot_tools_panel.setVisible)
+        layout.addWidget(self.plot_tools_panel)
+        plot_controls = FlowLayout()
         self.plot_help_label = QLabel()
         self.plot_help_label.setObjectName("Muted")
         self.plot_help_label.setWordWrap(True)
-        plot_controls.addWidget(self.plot_help_label, 1)
+        tools_layout.addWidget(self.plot_help_label)
         self.plot_style_combo = QComboBox()
         self.plot_style_combo.setProperty("neuroflow_help_key", "plot.style")
         for key in ("standard", "points", "step", "grayscale", "high_contrast"):
@@ -4717,15 +4522,17 @@ class NeuroFlowWindow(QMainWindow):
         self.figure_settings_button.setProperty("neuroflow_help_key", "plot.settings")
         self.figure_settings_button.clicked.connect(self._open_figure_settings)
         plot_controls.addWidget(self.figure_settings_button)
-        layout.addLayout(plot_controls)
+        tools_layout.addLayout(plot_controls)
 
-        panel_controls = QHBoxLayout()
+        panel_controls = FlowLayout()
         self.panel_label = QLabel()
         self.panel_label.setObjectName("Muted")
         panel_controls.addWidget(self.panel_label)
         self.panel_combo = QComboBox()
-        self.panel_combo.setMinimumWidth(250)
-        self.panel_combo.setMaximumWidth(460)
+        self.panel_combo.setMinimumWidth(200)
+        self.panel_combo.setMaximumWidth(360)
+        self.panel_combo.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.panel_combo.setMinimumContentsLength(16)
         self.panel_combo.setProperty("neuroflow_help_key", "plot.panel")
         panel_controls.addWidget(self.panel_combo)
         self.panel_focus_button = QPushButton()
@@ -4741,12 +4548,12 @@ class NeuroFlowWindow(QMainWindow):
         self.panel_save_button.clicked.connect(self._save_selected_panel)
         panel_controls.addWidget(self.panel_save_button)
         panel_controls.addStretch()
-        layout.addLayout(panel_controls)
+        tools_layout.addLayout(panel_controls)
 
         self.trace_controls = TraceControls(self.language)
         self.trace_controls.changed.connect(self._refresh_figure)
         self.trace_controls.setVisible(False)
-        layout.addWidget(self.trace_controls)
+        tools_layout.addWidget(self.trace_controls)
 
         metrics = QHBoxLayout()
         self.metric_source = MetricBox("数据源", "—")
@@ -4772,7 +4579,7 @@ class NeuroFlowWindow(QMainWindow):
         self.toolbar = NavigationToolbar2QT(self.canvas, self.figure_host)
         self.figure_layout.addWidget(self.toolbar)
         self.figure_layout.addWidget(self.canvas, 1)
-        self.figure_host.setMinimumHeight(360)
+        self.figure_host.setMinimumHeight(280)
         layout.addWidget(self.figure_host)
         self.plot_info_label = QLabel()
         self.plot_info_label.setObjectName("Muted")
@@ -4842,6 +4649,8 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.ai_layout_hint.setObjectName("Muted")
         self.ai_layout_hint.setWordWrap(True)
+        self.ai_layout_hint.setVisible(False)
+        self.assistant_title.setToolTip(self.ai_layout_hint.text())
         layout.addWidget(self.ai_layout_hint)
 
         self.assistant_tabs = QTabWidget()
@@ -4964,38 +4773,38 @@ class NeuroFlowWindow(QMainWindow):
             widget.setToolTip(f"{title}\n{description}")
 
     def _apply_icons(self) -> None:
-        icon = self.style().standardIcon
-        standard = QStyle.StandardPixmap
-        for button, icon_name in (
-            (self.new_project_button, standard.SP_FileIcon),
-            (self.sample_button, standard.SP_MediaPlay),
-            (self.import_button, standard.SP_DialogOpenButton),
-            (self.public_button, standard.SP_DriveNetIcon),
-            (self.project_button, standard.SP_DialogOpenButton),
-            (self.demo_folder_button, standard.SP_DirOpenIcon),
-            (self.home_button, standard.SP_DirHomeIcon),
-            (self.home_ai_button, standard.SP_MessageBoxInformation),
-            (self.sorter_manager_button, standard.SP_ComputerIcon),
-            (self.save_button, standard.SP_DialogSaveButton),
-            (self.ai_button, standard.SP_MessageBoxInformation),
-            (self.tutorial_button, standard.SP_DialogHelpButton),
-            (self.docs_button, standard.SP_FileDialogInfoView),
-            (self.run_button, standard.SP_MediaPlay),
-            (self.run_step_button, standard.SP_MediaPlay),
-            (self.figure_settings_button, standard.SP_FileDialogDetailedView),
-            (self.project_import_button, standard.SP_DialogOpenButton),
-            (self.project_public_button, standard.SP_DriveNetIcon),
-            (self.project_simulation_button, standard.SP_MediaPlay),
-            (self.project_source_folder_button, standard.SP_DirOpenIcon),
-            (self.panel_focus_button, standard.SP_TitleBarMaxButton),
-            (self.panel_edit_button, standard.SP_FileDialogDetailedView),
-            (self.panel_save_button, standard.SP_DialogSaveButton),
-            (self.open_ai_button, standard.SP_MessageBoxInformation),
-            (self.sidebar_ai_settings_button, standard.SP_FileDialogDetailedView),
-            (self.sidebar_ai_send_button, standard.SP_ArrowForward),
-            (self.close_ai_panel_button, standard.SP_TitleBarCloseButton),
+        for name, glyph in (
+            ("new_project_button", "plus"),
+            ("sample_button", "play"),
+            ("import_button", "folder"),
+            ("public_button", "grid"),
+            ("project_button", "folder"),
+            ("demo_folder_button", "folder"),
+            ("home_button", "home"),
+            ("home_ai_button", "chat"),
+            ("sorter_manager_button", "settings"),
+            ("save_button", "save"),
+            ("ai_button", "chat"),
+            ("tutorial_button", "help"),
+            ("docs_button", "book"),
+            ("run_button", "play"),
+            ("run_step_button", "play"),
+            ("figure_settings_button", "settings"),
+            ("project_import_button", "folder"),
+            ("project_public_button", "grid"),
+            ("project_simulation_button", "play"),
+            ("project_source_folder_button", "folder"),
+            ("panel_focus_button", "expand"),
+            ("panel_edit_button", "settings"),
+            ("panel_save_button", "save"),
+            ("open_ai_button", "expand"),
+            ("sidebar_ai_settings_button", "settings"),
+            ("sidebar_ai_send_button", "send"),
+            ("close_ai_panel_button", "close"),
         ):
-            button.setIcon(icon(icon_name))
+            button = getattr(self, name)
+            color = "#140d17" if button.objectName() == "Primary" else "#ded4e5"
+            button.setIcon(line_icon(glyph, color))
 
     def _update_control_tooltips(self) -> None:
         for widget in self.findChildren(QWidget):
@@ -5119,15 +4928,19 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.sidebar_ai_mode_combo.blockSignals(False)
         self.home_tutorial_button.setText(tr("tutorial", language))
-        self.hero_label.setText(tr("hero", language))
+        self.hero_label.setText("NeuroEphys AI")
         self.hero_subtitle.setText(
             (
-                "Choose one entry to begin. Data, parameters, results, and human "
-                "decisions stay together in one project."
+                "Your recordings. Your analysis workspace."
                 if language == "en_US"
-                else "选择一个入口即可开始；数据、参数、结果与人工决定始终保留在同一项目中。"
+                else "从一份记录，开始你的分析。"
             )
         )
+        self.home_search_button.setText(
+            "Find tools and actions                    Ctrl+K" if language == "en_US"
+            else "查找功能与操作                         Ctrl+K"
+        )
+        self.home_recent_button.setText("Recent projects" if language == "en_US" else "最近的项目")
         self.new_project_button.setText(
             "New project" if language == "en_US" else "新建项目"
         )
@@ -5223,7 +5036,8 @@ class NeuroFlowWindow(QMainWindow):
         for step in STEPS:
             title, subtitle = step_text(step.key, language)
             if not self.sidebar_collapsed:
-                self.step_buttons[step.key].setText(f"{title}\n    {subtitle}")
+                self.step_buttons[step.key].setText(title)
+                self.step_buttons[step.key].setToolTip(subtitle)
             chapter = next(
                 item for item in TUTORIALS if item["key"] == STEP_TUTORIAL[step.key]
             )
@@ -5268,6 +5082,7 @@ class NeuroFlowWindow(QMainWindow):
         )
         self._refresh_unit_curation_summary()
         self.plot_help_label.setText(tr("plot_help", language))
+        self.plot_tools_toggle.setText("Plot tools  ▸" if language == "en_US" else "图表工具  ▸")
         self.figure_settings_button.setText(tr("plot_settings", language))
         self._update_panel_control_text()
         current_style = self.plot_style_combo.currentData()
@@ -5284,9 +5099,9 @@ class NeuroFlowWindow(QMainWindow):
         self.metric_duration.label_widget.setText(tr("duration", language))
         self.metric_units.label_widget.setText(tr("units", language))
         self.assistant_title.setText(
-            "AI, guidance and evidence"
+            "Assistant"
             if language == "en_US"
-            else "AI、引导与证据"
+            else "助手"
         )
         self.assistant_mode.setText(
             "AI mode" if language == "en_US" else "AI 模式"
@@ -5512,6 +5327,7 @@ class NeuroFlowWindow(QMainWindow):
         return self._panel_axes[int(index)]
 
     def _toggle_panel_focus(self) -> None:
+        self.plot_tools_toggle.setChecked(True)
         snapshot = getattr(self, "_panel_layout_snapshot", None)
         if snapshot:
             for axis, position, visible in snapshot:
@@ -5656,6 +5472,8 @@ class NeuroFlowWindow(QMainWindow):
             )
 
     def _create_blank_project(self) -> None:
+        if not self._can_switch_project():
+            return
         dialog = NewProjectDialog(self.workspace, self, self.language)
         if dialog.exec() == QDialog.Accepted and dialog.state:
             self._load_state(dialog.state)
@@ -5668,6 +5486,8 @@ class NeuroFlowWindow(QMainWindow):
         project_root: Path | None = None,
         project_name: str | None = None,
     ) -> None:
+        if not self._can_switch_project():
+            return
         dialog = ImportDialog(
             self.workspace,
             self,
@@ -5695,6 +5515,8 @@ class NeuroFlowWindow(QMainWindow):
         )
 
     def _open_examples(self) -> None:
+        if not self._can_switch_project():
+            return
         dialog = ExampleLibraryDialog(self.workspace, self, self.language)
         if dialog.exec() != QDialog.Accepted:
             return
@@ -5939,6 +5761,8 @@ class NeuroFlowWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(index)))
 
     def _open_project(self) -> None:
+        if not self._can_switch_project():
+            return
         path = QFileDialog.getOpenFileName(
             self,
             "选择 NeuroEphys AI 项目",
@@ -5961,7 +5785,8 @@ class NeuroFlowWindow(QMainWindow):
         state.metadata["language"] = self.language
         self.preview = state.preprocessing or None
         self.matches = []
-        self.project_label.setText(f"{state.name}  ·  {state.root}")
+        self.project_label.setText(state.name)
+        self.project_label.setToolTip(str(state.root))
         self.metric_source.value_label.setText(state.source_type.upper())
         self.metric_channels.value_label.setText(str(state.channel_count or "—"))
         self.metric_duration.value_label.setText(f"{state.duration_seconds:.1f}s")
@@ -6020,6 +5845,7 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_ai_sidebar()
         self._restoring_project = False
         self._set_project_clean()
+        self._remember_project(state.root / MANIFEST_NAME)
 
     def _save(self, _checked: bool = False, *, notify: bool = True) -> bool:
         if not self.state:
@@ -6030,6 +5856,7 @@ class NeuroFlowWindow(QMainWindow):
                 datetime.now(timezone.utc).astimezone().isoformat()
             )
             path = save_project(self.state)
+            self._remember_project(path)
             self._set_project_clean()
             self.status_label.setText(
                 f"Project saved: {path.name}"
@@ -6175,7 +6002,8 @@ class NeuroFlowWindow(QMainWindow):
             self.sidebar_collapse_button.setToolTip("缩略左侧分析流程")
             for step in STEPS:
                 title, subtitle = step_text(step.key, self.language)
-                self.step_buttons[step.key].setText(f"{title}\n    {subtitle}")
+                self.step_buttons[step.key].setText(title)
+                self.step_buttons[step.key].setToolTip(subtitle)
             target = 270
         self.workflow_toggle_button.setText(
             ("Expand workflow" if self.language == "en_US" else "展开流程")
@@ -6311,6 +6139,8 @@ class NeuroFlowWindow(QMainWindow):
         self.run_context_label.setVisible(footer_room)
         self.stage_position_label.setVisible(width >= 610)
         self.stage_guide_button.setVisible(width >= 560)
+        self.page_subtitle.setVisible(width >= 680)
+        self.stage_progress.setVisible(width >= 610)
 
     def _select_step(self, key: str) -> None:
         previous_option = (
@@ -7194,6 +7024,8 @@ class NeuroFlowWindow(QMainWindow):
         if answer != QMessageBox.Yes:
             return
         self.active_run_keys = list(keys)
+        self.progress_bar.setRange(0, len(keys))
+        self.progress_bar.setValue(0)
         self.active_run_started = datetime.now(timezone.utc).astimezone()
         self.run_button.setEnabled(False)
         self.run_step_button.setEnabled(False)
@@ -7239,7 +7071,8 @@ class NeuroFlowWindow(QMainWindow):
     def _on_step_done(self, key: str, value: object) -> None:
         skipped = isinstance(value, dict) and value.get("skipped")
         self._set_step_status(key, "skipped" if skipped else "completed")
-        self.progress_bar.setValue([step.key for step in STEPS].index(key) + 1)
+        if key in self.active_run_keys:
+            self.progress_bar.setValue(self.active_run_keys.index(key) + 1)
         if key == "preprocess" and not skipped:
             self.preview = value
         elif key == "sorting":
@@ -7916,11 +7749,127 @@ class NeuroFlowWindow(QMainWindow):
         )
 
     def _open_context_tutorial(self) -> None:
-        TutorialDialog(
-            STEP_TUTORIAL.get(self.current_step, "import"),
-            self,
-            self.language,
-        ).exec()
+        self._open_tutorial_center(STEP_TUTORIAL.get(self.current_step, "import"))
+
+    def _open_tutorial_center(self, key: str = "import") -> None:
+        if self.tutorial_dialog is not None:
+            self.tutorial_dialog.close()
+            self.tutorial_dialog.deleteLater()
+        self.tutorial_dialog = TutorialDialog(key, self, self.language)
+        self.tutorial_dialog.show()
+        self.tutorial_dialog.raise_()
+
+    def _navigate_from_tutorial(self, item: dict) -> None:
+        key = item.get("id")
+        if key == "resume":
+            self._open_project()
+        elif key == "examples":
+            self._open_examples()
+        elif key == "layout_ai":
+            if self.state:
+                self.pages.setCurrentWidget(self.workspace_page)
+                self._reset_workspace_layout()
+        elif self.state and item.get("page_key") in self.step_buttons:
+            self.pages.setCurrentWidget(self.workspace_page)
+            self.guide_seen_steps.add(item["page_key"])
+            self._select_step(item["page_key"])
+            if key == "comparison":
+                index = self.sorting_workbench.diagnostic_combo.findData("comparison")
+                if index >= 0:
+                    self.sorting_workbench.diagnostic_combo.setCurrentIndex(index)
+            elif key in {"population", "connectivity"}:
+                target = "population:heatmap" if key == "population" else "connectivity:examples"
+                index = self.option_combo.findData(target)
+                if index >= 0:
+                    self.option_combo.setCurrentIndex(index)
+        else:
+            self._show_import("kilosort" if key == "import_sorting" else "binary", own_data_only=True)
+
+    def _recent_projects(self) -> list[str]:
+        try:
+            items = json.loads(str(self.settings.value("projects/recent", "[]")))
+        except (ValueError, TypeError):
+            return []
+        return [p for p in items if isinstance(p, str)][:8] if isinstance(items, list) else []
+
+    def _remember_project(self, path: Path) -> None:
+        if not path.is_file():
+            return
+        path_text = str(path.resolve())
+        previous = [p for p in self._recent_projects() if p.casefold() != path_text.casefold()]
+        self.settings.setValue("projects/recent", json.dumps([path_text, *previous][:8]))
+
+    def _refresh_recent_menu(self) -> None:
+        self.recent_menu.clear()
+        for path in self._recent_projects():
+            manifest = Path(path)
+            action = self.recent_menu.addAction(manifest.parent.name)
+            action.setToolTip(path)
+            action.setEnabled(manifest.is_file())
+            action.triggered.connect(lambda _checked=False, p=path: self._open_recent_project(p))
+        if self.recent_menu.isEmpty():
+            action = self.recent_menu.addAction("No recent projects" if self.language == "en_US" else "还没有最近项目")
+            action.setEnabled(False)
+
+    def _show_recent_projects(self) -> None:
+        self._refresh_recent_menu()
+        self.recent_menu.popup(self.home_recent_button.mapToGlobal(self.home_recent_button.rect().bottomLeft()))
+
+    def _open_recent_project(self, path: str) -> None:
+        if not self._can_switch_project():
+            return
+        try:
+            self._load_state(load_project(Path(path)))
+        except Exception as exc:
+            QMessageBox.warning(self, "Open project" if self.language == "en_US" else "打开项目", str(exc))
+
+    def _can_switch_project(self) -> bool:
+        if self.worker is not None and self.worker.isRunning():
+            QMessageBox.information(self, PRODUCT_NAME, "Wait for the analysis to finish." if self.language == "en_US" else "分析正在运行，请完成后再切换项目。")
+            return False
+        if self.ai_dialog and self.ai_dialog.worker and self.ai_dialog.worker.isRunning():
+            QMessageBox.information(self, PRODUCT_NAME, "Wait for the AI response to finish." if self.language == "en_US" else "AI 回复正在生成，请完成后再切换项目。")
+            return False
+        if self.state and self.project_dirty:
+            choice = QMessageBox.question(
+                self, PRODUCT_NAME,
+                "Save the current project before switching?" if self.language == "en_US" else "当前项目有未保存的修改。切换前是否保存？",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save,
+            )
+            if choice == QMessageBox.Cancel:
+                return False
+            if choice == QMessageBox.Save and not self._save(notify=False):
+                return False
+        return True
+
+    def _open_command_palette(self) -> None:
+        from .command_palette import CommandPaletteDialog
+        english = self.language == "en_US"
+        commands = []
+        for name in ("new", "open", "examples", "save", "project_folder", "sorters", "sidebar", "ai_panel", "reset_layout", "tutorial", "docs"):
+            item = getattr(self, f"menu_{name}_action")
+            needs_project = name in {"save", "project_folder", "sidebar", "ai_panel", "reset_layout"}
+            commands.append({
+                "key": name, "title": item.text(), "description": "NeuroEphys AI",
+                "shortcut": item.shortcut().toString(), "callback": item.trigger,
+                "enabled": item.isEnabled() and (not needs_project or self.state is not None),
+                "disabled_reason": "Open a project first" if english else "请先打开项目",
+            })
+        for step in STEPS:
+            title, subtitle = step_text(step.key, self.language)
+            commands.append({
+                "key": step.key, "title": title, "description": subtitle,
+                "keywords": step.key + " " + step.title,
+                "callback": lambda k=step.key: self._navigate_from_tutorial({"id": k, "page_key": k}),
+                "enabled": self.state is not None,
+                "disabled_reason": "Open a project first" if english else "请先打开项目",
+            })
+        for path in self._recent_projects():
+            commands.append({"key": path, "title": Path(path).parent.name,
+                             "description": "Recent project" if english else "最近的项目",
+                             "callback": lambda p=path: self._open_recent_project(p),
+                             "enabled": Path(path).is_file()})
+        CommandPaletteDialog(commands, self, self.language).exec()
 
 
 def raw_overview_figure_empty(state: ProjectState):

@@ -8,6 +8,9 @@ on:
       - "docs/site/**"
       - "docs/requirements.txt"
       - "scripts/build_sphinx_docs.py"
+      - "scripts/generate_*manual.py"
+      - "scripts/generate_sphinx_parameter_reference.py"
+      - "neuroflow/tutorial*.py"
       - "assets/brand/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:

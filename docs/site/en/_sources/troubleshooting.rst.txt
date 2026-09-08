@@ -1,6 +1,32 @@
 Troubleshooting
 ===============
 
+Missing figure controls or a cramped window
+----------------------------------------------------
+
+Expand **Plot tools** above the figure for panel selection, editing, and export.
+Drag the dividers to resize the three columns. **Ctrl+B** collapses the workflow
+labels; **Ctrl+J** shows or hides the assistant. Scroll long central content;
+the bottom run bar remains available. **View → Reset workspace layout** restores
+the layout without changing analysis results.
+
+Small help text or repeated walkthrough prompts
+----------------------------------------------------
+
+Use **A+** in the Tutorial center to enlarge the body text; the size is remembered.
+For an empty search, clear the query and reset the category to all tasks.
+Turn off automatic prompts at the bottom of a step guide. You can still open
+**Help → Tutorial center** or the current **Step guide** whenever needed.
+
+A recent project is disabled or a recording is missing
+------------------------------------------------------------
+
+Recent projects store the manifest location. If you moved a folder, use
+**Open / import project** to choose its ``neuroflow_project.json`` again.
+Saving a project does not copy every external recording. Restore missing source
+files to their original location, or import into a new project. Keep the old
+project and its completed results.
+
 Application does not start
 --------------------------
 

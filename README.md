@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.1.1
+# NeuroEphys AI v1.2.0
 
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
@@ -6,19 +6,31 @@
 
 > **正式版 / Production release**
 >
-> v1.0 同时提供无需 Python 的 Windows App 与可脚本化的 ``neuroephys-ai`` Python
+> v1.2 同时提供无需 Python 的 Windows App 与可脚本化的 ``neuroephys-ai`` Python
 > 包。候选 Unit、统计结果和 AI 建议仍属于科研证据，必须由研究者结合实验设计复核。
 
 - 教程网站：[中文](https://carbonlack.github.io/neuroflow-ai/zh/) ·
   [English](https://carbonlack.github.io/neuroflow-ai/en/)
 - 下载测试：[GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/releases)
 - 问题反馈：[GitHub Issues](https://github.com/CarbonLack/neuroflow-ai/issues)
-- v1.0 发行说明：[RELEASE_NOTES_1.0.md](RELEASE_NOTES_1.0.md)
+- 本次发行说明：[RELEASE_NOTES_1.2.md](RELEASE_NOTES_1.2.md)
 
 NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 平台调用经过验证的 sorter 和分析库，将数据导入、质量控制、sorting、人工 Unit
 复核、行为对齐、Neo/Elephant 神经分析、统计、机器学习、论文图和复现记录组织成
 可逐步检查、替换和恢复的工作流。
+
+## 开始使用
+
+首页保留 **新建项目、打开／导入项目、示例项目**。第一次使用可按
+[小项目练习](https://carbonlack.github.io/neuroflow-ai/zh/quick-start.html) 打开教学数据、
+运行质控、保存图片并重新打开项目。按 **Ctrl+K** 查找操作，按 **Ctrl+Shift+H**
+打开可搜索的教程中心。图表样式、子图选择、波形窗口在 **图表工具** 中展开。
+
+v1.2 优化了首页、三栏工作区、线条图标和阅读排版，新增最近项目、教程字号/已读记录，
+并修正单次运行进度和切换项目的未保存检查。App 与网页共用 18 项操作教程。
+
+<p align="center"><img src="docs/site/assets/neuroephys-tutorial-zh.png" width="880" alt="新版任务教程中心"></p>
 
 ## 受控AI助手
 
@@ -40,9 +52,9 @@ NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道
 
 ## 可执行工作流
 
-首页把“新建空白项目”“导入自己的数据”“打开已验证公开项目”“教学模拟”和
-“恢复项目”明确分开。空白项目不会生成模拟数据，进入 01 数据与项目页面后才由
-用户选择通用二进制、记录系统文件或已有 sorting 结果。数据入口会确定流程起点、
+首页“新建项目”进入数据导入向导，“打开／导入项目”继续已保存的项目，
+“示例项目”统一提供教学模拟和已验证公开数据。用户可选择通用二进制、
+记录系统文件或已有 sorting 结果。数据入口会确定流程起点、
 sorting 可用性和后续必需的元数据。
 示例数据保存在
 `Documents/NeuroEphysAI/DemoData/NeuroFlow_demo`，包含二进制原始电压、事件表、
@@ -84,7 +96,7 @@ NeuroEphys AI 不复制其他软件或文章的界面、文案、截图、图表
 - 内置缩放、平移、复位和图片保存工具栏；
 - 可切换突出数据点、阶梯线、灰度和高对比呈现；
 - 系统级中文/English 切换，语言选择写入项目；
-- 11 个工作流节点各自拥有“为什么做、输入、输出、必须检查、逐控件后果、方法来源”教程。
+- 教程中心按任务搜索，区分操作步骤、参数与排错，支持字号调整和跳转到对应页面。
 
 ## 数据入口
 
@@ -108,7 +120,7 @@ NeuroEphys AI 不复制其他软件或文章的界面、文案、截图、图表
 - IBL Brain-Wide Map `EID 4ecb5d24-f5cc-402c-be28-9d0f7cb14b3a`；
 - Buzsáki Lab DANDI `000552/0.230630.2304` 的固定 NWB asset。
 
-数据已下载时，首页双击“已验证公开项目”即可查看本机状态并直接建立或打开项目缓存。
+数据已下载时，在首页“示例项目”中选择对应公开记录即可打开项目缓存。
 
 原始文件保持只读。只有明确选择复制时才复制通用二进制；记录系统适配器仅在
 sorter 需要时生成项目级标准缓存。缺少原始电压时，原始质控与 sorting 会明确显示为跳过，不会伪造。
@@ -149,7 +161,7 @@ chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度
 
 ## 启动
 
-普通用户安装 ``NeuroEphysAI-Setup-1.1.1.exe`` 后，双击桌面上的 **NeuroEphys AI**
+普通用户安装 ``NeuroEphysAI-Setup-1.2.0.exe`` 后，双击桌面上的 **NeuroEphys AI**
 快捷方式即可启动。便携版需完整解压 ZIP，然后双击
 ``NeuroEphysAI\NeuroEphysAI.exe``；不要只复制单独的 EXE。两种版本都不要求用户安装
 Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
@@ -157,7 +169,7 @@ Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
 Python 用户可以安装构建出的 wheel：
 
 ```powershell
-python -m pip install neuroephys_ai-1.1.1-py3-none-any.whl
+python -m pip install neuroephys_ai-1.2.0-py3-none-any.whl
 neuroephys info
 ```
 
