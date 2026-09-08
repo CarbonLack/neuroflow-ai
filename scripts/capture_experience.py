@@ -15,6 +15,7 @@ from neuroflow.analysis import compute_unit_metrics, run_raw_qc
 from neuroflow.project import save_project
 from neuroflow.simulation import generate_demo_recording
 from neuroflow.ui import NeuroFlowWindow, StageGuideDialog, TutorialDialog
+from neuroflow import ui, tutorial_center
 
 
 def main():
@@ -23,6 +24,9 @@ def main():
     QSettings.setDefaultFormat(QSettings.IniFormat)
     with tempfile.TemporaryDirectory(prefix="neuroephys-ui-") as settings_path:
         QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, settings_path)
+        # Explicit organisation/application constructors otherwise use NativeFormat
+        # on Windows even after setDefaultFormat(), leaking captures into recents.
+        ui.QSettings = tutorial_center.QSettings = lambda *_: QSettings(str(Path(settings_path) / "capture.ini"), QSettings.IniFormat)
         app = QApplication.instance() or QApplication([])
         app.setFont(QFont("Microsoft YaHei", 10))
         window = NeuroFlowWindow(workspace)
