@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 
+import numpy as np
+
 from neuroflow.analysis import run_raw_qc
 from neuroflow.benchmark.config import load_config
 from neuroflow.benchmark.pipeline import estimate_storage, generate_session
+from neuroflow.benchmark.waveform_generator import generate_templates
 from neuroflow.project import load_project
 
 
@@ -55,3 +58,36 @@ def test_small_session_is_deterministic_blinded_and_valid(tmp_path):
     second_project, _, second_result = generate_session(tmp_path / "second", cfg, "lightweight", "neuropixels", 0)
     assert second_result["passed"]
     assert first == (second_project / "raw" / "recording.bin").read_bytes()
+
+
+def test_waveform_population_stays_in_real_calibration_range():
+    units = [
+        {
+            "unit_id": unit_id,
+            "firing_phenotype": "fast-spiking-like" if unit_id % 4 == 0 else "regular",
+            "sorting_difficulty": "low_snr" if unit_id % 7 == 0 else "standard",
+            "peak_channel": (unit_id % 8) * 4 + unit_id % 4,
+        }
+        for unit_id in range(80)
+    ]
+    templates = generate_templates(np.random.default_rng(20260915), units, "tetrode", 32, 30_000.0)
+    half_widths = []
+    trough_to_peaks = []
+    rebound_ratios = []
+    for payload in templates.values():
+        waveform = payload["waveform_uv"]
+        peak_channel = int(np.argmax(np.ptp(waveform, axis=0)))
+        trace = waveform[:, peak_channel]
+        trough_index = int(np.argmin(trace))
+        trough = -float(trace[trough_index])
+        threshold = -0.5 * trough
+        selected = np.flatnonzero(trace <= threshold)
+        half_widths.append(len(selected) / 30_000.0 * 1_000.0)
+        positive_index = trough_index + 1 + int(np.argmax(trace[trough_index + 1 :]))
+        trough_to_peaks.append((positive_index - trough_index) / 30_000.0 * 1_000.0)
+        rebound_ratios.append(float(trace[positive_index]) / trough)
+    # Broad acceptance bands are based on the 10--90% ranges measured by the
+    # read-only real-data calibration; the separate report tracks exact values.
+    assert 0.16 <= np.median(half_widths) <= 0.25
+    assert 0.45 <= np.median(trough_to_peaks) <= 0.58
+    assert 0.16 <= np.median(rebound_ratios) <= 0.29

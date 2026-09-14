@@ -1,0 +1,35 @@
+schema_version: 2
+seed: 20260915
+sampling_rate_hz: 30000
+lfp_sampling_rate_hz: 1000
+scale_uv_per_bit: 0.195
+chunk_seconds: 5
+lightweight:
+  sessions: 1
+  duration_seconds: [65]
+  trial_range: [5, 7]
+neuropixels:
+  lightweight_channels: 64
+  lightweight_units_per_region:
+    M1: [18, 22]
+    mPFC: [16, 20]
+tetrode:
+  lightweight_channels: 32
+  lightweight_units_per_region:
+    M1: [6, 9]
+    mPFC: [6, 9]
+noise:
+  normal_rms_uv: [12.0, 21.0]
+  line_noise_uv: [2.0, 5.0]
+  far_unit_rate_hz_per_4_channels: [45.0, 95.0]
+  far_unit_amplitude_uv: [5.0, 26.0]
+  local_correlation_fraction: [0.08, 0.22]
+qc:
+  high_noise_channels: [1, 1]
+  line_noise_channels: [1, 1]
+  dead_channel_probability: 1.0
+  transient_artifacts: [1, 2]
+  baseline_shift_probability: 0.5
+  common_mode_probability: 0.5
+  clipping_probability: 0.35
+  drift_level: [0.04, 0.14]

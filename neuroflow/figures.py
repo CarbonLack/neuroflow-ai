@@ -332,7 +332,10 @@ def raw_overview_figure(
     time_ms = (
         np.arange(start, stop, sample_step)[: len(traces)] / state.sampling_rate * 1000
     )
-    robust_amplitude = float(np.nanpercentile(np.abs(traces), 99))
+    # Use the median per-channel envelope so that one noisy contact does not
+    # flatten every healthy channel in the stacked preview.
+    channel_envelopes = np.nanpercentile(np.abs(traces), 99, axis=0)
+    robust_amplitude = float(np.nanmedian(channel_envelopes))
     spacing = max(robust_amplitude * 2.6, 25.0)
     offsets = np.arange(traces.shape[1]) * spacing
     for local_index, channel_index in enumerate(range(first_channel, last_channel)):

@@ -35,7 +35,11 @@ def export_ground_truth(
         **{
             key: value
             for unit_id, payload in templates.items()
-            for key, value in ((f"unit_{unit_id}_channels", payload["channels"]), (f"unit_{unit_id}_waveform_uv", payload["waveform_uv"]))
+            for key, value in (
+                (f"unit_{unit_id}_channels", payload["channels"]),
+                (f"unit_{unit_id}_waveform_uv", payload["waveform_uv"]),
+                (f"unit_{unit_id}_variants_uv", payload.get("variants_uv", payload["waveform_uv"][None, ...])),
+            )
         },
     )
     _csv(root / "units.csv", units)

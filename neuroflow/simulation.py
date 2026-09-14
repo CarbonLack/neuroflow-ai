@@ -287,31 +287,48 @@ def generate_demo_recording(
     raw[:, noisy_channel] += rng.normal(0.0, 55.0 / scale_uv_per_bit, size=sample_count)
 
     waveform_samples = 61
-    x = np.arange(waveform_samples, dtype=np.float64)
+    half = waveform_samples // 2
+    x_ms = (np.arange(waveform_samples, dtype=np.float64) - half) / sampling_rate * 1000.0
     unit_channels = np.linspace(
         1, max(1, channel_count - 2), len(base_rates), dtype=int
     ).tolist()
     unit_amplitudes = [185, 225, 205, 245, 190, 230, 210, 200]
     templates = {}
     for unit_id, center_channel in enumerate(unit_channels):
-        negative = -np.exp(-0.5 * ((x - 22.0) / 3.2) ** 2)
-        rebound = 0.32 * np.exp(-0.5 * ((x - 31.0) / 5.0) ** 2)
-        temporal = (negative + rebound) * unit_amplitudes[unit_id] / scale_uv_per_bit
+        narrow = unit_id in {1, 4, 7}
+        trough_width = rng.uniform(0.055, 0.092) if narrow else rng.uniform(0.070, 0.130)
+        pre_gain = rng.uniform(0.07, 0.23)
+        rebound_gain = rng.uniform(0.15, 0.32)
+        pre_delay = rng.uniform(0.28, 0.40)
+        rebound_delay = rng.uniform(0.46, 0.61)
+        negative = -np.exp(-0.5 * (x_ms / trough_width) ** 2)
+        pre_positive = pre_gain * np.exp(-0.5 * ((x_ms + pre_delay) / rng.uniform(0.07, 0.11)) ** 2)
+        rebound = rebound_gain * np.exp(-0.5 * ((x_ms - rebound_delay) / rng.uniform(0.13, 0.23)) ** 2)
+        slow_after = -rng.uniform(0.015, 0.045) * np.exp(-0.5 * ((x_ms - 1.05) / 0.40) ** 2)
+        temporal = (negative + pre_positive + rebound + slow_after) * unit_amplitudes[unit_id] / scale_uv_per_bit
         template = np.zeros((waveform_samples, channel_count), dtype=np.float64)
+        spatial_irregularity = rng.lognormal(0.0, 0.16, channel_count)
         for channel in range(channel_count):
-            spatial = np.exp(-abs(channel - center_channel) / 1.6)
+            spatial = np.exp(-abs(channel - center_channel) / 1.6) * spatial_irregularity[channel]
+            if channel == center_channel:
+                spatial = 1.0
             template[:, channel] = temporal * spatial
         templates[unit_id] = template
 
-    half = waveform_samples // 2
     for unit_id, spike_times in ground_truth.items():
         template = templates[unit_id]
+        previous_sample = -sample_count
         for spike_time in spike_times:
             center = round(spike_time * sampling_rate)
             start = center - half
             stop = start + waveform_samples
             if start >= 0 and stop <= sample_count:
-                raw[start:stop] += template
+                amplitude_scale = float(np.clip(rng.normal(1.0, 0.10), 0.70, 1.30))
+                isi_seconds = (center - previous_sample) / sampling_rate
+                if isi_seconds < 0.015:
+                    amplitude_scale *= 0.82 + 10.0 * isi_seconds
+                raw[start:stop] += template * amplitude_scale
+                previous_sample = center
 
     artifact_time = min(18.0, duration_seconds * 0.65)
     artifact_start = int(artifact_time * sampling_rate)

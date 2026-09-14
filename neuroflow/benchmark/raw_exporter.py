@@ -24,6 +24,7 @@ def _add_spikes(
     for unit in units:
         unit_id = int(unit["unit_id"])
         template = templates[unit_id]["waveform_uv"]
+        variants = templates[unit_id].get("variants_uv")
         channels = templates[unit_id]["channels"].copy()
         peak_index = int(np.argmin(template[:, int(np.argmax(np.max(np.abs(template), axis=0)))]))
         centers = np.rint(spikes[unit_id] * sampling_rate).astype(np.int64)
@@ -32,8 +33,19 @@ def _add_spikes(
         centers = centers[left:right]
         if not len(centers):
             continue
+        # Shape variants, amplitude variation and burst attenuation are
+        # deterministic functions of GT sample time.  The spike center is not
+        # moved: exported ground-truth timestamps remain sample-exact.
         progress = np.clip((centers / sampling_rate) / duration_seconds, 0, 1)
         amplitude_scale = 1.0 + unit["amplitude_drift_fraction"] * (progress - 0.5) * 2
+        hashed = centers.astype(np.uint64) * np.uint64(6364136223846793005)
+        unit_hash = ((unit_id + 1) * 1442695040888963407) & ((1 << 64) - 1)
+        hashed += np.uint64(unit_hash)
+        uniform = ((hashed >> np.uint64(11)).astype(np.float64) / float(1 << 53))
+        random_scale = 1.0 + unit.get("waveform_amplitude_cv", 0.1) * np.sqrt(3.0) * (2.0 * uniform - 1.0)
+        amplitude_scale *= np.clip(random_scale, 0.55, 1.45)
+        isi = np.r_[np.inf, np.diff(centers) / sampling_rate]
+        amplitude_scale *= np.where(isi < 0.015, 0.82 + 10.0 * isi, 1.0)
         if electrode == "neuropixels" and unit["spatial_drift_sites"]:
             shift = int(round(unit["spatial_drift_sites"] * float(np.mean(progress))))
             candidate = channels + shift
@@ -44,8 +56,13 @@ def _add_spikes(
         offsets = np.arange(len(template), dtype=np.int64) - peak_index
         indices = centers[:, None] + offsets[None, :] - sample_start
         valid = (indices >= 0) & (indices < len(raw_uv))
+        variant_index = ((hashed >> np.uint64(32)) % len(variants)).astype(int) if variants is not None else None
         for local_channel, channel in enumerate(channels):
-            values = amplitude_scale[:, None] * template[None, :, local_channel]
+            if variants is None:
+                waveform_values = template[None, :, local_channel]
+            else:
+                waveform_values = variants[variant_index, :, local_channel]
+            values = amplitude_scale[:, None] * waveform_values
             if electrode == "tetrode":
                 wire_gradient = local_channel - (len(channels) - 1) / 2
                 values *= 1.0 + unit["relative_wire_drift_fraction"] * wire_gradient * (progress[:, None] - 0.5)
@@ -87,7 +104,10 @@ def export_raw_recording(
     with path.open("wb", buffering=1024 * 1024 * 16) as handle:
         for sample_start in range(0, total_samples, chunk_samples):
             count = min(chunk_samples, total_samples - sample_start)
-            raw_uv = background_chunk(rng, sample_start, count, channel_count, sampling_rate, normal_rms, line_amplitude)
+            raw_uv = background_chunk(
+                rng, sample_start, count, channel_count, sampling_rate,
+                normal_rms, line_amplitude, noise_config,
+            )
             lfp_indices = np.minimum((sample_start + np.arange(count, dtype=np.int64)) // ratio, lfp.shape[1] - 1)
             for region in (0, 1):
                 channels = np.flatnonzero(region_index == region)
