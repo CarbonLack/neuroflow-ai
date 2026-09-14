@@ -125,21 +125,25 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
     preview = np.asarray(raw[:count], dtype=np.float32)
     rms = np.sqrt(np.mean(preview**2, axis=0))
     median_rms = float(np.median(rms))
-    bad_channels = np.flatnonzero(rms > median_rms * 2.6).astype(int).tolist()
+    high_noise_channels = np.flatnonzero(rms > median_rms * 1.8).astype(int).tolist()
+    dead_channels = np.flatnonzero(rms < median_rms * 0.2).astype(int).tolist()
+    bad_channels = sorted(set(high_noise_channels + dead_channels))
 
     frequencies, power = signal.welch(
         preview,
         fs=state.sampling_rate,
-        nperseg=min(8192, count),
+        nperseg=min(60_000, count),
         axis=0,
     )
-    mean_power = power.mean(axis=1)
     target_index = int(np.argmin(np.abs(frequencies - 50.0)))
-    neighborhood = (frequencies >= 45.0) & (frequencies <= 55.0)
-    baseline = np.median(mean_power[neighborhood])
-    line_noise_ratio = float(mean_power[target_index] / max(baseline, 1e-12))
+    neighborhood = (frequencies >= 45.0) & (frequencies <= 55.0) & (
+        np.abs(frequencies - 50.0) > 1.0
+    )
     channel_baseline = np.median(power[neighborhood], axis=0)
-    channel_line_ratios = power[target_index] / np.maximum(channel_baseline, 1e-12)
+    raw_channel_line_ratios = power[target_index] / np.maximum(channel_baseline, 1e-12)
+    population_line_baseline = max(float(np.median(raw_channel_line_ratios)), 1e-12)
+    channel_line_ratios = raw_channel_line_ratios / population_line_baseline
+    line_noise_ratio = float(np.max(channel_line_ratios))
     saturated_by_channel = np.count_nonzero(np.abs(preview) >= 32760, axis=0)
     saturated = int(saturated_by_channel.sum())
 
@@ -163,9 +167,13 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
     preview_rms = rms.copy()
     stable_rms = np.median(rms_timeline_array, axis=0)
     median_rms = float(np.median(stable_rms))
-    bad_channels = np.flatnonzero(
-        stable_rms > median_rms * 2.6
+    high_noise_channels = np.flatnonzero(
+        stable_rms > median_rms * 1.8
     ).astype(int).tolist()
+    dead_channels = np.flatnonzero(
+        stable_rms < median_rms * 0.2
+    ).astype(int).tolist()
+    bad_channels = sorted(set(high_noise_channels + dead_channels))
     temporal_peak_ratio = np.max(rms_timeline_array, axis=0) / np.maximum(
         stable_rms,
         1e-12,
@@ -186,17 +194,22 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
     quality_score = float(np.clip(quality_score, 0.0, 100.0))
     channel_labels = [
         (
-            "high_noise"
-            if channel in bad_channels
+            "near_dead"
+            if channel in dead_channels
+            else "high_noise"
+            if channel in high_noise_channels
             else "clipped"
             if clipping_fraction[channel] > 0.001
             else "transient_artifact"
             if channel in transient_channels
             else "line_noise"
-            if channel_line_ratios[channel] > 2.5
+            if channel_line_ratios[channel] > 6.0
             else "candidate_good"
         )
         for channel in range(state.channel_count)
+    ]
+    line_noise_channels = [
+        index for index, label in enumerate(channel_labels) if label == "line_noise"
     ]
     psd_mask = frequencies <= min(300.0, state.sampling_rate * 0.45)
 
@@ -205,10 +218,14 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
         "preview_channel_rms": preview_rms.tolist(),
         "median_rms": median_rms,
         "bad_channels": bad_channels,
+        "high_noise_channels": high_noise_channels,
+        "dead_channels": dead_channels,
         "transient_channels": transient_channels,
         "temporal_peak_ratio": temporal_peak_ratio.tolist(),
         "line_noise_ratio": line_noise_ratio,
         "channel_line_noise_ratio": channel_line_ratios.tolist(),
+        "line_noise_channels": line_noise_channels,
+        "line_noise_population_baseline": population_line_baseline,
         "saturated_samples": saturated,
         "saturated_by_channel": saturated_by_channel.tolist(),
         "clipping_fraction": clipping_fraction.tolist(),
@@ -219,12 +236,13 @@ def run_raw_qc(state: ProjectState, seconds: float = 8.0) -> dict:
         "timeline_seconds": (timeline_starts / state.sampling_rate).tolist(),
         "rms_timeline": rms_timeline_array.tolist(),
         "preview_seconds": count / state.sampling_rate,
-        "status": "warning" if bad_channels or line_noise_ratio > 2.5 else "pass",
+        "status": "warning" if bad_channels or line_noise_channels else "pass",
     }
     state.qc = result
     state.log(
         f"Raw QC completed: quality score {quality_score:.1f}/100, "
-        f"{len(bad_channels)} high-noise channels, 50 Hz ratio {line_noise_ratio:.2f}"
+        f"{len(high_noise_channels)} high-noise and {len(dead_channels)} near-dead channels, "
+        f"50 Hz ratio {line_noise_ratio:.2f}"
     )
     return result
 

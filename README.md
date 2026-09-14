@@ -24,6 +24,8 @@ NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道
 
 v1.2.1 增加按实际图名选择的子图格式编辑、分页并排参数、项目统一样式与期刊参考预设。
 字体、轴线、网格及配色的默认参数与依据见 [科研作图标准](docs/FIGURE_STYLE_STANDARD_ZH.md)。
+用于长时、复杂、带独立答案验证的两类模拟数据生成方法见
+[20 分钟标准 benchmark](docs/STANDARD_BENCHMARK_20MIN_ZH.md)。
 
 首页保留 **新建项目、打开／导入项目、示例项目**。第一次使用可按
 [小项目练习](https://carbonlack.github.io/neuroflow-ai/zh/quick-start.html) 打开教学数据、
