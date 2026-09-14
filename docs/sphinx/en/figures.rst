@@ -9,6 +9,20 @@ panel to enlarge, edit, or export it without cropping a screenshot. Expand
 Figure Studio
 -------------
 
+Panels are named from their actual titles, not ambiguous “Axis 1 / Axis 2” labels.
+The object editor uses category tabs and paired controls; its preview follows the selected panel.
+In **Shared style**, choose a preset and apply it to the **selected panel**, **whole figure**,
+or **all project figures**. Save the project with Ctrl+S to retain shared-style overrides.
+Applying to all project figures clears local shared-style overrides. Existing exports are not overwritten.
+Fine-grained object edits affect the current canvas and must be exported separately.
+
+Research defaults are Arial, 8 pt labels/ticks/legend, 9 pt titles, 0.75 pt axes, 0.8 pt data lines,
+outward 3 pt ticks, no grid, no top/right frame, muted purple/green category colours and 600 DPI raster output.
+A higher-contrast category palette and the original category colours remain selectable.
+Data, units, limits, scales and heatmap normalization are preserved. Nature reference uses 7 pt:
+there is no single universal journal specification. See
+`official sources and design choices <https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/FIGURE_STYLE_STANDARD_ZH.md>`_.
+
 Open **Figure settings** for whole-figure controls or **Edit panel** for the
 selected axis. The editor exposes:
 

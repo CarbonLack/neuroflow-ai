@@ -646,7 +646,7 @@ def compare_sorting_pair_with_lag(
         encoding="utf-8",
     )
     summary["outputs"].update(
-        export_sorting_comparison_figures(summary, destination)
+        export_sorting_comparison_figures(summary, destination, state.metadata.get("publication_style"))
     )
     summary_path.write_text(
         json.dumps(summary, ensure_ascii=False, indent=2),
@@ -665,9 +665,11 @@ def compare_sorting_pair_with_lag(
 def export_sorting_comparison_figures(
     summary: dict[str, Any],
     output_dir: Path,
+    publication_style: dict | None = None,
 ) -> dict[str, str]:
     """Export readable comparison panels without claiming ground truth."""
     import matplotlib.pyplot as plt
+    from .publication_style import apply_publication_style, style_values
 
     pairwise = summary.get("pairwise", [])
     assigned = summary.get("one_to_one_assignment", [])
@@ -740,7 +742,8 @@ def export_sorting_comparison_figures(
         color="#4b5563",
     )
     figure.tight_layout(rect=(0, 0.03, 1, 1))
-    figure.savefig(heatmap_png, dpi=180, bbox_inches="tight")
+    apply_publication_style(figure, publication_style)
+    figure.savefig(heatmap_png, dpi=style_values(publication_style)["dpi"], bbox_inches="tight")
     figure.savefig(heatmap_svg, bbox_inches="tight")
     plt.close(figure)
 
@@ -795,7 +798,8 @@ def export_sorting_comparison_figures(
         color="#4b5563",
     )
     figure.tight_layout(rect=(0, 0.03, 1, 1))
-    figure.savefig(assigned_png, dpi=180, bbox_inches="tight")
+    apply_publication_style(figure, publication_style)
+    figure.savefig(assigned_png, dpi=style_values(publication_style)["dpi"], bbox_inches="tight")
     figure.savefig(assigned_svg, bbox_inches="tight")
     plt.close(figure)
     return {

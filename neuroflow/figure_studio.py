@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
+    QGridLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -40,11 +41,16 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSpinBox,
     QSplitter,
+    QTabWidget,
+    QRadioButton,
+    QButtonGroup,
+    QSizePolicy,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
 )
+from .publication_style import PRESETS, ACCESSIBLE_MAP, MUTED_MAP, apply_publication_style, panel_title, style_values
 
 
 def _rgba_hex(value: Any, fallback: str = "#000000") -> str:
@@ -78,11 +84,11 @@ def figure_artist_catalog(figure) -> list[dict[str, Any]]:
     """Return the editable object hierarchy used by the studio and tests."""
     result: list[dict[str, Any]] = [{"kind": "figure", "name": "Figure", "object": figure}]
     for axis_index, axis in enumerate(figure.axes, start=1):
-        title = axis.get_title().strip()
+        title = panel_title(axis, axis_index)
         result.append(
             {
                 "kind": "axis",
-                "name": title or f"Axis {axis_index}",
+                "name": title,
                 "object": axis,
                 "axis_index": axis_index,
             }
@@ -172,20 +178,23 @@ class FigureStudioDialog(QDialog):
             if language == "zh_CN"
             else "Figure Studio - object editor"
         )
-        self.resize(1180, 840)
+        self.resize(1280, 850)
+        self.field_widgets = {}
+        self._field_sections = {}
+        self._form_pages = {}
         root = QVBoxLayout(self)
 
         heading = QLabel(
-            "逐个选择并编辑整图、坐标轴、曲线、散点、柱形、热图、文字和图例"
+            "图形格式"
             if language == "zh_CN"
-            else "Select and edit the figure, axes, lines, points, patches, images, text, and legends"
+            else "Format figure"
         )
         heading.setStyleSheet("font-size: 19px; font-weight: 700;")
         root.addWidget(heading)
         explanation = QLabel(
             (
-                "这里修改的是当前图的呈现，不会重新计算数据。左侧选择对象，右侧只显示该对象"
-                "真正可用的属性；点击‘应用并预览’后主图立即更新。"
+                "子图指一块完整绘图区，不是 X / Y 轴。左侧按图名选择，右侧按类别调整。"
+                "统一样式可应用到当前图或整个项目，不改变分析数据。"
             )
             if language == "zh_CN"
             else (
@@ -202,30 +211,35 @@ class FigureStudioDialog(QDialog):
         self.tree.setHeaderLabels(
             ["图中对象" if language == "zh_CN" else "Figure objects"]
         )
-        self.tree.setMinimumWidth(300)
+        self.tree.setMinimumWidth(180)
+        self.tree.setMaximumWidth(310)
         self.tree.currentItemChanged.connect(self._selection_changed)
         splitter.addWidget(self.tree)
 
         editor_container = QWidget()
         editor_outer = QVBoxLayout(editor_container)
         self.target_heading = QLabel()
+        self.target_heading.setWordWrap(True)
         self.target_heading.setStyleSheet("font-size: 17px; font-weight: 700;")
         editor_outer.addWidget(self.target_heading)
-        self.editor_scroll = QScrollArea()
-        self.editor_scroll.setWidgetResizable(True)
-        self.editor_scroll.setFrameShape(QFrame.NoFrame)
-        self.editor_body = QWidget()
-        self.editor_layout = QFormLayout(self.editor_body)
-        self.editor_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        self.editor_scroll.setWidget(self.editor_body)
-        editor_outer.addWidget(self.editor_scroll, 1)
+        self.mode_tabs = QTabWidget()
+        self.editor_tabs = QTabWidget()
+        self.editor_tabs.setMinimumHeight(320)
+        self.mode_tabs.addTab(self.editor_tabs, "当前对象" if language == "zh_CN" else "Selected object")
+        style_scroll = QScrollArea()
+        style_scroll.setWidgetResizable(True)
+        style_scroll.setFrameShape(QFrame.NoFrame)
+        style_scroll.setWidget(self._build_style_panel())
+        self.mode_tabs.addTab(style_scroll, "统一样式" if language == "zh_CN" else "Shared style")
+        editor_outer.addWidget(self.mode_tabs, 1)
         self.preview_label = QLabel()
         self.preview_label.setAlignment(Qt.AlignCenter)
-        self.preview_label.setMinimumHeight(230)
+        self.preview_label.setFixedHeight(160)
+        self.preview_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         self.preview_label.setStyleSheet(
             "QLabel { background: #ffffff; border: 1px solid #d6dfdc; }"
         )
-        editor_outer.addWidget(self.preview_label)
+        editor_outer.addWidget(self.preview_label, 0)
         splitter.addWidget(editor_container)
         splitter.setStretchFactor(1, 1)
         root.addWidget(splitter, 1)
@@ -235,6 +249,10 @@ class FigureStudioDialog(QDialog):
             "恢复当前对象初始样式" if language == "zh_CN" else "Reset selected object"
         )
         self.reset_button.clicked.connect(self._reset_selected)
+        self.mode_tabs.currentChanged.connect(lambda index: self.reset_button.setText(
+            ("载入默认参数" if self.language == "zh_CN" else "Load default values") if index == 1
+            else ("恢复当前对象初始样式" if self.language == "zh_CN" else "Reset selected object")
+        ))
         self.apply_button = QPushButton(
             "应用并预览" if language == "zh_CN" else "Apply and preview"
         )
@@ -258,18 +276,33 @@ class FigureStudioDialog(QDialog):
         if initial_axis is not None:
             for index in range(self.tree.topLevelItemCount()):
                 top = self.tree.topLevelItem(index)
+                if top.data(0, Qt.UserRole) is initial_axis:
+                    initial_item = top
+                    top.setExpanded(True)
+                    break
                 for child_index in range(top.childCount()):
                     child = top.child(child_index)
                     if child.data(0, Qt.UserRole) is initial_axis:
                         initial_item = child
                         break
         self.tree.setCurrentItem(initial_item)
+        if initial_axis is not None:
+            self.style_scope.button(0).setChecked(True)
         self._update_preview()
 
     def _update_preview(self) -> None:
         """Render the edited figure into the dialog without changing its data."""
         buffer = BytesIO()
-        self.figure.savefig(buffer, format="png", dpi=100, bbox_inches="tight")
+        current = self.tree.currentItem()
+        target = current.data(0, Qt.UserRole) if current else None
+        axis = target if target in self.figure.axes else getattr(target, "axes", None)
+        extent = "tight"
+        if axis in self.figure.axes and axis.get_visible():
+            self.figure.draw_without_rendering()
+            box = axis.get_tightbbox(self.figure._get_renderer())
+            if box is not None:
+                extent = box.transformed(self.figure.dpi_scale_trans.inverted()).padded(0.05)
+        self.figure.savefig(buffer, format="png", dpi=140, bbox_inches=extent)
         pixmap = QPixmap()
         pixmap.loadFromData(buffer.getvalue(), "PNG")
         available = self.preview_label.size()
@@ -295,23 +328,30 @@ class FigureStudioDialog(QDialog):
             if item["kind"] == "axis":
                 axis_item = QTreeWidgetItem(
                     [
-                        f"坐标轴 {item['axis_index']} · {item['name']}"
+                        f"{'色标' if item['object'].get_label() == '<colorbar>' else '子图'} {item['axis_index']} · {item['name']}"
                         if self.language == "zh_CN"
-                        else f"Axis {item['axis_index']} · {item['name']}"
+                        else f"Panel {item['axis_index']} · {item['name']}"
                     ]
                 )
                 axis_item.setData(0, Qt.UserRole, item["object"])
+                axis_item.setToolTip(0, axis_item.text(0))
                 self.tree.addTopLevelItem(axis_item)
                 axis_items[item["axis_index"]] = axis_item
             else:
                 child = QTreeWidgetItem([item["name"]])
                 child.setData(0, Qt.UserRole, item["object"])
                 axis_items[item["axis_index"]].addChild(child)
-        self.tree.expandAll()
+        self.tree.collapseAll()
 
     def _clear_form(self) -> None:
-        while self.editor_layout.rowCount():
-            self.editor_layout.removeRow(0)
+        while self.editor_tabs.count():
+            page = self.editor_tabs.widget(0)
+            self.editor_tabs.removeTab(0)
+            page.deleteLater()
+        self._form_pages.clear()
+        self.field_widgets.clear()
+        self._field_sections.clear()
+        self._select_form_page("外观", "Appearance")
         self.bindings.clear()
 
     def _selection_changed(self, current, _previous) -> None:
@@ -320,12 +360,15 @@ class FigureStudioDialog(QDialog):
             return
         target = current.data(0, Qt.UserRole)
         self.target_heading.setText(current.text(0))
+        style_target = target if target in self.figure.axes else getattr(target, "axes", None)
+        self._load_shared_style(getattr(style_target or self.figure, "_neuroflow_publication_style", None))
         if target is self.figure:
             self._build_figure_editor()
         elif target in self.figure.axes:
             self._build_axis_editor(target)
         else:
             self._build_artist_editor(target)
+        self._update_preview()
 
     def _double(
         self,
@@ -342,6 +385,136 @@ class FigureStudioDialog(QDialog):
         control.setValue(float(value))
         return control
 
+    def _build_style_panel(self):
+        panel = QWidget()
+        outer = QVBoxLayout(panel)
+        zh = self.language == "zh_CN"
+        note = QLabel("只统一字体、线宽、网格和配色；不复制标题、单位、数据范围或统计结果。项目样式随项目保存。" if zh else "Share presentation only, never titles, units, ranges or statistics. Project styles are saved with the project.")
+        note.setWordWrap(True)
+        outer.addWidget(note)
+        presets = QHBoxLayout()
+        for key, title in (("research", "科研通用 · 8 pt"), ("nature", "Nature 参考 · 7 pt"), ("presentation", "报告展示 · 12 pt")):
+            button = QPushButton(title if zh else key.title())
+            button.clicked.connect(lambda _checked=False, k=key: self._load_shared_style(PRESETS[k]))
+            presets.addWidget(button)
+        outer.addLayout(presets)
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(18)
+        grid.setVerticalSpacing(12)
+        initial = style_values(getattr(self.figure, "_neuroflow_publication_style", None))
+        self.style_controls = {}
+        specs = [
+            ("font_family", "字体", "Font"), ("font_size", "轴标题 / 刻度字号 (pt)", "Labels / ticks (pt)"),
+            ("title_size", "图标题字号 (pt)", "Title size (pt)"), ("axis_width", "轴线 / 刻度线宽 (pt)", "Axes / ticks (pt)"),
+            ("line_width", "数据线宽 (pt)", "Data lines (pt)"), ("tick_length", "主刻度长度 (pt)", "Tick length (pt)"),
+            ("text_color", "文字与轴线颜色", "Text / axes colour"), ("background", "绘图背景", "Figure background"),
+            ("grid", "显示 Y 主网格", "Y major grid"), ("top_right", "显示上、右边框", "Top / right frame"),
+            ("palette", "分类配色", "Category palette"), ("dpi", "位图导出 DPI", "Raster export DPI"),
+        ]
+        for index, (key, chinese, english) in enumerate(specs):
+            if key in ("grid", "top_right"):
+                control = QCheckBox()
+                control.setChecked(initial[key])
+            elif key in ("text_color", "background"):
+                control = ColorButton(initial[key])
+            elif key == "font_family":
+                control = self._combo(["Arial", "Helvetica", "DejaVu Sans", "Microsoft YaHei"], initial[key])
+            elif key == "palette":
+                control = QComboBox()
+                control.addItem("柔和紫绿（默认）" if zh else "Muted purple / green", "muted")
+                control.addItem("高对比分类色" if zh else "High-contrast categories", "accessible")
+                control.addItem("原始分类配色" if zh else "Original categories", "original")
+                control.setCurrentIndex(control.findData(initial[key]))
+            else:
+                control = self._double(initial[key], 50 if key == "dpi" else 0.1, 1200 if key == "dpi" else 100, 0 if key == "dpi" else 2, 50 if key == "dpi" else 0.25)
+            self.style_controls[key] = control
+            row, col = index // 2, (index % 2) * 2
+            label = QLabel(chinese if zh else english)
+            label.setWordWrap(True)
+            grid.addWidget(label, row, col)
+            grid.addWidget(control, row, col + 1)
+        grid.setColumnStretch(1, 1)
+        grid.setColumnStretch(3, 1)
+        outer.addLayout(grid)
+        self.palette_preview = QLabel()
+        self.palette_preview.setWordWrap(True)
+        self.style_controls["palette"].currentIndexChanged.connect(self._update_palette_preview)
+        outer.addWidget(self.palette_preview)
+        self._update_palette_preview()
+        scope_row = QHBoxLayout()
+        self.style_scope = QButtonGroup(self)
+        for index, (chinese, english) in enumerate((("当前子图", "Selected panel"), ("当前整图", "Whole figure"), ("项目所有图", "All project figures"))):
+            radio = QRadioButton(chinese if zh else english)
+            radio.setObjectName(f"styleScope{index}")
+            self.style_scope.addButton(radio, index)
+            scope_row.addWidget(radio)
+        self.style_scope.button(1).setChecked(True)
+        self.style_scope.button(2).setEnabled(getattr(self.parent(), "state", None) is not None)
+        outer.insertLayout(2, scope_row)
+        self.style_status = QLabel("预设是起点，不保证所有期刊合规；投稿前按最终尺寸检查。" if zh else "Presets are starting points, not universal journal compliance. Check final-size output.")
+        self.style_status.setWordWrap(True)
+        outer.addWidget(self.style_status)
+        outer.addStretch()
+        return panel
+
+    def _update_palette_preview(self, *_):
+        name = self.style_controls["palette"].currentData()
+        palette = MUTED_MAP.values() if name == "muted" else ACCESSIBLE_MAP.values() if name == "accessible" else MUTED_MAP.keys()
+        self.palette_preview.setText(" &nbsp; ".join(f'<span style="background-color:{colour};color:#222222;">&nbsp; {colour.upper()} &nbsp;</span>' for colour in palette))
+
+    def _load_shared_style(self, value):
+        for key, val in style_values(value).items():
+            control = self.style_controls[key]
+            if isinstance(control, QCheckBox):
+                control.setChecked(val)
+            elif isinstance(control, ColorButton):
+                control.set_color(val)
+            elif isinstance(control, QComboBox):
+                control.setCurrentIndex(control.findData(val) if key == "palette" else control.findText(val))
+            else:
+                control.setValue(val)
+
+    def _apply_shared_style(self):
+        values = {}
+        for key, control in self.style_controls.items():
+            if isinstance(control, QCheckBox):
+                values[key] = control.isChecked()
+            elif isinstance(control, ColorButton):
+                values[key] = control.color()
+            elif isinstance(control, QComboBox):
+                values[key] = control.currentData() if key == "palette" else control.currentText()
+            else:
+                values[key] = control.value()
+        values = style_values(values)
+        scope = self.style_scope.checkedId()
+        current = self.tree.currentItem()
+        target = current.data(0, Qt.UserRole) if current else None
+        axis = target if target in self.figure.axes else getattr(target, "axes", None)
+        if scope == 0 and axis is None:
+            raise ValueError("请先在左侧选择子图或图中元素。" if self.language == "zh_CN" else "Select a panel or artist first.")
+        state = getattr(self.parent(), "state", None)
+        key = getattr(self.figure, "_neuroflow_style_key", None)
+        if scope == 2:
+            if state is None:
+                raise ValueError("No project is open")
+            state.metadata["publication_style"] = dict(values)
+            # An explicit 'all' command replaces local style overrides, not scientific data.
+            state.metadata.pop("figure_styles", None)
+        elif state is not None and key:
+            entry = state.metadata.setdefault("figure_styles", {}).setdefault(key, {})
+            if scope == 1:
+                entry["figure"] = dict(values)
+                entry.pop("panels", None)
+            else:
+                entry.setdefault("panels", {})[str(self.figure.axes.index(axis))] = dict(values)
+        apply_publication_style(self.figure, values, [axis] if scope == 0 else None)
+        if state is not None:
+            self.parent()._mark_project_dirty()
+        self.style_status.setText("已应用。项目样式按 Ctrl+S 保存；已有导出文件不自动覆盖。" if self.language == "zh_CN" else "Applied. Ctrl+S saves project styles; existing exports are not overwritten.")
+        self.figure.canvas.draw_idle()
+        self._update_preview()
+        self._selection_changed(self.tree.currentItem(), None)
+
     def _spin(self, value: int, minimum: int = 1, maximum: int = 10000) -> QSpinBox:
         control = QSpinBox()
         control.setRange(minimum, maximum)
@@ -356,27 +529,92 @@ class FigureStudioDialog(QDialog):
         return control
 
     def _row(self, zh: str, en: str, widget: QWidget) -> None:
-        self.editor_layout.addRow(zh if self.language == "zh_CN" else en, widget)
+        if en in {"X scale", "Y scale", "X minimum", "X maximum", "Y minimum", "Y maximum", "X direction", "Y direction"}:
+            self._select_form_page("X / Y 范围", "X / Y ranges")
+        self.field_widgets[en] = widget
+        self._field_sections[en] = self._active_form
+        label = QLabel(zh if self.language == "zh_CN" else en)
+        label.setWordWrap(True)
+        label.setBuddy(widget)
+        grid, count = self._form_pages[self._active_form]
+        wide = widget.layout() is not None
+        if wide:
+            row = (count + 1) // 2
+            grid.addWidget(label, row, 0)
+            grid.addWidget(widget, row, 1, 1, 3)
+            count = (row + 1) * 2
+        else:
+            row, column = count // 2, (count % 2) * 2
+            grid.addWidget(label, row, column)
+            grid.addWidget(widget, row, column + 1)
+            count += 1
+        self._form_pages[self._active_form] = (grid, count)
+
+    def _select_form_page(self, zh, en):
+        if en not in self._form_pages:
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setFrameShape(QFrame.NoFrame)
+            body = QWidget()
+            outer = QVBoxLayout(body)
+            grid = QGridLayout()
+            grid.setHorizontalSpacing(16)
+            grid.setVerticalSpacing(10)
+            grid.setColumnStretch(1, 1)
+            grid.setColumnStretch(3, 1)
+            outer.addLayout(grid)
+            # Compatibility for informational rows in existing artist editors.
+            self.editor_layout = QFormLayout()
+            outer.addLayout(self.editor_layout)
+            outer.addStretch()
+            scroll.setWidget(body)
+            self.editor_tabs.addTab(scroll, zh if self.language == "zh_CN" else en)
+            self._form_pages[en] = (grid, 0)
+        self._active_form = en
 
     def _section(self, zh: str, en: str) -> None:
-        label = QLabel(zh if self.language == "zh_CN" else en)
-        label.setStyleSheet(
-            "font-size: 15px; font-weight: 700; margin-top: 10px; "
-            "padding-top: 8px; border-top: 1px solid #d8e0dc;"
-        )
-        self.editor_layout.addRow(label)
+        names = {
+            "Titles, type, and ranges": ("标题与字体", "Titles"),
+            "Plot position and axis lengths": ("尺寸与位置", "Layout"),
+            "Individual axis lines": ("轴线", "Frame"),
+            "Major/minor ticks and numbering": ("刻度", "Ticks"),
+            "Independent X/Y grid lines": ("网格", "Grid"),
+            "Custom reference lines": ("参考线", "Reference"),
+            "Legend": ("图例", "Legend"),
+        }
+        # Remove unused initial Appearance page for axes.
+        if len(self._form_pages) == 1 and self._form_pages.get("Appearance", (None, 1))[1] == 0:
+            page = self.editor_tabs.widget(0)
+            self.editor_tabs.removeTab(0)
+            page.deleteLater()
+            self._form_pages.clear()
+        self._select_form_page(*names.get(en, (zh, en)))
+
+    @staticmethod
+    def _field_value(widget):
+        if isinstance(widget, QCheckBox):
+            return widget.isChecked()
+        if isinstance(widget, ColorButton):
+            return widget.color()
+        if isinstance(widget, QComboBox):
+            return widget.currentText()
+        if isinstance(widget, QLineEdit):
+            return widget.text()
+        if isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+            return widget.value()
+        return tuple(FigureStudioDialog._field_value(child) for child in widget.findChildren(QWidget, options=Qt.FindDirectChildrenOnly) if not isinstance(child, QLabel))
 
     def _build_figure_editor(self) -> None:
         width, height = self.figure.get_size_inches()
         width_control = self._double(width, 1.0, 30.0, 2, 0.1)
         height_control = self._double(height, 1.0, 30.0, 2, 0.1)
-        dpi_control = self._spin(round(self.figure.dpi), 50, 1200)
+        dpi_control = self._spin(round(style_values(getattr(self.figure, "_neuroflow_publication_style", None))["dpi"]), 50, 1200)
         face = ColorButton(self.figure.get_facecolor())
         layout_preset = self._combo(
             [
                 "Custom",
-                "Single column (85 mm)",
-                "Double column (178 mm)",
+                "Single column (89 mm)",
+                "Double column (183 mm)",
                 "Square",
                 "Presentation 16:9",
             ],
@@ -387,40 +625,46 @@ class FigureStudioDialog(QDialog):
         )
         self._row("宽度（英寸）", "Width (inches)", width_control)
         self._row("高度（英寸）", "Height (inches)", height_control)
-        self._row("显示 / 导出 DPI", "Display / export DPI", dpi_control)
+        self._row("位图导出 DPI", "Raster export DPI", dpi_control)
         self._row("背景颜色", "Background color", face)
         self._row("期刊尺寸预设", "Publication size preset", layout_preset)
         self._row("透明背景", "Transparent background", transparent)
-        self._export_transparent = transparent
+        transparent.setChecked(getattr(self, "_transparent_export", False))
+        transparent.toggled.connect(lambda checked: setattr(self, "_transparent_export", checked))
 
         def apply() -> None:
             width_value, height_value = width_control.value(), height_control.value()
             preset = layout_preset.currentText()
-            if preset == "Single column (85 mm)":
-                width_value = 85 / 25.4
-            elif preset == "Double column (178 mm)":
-                width_value = 178 / 25.4
+            if preset == "Single column (89 mm)":
+                width_value = 89 / 25.4
+            elif preset == "Double column (183 mm)":
+                width_value = 183 / 25.4
             elif preset == "Square":
                 height_value = width_value
             elif preset == "Presentation 16:9":
                 height_value = width_value * 9 / 16
             self.figure.set_size_inches(width_value, height_value, forward=True)
-            self.figure.set_dpi(dpi_control.value())
+            style = style_values(getattr(self.figure, "_neuroflow_publication_style", None))
+            style["dpi"] = dpi_control.value()
+            self.figure._neuroflow_publication_style = style
+            self.figure._neuroflow_export_size = (width_value, height_value)
             self.figure.set_facecolor(face.color())
 
         self.bindings.append(Binding(apply))
 
     def _build_axis_editor(self, axis) -> None:
         self._section("标题、字体与范围", "Titles, type, and ranges")
-        title = QLineEdit(axis.get_title())
+        title_location = next((loc for loc in ("left", "center", "right") if axis.get_title(loc=loc)), "left")
+        title_artist = {"left": axis._left_title, "center": axis.title, "right": axis._right_title}[title_location]
+        title = QLineEdit(axis.get_title(loc=title_location))
         xlabel = QLineEdit(axis.get_xlabel())
         ylabel = QLineEdit(axis.get_ylabel())
-        title_align = self._combo(["left", "center", "right"], "left")
-        title_size = self._double(axis.title.get_fontsize(), 1, 100, 1, 1)
+        title_align = self._combo(["left", "center", "right"], title_location)
+        title_size = self._double(title_artist.get_fontsize(), 1, 100, 1, 1)
         title_weight = self._combo(
-            ["normal", "bold", "medium", "semibold"], axis.title.get_fontweight()
+            ["normal", "bold", "medium", "semibold"], title_artist.get_fontweight()
         )
-        title_color = ColorButton(axis.title.get_color(), self)
+        title_color = ColorButton(title_artist.get_color(), self)
         xlabel_size = self._double(axis.xaxis.label.get_fontsize(), 1, 100, 1, 1)
         ylabel_size = self._double(axis.yaxis.label.get_fontsize(), 1, 100, 1, 1)
         xlabel_pad = self._double(axis.xaxis.labelpad, -50, 100, 1, 1)
@@ -576,12 +820,12 @@ class FigureStudioDialog(QDialog):
             "显示右侧刻度" if self.language == "zh_CN" else "Show right ticks"
         )
         x_number_format = self._combo(
-            ["automatic", "integer", "1 decimal", "2 decimals", "3 decimals", "scientific"],
-            "automatic",
+            ["keep existing", "automatic", "integer", "1 decimal", "2 decimals", "3 decimals", "scientific"],
+            "keep existing",
         )
         y_number_format = self._combo(
-            ["automatic", "integer", "1 decimal", "2 decimals", "3 decimals", "scientific"],
-            "automatic",
+            ["keep existing", "automatic", "integer", "1 decimal", "2 decimals", "3 decimals", "scientific"],
+            "keep existing",
         )
         self._row("X 主刻度间隔", "X major interval", x_major_interval)
         self._row("Y 主刻度间隔", "Y major interval", y_major_interval)
@@ -763,172 +1007,210 @@ class FigureStudioDialog(QDialog):
             }[name]
             return FuncFormatter(lambda value, _position: f"{value:.{decimals}f}")
 
+        initial_fields = {key: self._field_value(widget) for key, widget in self.field_widgets.items()}
+        initial_spine_offsets = {key: controls[3].value() for key, controls in spine_controls.items()}
+        field_sections = dict(self._field_sections)
+        field_widgets = dict(self.field_widgets)
+
+        def changed(section):
+            return any(field_sections[key] == section and self._field_value(widget) != initial_fields[key] for key, widget in field_widgets.items())
+
+        def field_changed(key):
+            return self._field_value(field_widgets[key]) != initial_fields[key]
+
         def apply() -> None:
-            if xmin.value() >= xmax.value() or ymin.value() >= ymax.value():
+            x_limits_changed = field_changed("X minimum") or field_changed("X maximum")
+            y_limits_changed = field_changed("Y minimum") or field_changed("Y maximum")
+            if (x_limits_changed and xmin.value() >= xmax.value()) or (y_limits_changed and ymin.value() >= ymax.value()):
                 raise ValueError(
                     "坐标最小值必须小于最大值"
                     if self.language == "zh_CN"
                     else "Axis minimum must be smaller than maximum"
                 )
-            figure_width_value, figure_height_value = self.figure.get_size_inches()
-            width_fraction_value = plot_width.value() / figure_width_value
-            height_fraction_value = plot_height.value() / figure_height_value
-            left_value = left_percent.value() / 100.0
-            bottom_value = bottom_percent.value() / 100.0
-            if (
-                left_value + width_fraction_value > 1.0
-                or bottom_value + height_fraction_value > 1.0
-            ):
-                raise ValueError(
-                    "绘图区位置与轴长超出画布；请减小轴长或左/下边距"
-                    if self.language == "zh_CN"
-                    else "Plot position and axis lengths extend beyond the canvas"
-                )
-            axis.set_position(
-                [left_value, bottom_value, width_fraction_value, height_fraction_value]
-            )
-            axis.set_aspect(aspect.currentText(), adjustable="box")
-            axis.set_title(
-                title.text(),
-                loc=title_align.currentText(),
-                fontsize=title_size.value(),
-                fontweight=title_weight.currentText(),
-                color=title_color.color(),
-            )
-            axis.set_xlabel(
-                xlabel.text(),
-                fontsize=xlabel_size.value(),
-                labelpad=xlabel_pad.value(),
-                color=label_color.color(),
-            )
-            axis.set_ylabel(
-                ylabel.text(),
-                fontsize=ylabel_size.value(),
-                labelpad=ylabel_pad.value(),
-                color=label_color.color(),
-            )
-            axis.set_xscale(xscale.currentText())
-            axis.set_yscale(yscale.currentText())
-            axis.set_xlim(xmin.value(), xmax.value())
-            axis.set_ylim(ymin.value(), ymax.value())
-            axis.xaxis.set_inverted(invert_x.isChecked())
-            axis.yaxis.set_inverted(invert_y.isChecked())
-            axis.set_facecolor(face.color())
-
-            for spine_name, controls in spine_controls.items():
-                visible, color, width, offset = controls
-                spine = axis.spines[spine_name]
-                spine.set_visible(visible.isChecked())
-                spine.set_color(color.color())
-                spine.set_linewidth(width.value())
-                spine.set_position(("outward", offset.value()))
-
-            x_interval = _parse_interval(x_major_interval, "X major interval")
-            y_interval = _parse_interval(y_major_interval, "Y major interval")
-            if x_interval is not None:
-                axis.xaxis.set_major_locator(MultipleLocator(x_interval))
-            if y_interval is not None:
-                axis.yaxis.set_major_locator(MultipleLocator(y_interval))
-            if x_minor_divisions.value() > 0:
-                axis.xaxis.set_minor_locator(
-                    AutoMinorLocator(x_minor_divisions.value())
-                )
-            else:
-                axis.xaxis.set_minor_locator(NullLocator())
-            if y_minor_divisions.value() > 0:
-                axis.yaxis.set_minor_locator(
-                    AutoMinorLocator(y_minor_divisions.value())
-                )
-            else:
-                axis.yaxis.set_minor_locator(NullLocator())
-            axis.tick_params(
-                axis="both",
-                which="major",
-                direction=tick_direction.currentText(),
-                colors=tick_color.color(),
-                labelsize=tick_size.value(),
-                length=major_length.value(),
-                width=major_width.value(),
-                pad=tick_pad.value(),
-                top=show_top_ticks.isChecked(),
-                right=show_right_ticks.isChecked(),
-            )
-            axis.tick_params(
-                axis="both",
-                which="minor",
-                direction=tick_direction.currentText(),
-                colors=tick_color.color(),
-                length=minor_length.value(),
-                width=minor_width.value(),
-                top=show_top_ticks.isChecked(),
-                right=show_right_ticks.isChecked(),
-            )
-            axis.tick_params(axis="x", labelrotation=x_tick_rotation.value())
-            axis.tick_params(axis="y", labelrotation=y_tick_rotation.value())
-            axis.xaxis.set_major_formatter(_formatter(x_number_format.currentText()))
-            axis.yaxis.set_major_formatter(_formatter(y_number_format.currentText()))
-
-            axis.set_axisbelow(grid_layer.currentText() == "below data")
-            for grid_axis, which, enabled, width, style in (
-                ("x", "major", x_grid_major, major_grid_width, major_grid_style),
-                ("y", "major", y_grid_major, major_grid_width, major_grid_style),
-                ("x", "minor", x_grid_minor, minor_grid_width, minor_grid_style),
-                ("y", "minor", y_grid_minor, minor_grid_width, minor_grid_style),
-            ):
-                axis.grid(
-                    enabled.isChecked(),
-                    axis=grid_axis,
-                    which=which,
-                    color=grid_color.color(),
-                    alpha=grid_alpha.value(),
-                    linewidth=width.value(),
-                    linestyle=style.currentText(),
-                )
-
-            for line in tuple(axis.lines):
-                gid = line.get_gid()
-                if gid and str(gid).startswith("neuroflow-reference-grid:"):
-                    line.remove()
-            for value in _parse_reference_values(x_reference):
-                line = axis.axvline(
-                    value,
-                    color=reference_color.color(),
-                    linestyle=reference_style.currentText(),
-                    linewidth=reference_width.value(),
-                    alpha=reference_alpha.value(),
-                    zorder=1.5,
-                )
-                line.set_gid(f"neuroflow-reference-grid:x:{value}")
-            for value in _parse_reference_values(y_reference):
-                line = axis.axhline(
-                    value,
-                    color=reference_color.color(),
-                    linestyle=reference_style.currentText(),
-                    linewidth=reference_width.value(),
-                    alpha=reference_alpha.value(),
-                    zorder=1.5,
-                )
-                line.set_gid(f"neuroflow-reference-grid:y:{value}")
-
-            if legend_visible.isChecked():
-                handles, labels = axis.get_legend_handles_labels()
-                if handles:
-                    updated_legend = axis.legend(
-                        handles,
-                        labels,
-                        title=legend_title.text(),
-                        loc=legend_location.currentText(),
-                        ncols=legend_columns.value(),
-                        fontsize=legend_font.value(),
-                        frameon=legend_frame.isChecked(),
+            if changed("Layout"):
+                figure_width_value, figure_height_value = self.figure.get_size_inches()
+                width_fraction_value = plot_width.value() / figure_width_value
+                height_fraction_value = plot_height.value() / figure_height_value
+                left_value = left_percent.value() / 100.0
+                bottom_value = bottom_percent.value() / 100.0
+                if (
+                    left_value + width_fraction_value > 1.0
+                    or bottom_value + height_fraction_value > 1.0
+                ):
+                    raise ValueError(
+                        "绘图区位置与轴长超出画布；请减小轴长或左/下边距"
+                        if self.language == "zh_CN"
+                        else "Plot position and axis lengths extend beyond the canvas"
                     )
-                    frame = updated_legend.get_frame()
-                    frame.set_facecolor(legend_face.color())
-                    frame.set_edgecolor(legend_edge.color())
-                    frame.set_linewidth(legend_frame_width.value())
-                    frame.set_alpha(legend_frame_alpha.value())
-            elif axis.get_legend() is not None:
-                axis.get_legend().set_visible(False)
+                axis.set_position(
+                    [left_value, bottom_value, width_fraction_value, height_fraction_value]
+                )
+                axis.set_aspect(aspect.currentText(), adjustable="box")
+
+            if changed("Titles"):
+                if title_align.currentText() != title_location:
+                    axis.set_title("", loc=title_location)
+                axis.set_title(
+                    title.text(),
+                    loc=title_align.currentText(),
+                    fontsize=title_size.value(),
+                    fontweight=title_weight.currentText(),
+                    color=title_color.color(),
+                )
+                axis.set_xlabel(
+                    xlabel.text(),
+                    fontsize=xlabel_size.value(),
+                    labelpad=xlabel_pad.value(),
+                    color=label_color.color(),
+                )
+                axis.set_ylabel(
+                    ylabel.text(),
+                    fontsize=ylabel_size.value(),
+                    labelpad=ylabel_pad.value(),
+                    color=label_color.color(),
+                )
+
+            if changed("X / Y ranges"):
+                if field_changed("X scale"):
+                    axis.set_xscale(xscale.currentText())
+                if field_changed("Y scale"):
+                    axis.set_yscale(yscale.currentText())
+                if x_limits_changed:
+                    axis.set_xlim(xmin.value(), xmax.value())
+                if y_limits_changed:
+                    axis.set_ylim(ymin.value(), ymax.value())
+                if x_limits_changed or field_changed("X direction"):
+                    axis.xaxis.set_inverted(invert_x.isChecked())
+                if y_limits_changed or field_changed("Y direction"):
+                    axis.yaxis.set_inverted(invert_y.isChecked())
+                if field_changed("Plot-area background"):
+                    axis.set_facecolor(face.color())
+
+            if changed("Frame"):
+                for spine_name, controls in spine_controls.items():
+                    visible, color, width, offset = controls
+                    spine = axis.spines[spine_name]
+                    spine.set_visible(visible.isChecked())
+                    spine.set_color(color.color())
+                    spine.set_linewidth(width.value())
+                    if offset.value() != initial_spine_offsets[spine_name]:
+                        spine.set_position(("outward", offset.value()))
+
+            if changed("Ticks"):
+                x_interval = _parse_interval(x_major_interval, "X major interval")
+                y_interval = _parse_interval(y_major_interval, "Y major interval")
+                if x_interval is not None:
+                    axis.xaxis.set_major_locator(MultipleLocator(x_interval))
+                if y_interval is not None:
+                    axis.yaxis.set_major_locator(MultipleLocator(y_interval))
+                if field_changed("X minor divisions") and x_minor_divisions.value() > 0:
+                    axis.xaxis.set_minor_locator(
+                        AutoMinorLocator(x_minor_divisions.value())
+                    )
+                elif field_changed("X minor divisions"):
+                    axis.xaxis.set_minor_locator(NullLocator())
+                if field_changed("Y minor divisions") and y_minor_divisions.value() > 0:
+                    axis.yaxis.set_minor_locator(
+                        AutoMinorLocator(y_minor_divisions.value())
+                    )
+                elif field_changed("Y minor divisions"):
+                    axis.yaxis.set_minor_locator(NullLocator())
+                axis.tick_params(
+                    axis="both",
+                    which="major",
+                    direction=tick_direction.currentText(),
+                    colors=tick_color.color(),
+                    labelsize=tick_size.value(),
+                    length=major_length.value(),
+                    width=major_width.value(),
+                    pad=tick_pad.value(),
+                    top=show_top_ticks.isChecked(),
+                    right=show_right_ticks.isChecked(),
+                )
+                axis.tick_params(
+                    axis="both",
+                    which="minor",
+                    direction=tick_direction.currentText(),
+                    colors=tick_color.color(),
+                    length=minor_length.value(),
+                    width=minor_width.value(),
+                    top=show_top_ticks.isChecked(),
+                    right=show_right_ticks.isChecked(),
+                )
+                axis.tick_params(axis="x", labelrotation=x_tick_rotation.value())
+                axis.tick_params(axis="y", labelrotation=y_tick_rotation.value())
+                if x_number_format.currentText() != "keep existing":
+                    axis.xaxis.set_major_formatter(_formatter(x_number_format.currentText()))
+                if y_number_format.currentText() != "keep existing":
+                    axis.yaxis.set_major_formatter(_formatter(y_number_format.currentText()))
+
+            if changed("Grid"):
+                axis.set_axisbelow(grid_layer.currentText() == "below data")
+                for grid_axis, which, enabled, width, style in (
+                    ("x", "major", x_grid_major, major_grid_width, major_grid_style),
+                    ("y", "major", y_grid_major, major_grid_width, major_grid_style),
+                    ("x", "minor", x_grid_minor, minor_grid_width, minor_grid_style),
+                    ("y", "minor", y_grid_minor, minor_grid_width, minor_grid_style),
+                ):
+                    if not enabled.isChecked():
+                        axis.grid(False, axis=grid_axis, which=which)
+                        continue
+                    axis.grid(
+                        True,
+                        axis=grid_axis,
+                        which=which,
+                        color=grid_color.color(),
+                        alpha=grid_alpha.value(),
+                        linewidth=width.value(),
+                        linestyle=style.currentText(),
+                    )
+
+            if changed("Reference"):
+                for line in tuple(axis.lines):
+                    gid = line.get_gid()
+                    if gid and str(gid).startswith("neuroflow-reference-grid:"):
+                        line.remove()
+                for value in _parse_reference_values(x_reference):
+                    line = axis.axvline(
+                        value,
+                        color=reference_color.color(),
+                        linestyle=reference_style.currentText(),
+                        linewidth=reference_width.value(),
+                        alpha=reference_alpha.value(),
+                        zorder=1.5,
+                    )
+                    line.set_gid(f"neuroflow-reference-grid:x:{value}")
+                for value in _parse_reference_values(y_reference):
+                    line = axis.axhline(
+                        value,
+                        color=reference_color.color(),
+                        linestyle=reference_style.currentText(),
+                        linewidth=reference_width.value(),
+                        alpha=reference_alpha.value(),
+                        zorder=1.5,
+                    )
+                    line.set_gid(f"neuroflow-reference-grid:y:{value}")
+
+            if changed("Legend"):
+                if legend_visible.isChecked():
+                    handles, labels = axis.get_legend_handles_labels()
+                    if handles:
+                        updated_legend = axis.legend(
+                            handles,
+                            labels,
+                            title=legend_title.text(),
+                            loc=legend_location.currentText(),
+                            ncols=legend_columns.value(),
+                            fontsize=legend_font.value(),
+                            frameon=legend_frame.isChecked(),
+                        )
+                        frame = updated_legend.get_frame()
+                        frame.set_facecolor(legend_face.color())
+                        frame.set_edgecolor(legend_edge.color())
+                        frame.set_linewidth(legend_frame_width.value())
+                        frame.set_alpha(legend_frame_alpha.value())
+                elif axis.get_legend() is not None:
+                    axis.get_legend().set_visible(False)
 
         self.bindings.append(Binding(apply))
 
@@ -1200,6 +1482,12 @@ class FigureStudioDialog(QDialog):
         self.bindings.append(Binding(apply))
 
     def _apply(self) -> None:
+        if self.mode_tabs.currentIndex() == 1:
+            try:
+                self._apply_shared_style()
+            except (ValueError, TypeError) as exc:
+                QMessageBox.warning(self, "Figure style", str(exc))
+            return
         try:
             for binding in self.bindings:
                 binding.apply()
@@ -1217,6 +1505,7 @@ class FigureStudioDialog(QDialog):
             }
         if target in self.figure.axes:
             return {
+                "titles": {loc: {"text": target.get_title(loc=loc), "size": artist.get_fontsize(), "color": artist.get_color(), "weight": artist.get_fontweight()} for loc, artist in (("left", target._left_title), ("center", target.title), ("right", target._right_title))},
                 "title": target.get_title(),
                 "title_color": target.title.get_color(),
                 "title_size": target.title.get_fontsize(),
@@ -1322,6 +1611,10 @@ class FigureStudioDialog(QDialog):
         return base
 
     def _reset_selected(self) -> None:
+        if self.mode_tabs.currentIndex() == 1:
+            self._load_shared_style(PRESETS["research"])
+            self.style_status.setText("默认参数已载入，点击应用后生效。" if self.language == "zh_CN" else "Defaults loaded; click Apply to use them.")
+            return
         current = self.tree.currentItem()
         if current is None:
             return
@@ -1332,13 +1625,8 @@ class FigureStudioDialog(QDialog):
             target.set_dpi(snapshot["dpi"])
             target.set_facecolor(snapshot["facecolor"])
         elif target in self.figure.axes:
-            target.set_title(
-                snapshot["title"],
-                loc="left",
-                color=snapshot["title_color"],
-                fontsize=snapshot["title_size"],
-                fontweight=snapshot["title_weight"],
-            )
+            for loc, title in snapshot["titles"].items():
+                target.set_title(title["text"], loc=loc, color=title["color"], fontsize=title["size"], fontweight=title["weight"])
             target.set_xlabel(
                 snapshot["xlabel"],
                 fontsize=snapshot["xlabel_size"],
@@ -1429,10 +1717,17 @@ class FigureStudioDialog(QDialog):
         )
         if not selected:
             return
-        transparent = getattr(self, "_export_transparent", None)
-        self.figure.savefig(
-            selected,
-            dpi=self.figure.dpi,
-            bbox_inches="tight",
-            transparent=transparent.isChecked() if transparent is not None else False,
-        )
+        original_size = self.figure.get_size_inches().copy()
+        export_size = getattr(self.figure, "_neuroflow_export_size", None)
+        try:
+            if export_size:
+                self.figure.set_size_inches(*export_size, forward=False)
+            self.figure.savefig(
+                selected,
+                dpi=style_values(getattr(self.figure, "_neuroflow_publication_style", None))["dpi"],
+                bbox_inches=None if export_size else "tight",
+                transparent=getattr(self, "_transparent_export", False),
+            )
+        finally:
+            self.figure.set_size_inches(*original_size, forward=False)
+            self.figure.canvas.draw_idle()

@@ -12,6 +12,7 @@ from scipy import signal as scipy_signal
 from .analysis import load_recording
 from .medpc import CONFIRMED_EVENT_DICTIONARY
 from .models import ProjectState
+from .publication_style import publication_figure
 
 INK = "#16242c"
 MUTED = "#657781"
@@ -62,6 +63,7 @@ def _base_figure(
     return fig, axes
 
 
+@publication_figure
 def pending_step_figure(
     state: ProjectState,
     step_title: str,
@@ -124,6 +126,7 @@ def pending_step_figure(
     return fig
 
 
+@publication_figure
 def synchronization_figure(state: ProjectState) -> Figure:
     result = state.metadata.get("synchronization", {})
     if not result:
@@ -274,6 +277,7 @@ def synchronization_figure(state: ProjectState) -> Figure:
     return fig
 
 
+@publication_figure
 def raw_overview_figure(
     state: ProjectState,
     *,
@@ -313,8 +317,10 @@ def raw_overview_figure(
         axes[1, 0].set_yticks([])
         return fig
     raw = load_recording(state)
-    start = int(np.clip(start_seconds, 0, state.duration_seconds) * state.sampling_rate)
     count = max(int(window_ms / 1000.0 * state.sampling_rate), 1)
+    if raw.shape[0] == 0:
+        raise ValueError("Recording contains no samples")
+    start = min(int(max(start_seconds, 0) * state.sampling_rate), max(raw.shape[0] - count, 0))
     stop = min(start + count, raw.shape[0])
     first_channel = int(np.clip(first_channel, 0, state.channel_count - 1))
     last_channel = min(first_channel + max(visible_channels, 1), state.channel_count)
@@ -397,6 +403,7 @@ def raw_overview_figure(
     return fig
 
 
+@publication_figure
 def _task_event_behavior_figure(state: ProjectState) -> Figure:
     """Show task-event counts and timing without calling each event a trial."""
     fig, axes = _base_figure(1, 2, 6.2)
@@ -478,6 +485,7 @@ def _task_event_behavior_figure(state: ProjectState) -> Figure:
     return fig
 
 
+@publication_figure
 def behavior_figure(state: ProjectState) -> Figure:
     fig, axes = _base_figure(1, 2, 4.8)
     trials = state.trials
@@ -590,6 +598,7 @@ def behavior_figure(state: ProjectState) -> Figure:
     return fig
 
 
+@publication_figure
 def qc_figure(state: ProjectState) -> Figure:
     fig, axes = _base_figure(1, 2, 4.7)
     rms = np.asarray(state.qc.get("channel_rms", []), dtype=float)
@@ -631,6 +640,7 @@ def qc_figure(state: ProjectState) -> Figure:
     return fig
 
 
+@publication_figure
 def qc_diagnostics_figure(state: ProjectState, view: str = "summary") -> Figure:
     if view == "summary":
         return qc_figure(state)
@@ -715,6 +725,7 @@ def qc_diagnostics_figure(state: ProjectState, view: str = "summary") -> Figure:
     return fig
 
 
+@publication_figure
 def preprocessing_figure(
     preview: dict[str, np.ndarray], language: str = "zh_CN"
 ) -> Figure:
@@ -747,6 +758,7 @@ def preprocessing_figure(
     return fig
 
 
+@publication_figure
 def preprocessing_diagnostics_figure(
     preview: dict[str, np.ndarray],
     state: ProjectState,
@@ -907,6 +919,7 @@ def preprocessing_diagnostics_figure(
     return fig
 
 
+@publication_figure
 def sorting_figure(matches: list[dict], state: ProjectState) -> Figure:
     fig, axes = _base_figure(1, 2, 4.8)
     sorter_name = state.metadata.get("sorting", {}).get("sorter", "Sorter")
@@ -948,6 +961,7 @@ def sorting_figure(matches: list[dict], state: ProjectState) -> Figure:
     return fig
 
 
+@publication_figure
 def sorting_comparison_figure(state: ProjectState) -> Figure:
     comparison = state.sorting_comparison
     external_references = comparison.get("external_references", {})
@@ -1164,6 +1178,7 @@ def sorting_comparison_figure(state: ProjectState) -> Figure:
     return fig
 
 
+@publication_figure
 def _external_sorting_comparison_figure(
     state: ProjectState,
     comparison: dict,
@@ -1327,6 +1342,7 @@ def _load_npy(root: Path, name: str) -> np.ndarray | None:
     return None
 
 
+@publication_figure
 def sorting_diagnostics_figure(state: ProjectState, view: str = "pipeline") -> Figure:
     if view == "comparison":
         return sorting_comparison_figure(state)
@@ -1795,6 +1811,7 @@ def sorting_diagnostics_figure(state: ProjectState, view: str = "pipeline") -> F
     return fig
 
 
+@publication_figure
 def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
     if view.startswith("unit:"):
         unit_id = int(view.split(":", 1)[1])
@@ -1911,6 +1928,7 @@ def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
     return fig
 
 
+@publication_figure
 def neural_toolkit_figure(state: ProjectState, view: str) -> Figure:
     if view.startswith("event:"):
         return event_analysis_figure(state, int(view.split(":", 1)[1]))
@@ -2140,6 +2158,7 @@ def neural_toolkit_figure(state: ProjectState, view: str) -> Figure:
     return fig
 
 
+@publication_figure
 def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Figure:
     analysis = state.analysis
     if not analysis:
@@ -2378,6 +2397,7 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     return fig
 
 
+@publication_figure
 def statistics_figure(state: ProjectState, view: str = "effects") -> Figure:
     fig, axes = _base_figure(1, 2, 4.8)
     rows = state.statistics.get("rows", [])
@@ -2644,6 +2664,7 @@ def statistics_figure(state: ProjectState, view: str = "effects") -> Figure:
     return fig
 
 
+@publication_figure
 def decoding_figure(state: ProjectState) -> Figure:
     fig, axes = _base_figure(2, 3, 5.8)
     result = state.decoding
@@ -2862,6 +2883,7 @@ def decoding_figure(state: ProjectState) -> Figure:
     return fig
 
 
+@publication_figure
 def regression_figure(state: ProjectState) -> Figure:
     fig, axes = _base_figure(1, 3, 4.8)
     result = state.regression
@@ -2936,6 +2958,7 @@ def regression_figure(state: ProjectState) -> Figure:
     return fig
 
 
+@publication_figure
 def connectivity_figure(state: ProjectState, view: str = "examples") -> Figure:
     """Render selectable fine-timing connectivity views from a shared result."""
 
@@ -3116,6 +3139,7 @@ def connectivity_figure(state: ProjectState, view: str = "examples") -> Figure:
     return fig
 
 
+@publication_figure
 def population_dynamics_figure(
     state: ProjectState,
     view: str = "heatmap",

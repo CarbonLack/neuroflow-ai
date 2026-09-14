@@ -1340,7 +1340,7 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
     figures_dir.mkdir(exist_ok=True)
     for name, builder in figure_builders:
         figure = builder()
-        figure.savefig(figures_dir / f"{name}.png", dpi=220, bbox_inches="tight")
+        figure.savefig(figures_dir / f"{name}.png", dpi=getattr(figure, "_neuroflow_publication_style", {}).get("dpi", 600), bbox_inches="tight")
         figure.savefig(figures_dir / f"{name}.svg", bbox_inches="tight")
         figure.clear()
     return output_dir

@@ -307,6 +307,15 @@ def test_english_raw_figure_contains_no_chinese_labels(tmp_path: Path):
     assert not any("\u4e00" <= character <= "\u9fff" for character in visible_text)
 
 
+def test_raw_figure_clamps_default_view_to_short_recording(tmp_path: Path):
+    state = generate_demo_recording(
+        tmp_path / "short-recording", duration_seconds=0.1, channel_count=4
+    )
+    figure = raw_overview_figure(state)
+    assert figure.axes[0].lines
+    assert all(len(line.get_xdata()) > 0 for line in figure.axes[0].lines)
+
+
 def test_elephant_toolkit_produces_real_results(tmp_path: Path):
     state = generate_demo_recording(
         tmp_path / "toolkit",

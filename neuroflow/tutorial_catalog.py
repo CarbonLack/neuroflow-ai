@@ -347,7 +347,7 @@ TUTORIAL_CATALOG: list[dict[str, Any]] = [
         "An open project with the analyses you want to export completed.",
         [
             _step("保存当前项目", "Save the project", "按 Ctrl+S 或选择“文件 → 保存项目”。保存成功后，可用项目清单继续工作。", "Press Ctrl+S or choose File → Save project. After saving, reopen the manifest to continue later."),
-            _step("整理图形输出", "Prepare figures", "在分析页用“图形设置”调整图；需要单幅图时使用面板选择和保存按钮。完整导出请进入“论文与复现”运行本步骤。", "Use Figure settings on analysis pages to adjust plots, or select and save an individual panel. For the full export, run Publication and reproducibility."),
+            _step("整理图形输出", "Prepare figures", "打开“图形设置”：左侧按图名选子图，右侧分页调整。到“统一样式”选择当前子图、当前整图或项目所有图，应用后按 Ctrl+S 保存；默认是柔和紫绿配色。精细元素编辑须直接导出成品；完整报告进入“论文与复现”重新生成。", "Open Figure settings: select a named panel and edit by category. Shared style can target a panel, the figure or all project figures; apply and save with Ctrl+S. Muted purple/green is the default. Export fine-grained object edits directly; regenerate full reports in Publication and reproducibility."),
             _step("找到成果和日志", "Find outputs and logs", "选择“文件 → 打开项目文件夹”。看 00_README_项目说明.md；图和表在 exports，分析结果在 results，实验日志与人工笔记在 logs。", "Choose File → Open project folder. Read the file beginning with 00_README_; exports holds figures and tables, results holds analysis output, and logs holds experiment logs and notes."),
         ],
         "交付前打开导出的图核对标题、坐标、单位和统计标记。项目依赖外部原始数据时，备份也要包括这些来源。",

@@ -5411,7 +5411,7 @@ class NeuroFlowWindow(QMainWindow):
             self.canvas.figure.savefig(
                 path,
                 bbox_inches=extent.expanded(1.06, 1.10),
-                dpi=300,
+                dpi=getattr(self.canvas.figure, "_neuroflow_publication_style", {}).get("dpi", 600),
             )
         finally:
             for item, visible in visibility:

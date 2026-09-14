@@ -1,6 +1,6 @@
 #define MyAppName "NeuroEphys AI"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.2.0"
+  #define MyAppVersion "1.2.1"
 #endif
 #define MyAppPublisher "NeuroEphys AI team"
 #define MyAppURL "https://github.com/CarbonLack/neuroflow-ai"

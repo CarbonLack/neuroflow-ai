@@ -71,14 +71,8 @@ def test_figure_studio_exposes_prism_style_axis_controls():
             break
     assert axis_item is not None
     dialog.tree.setCurrentItem(axis_item)
-    labels = {
-        dialog.editor_layout.itemAt(row, QFormLayout.ItemRole.LabelRole)
-        .widget()
-        .text()
-        for row in range(dialog.editor_layout.rowCount())
-        if dialog.editor_layout.itemAt(row, QFormLayout.ItemRole.LabelRole)
-        and dialog.editor_layout.itemAt(row, QFormLayout.ItemRole.LabelRole).widget()
-    }
+    labels = set(dialog.field_widgets)
+    assert dialog.editor_tabs.count() >= 6
     assert "X-axis length (inches)" in labels
     assert "Bottom X axis" in labels
     assert "X major interval" in labels

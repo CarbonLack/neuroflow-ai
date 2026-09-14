@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.2.0
+# NeuroEphys AI v1.2.1
 
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
@@ -21,6 +21,9 @@ NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道
 可逐步检查、替换和恢复的工作流。
 
 ## 开始使用
+
+v1.2.1 增加按实际图名选择的子图格式编辑、分页并排参数、项目统一样式与期刊参考预设。
+字体、轴线、网格及配色的默认参数与依据见 [科研作图标准](docs/FIGURE_STYLE_STANDARD_ZH.md)。
 
 首页保留 **新建项目、打开／导入项目、示例项目**。第一次使用可按
 [小项目练习](https://carbonlack.github.io/neuroflow-ai/zh/quick-start.html) 打开教学数据、

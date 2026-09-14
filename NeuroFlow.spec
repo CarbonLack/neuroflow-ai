@@ -100,6 +100,7 @@ datas += [
     (f"RELEASE_NOTES_{release_series}.md", "."),
     (f"RELEASE_VALIDATION_{release_series}.md", "."),
     ("THIRD_PARTY_SOURCES.md", "."),
+    ("docs/FIGURE_STYLE_STANDARD_ZH.md", "."),
     ("PROJECT_RIGHTS_NOTICE_ZH.md", "."),
 ]
 

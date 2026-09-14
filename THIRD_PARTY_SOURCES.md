@@ -44,3 +44,18 @@ NeuroEphys AI 采用“复用成熟计算能力、保留原生输出、自主实
   和 https://api-docs.deepseek.com/quick_start/pricing
 
 网站“方法与来源”页逐项描述借鉴范围。全部解释文字由项目团队重新撰写。
+
+## 科研作图与交互参考
+
+- Nature 最终投稿图件规范（最终宽度、字体与线宽范围）：
+  https://www.nature.com/nature/for-authors/final-submission
+- PLOS Medicine 图件规范（字体、字号与文件格式）：
+  https://journals.plos.org/plosmedicine/s/figures
+- Nature Research Figure Guide（可访问配色）：
+  https://research-figure-guide.nature.com/figures/preparing-figures-our-specifications/
+- Matplotlib 颜色映射选择指南（连续、发散与分类数据的语义）：
+  https://matplotlib.org/stable/users/explain/colors/colormaps.html
+- GraphPad Prism 的“一个、部分或全部数据集”格式化交互说明：
+  https://www.graphpad.com/guides/prism/latest/user-guide/changing_one__some_or_all_data.htm
+
+Figure Studio 借鉴的是分组参数和作用范围的交互原则，没有复制 GraphPad 的界面、图标、代码或说明文字。默认柔和紫绿配色是 NeuroEphys AI 自行设计的科研起点，不宣称为任何期刊的强制配色；连续热图与具有数值语义的颜色映射不会被自动替换。

@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.2.1
+
+- Name panels from their real left/center/right titles and correctly preselect a double-clicked panel.
+- Replace the long Figure Studio form with category tabs and paired controls; preview the selected panel.
+- Add publication presets and separate panel, figure and project style scopes persisted with the project.
+- Apply shared defaults to GUI/Python figures and regenerated reports without changing values, units, limits or heatmap normalization.
+- Document official Nature/PLOS requirements separately from design choices; preserve the app palette.
+- Avoid empty trace windows when the requested start reaches the end of a short recording.
+
 ## v1.2.0
 
 - Rebuilt bilingual help around 18 searchable tasks with steps, checks, saved

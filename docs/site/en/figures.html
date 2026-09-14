@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/figures.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=6efca38a"></script>
+      <script src="_static/documentation_options.js?v=ca842793"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -318,6 +318,18 @@ panel to enlarge, edit, or export it without cropping a screenshot. Expand
 <strong>Plot tools</strong> above the figure to reveal style, panel selection, and export controls.</p>
 <section id="figure-studio">
 <h2>Figure Studio<a class="headerlink" href="#figure-studio" title="Link to this heading"></a></h2>
+<p>Panels are named from their actual titles, not ambiguous “Axis 1 / Axis 2” labels.
+The object editor uses category tabs and paired controls; its preview follows the selected panel.
+In <strong>Shared style</strong>, choose a preset and apply it to the <strong>selected panel</strong>, <strong>whole figure</strong>,
+or <strong>all project figures</strong>. Save the project with Ctrl+S to retain shared-style overrides.
+Applying to all project figures clears local shared-style overrides. Existing exports are not overwritten.
+Fine-grained object edits affect the current canvas and must be exported separately.</p>
+<p>Research defaults are Arial, 8 pt labels/ticks/legend, 9 pt titles, 0.75 pt axes, 0.8 pt data lines,
+outward 3 pt ticks, no grid, no top/right frame, muted purple/green category colours and 600 DPI raster output.
+A higher-contrast category palette and the original category colours remain selectable.
+Data, units, limits, scales and heatmap normalization are preserved. Nature reference uses 7 pt:
+there is no single universal journal specification. See
+<a class="reference external" href="https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/FIGURE_STYLE_STANDARD_ZH.md">official sources and design choices</a>.</p>
 <p>Open <strong>Figure settings</strong> for whole-figure controls or <strong>Edit panel</strong> for the
 selected axis. The editor exposes:</p>
 <ul class="simple">

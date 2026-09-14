@@ -240,14 +240,15 @@ CONTROL_HELP = {
     "plot.settings": {
         "zh_CN": (
             "Figure Studio 图形工作室",
-            "打开对象级编辑器。左侧可选择整图、坐标轴、曲线、散点、柱/填充区域、"
+            "按图名选择子图（不是 X/Y 轴），按类别分页编辑。统一样式可用于当前子图、"
+            "当前整图或项目所有图，应用后按 Ctrl+S 保存；精细元素修改请直接导出成品。左侧可选择整图、子图、曲线、散点、柱/填充区域、"
             "热图、文字和图例；右侧按对象提供精确宽高、DPI、标题、单位、范围、颜色、"
             "透明度、粗细、线型、marker、色图、主次刻度、四边坐标轴、主次网格、"
             "参考线和图例设置。修改只影响当前呈现，不重新计算数据。",
         ),
         "en_US": (
             "Figure Studio",
-            "Open the object-level editor for the whole figure, axes, lines, scatters, "
+            "Select named panels and edit by category. Shared styles target a panel, figure, or project; save with Ctrl+S. Export fine-grained object edits directly. Edit the whole figure, panels, lines, scatters, "
             "patches, images, text, and legends. Controls include exact size, DPI, labels, "
             "limits, colors, alpha, widths, styles, markers, colormaps, major/minor ticks, "
             "four independent spines, major/minor grids, reference lines, and legends. "
@@ -281,7 +282,7 @@ CONTROL_HELP = {
     "plot.panel_edit": {
         "zh_CN": (
             "编辑所选子图",
-            "打开 Figure Studio 并自动定位到所选坐标轴。可继续选择该子图内的线、"
+            "打开 Figure Studio 并自动定位到所选子图。可继续选择该子图内的线、"
             "点、柱、热图或文字逐项编辑；不会改变原始数据或数值分析结果。",
         ),
         "en_US": (

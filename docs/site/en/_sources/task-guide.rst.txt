@@ -600,7 +600,7 @@ An open project with the analyses you want to export completed.
 
 2. **Prepare figures**
 
-   Use Figure settings on analysis pages to adjust plots, or select and save an individual panel. For the full export, run Publication and reproducibility.
+   Open Figure settings: select a named panel and edit by category. Shared style can target a panel, the figure or all project figures; apply and save with Ctrl+S. Muted purple/green is the default. Export fine-grained object edits directly; regenerate full reports in Publication and reproducibility.
 
 3. **Find outputs and logs**
 

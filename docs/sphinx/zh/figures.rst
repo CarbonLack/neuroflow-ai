@@ -7,7 +7,9 @@
 Figure Studio
 -------------
 
-点击 **图形设置** 编辑整图，点击 **编辑子图** 编辑当前坐标轴。编辑器提供：
+点击 **图形设置** 编辑整图，点击 **编辑子图** 编辑选中的子图。
+“子图”是一整块绘图区，不是 X / Y 轴。左侧按实际图名显示，右侧的标题、范围、
+轴线、刻度、网格等分类分页，同页参数并排呈现，预览跟随所选子图。编辑器提供：
 
 * 画布尺寸和导出 DPI；
 * 子图位置和坐标轴实际长度；
@@ -26,6 +28,30 @@ Figure Studio
 * PNG：汇报或线上提交预览。
 * CSV/源数据表：追溯图中的数值。
 
+单图与项目统一样式
+------------------
+
+打开 **统一样式**，选择科研通用、Nature 参考或报告展示预设，修改参数，
+再选择 **当前子图 / 当前整图 / 项目所有图**，点击 **应用并预览**。
+**Ctrl+S** 保存项目后可恢复；选择项目所有图会清除局部统一样式覆盖。
+已有导出文件不会自动改写，需要重新导出。当前对象中的精细元素编辑只保留在
+当前画布，须导出保存成品，不等同于项目统一样式。
+
+默认 Arial，轴标题/刻度/图例 8 pt、子图标题 9 pt、轴线 0.75 pt、数据线 0.8 pt、
+向外刻度 3 pt、无网格、隐藏上右边框、白底深灰字、低饱和度紫绿分类色；位图 600 DPI。
+默认浅紫 / 柔绿 / 浅赭 / 灰蓝，另可选择高对比分类型配色或原始配色。
+统一样式不会改变数值、单位、范围、对数尺度、统计结果或热图归一化。
+
+期刊要求有差异：`Nature 最终稿规范 <https://www.nature.com/nature/for-authors/final-submission>`_
+常用 5–7 pt、0.25–1 pt 线宽，而
+`PLOS 图件要求 <https://journals.plos.org/plosmedicine/s/figures>`_ 为 8–12 pt。
+因此 Nature 参考预设单独使用 7 pt；无网格等属于产品设计选择，不是全部期刊强制规范。
+详细参数、颜色和官方出处见
+`科研作图标准 <https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/FIGURE_STYLE_STANDARD_ZH.md>`_。
+
+尺寸按最终输出核对。在整图页选择 89 mm 或 183 mm 尺寸后，使用编辑器的导出按钮
+保持该物理宽度。预设不等于目标期刊的自动合规认证。
+
 导出前检查
 ----------
 
@@ -34,5 +60,5 @@ Figure Studio
 
 .. raw:: html
 
-   <img class="product-shot" src="../assets/neuroflow-figure-studio.png"
+   <img class="product-shot" src="../assets/neuroephys-format-shared.png"
         alt="NeuroEphys AI 图表编辑器">
