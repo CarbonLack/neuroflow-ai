@@ -6,6 +6,7 @@ from neuroflow.analysis import export_reproducible_bundle, event_aligned_analysi
 
 def test_export_does_not_claim_unrun_analysis(tmp_path):
     state = ProjectState(root=tmp_path, name='Actual experiment')
+    state.metadata['language'] = 'zh_CN'
     output = export_reproducible_bundle(state, tmp_path / 'export')
     workflow = json.loads((output / 'workflow.json').read_text(encoding='utf-8'))
     methods = (output / 'methods.md').read_text(encoding='utf-8')
@@ -14,6 +15,11 @@ def test_export_does_not_claim_unrun_analysis(tmp_path):
     assert 'No spike-sorting results' in methods
     assert 'Trial labels were decoded' not in methods
     assert 'Spikes were aligned' not in methods
+    assert state.metadata['language'] == 'zh_CN'
+    assert (output / 'publication/index.html').exists()
+    inventory = json.loads((output / 'publication/artifact_inventory.json').read_text(encoding='utf-8'))
+    assert 'workflow.json' in {item['path'] for item in inventory}
+    assert all(len(item['sha256']) == 64 for item in inventory)
 
 
 def test_export_uses_actual_alignment_parameters(tmp_path):

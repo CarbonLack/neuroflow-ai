@@ -137,11 +137,17 @@ def run_statistical_suite(
         if label.lower() not in {"unknown", "nan", "none"}
     ][:2]
     mixed_records: list[dict] = []
+    baseline_window = state.analysis.get("baseline_window", (-0.5, 0.0))
+    response_window = state.analysis.get("response_window", (0.0, 0.5))
     for unit_id, unit in state.analysis["units"].items():
         centers = np.asarray(state.analysis["bin_centers"])
         rates = np.asarray(unit["rates"])
-        baseline = rates[:, (centers >= -0.5) & (centers < 0.0)].mean(axis=1)
-        response = rates[:, (centers >= 0.0) & (centers < 0.5)].mean(axis=1)
+        baseline_mask = (centers >= baseline_window[0]) & (centers < baseline_window[1])
+        response_mask = (centers >= response_window[0]) & (centers < response_window[1])
+        if not baseline_mask.any() or not response_mask.any():
+            raise ValueError("Statistical windows contain no bins; rerun event alignment with valid windows")
+        baseline = rates[:, baseline_mask].mean(axis=1)
+        response = rates[:, response_mask].mean(axis=1)
         if np.allclose(baseline, response):
             t_value = w_value = 0.0
             t_p = w_p = permutation_p = 1.0
@@ -314,6 +320,8 @@ def run_statistical_suite(
     result = {
         "rows": rows,
         "primary_test": "paired sign-flip permutation",
+        "baseline_window": list(baseline_window),
+        "response_window": list(response_window),
         "multiple_comparison": "Benjamini-Hochberg FDR",
         "alpha": float(alpha),
         "requested_method": requested_method,

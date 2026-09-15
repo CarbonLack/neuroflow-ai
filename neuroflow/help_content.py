@@ -543,6 +543,8 @@ PAGE_CONTROLS = {
         ("PCA/聚类", "用于探索群体结构，不自动提供科学因果解释。"),
     ],
     "export": [
+        ("英文分析报告", "运行本节点后打开 exports/publication/index.html。按行为→神经响应→统计组织主图，其余图表进入附图索引；不根据显著性删除结果。"),
+        ("图注与阅读说明", "publication 内提供英文图注草稿、子图字母和中文阅读说明。请补充实验设计和生物学解释；自动草稿不能代替研究者结论。"),
         ("图形设置", "修改当前图的标题、坐标、范围和网格。"),
         ("SVG/PDF/PNG", "SVG/PDF 保留矢量元素；PNG 用于快速预览。"),
         ("CSV 与 Methods", "同时导出绘图数据、统计表、参数、版本和方法草稿。"),
@@ -728,6 +730,8 @@ PAGE_CONTROLS_EN = {
         ),
     ],
     "export": [
+        ("English analysis report", "After running this step, open exports/publication/index.html. Main figures follow behavior, neural response and statistics; other artifacts remain indexed as supplementary evidence."),
+        ("Legends and interpretation", "The publication folder contains draft English legends, panel letters and a reading guide. Review biological interpretations and target-journal requirements before submission."),
         (
             "Figure settings",
             "Edit the current figure title, axis names, limits, and grid.",

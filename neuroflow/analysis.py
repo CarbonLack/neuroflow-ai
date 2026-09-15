@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import copy
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
@@ -937,6 +938,9 @@ def event_aligned_analysis(
 
 
 def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
+    # Publication output is English without changing the user's App language.
+    state = copy(state)
+    state.metadata = {**state.metadata, "language": "en_US"}
     output_dir.mkdir(parents=True, exist_ok=True)
     workflow = {
         "project": state.name,
@@ -1352,7 +1356,17 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
     figures_dir.mkdir(exist_ok=True)
     for name, builder in figure_builders:
         figure = builder()
+        panel_index = 0
+        for axis in figure.axes:
+            if axis.get_label() == "<colorbar>" or not axis.axison:
+                continue
+            axis.annotate(chr(97 + panel_index), xy=(0, 1), xycoords="axes fraction",
+                          xytext=(-20, 18), textcoords="offset points",
+                          fontsize=9, fontweight="bold", annotation_clip=False)
+            panel_index += 1
         figure.savefig(figures_dir / f"{name}.png", dpi=getattr(figure, "_neuroflow_publication_style", {}).get("dpi", 600), bbox_inches="tight")
         figure.savefig(figures_dir / f"{name}.svg", bbox_inches="tight")
         figure.clear()
+    from .publication_report import write_publication_report
+    write_publication_report(state, output_dir, [name for name, _ in figure_builders])
     return output_dir

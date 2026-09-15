@@ -244,6 +244,31 @@ def inspect_binary_sidecars(source: Path) -> dict[str, Any]:
             break
         except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
             continue
+    geometry_csv = source.parent / "channel_geometry.csv"
+    if geometry_csv.exists() and not result.get("contact_positions_um"):
+        with geometry_csv.open(encoding="utf-8-sig", newline="") as stream:
+            rows = list(csv.DictReader(stream))
+        if rows and {"channel_id", "x_position_um", "y_position_um"} <= rows[0].keys():
+            rows.sort(key=lambda row: int(row["channel_id"]))
+            if [int(row["channel_id"]) for row in rows] != list(range(len(rows))):
+                raise ValueError("Geometry CSV channel IDs must be contiguous, zero-based acquisition indices")
+            positions = np.asarray([[float(row['x_position_um']), float(row['y_position_um'])] for row in rows])
+            if not np.isfinite(positions).all():
+                raise ValueError("Geometry contains non-finite coordinates")
+            probe_labels = list(dict.fromkeys(row.get('probe_id', 'probe_0') for row in rows))
+            shanks = np.asarray([probe_labels.index(row.get('probe_id', 'probe_0')) for row in rows])
+            local_positions = positions.copy()
+            # CSV probe positions are local. Separate the coordinate systems for
+            # algorithms requiring a unique global embedding; never claim that
+            # this offset measures anatomical distance between probes.
+            gap = max(float(np.ptp(positions[:, 0])) + 1000.0, 1000.0)
+            positions[:, 0] += shanks * gap
+            if len(np.unique(positions, axis=0)) != len(positions):
+                raise ValueError("Repeated coordinates within a probe; inspect channel_geometry.csv")
+            result.update(geometry_path=str(geometry_csv), contact_positions_um=positions.tolist(),
+                contact_shank_ids=shanks.tolist(), local_contact_positions_um=local_positions.tolist(),
+                probe_labels=probe_labels,
+                geometry_embedding_note="Probe-local coordinates translated to separate algorithmic coordinate systems; offsets are NOT anatomical distances.")
     return result
 
 
@@ -333,6 +358,8 @@ def import_binary_recording(
         metadata["probe"] = {
             "geometry_mode": "sidecar_geometry",
             "geometry_source": sidecars.get("geometry_path"),
+            "geometry_embedding_note": sidecars.get("geometry_embedding_note"),
+            "physical_inter_probe_distance_known": False if len(sidecars.get("probe_labels", [])) > 1 else None,
         }
     state = ProjectState(
         root=project_root,

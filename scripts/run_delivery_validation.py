@@ -45,9 +45,8 @@ def main():
             state = import_binary_recording(args.output, args.source / 'raw/recording.bin', 30000,
                 32 if args.electrode == 'tetrode' else 128, scale_uv_per_bit=0.195, electrode_type=args.electrode)
             assert not state.events and not state.sorted_spikes
-            with (args.source / 'raw/channel_geometry.csv').open(encoding='utf-8-sig') as f:
-                geometry = list(csv.DictReader(f))
-            state.metadata['contact_positions_um'] = [[float(r['x_position_um']),float(r['y_position_um'])] for r in geometry]
+            if not state.metadata.get('contact_positions_um'):
+                raise ValueError('Expected channel_geometry.csv to be imported with probe identities')
             state.metadata['source_metadata'] = meta
             log('IMPORT behavior events from CSV, shared simulation clock')
             import_behavior_events(state, args.source / 'raw/events.csv')

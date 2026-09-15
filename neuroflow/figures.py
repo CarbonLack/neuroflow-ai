@@ -2233,6 +2233,7 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
             linewidth=0.72,
         )
     raster.axvline(0, color=INK, linewidth=1.0, linestyle="--")
+    raster.set_xlim(*analysis.get("window", (-0.5, 1.0)))
     raster.set_ylim(0.3, max(len(unit["aligned_spikes"]) + 0.7, 1.7))
     raster.set_title(
         _text(
