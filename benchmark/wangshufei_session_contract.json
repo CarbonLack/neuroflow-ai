@@ -1,0 +1,27 @@
+{
+  "source": "User confirmation and supplied conversation screenshots, 2026-09-15",
+  "channel_numbering": "one-based acquisition CH labels, not lexicographic file order",
+  "channels_per_animal": 32,
+  "recordings": [
+    {"folder": "2024-07-25_10-06-27", "groups": [
+      {"channels": [1, 32], "subject": "101", "status": "confirmed by supplied exchange"},
+      {"channels": [33, 64], "subject": null, "status": "resolve from acquisition metadata and sync evidence"},
+      {"channels": [65, 96], "subject": null, "status": "resolve from acquisition metadata and sync evidence"},
+      {"channels": [97, 128], "subject": null, "status": "resolve from acquisition metadata and sync evidence"}
+    ]},
+    {"folder": "2024-07-25_12-58-41", "groups": [
+      {"channels": [1, 32], "subject": null, "status": "candidate 108; verify timing and metadata"},
+      {"channels": [33, 64], "subject": null, "status": "excluded", "reason": "Behavior box failed; user excluded animal from this day's analysis"}
+    ]}
+  ],
+  "medpc": {"event_array": "C", "time_array": "D", "sync_on": 11, "sync_off": 12,
+    "event_codes": {"1": "wellhead", "2": "wellrelease", "3": "pumpon", "4": "pumpoff", "5": "LeftLightOn", "6": "LeftLightOff", "7": "Rightlighton", "8": "Rightlightoff", "9": "Noiseon", "10": "Noiseoff", "11": "Syncon", "12": "Syncoff", "17": "LeftLeverStart", "18": "LeftLeverEnd", "19": "RightLeverStart", "20": "RightLeverEnd", "21": "LeftLeverOn", "22": "RightLeverOn", "23": "LeftLeverOff", "24": "RightLeverOff"}},
+  "analysis_constraints": {
+    "no_cross_animal_sorting_or_reference": true,
+    "source_files_read_only": true,
+    "low_frequency_unavailable_below_hz": 300,
+    "physical_contact_positions": "unknown; never label synthetic layout as measured geometry",
+    "reference_sorting": "NEX5; approximate 17 + 9 reported units, not ground truth or target unit count",
+    "synchronization": "MED-PC 11/12 are event codes, not acquisition digital-channel numbers; verify TTL channel separately"
+  }
+}
