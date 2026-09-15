@@ -46,6 +46,16 @@ Export choices
 Publication checks
 ------------------
 
+Run the final export step and open ``exports/publication/index.html`` in the project.
+Main figures follow behavioral context, neural response and statistical evidence; remaining
+figures and tables remain indexed as supplementary evidence without significance-based selection.
+``figure_legends.md`` provides draft English legends and ``artifact_inventory.json`` records
+file checksums. Figures are exported in English without changing the App language.
+
+Researchers must review interpretations and target-journal requirements. The report is a draft,
+not automatic journal certification. Do not conflate Wilcoxon tests in the event overview with
+permutation tests in the statistical suite.
+
 Confirm units, condition counts, normalization, baseline, uncertainty
 definition, statistical marks, and color accessibility before export. Vector
 editing after export must not alter the underlying values or remove required
