@@ -4270,8 +4270,9 @@ class NeuroFlowWindow(QMainWindow):
         self.workspace_language_combo.currentIndexChanged.connect(
             lambda: self._set_language(self.workspace_language_combo.currentData())
         )
-        self.workspace_language_combo.setParent(header)
-        self.workspace_language_combo.setVisible(False)
+        self.workspace_language_combo.setToolTip("界面语言 / Interface language")
+        self.workspace_language_combo.setMaximumWidth(120)
+        layout.addWidget(self.workspace_language_combo)
         self.sorter_manager_button = QPushButton("Sorter 管理")
         self.sorter_manager_button.clicked.connect(
             lambda: SorterManagerDialog(self.language, self).exec()
