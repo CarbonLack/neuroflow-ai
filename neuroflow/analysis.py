@@ -939,31 +939,27 @@ def event_aligned_analysis(
 def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     workflow = {
-        "project": "NeuroEphys AI Demo",
+        "project": state.name,
         "source": str(state.recording_path),
         "sampling_rate_hz": state.sampling_rate,
         "channel_count": state.channel_count,
         "duration_seconds": state.duration_seconds,
-        "steps": [
-            "raw_qc",
-            "preprocessing_preview",
-            "spike_sorting",
-            "unit_qc",
-            "event_alignment",
-            "behavior",
-            "spike_train_statistics",
-            "fine_timing_connectivity",
-            "lfp_spectral_analysis",
-            "spike_field_coupling",
-            "method_validation_case",
-            "statistics",
-            "decoding",
-            "regression",
-            "figure_export",
-        ],
+        "steps": [name for name, result in (
+            ("raw_qc", state.qc),
+            ("preprocessing_preview", state.preprocessing),
+            ("sorting_results_available", state.sorted_spikes),
+            ("unit_qc", state.unit_metrics),
+            ("event_alignment", state.analysis),
+            ("spike_train_statistics", state.spike_train_analysis),
+            ("lfp_spectral_analysis", state.lfp_analysis),
+            ("spike_field_coupling", state.spike_field_analysis),
+            ("statistics", state.statistics),
+            ("decoding", state.decoding),
+            ("regression", state.regression),
+        ) if result],
+        "steps_semantics": "Nonempty saved results, not an assertion of scientific validation.",
         "parameters": {
-            "bandpass_hz": [300, 6000],
-            "reference": "common_median",
+            "preprocessing": _json_ready(state.preprocessing),
             "sorter": state.metadata.get("sorting", {}).get("sorter", "imported"),
             "event_window_seconds": list(state.analysis.get("window", (-0.5, 1.0))),
             "bin_size_seconds": state.analysis.get("bin_size", 0.025),
@@ -1036,7 +1032,8 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
     sorting_sentence = (
         f"Spike sorting was performed with {sorter_name}. "
         if sorter_name
-        else "Previously processed spike-sorting results were imported with source provenance. "
+        else ("Previously processed spike-sorting results were imported with source provenance. "
+              if state.sorted_spikes else "No spike-sorting results were available. ")
     )
     spike_train_sentence = (
         "Unit spike trains were represented as unit-aware Neo SpikeTrain objects. "
@@ -1103,16 +1100,13 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         "# Methods draft\n\n"
         f"A {state.channel_count}-channel extracellular recording was sampled at "
         f"{state.sampling_rate:.0f} Hz for {state.duration_seconds:.1f} s. "
-        "Raw signals were inspected for channel noise, saturation, and line-frequency "
-        f"contamination. {sorting_sentence}Candidate units "
-        "were reviewed using firing rate, refractory-period violations, waveform "
-        "amplitude, and signal-to-noise ratio. Spikes were aligned to experimental "
-        "events in a -0.5 to 1.0 s window and summarized using 25 ms bins. Baseline "
-        "and post-event firing rates were compared using paired tests, sign-flip "
-        "permutation, bootstrap confidence intervals, and Benjamini-Hochberg "
-        "correction across units. Trial labels were decoded with a preprocessing "
-        "pipeline fit inside stratified cross-validation, and evaluated against a "
-        "label-permutation null distribution. "
+        f"{sorting_sentence}"
+        + ("Raw-signal QC results and their inspected interval are recorded in provenance.json. " if state.qc else "")
+        + ("Candidate-unit QC metrics were computed; this does not constitute manual acceptance as single units. " if state.unit_metrics else "")
+        + (f"Spikes were aligned in the {state.analysis.get('window')} s event window using {state.analysis.get('bin_size')} s bins. " if state.analysis else "")
+        + ("Statistical test results and settings are recorded in provenance.json and exported tables. " if state.statistics else "")
+        + ("Decoding results and validation settings are recorded in provenance.json. " if state.decoding else "")
+        +
         f"{spike_train_sentence}{connectivity_sentence}{population_sentence}{lfp_sentence}"
         f"{coupling_sentence}{case_sentence}\n"
         "\n## Method sources\n\n"

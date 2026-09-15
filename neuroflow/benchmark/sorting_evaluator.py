@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
+from numba import njit
 
 
 def _load_npz(path: Path) -> dict[int, np.ndarray]:
@@ -18,19 +19,21 @@ def _load_candidate(path: Path, sampling_rate: float) -> dict[int, np.ndarray]:
     return {int(cluster): times[clusters == cluster] for cluster in np.unique(clusters)}
 
 
+@njit(cache=True)
 def _matches(left: np.ndarray, right: np.ndarray, tolerance: float) -> int:
-    if not len(left) or not len(right):
-        return 0
-    # Vectorized nearest-neighbour assignment.  Unique candidate indices enforce
-    # the one-spike/one-match rule while avoiding Python loops over millions of
-    # spikes in the 20-minute sessions.
-    positions = np.searchsorted(right, left)
-    high = np.clip(positions, 0, len(right) - 1)
-    low = np.clip(positions - 1, 0, len(right) - 1)
-    use_low = np.abs(left - right[low]) <= np.abs(left - right[high])
-    nearest = np.where(use_low, low, high)
-    valid = np.abs(left - right[nearest]) <= tolerance
-    return int(len(np.unique(nearest[valid])))
+    # Sorted two-pointer matching maximizes the number of one-to-one matches.
+    i = j = count = 0
+    while i < len(left) and j < len(right):
+        delta = right[j] - left[i]
+        if abs(delta) <= tolerance:
+            count += 1
+            i += 1
+            j += 1
+        elif delta < -tolerance:
+            j += 1
+        else:
+            i += 1
+    return count
 
 
 def evaluate_candidate_sorting(
@@ -41,6 +44,8 @@ def evaluate_candidate_sorting(
 ) -> dict:
     truth = _load_npz(truth_archive)
     candidate = _load_candidate(candidate_root, sampling_rate)
+    truth = {key: np.sort(value) for key, value in truth.items()}
+    candidate = {key: np.sort(value) for key, value in candidate.items()}
     truth_ids, candidate_ids = sorted(truth), sorted(candidate)
     score = np.zeros((len(truth_ids), len(candidate_ids)), dtype=float)
     matches = np.zeros_like(score, dtype=int)
@@ -67,6 +72,11 @@ def evaluate_candidate_sorting(
         "true_unit_count": len(truth),
         "candidate_cluster_count": len(candidate),
         "matched_pairs": pairs,
+        "unassigned_true_units": sorted(set(truth_ids) - {p['true_unit'] for p in pairs}),
+        "unassigned_candidate_clusters": sorted(set(candidate_ids) - {p['candidate_cluster'] for p in pairs}),
+        "mean_recall_all_true_units": float(sum(p['recall'] for p in pairs) / max(len(truth_ids), 1)),
+        "well_recovered_f1_ge_0_8": sum(p['f1'] >= 0.8 for p in pairs),
+        "median_scope": "Assigned pairs only; see all-unit recall and unassigned units.",
         "median_recall": float(np.median([row["recall"] for row in pairs])) if pairs else 0.0,
         "median_precision": float(np.median([row["precision"] for row in pairs])) if pairs else 0.0,
         "median_f1": float(np.median([row["f1"] for row in pairs])) if pairs else 0.0,
@@ -84,6 +94,6 @@ def write_sorting_evaluation(result: dict, output: Path) -> None:
         f"- 中位 Recall：{result['median_recall']:.3f}",
         f"- 中位 Precision：{result['median_precision']:.3f}",
         f"- 中位 F1：{result['median_f1']:.3f}", "",
-        "这些候选结果故意包含合并、拆分、漏检和误检，用于测试 Unit QC 与 sorter 比较，不是“完美答案”。", "",
+        "中位数只覆盖配对的簇，不代表全部真实神经元。未配对单元、全体真实单元平均召回率见 JSON；候选簇不等于已通过人工复核的单细胞。", "",
     ]
     (output / "sorting_ground_truth_comparison.md").write_text("\n".join(lines), encoding="utf-8")

@@ -2254,6 +2254,8 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     for display, count, color in zip(
         display_labels, condition_counts, condition_colors, strict=True
     ):
+        if count == 0:
+            continue
         raster.plot(
             [],
             [],
@@ -2273,6 +2275,8 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     for index, (raw_label, display, count, color) in enumerate(
         zip(raw_labels, display_labels, condition_counts, condition_colors, strict=True)
     ):
+        if count == 0:
+            continue
         mean_key = "condition_a" if index == 0 else "condition_b"
         mean_rate = np.asarray(unit[mean_key], dtype=float)
         psth.plot(
