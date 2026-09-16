@@ -90,6 +90,7 @@ def main():
             if config.get('summary_subjects'):
                 summary_arguments += ['--subjects', ','.join(str(item) for item in config['summary_subjects'])]
             run('summarize_real_validation.py', summary_arguments, 'summary')
+            run('refresh_publication_storyboards.py', ['--delivery', str(args.manifest.parent)], 'publication_storyboards')
             run('prepare_publication_layouts.py', ['--delivery', str(args.manifest.parent)], 'publication_layouts')
             run('audit_exported_figures.py', ['--delivery', str(args.manifest.parent)], 'figure_audit')
             run('build_delivery_index.py', ['--delivery', str(args.manifest.parent)], 'navigation')
