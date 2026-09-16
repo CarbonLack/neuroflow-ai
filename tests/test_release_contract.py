@@ -35,6 +35,14 @@ def test_release_workflow_does_not_hardcode_an_old_version():
 
     assert "release/v1.0.0/*" not in workflow
     assert workflow.count("release/v*/*") == 2
+    assert "build_release.ps1 -SkipTests -SkipDocs -Lite" in workflow
+
+    release_script = (
+        Path(__file__).resolve().parents[1] / "scripts" / "build_release.ps1"
+    ).read_text(encoding="utf-8")
+    assert "[switch]$Lite" in release_script
+    assert 'if ($Lite) {' in release_script
+    assert '"--self-test-kilosort"' in release_script
 
 
 def test_workspace_override_creates_stable_layout(tmp_path: Path, monkeypatch):

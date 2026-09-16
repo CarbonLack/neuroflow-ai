@@ -32,3 +32,6 @@
 发行文件包括 Windows 安装版/便携版和 Python wheel/源码包。核心版与包含 Kilosort/GPU 运行库的完整包分别标识。
 支持环境为 Windows 10/11 x64、Python 3.12；GPU sorter 依赖兼容硬件和驱动。
 改进依据与官方资料见 docs/PRODUCT_REVIEW_1.2_ZH.md。
+
+本地正式发布脚本默认生成完整分析版，并在打包后实际运行 Kilosort4、MountainSort5、
+内置 sorter、启动、AI 隐私和图形导出自检；只有显式传入 `-Lite` 才生成公开核心包。

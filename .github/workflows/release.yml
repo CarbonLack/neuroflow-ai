@@ -39,7 +39,7 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: python -m pytest -q
       - name: Build and verify release artifacts
-        run: powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -SkipTests -SkipDocs
+        run: powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -SkipTests -SkipDocs -Lite
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:

@@ -46,6 +46,10 @@ print(ne.__version__, qc["quality_score"])
 可选组件：`[desktop]` 提供 Python 启动的 GUI；`[mountainsort]` 提供 MountainSort5；
 `[kilosort]` 提供 Kilosort4。后二者有本机编译器或 GPU/CUDA 兼容性要求。
 
+本地“完整分析版”桌面包已经随 App 带入 Kilosort4 与匹配的 PyTorch/CUDA 运行组件，
+仍要求电脑具有兼容的 NVIDIA 显卡和驱动。GitHub Actions 生成的公开核心包使用明确的
+`-Lite` 构建，不携带约 4 GB 的 GPU 运行组件，也不会把缺失的 Kilosort 静默替换为其他工具。
+
 ## 科学与隐私边界
 
 - 原始数据默认只读，派生数据写入项目目录。
@@ -69,3 +73,6 @@ core scientific runtime are bundled. User projects remain in
 Python 3.12 users can install the wheel and run `neuroephys info`. Optional
 extras are `[desktop]`, `[mountainsort]`, and `[kilosort]`. Review all candidate
 units, statistical results, decoding results, and AI suggestions scientifically.
+The local full-analysis desktop bundle includes Kilosort4 and its matched
+PyTorch/CUDA runtime; a compatible NVIDIA GPU and driver are still required.
+The public GitHub Actions core build is explicitly marked as a Lite build.

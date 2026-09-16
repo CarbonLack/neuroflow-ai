@@ -1,7 +1,8 @@
 param(
     [switch]$SkipTests,
     [switch]$SkipDocs,
-    [switch]$SkipInstaller
+    [switch]$SkipInstaller,
+    [switch]$Lite
 )
 
 $ErrorActionPreference = "Stop"
@@ -65,7 +66,11 @@ try {
         }
     }
 
-    $env:NEUROEPHYS_LITE_BUILD = "1"
+    if ($Lite) {
+        $env:NEUROEPHYS_LITE_BUILD = "1"
+    } else {
+        Remove-Item Env:NEUROEPHYS_LITE_BUILD -ErrorAction SilentlyContinue
+    }
     & $Python -m PyInstaller --noconfirm --clean (Join-Path $Root "NeuroFlow.spec")
     if ($LASTEXITCODE -ne 0) {
         throw "Windows application build failed with exit code $LASTEXITCODE."
@@ -92,6 +97,20 @@ try {
     $FigureSelfTest = Start-Process -FilePath $AppExe -ArgumentList "--self-test-figure-export" -PassThru -Wait -WindowStyle Hidden
     if ($FigureSelfTest.ExitCode -ne 0) {
         throw "Packaged figure self-test failed with exit code $($FigureSelfTest.ExitCode)."
+    }
+    $MountainSortSelfTest = Start-Process -FilePath $AppExe -ArgumentList "--self-test-mountainsort" -PassThru -Wait -WindowStyle Hidden
+    if ($MountainSortSelfTest.ExitCode -ne 0) {
+        throw "Packaged MountainSort5 self-test failed with exit code $($MountainSortSelfTest.ExitCode)."
+    }
+    $InternalSortersSelfTest = Start-Process -FilePath $AppExe -ArgumentList "--self-test-internal-sorters" -PassThru -Wait -WindowStyle Hidden
+    if ($InternalSortersSelfTest.ExitCode -ne 0) {
+        throw "Packaged internal-sorter self-test failed with exit code $($InternalSortersSelfTest.ExitCode)."
+    }
+    if (-not $Lite) {
+        $KilosortSelfTest = Start-Process -FilePath $AppExe -ArgumentList "--self-test-kilosort" -PassThru -Wait -WindowStyle Hidden
+        if ($KilosortSelfTest.ExitCode -ne 0) {
+            throw "Packaged Kilosort4 self-test failed with exit code $($KilosortSelfTest.ExitCode)."
+        }
     }
     Remove-Item Env:NEUROEPHYS_HOME -ErrorAction SilentlyContinue
 
