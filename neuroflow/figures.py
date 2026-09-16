@@ -2350,6 +2350,10 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
             vmin=-3,
             vmax=3,
         )
+        unit_ids = list(analysis["units"])
+        tick_rows = np.arange(0, len(order), max(1, int(np.ceil(len(order) / 15))))
+        heatmap.set_yticks(tick_rows + 0.5)
+        heatmap.set_yticklabels([str(unit_ids[order[index]]) for index in tick_rows])
         fig.colorbar(
             image,
             ax=heatmap,

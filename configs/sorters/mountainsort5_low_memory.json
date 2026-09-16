@@ -1,0 +1,6 @@
+{
+  "scheme": "2",
+  "scheme2_training_duration_sec": 60,
+  "scheme2_training_recording_sampling_mode": "uniform",
+  "scheme2_max_num_snippets_per_training_batch": 100
+}
