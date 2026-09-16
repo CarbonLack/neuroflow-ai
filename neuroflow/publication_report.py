@@ -25,6 +25,8 @@ CAPTIONS = {
 def write_publication_report(state, output: Path, figure_names: list[str]) -> Path:
     folder = output / 'publication'
     folder.mkdir(parents=True, exist_ok=True)
+    from .publication_layout import write_sized_figures
+    write_sized_figures(output, figure_names)
     inventory = []
     for path in sorted(output.rglob('*')):
         if not path.is_file() or folder in path.parents:
@@ -82,6 +84,7 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
         '<style>body{font:15px Arial,sans-serif;color:#222;max-width:1050px;margin:40px auto;padding:0 24px;background:white}h1,h2{font-weight:600}section{margin:36px 0;break-inside:avoid}img{width:100%;height:auto}p{line-height:1.6}.note{color:#666}a{color:#654c80}@media print{body{margin:0}section{break-before:page}}</style>'
         f'<h1>{html.escape(state.name)}</h1><p>English analysis figures and supplementary evidence. Draft organization; scientific review and target-journal checks remain required.</p>'
         '<p>Main figures follow behavioral context, neural response and statistical uncertainty. All remaining artifacts are indexed below, including alternative formats and prior files. No significance-based filtering is applied.</p>'
+        + '<p><a href="sized_figures/README.md">Physical-size artwork and checks</a> · <a href="sized_figures/layout_checks.json">Layout diagnostics</a></p>'
         + ''.join(chunks) + '<h2>Complete artifact inventory</h2><ul>' + links + '</ul></html>')
     (folder / 'index.html').write_text(document, encoding='utf-8')
     (folder / 'figure_legends.md').write_text('\n'.join(legends), encoding='utf-8')
