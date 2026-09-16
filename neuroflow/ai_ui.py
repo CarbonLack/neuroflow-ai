@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QTextBrowser,
@@ -164,7 +165,8 @@ class AISettingsDialog(QDialog):
             if language == "en_US"
             else "AI 助手设置"
         )
-        self.setMinimumWidth(720)
+        self.resize(760, 650)
+        self.setMinimumSize(520, 440)
 
         layout = QVBoxLayout(self)
         intro = QLabel(
@@ -324,7 +326,10 @@ class AISettingsDialog(QDialog):
             "Additional context" if language == "en_US" else "额外上下文",
             self.include_log_check,
         )
-        layout.addLayout(form)
+        settings_content = QWidget()
+        settings_content_layout = QVBoxLayout(settings_content)
+        settings_content_layout.setContentsMargins(0, 0, 0, 0)
+        settings_content_layout.addLayout(form)
 
         self.key_note = QLabel(
             (
@@ -340,7 +345,7 @@ class AISettingsDialog(QDialog):
         )
         self.key_note.setWordWrap(True)
         self.key_note.setObjectName("Muted")
-        layout.addWidget(self.key_note)
+        settings_content_layout.addWidget(self.key_note)
 
         self.recommendation = QLabel(
             (
@@ -357,7 +362,13 @@ class AISettingsDialog(QDialog):
         self.recommendation.setWordWrap(True)
         self.recommendation.setObjectName("InsetPanel")
         self.recommendation.setContentsMargins(12, 9, 12, 9)
-        layout.addWidget(self.recommendation)
+        settings_content_layout.addWidget(self.recommendation)
+
+        settings_scroll = QScrollArea()
+        settings_scroll.setWidgetResizable(True)
+        settings_scroll.setFrameShape(QFrame.NoFrame)
+        settings_scroll.setWidget(settings_content)
+        layout.addWidget(settings_scroll, 1)
 
         button_row = QHBoxLayout()
         self.health_button = QPushButton(
@@ -536,6 +547,7 @@ class ContextPreviewDialog(QDialog):
         self.language = language
         self.checks: dict[str, QCheckBox] = {}
         self.resize(1000, 680)
+        self.setMinimumSize(560, 440)
         layout = QVBoxLayout(self)
         explanation = QLabel(
             (
@@ -633,7 +645,7 @@ class AIAssistantDialog(QDialog):
         self.stream_buffer = ""
 
         self.resize(1280, 790)
-        self.setMinimumSize(1050, 680)
+        self.setMinimumSize(680, 520)
         self.setModal(False)
         self._build_ui()
         self.set_language(self.language_getter())
@@ -765,7 +777,9 @@ class AIAssistantDialog(QDialog):
 
         plan_frame = QFrame()
         plan_frame.setObjectName("Card")
-        plan_frame.setMinimumWidth(700)
+        # Keep both work areas usable without forcing a desktop-sized dialog.
+        # Layout stretch factors shrink the plan alongside chat on small screens.
+        plan_frame.setMinimumWidth(300)
         plan_layout = QVBoxLayout(plan_frame)
         plan_layout.setContentsMargins(12, 12, 12, 12)
         self.plan_title = QLabel()
