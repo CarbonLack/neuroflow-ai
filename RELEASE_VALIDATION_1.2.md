@@ -41,3 +41,16 @@
 - 本机成品位置：`D:\PhD\AI大赛\本地正式版\v1.2.1`；安装及成品自检记录：`D:\PhD\AI大赛\发布验证\v1.2.1`。
 
 上述预设是投稿前的规范化起点，不代表对所有期刊自动合规。最终仍应依据目标期刊和最终版面尺寸检查。
+
+## 1.2.1 正式 Full 发行物最终验收（2026-09-16）
+
+- 源码完整回归：131 项通过；其余输出为第三方科学计算库的弃用提醒，不是失败。
+- 正式构建默认是 Full 包，包含 Kilosort 4 所需的 PyTorch/CUDA 运行组件；只有显式使用 `-Lite` 才会生成不含这些组件的核心包。公开 GitHub Actions 仍明确构建 Lite 包，避免把缺少 GPU 组件误写成完整包。
+- 构建目录中的正式程序依次通过六项阻断式自检：启动、离线 AI 隐私边界、SVG/PDF/PNG 图形导出、MountainSort5、内置 sorters、Kilosort 4。任一项失败时构建脚本都会停止，不生成“已通过”的发行结论。
+- Kilosort 4.1.7 实际使用 PyTorch 2.11.0 + CUDA 12.8，在 NVIDIA GeForce RTX 3080 20 GB 上完成模拟记录分选；结果为 2 个 unit、771 个 spike，并保存原生诊断文件。
+- 安装包 `NeuroEphysAI-Setup-1.2.1.exe`（2,081,209,762 字节）已静默安装到隔离验收目录，退出码为 0，无需重启；桌面和开始菜单的一键快捷方式均成功生成。安装后的程序再次通过启动和 GPU Kilosort 实跑。
+- 便携包 `NeuroEphysAI-1.2.1-Windows-x64-portable.zip`（3,129,898,674 字节）已完整解压；解压后的独立程序再次通过启动和 GPU Kilosort 实跑。
+- Python wheel `neuroephys_ai-1.2.1-py3-none-any.whl`（426,688 字节）已安装到独立目录；从非源码工作目录成功导入 `neuroephys` 和 `neuroflow`，产品版本为 1.2.1，公开 API 为 60 项。发行名是 `neuroephys-ai`，代码导入名是 `neuroephys`。
+- 各发行文件的 SHA-256 校验值保存在同目录 `SHA256SUMS.txt`。正式成品位于 `D:\PhD\AI大赛\neuroflow-ai\release\v1.2.1`；独立验收证据位于 `D:\PhD\AI大赛\发布验证\v1.2.1_d1eaa4a_build`、`v1.2.1_d1eaa4a_install`、`v1.2.1_d1eaa4a_portable` 和 `v1.2.1_d1eaa4a_wheel`。
+
+这里的“通过”限定为上述机器与明确列出的自检数据，不代表任意第三方数据、任意驱动或任意参数组合均自动通过。真实数据必须继续保留原始文件、参数、日志、人工 Unit 复核与失败记录。
