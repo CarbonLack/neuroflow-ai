@@ -982,6 +982,7 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         "raw_file": state.recording_path.name if state.recording_path else None,
         "qc": state.qc,
         "unit_metrics": state.unit_metrics,
+        "automated_qc_screen": state.metadata.get("automated_qc_screen"),
         "spike_train_analysis": _json_ready(state.spike_train_analysis),
         "lfp_analysis": _json_ready(state.lfp_analysis),
         "spike_field_analysis": _json_ready(state.spike_field_analysis),

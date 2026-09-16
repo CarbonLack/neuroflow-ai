@@ -47,6 +47,13 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
         f'- 当前分析选入事件：{state.analysis.get("selected_event_count", 0)}个。每行事件不自动等于一个独立试次。', '']
     if state.analysis:
         guide += [f'分析窗口：{state.analysis.get("window")}秒；分箱：{state.analysis.get("bin_size")}秒。', '']
+    screen = state.metadata.get('automated_qc_screen')
+    if screen:
+        guide += ['## 质量筛选范围', '',
+            '这是单独的自动质量筛选分支，不是人工确认的single-unit结果。筛选依据为质量指标，不依据事件显著性。', '',
+            f'阈值：{screen["thresholds"]}。',
+            f'保留Unit：{screen["included_units"]}；排除Unit：{screen["excluded_units"]}。',
+            f'完整未筛选项目：{screen["source_project"]}。', '']
     if state.statistics.get('rows'):
         rows = state.statistics['rows']
         significant = [r for r in rows if r.get('significant_fdr')]
