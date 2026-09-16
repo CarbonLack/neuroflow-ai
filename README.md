@@ -16,6 +16,8 @@
 - 下载测试：[GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/releases)
 - 问题反馈：[GitHub Issues](https://github.com/CarbonLack/neuroflow-ai/issues)
 - 本次发行说明：[RELEASE_NOTES_1.2.md](RELEASE_NOTES_1.2.md)
+- 三批数据验证范围、结果与科学边界：
+  [THREE_BATCH_ACCEPTANCE_ZH.md](docs/THREE_BATCH_ACCEPTANCE_ZH.md)
 
 NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道电生理分析工作台。
 平台调用经过验证的 sorter 和分析库，将数据导入、质量控制、sorting、人工 Unit
