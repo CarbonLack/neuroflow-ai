@@ -498,9 +498,11 @@ def test_mountainsort_splits_declared_independent_contacts(
 
     def grouped_sorter(**kwargs):
         observed.update(kwargs)
-        return si.NumpySorting.from_unit_dict(
+        sorting = si.NumpySorting.from_unit_dict(
             [{3: np.array([30, 90])}], sampling_frequency=30_000
         )
+        sorting.set_property("group", np.array([1]))
+        return sorting
 
     monkeypatch.setattr(ss, "run_sorter_by_property", grouped_sorter)
     monkeypatch.setattr(
@@ -522,6 +524,9 @@ def test_mountainsort_splits_declared_independent_contacts(
     assert "no unmeasured cross-contact geometry" in " ".join(
         state.sorting_provenance["mountainsort5"]["automatic_adjustments"]
     )
+    assert state.sorting_provenance["mountainsort5"]["unit_source_groups"] == {
+        "3": "1"
+    }
 
 
 def test_kilosort_runtime_parser_accepts_timestamped_log_lines(tmp_path: Path):

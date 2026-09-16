@@ -387,6 +387,16 @@ def run_sorter(
         / state.sampling_rate
         for unit in sorting.unit_ids
     }
+    unit_source_groups: dict[str, str] = {}
+    if "group" in sorting.get_property_keys():
+        unit_source_groups = {
+            str(int(unit)): str(group.item() if isinstance(group, np.generic) else group)
+            for unit, group in zip(
+                sorting.unit_ids,
+                sorting.get_property("group"),
+                strict=True,
+            )
+        }
     provenance = {
         "sorter": item["name"],
         "sorter_key": sorter_name,
@@ -397,6 +407,8 @@ def run_sorter(
         "sorting_input": str(sorting_input),
         "linked_source": str(state.source_path) if state.source_path else None,
         "automatic_adjustments": automatic_adjustments,
+        "unit_grouping_property": "group" if unit_source_groups else None,
+        "unit_source_groups": unit_source_groups,
     }
     register_sorting_result(
         state,
