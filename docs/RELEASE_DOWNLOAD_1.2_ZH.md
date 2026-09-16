@@ -1,5 +1,8 @@
 # NeuroEphys AI v1.2.3 — 下载与安装
 
+首次使用请先阅读 GitHub 内的[安装与完整使用教程](https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/GITHUB_USER_GUIDE_ZH.md)；
+英文版见 [Installation and complete user guide](https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/GITHUB_USER_GUIDE_EN.md)。
+
 保留紫黑配色、原 Logo 及科学分析选择，重新整理首页、教程中心和工作区。
 
 ## 下载哪个文件

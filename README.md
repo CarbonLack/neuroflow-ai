@@ -11,6 +11,8 @@
 
 - 教程网站：[中文](https://carbonlack.github.io/neuroflow-ai/zh/) ·
   [English](https://carbonlack.github.io/neuroflow-ai/en/)
+- **GitHub 安装与完整使用教程：[中文](docs/GITHUB_USER_GUIDE_ZH.md) ·
+  [English](docs/GITHUB_USER_GUIDE_EN.md)**
 - 下载测试：[GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/releases)
 - 问题反馈：[GitHub Issues](https://github.com/CarbonLack/neuroflow-ai/issues)
 - 本次发行说明：[RELEASE_NOTES_1.2.md](RELEASE_NOTES_1.2.md)
