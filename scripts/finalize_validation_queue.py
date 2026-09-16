@@ -14,11 +14,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--manifest', type=Path, required=True)
     parser.add_argument('--max-hours', type=float, default=12)
+    parser.add_argument('--refresh', action='store_true', help='Regenerate every completed derived artifact with the current source code')
     args = parser.parse_args()
     config = json.loads(args.manifest.read_text(encoding='utf-8'))
     queue_path = args.manifest.with_name(args.manifest.stem + '_status.json')
     output = args.manifest.with_name('postprocessing_status.json')
-    results = json.loads(output.read_text(encoding='utf-8')) if output.exists() else {}
+    results = (
+        {}
+        if args.refresh
+        else json.loads(output.read_text(encoding='utf-8')) if output.exists() else {}
+    )
     repo = Path(__file__).resolve().parents[1]
     deadline = time.monotonic() + args.max_hours * 3600
     def run(script, arguments, key):
@@ -39,9 +44,33 @@ def main():
                 continue
             project = Path(job['output'])
             if '--no-behavior' in job['arguments']:
-                results[key] = {'status': 'electrophysiology_only', 'manual_review': 'pending'}
+                code = run(
+                    'analyze_saved_medpc_project.py',
+                    ['--project', str(project), '--initial-only'],
+                    key + '_initial_qc',
+                )
+                results[key] = {
+                    'status': 'electrophysiology_only' if code == 0 else 'failed',
+                    'exit_code': code,
+                    'manual_review': 'pending',
+                }
             else:
-                code = run('analyze_saved_medpc_project.py', ['--project', str(project), '--qc-screen'], key)
+                if args.refresh:
+                    code = run(
+                        'analyze_saved_medpc_project.py',
+                        ['--project', str(project), '--refresh-initial-qc'],
+                        key + '_all_candidates',
+                    )
+                    if code == 0:
+                        code = run(
+                            'review_event_family.py',
+                            ['--project', str(project)],
+                            key + '_all_candidates_family',
+                        )
+                else:
+                    code = 0
+                if code == 0:
+                    code = run('analyze_saved_medpc_project.py', ['--project', str(project), '--qc-screen'], key)
                 screened = project / 'screened_review'
                 if code == 0 and (screened / 'exports/event_analysis_summary.json').exists():
                     code = run('review_event_family.py', ['--project', str(screened)], key + '_family')

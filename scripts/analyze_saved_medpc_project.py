@@ -20,10 +20,18 @@ def main():
     parser.add_argument('--max-isi-violation', type=float, default=0.01)
     parser.add_argument('--min-snr', type=float, default=5.0)
     parser.add_argument('--min-spikes', type=int, default=500)
+    parser.add_argument('--refresh-initial-qc', action='store_true', help='Regenerate the source-project initial QC export with current code before event analyses')
+    parser.add_argument('--initial-only', action='store_true', help='Regenerate only the source-project initial QC export; valid for electrophysiology-only projects')
     args = parser.parse_args()
     state = load_project(args.project)
     if not state.sorted_spikes:
         raise ValueError('Run an actual sorter first')
+    if args.refresh_initial_qc or args.initial_only:
+        initial = state.root / 'exports' / 'initial_qc'
+        export_reproducible_bundle(state, initial)
+        print(json.dumps({'initial_qc': str(initial), 'units': len(state.sorted_spikes)}, ensure_ascii=False), flush=True)
+    if args.initial_only:
+        return
     if args.qc_screen:
         source_manifest = state.root / 'neuroflow_project.json'
         state = deepcopy(state)
