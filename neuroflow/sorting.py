@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 import re
+import shutil
 from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
@@ -332,14 +333,55 @@ def run_sorter(
                 f"{item['name']} filtering.freq_max adjusted to "
                 f"{adjusted_filtering['freq_max']:.0f} Hz"
             )
-    sorting = ss.run_sorter(
-        sorter_name=sorter_name,
-        recording=recording,
-        folder=results_dir,
-        remove_existing_folder=True,
-        verbose=True,
-        **sorter_settings,
+    probe_metadata = state.metadata.get("probe", {})
+    independent_contacts = (
+        state.metadata.get("contact_positions_um") is None
+        and probe_metadata.get("geometry_mode") == "independent_contacts"
     )
+    split_independent_contacts = (
+        sorter_name == "mountainsort5"
+        and independent_contacts
+        and "group" in recording.get_property_keys()
+    )
+    if split_independent_contacts:
+        # MountainSort5 aligns every detected template globally. With independent
+        # microwires, cross-contact templates have no meaningful overlap; in
+        # mountainsort5 0.5.x their near-zero correlations can make the alignment
+        # iteration overflow. Sorting each declared independent contact separately
+        # preserves the acquisition topology and SpikeInterface then aggregates the
+        # units into one result without inventing spatial neighbours.
+        result_path = Path(results_dir).resolve()
+        project_root = Path(state.root).resolve()
+        if result_path.exists():
+            if not result_path.is_relative_to(project_root):
+                raise ValueError(
+                    "Refusing to replace a grouped sorter result outside the project"
+                )
+            shutil.rmtree(result_path)
+        automatic_adjustments.append(
+            "Ran MountainSort5 once per declared independent contact and "
+            "aggregated the units; no unmeasured cross-contact geometry was used."
+        )
+        if progress:
+            progress(automatic_adjustments[-1])
+        sorting = ss.run_sorter_by_property(
+            sorter_name=sorter_name,
+            recording=recording,
+            grouping_property="group",
+            folder=results_dir,
+            engine="loop",
+            verbose=True,
+            **sorter_settings,
+        )
+    else:
+        sorting = ss.run_sorter(
+            sorter_name=sorter_name,
+            recording=recording,
+            folder=results_dir,
+            remove_existing_folder=True,
+            verbose=True,
+            **sorter_settings,
+        )
     sorted_spikes = {
         int(unit): sorting.get_unit_spike_train(unit).astype(float)
         / state.sampling_rate

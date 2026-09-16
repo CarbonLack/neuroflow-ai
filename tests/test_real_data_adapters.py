@@ -33,6 +33,7 @@ from neuroflow.sorting import (
     kilosort_runtime_summary,
     load_kilosort4_result,
     load_spikeinterface_result,
+    run_sorter,
 )
 
 
@@ -470,6 +471,57 @@ def test_existing_spikeinterface_output_can_be_registered_without_rerun(
     assert state.sorting_provenance["mountainsort5"]["settings"][
         "detect_threshold"
     ] == 5.5
+
+
+def test_mountainsort_splits_declared_independent_contacts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    import spikeinterface as si
+    import spikeinterface.sorters as ss
+
+    project = tmp_path / "project"
+    project.mkdir()
+    recording_path = project / "recording.bin"
+    np.zeros((300, 2), dtype=np.int16).tofile(recording_path)
+    state = ProjectState(
+        root=project,
+        recording_path=recording_path,
+        sampling_rate=30_000,
+        channel_count=2,
+        duration_seconds=0.01,
+        dtype="int16",
+        scale_uv_per_bit=0.195,
+        metadata={"probe": {"geometry_mode": "independent_contacts"}},
+    )
+    observed: dict[str, object] = {}
+
+    def grouped_sorter(**kwargs):
+        observed.update(kwargs)
+        return si.NumpySorting.from_unit_dict(
+            [{3: np.array([30, 90])}], sampling_frequency=30_000
+        )
+
+    monkeypatch.setattr(ss, "run_sorter_by_property", grouped_sorter)
+    monkeypatch.setattr(
+        ss,
+        "run_sorter",
+        lambda **kwargs: pytest.fail("ungrouped sorter path was used"),
+    )
+
+    spikes = run_sorter(
+        state,
+        "mountainsort5",
+        project / "results" / "mountainsort5",
+        update_comparison=False,
+    )
+
+    assert observed["grouping_property"] == "group"
+    assert observed["engine"] == "loop"
+    np.testing.assert_allclose(spikes[3], [0.001, 0.003])
+    assert "no unmeasured cross-contact geometry" in " ".join(
+        state.sorting_provenance["mountainsort5"]["automatic_adjustments"]
+    )
 
 
 def test_kilosort_runtime_parser_accepts_timestamped_log_lines(tmp_path: Path):
