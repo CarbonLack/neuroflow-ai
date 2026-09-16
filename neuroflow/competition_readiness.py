@@ -18,6 +18,22 @@ DEMO_STORY = (
 )
 
 
+def _offline_docs_available(workspace: Path) -> bool:
+    """Recognize both source-tree and packaged offline documentation layouts."""
+    candidates = (
+        workspace / "docs" / "site" / "zh" / "index.html",
+        workspace / "docs" / "site" / "en" / "index.html",
+        workspace / "docs" / "_build" / "html" / "index.html",
+        workspace / "assets" / "docs" / "zh" / "index.html",
+        workspace / "assets" / "docs" / "en" / "index.html",
+        workspace / "neuroflow_docs" / "index.html",
+        workspace / "_internal" / "neuroflow_docs" / "index.html",
+        workspace / "docs" / "zh" / "index.html",
+        workspace / "docs" / "en" / "index.html",
+    )
+    return any(path.is_file() for path in candidates)
+
+
 def readiness_snapshot(
     state: ProjectState | None,
     *,
@@ -90,7 +106,7 @@ def readiness_snapshot(
         {
             "id": "offline_docs",
             "label": "Offline documentation is available",
-            "ready": (workspace / "docs" / "_build" / "html" / "index.html").exists(),
+            "ready": _offline_docs_available(workspace),
         },
     ]
     return {
