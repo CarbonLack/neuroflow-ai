@@ -20,7 +20,7 @@ from matplotlib.ticker import (
     NullLocator,
     ScalarFormatter,
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -234,12 +234,16 @@ class FigureStudioDialog(QDialog):
         editor_outer.addWidget(self.mode_tabs, 1)
         self.preview_label = QLabel()
         self.preview_label.setAlignment(Qt.AlignCenter)
-        self.preview_label.setFixedHeight(160)
+        self.preview_label.setFixedHeight(260)
         self.preview_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         self.preview_label.setStyleSheet(
             "QLabel { background: #ffffff; border: 1px solid #d6dfdc; }"
         )
         editor_outer.addWidget(self.preview_label, 0)
+        self._preview_resize_timer = QTimer(self)
+        self._preview_resize_timer.setSingleShot(True)
+        self._preview_resize_timer.setInterval(80)
+        self._preview_resize_timer.timeout.connect(self._update_preview)
         splitter.addWidget(editor_container)
         splitter.setStretchFactor(1, 1)
         root.addWidget(splitter, 1)
@@ -290,19 +294,22 @@ class FigureStudioDialog(QDialog):
             self.style_scope.button(0).setChecked(True)
         self._update_preview()
 
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self._preview_resize_timer.start()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        if hasattr(self, "_preview_resize_timer"):
+            self._preview_resize_timer.start()
+
     def _update_preview(self) -> None:
         """Render the edited figure into the dialog without changing its data."""
         buffer = BytesIO()
-        current = self.tree.currentItem()
-        target = current.data(0, Qt.UserRole) if current else None
-        axis = target if target in self.figure.axes else getattr(target, "axes", None)
-        extent = "tight"
-        if axis in self.figure.axes and axis.get_visible():
-            self.figure.draw_without_rendering()
-            box = axis.get_tightbbox(self.figure._get_renderer())
-            if box is not None:
-                extent = box.transformed(self.figure.dpi_scale_trans.inverted()).padded(0.05)
-        self.figure.savefig(buffer, format="png", dpi=140, bbox_inches=extent)
+        # Always retain the complete figure as context. The selected object is
+        # identified by the tree and heading; cropping it here made multi-panel
+        # layouts look like a tiny, isolated plot and concealed neighboring panels.
+        self.figure.savefig(buffer, format="png", dpi=140, bbox_inches="tight")
         pixmap = QPixmap()
         pixmap.loadFromData(buffer.getvalue(), "PNG")
         available = self.preview_label.size()

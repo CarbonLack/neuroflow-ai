@@ -50,6 +50,7 @@ def _capture(window, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not pixmap.save(str(path)):
         raise RuntimeError(f"Could not save screenshot: {path}")
+    print(f"Captured {path.name}", flush=True)
 
 
 def main() -> int:
@@ -59,8 +60,10 @@ def main() -> int:
     app = QApplication.instance() or QApplication([])
     app.setFont(QFont("Microsoft YaHei", 10))
     window = NeuroFlowWindow(workspace)
+    window.auto_stage_guides = False
     window.resize(1900, 1080)
     window._set_language("en_US")
+    window.home_workspace_hint.setText("NeuroEphys AI  /  Local workspace")
     window.show()
     _capture(window, output / "neuroflow-home.png")
     new_project = NewProjectDialog(workspace, window, "en_US")
@@ -319,9 +322,7 @@ def main() -> int:
         studio.tree.setCurrentItem(studio.tree.topLevelItem(1))
     studio.show()
     _capture(studio, output / "neuroflow-figure-studio.png")
-    studio.editor_scroll.verticalScrollBar().setValue(
-        int(studio.editor_scroll.verticalScrollBar().maximum() * 0.78)
-    )
+    studio.mode_tabs.setCurrentIndex(1)
     _capture(studio, output / "neuroflow-figure-studio-axes.png")
     studio.close()
     # The application correctly prompts before closing a dirty project. This
