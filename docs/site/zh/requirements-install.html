@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/requirements-install.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f470d208"></script>
+      <script src="_static/documentation_options.js?v=e6b6ee12"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -159,6 +159,11 @@
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id2">发送内容预览</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id3">科学解释结构</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#ollama">本机 Ollama</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="competition-demo.html">决赛演示与离线保障</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="competition-demo.html#id2">推荐 5–10 分钟顺序</a></li>
+<li class="toctree-l2"><a class="reference internal" href="competition-demo.html#id3">现场保障</a></li>
 </ul>
 </li>
 </ul>
@@ -328,17 +333,17 @@
 <section id="windows-app">
 <h2>安装 Windows App<a class="headerlink" href="#windows-app" title="Link to this heading"></a></h2>
 <p>需要完整科研复现和比赛演示时，推荐从 GitHub <strong>Releases</strong> 下载
-<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.2-Full.exe</span></code>，并保留默认的“完整 GPU/Kilosort”组件。
+<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.3-Full.exe</span></code>，并保留默认的“完整 GPU/Kilosort”组件。
 安装页也可选择“仅通用核心”。没有兼容 NVIDIA GPU 或暂时不用 Kilosort 的用户，
-可直接下载更小的 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.2.exe</span></code> 标准版。两种安装程序都只安装到当前用户目录，不要求管理员权限，
+可直接下载更小的 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.3.exe</span></code> 标准版。两种安装程序都只安装到当前用户目录，不要求管理员权限，
 并创建桌面和开始菜单快捷方式。卸载程序不会删除
 <code class="docutils literal notranslate"><span class="pre">Documents\NeuroEphysAI</span></code> 中的项目数据。</p>
-<p>便携版 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.2.2-Windows-x64-portable.zip</span></code> 无需安装。完整解压后启动
+<p>便携版 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.2.3-Windows-x64-portable.zip</span></code> 无需安装。完整解压后启动
 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI\NeuroEphysAI.exe</span></code>，不能只复制单独的 EXE。one-folder 结构让科学
 计算依赖可以检查，启动时也无需反复解压。</p>
 <p>安装版与便携版都在本机运行数据导入、质控、已有 sorting 导入、Unit 人工复核、
 行为、统计、机器学习、Elephant、图表、AI 控制和教程。Kilosort4 所需 CUDA PyTorch
-运行库有数 GiB，因此通过 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.2-Full.exe</span></code> 作为独立 GPU Full 自选安装版交付，不在标准 App 中重复打包。Full 安装程序默认选中 GPU 后端，也允许取消该组件。Sorter 页面
+运行库有数 GiB，因此通过 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.3-Full.exe</span></code> 作为独立 GPU Full 自选安装版交付，不在标准 App 中重复打包。Full 安装程序默认选中 GPU 后端，也允许取消该组件。Sorter 页面
 显示实际状态，不会用其他 sorter 冒充 Kilosort。</p>
 <p>首次打开后进入 <strong>Sorter 管理</strong>。该页面显示实际检测到的后端、版本、硬件要求、
 适用探针和可运行状态。只有通过环境探测的后端才标记为可运行。</p>
@@ -347,7 +352,7 @@
 <h2>Python 包<a class="headerlink" href="#python" title="Link to this heading"></a></h2>
 <p>正式 Python 发行物支持 64 位 Python 3.12。新建独立环境并安装 wheel：</p>
 <div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="n">venv</span>
-<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">2</span><span class="p">.</span><span class="n">2-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
+<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">2</span><span class="p">.</span><span class="n">3-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
 <span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">neuroephys</span><span class="p">.</span><span class="n">exe</span> <span class="n">info</span>
 </pre></div>
 </div>

@@ -67,7 +67,10 @@ def main():
     body = ''.join('<tr>' + ''.join(f'<td>{html.escape(x)}</td>' for x in row) + '</tr>' for row in matrix)
     page = '<!doctype html><html lang="zh"><meta charset="utf-8"><title>真实数据验证汇总</title><style>body{font:15px Arial,"Microsoft YaHei",sans-serif;max-width:1250px;margin:32px auto;padding:20px;color:#28232d}table{border-collapse:collapse;width:100%}td,th{padding:9px;border-bottom:1px solid #ddd}th{background:#eee8f2}p{line-height:1.7}</style><h1>真实数据验证汇总</h1><p>候选簇、自动筛选和人工验收是三个阶段。下表只报告已保存证据，缺失项不按零处理。</p><table><tr>' + ''.join(f'<th>{x}</th>' for x in headers) + '</tr>' + body + '</table><p>跨事件显著组合不是独立神经元或动物数。无行为组只做分选和质控。人工复核仍待完成。</p></html>'
     (args.delivery / '真实数据验证汇总.html').write_text(page, encoding='utf-8')
-    print(args.delivery / '真实数据验证汇总.html', flush=True)
+    # GitHub's Windows runner can expose a legacy cp1252 stdout even though the
+    # generated files are UTF-8. Keep console output ASCII-only; the actual
+    # Chinese filenames above remain unchanged.
+    print('real validation summary written', flush=True)
 
 
 if __name__ == '__main__':

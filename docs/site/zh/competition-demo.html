@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>图表检查与论文导出 &mdash; NeuroEphys AI 中文手册</title>
+  <title>决赛演示与离线保障 &mdash; NeuroEphys AI 中文手册</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
 
 
     <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
-    <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/figures.html" />
+    <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/competition-demo.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=e6b6ee12"></script>
@@ -23,8 +23,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="索引" href="genindex.html" />
     <link rel="search" title="搜索" href="search.html" />
-    <link rel="next" title="受控 AI 助手" href="ai-assistant.html" />
-    <link rel="prev" title="统计、机器学习与科学边界" href="statistics-ml.html" />
+    <link rel="next" title="操作与方法参数参考" href="parameter-reference.html" />
+    <link rel="prev" title="受控 AI 助手" href="ai-assistant.html" />
 </head>
 
 <body class="wy-body-for-nav">
@@ -146,11 +146,11 @@
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id4">阅读图表</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">图表检查与论文导出</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#figure-studio">Figure Studio</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id2">导出格式</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id3">单图与项目统一样式</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id5">导出前检查</a></li>
+<li class="toctree-l1"><a class="reference internal" href="figures.html">图表检查与论文导出</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#figure-studio">Figure Studio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#id2">导出格式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#id3">单图与项目统一样式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="figures.html#id5">导出前检查</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">受控 AI 助手</a><ul>
@@ -161,9 +161,9 @@
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#ollama">本机 Ollama</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="competition-demo.html">决赛演示与离线保障</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="competition-demo.html#id2">推荐 5–10 分钟顺序</a></li>
-<li class="toctree-l2"><a class="reference internal" href="competition-demo.html#id3">现场保障</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">决赛演示与离线保障</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id2">推荐 5–10 分钟顺序</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">现场保障</a></li>
 </ul>
 </li>
 </ul>
@@ -307,9 +307,9 @@
           <div role="navigation" aria-label="页面导航">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">图表检查与论文导出</li>
+      <li class="breadcrumb-item active">决赛演示与离线保障</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/figures.rst.txt" rel="nofollow"> 查看页面源码</a>
+            <a href="_sources/competition-demo.rst.txt" rel="nofollow"> 查看页面源码</a>
       </li>
   </ul>
   <hr/>
@@ -318,74 +318,38 @@
            <div itemprop="articleBody">
 
   <section id="id1">
-<h1>图表检查与论文导出<a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
-<p>每个科学页面使用交互式 Matplotlib 画布。工具栏提供复位、平移、缩放、点值检查和
-保存。展开 <strong>图表工具</strong> 后选择面板，可以单独放大、编辑或导出。</p>
-<section id="figure-studio">
-<h2>Figure Studio<a class="headerlink" href="#figure-studio" title="Link to this heading"></a></h2>
-<p>点击 <strong>图形设置</strong> 编辑整图，点击 <strong>编辑子图</strong> 编辑选中的子图。
-“子图”是一整块绘图区，不是 X / Y 轴。左侧按实际图名显示，右侧的标题、范围、
-轴线、刻度、网格等分类分页，同页参数并排呈现，预览跟随所选子图。编辑器提供：</p>
-<ul class="simple">
-<li><p>画布尺寸和导出 DPI；</p></li>
-<li><p>子图位置和坐标轴实际长度；</p></li>
-<li><p>标题、轴标题、范围、尺度和刻度格式；</p></li>
-<li><p>四条轴线的显示、颜色、线宽和偏移；</p></li>
-<li><p>主次刻度间隔和网格样式；</p></li>
-<li><p>线条颜色、粗细、线型、点型和透明度；</p></li>
-<li><p>散点大小、填充/边缘颜色和透明度；</p></li>
-<li><p>柱、填充区、热图、文字、图例和参考线。</p></li>
-</ul>
-</section>
+<h1>决赛演示与离线保障<a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
+<p>App 的 <strong>帮助 → 决赛演示准备</strong> 将比赛要求转成可检查的证据清单，而不是把汇报做成
+一段纯技术介绍。清单只报告实际存在的项目、分析、图件、论文排版、AI 配置、sorter 和
+离线手册；缺失项保持未勾选。</p>
 <section id="id2">
-<h2>导出格式<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
-<ul class="simple">
-<li><p>SVG：继续进行矢量编辑。</p></li>
-<li><p>PDF：论文和审阅使用的矢量文件。</p></li>
-<li><p>PNG：汇报或线上提交预览。</p></li>
-<li><p>CSV/源数据表：追溯图中的数值。</p></li>
-</ul>
+<h2>推荐 5–10 分钟顺序<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>实际问题与目标用户：导入、分选、行为对齐、解释和复现分散在多个工具中。</p></li>
+<li><p>创建或导入项目：强调源数据只读、项目可恢复、参数和中间结果可追溯。</p></li>
+<li><p>展示质控、三 sorter 横向比较和事件同步。</p></li>
+<li><p>展示 Raster/PSTH、统计证据与面向初学者的解释。</p></li>
+<li><p>展示英文主图、附图、panel 字母、图注草稿和完整产物索引。</p></li>
+<li><p>展示 AI 如何读取脱敏项目上下文、提出建议并受工具白名单约束。</p></li>
+<li><p>用真实运行记录说明效率、失败原因、修正和仍需人工复核的限制。</p></li>
+</ol>
 </section>
 <section id="id3">
-<h2>单图与项目统一样式<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
-<p>打开 <strong>统一样式</strong>，选择科研通用、Nature 参考或报告展示预设，修改参数，
-再选择 <strong>当前子图 / 当前整图 / 项目所有图</strong>，点击 <strong>应用并预览</strong>。
-<strong>Ctrl+S</strong> 保存项目后可恢复；选择项目所有图会清除局部统一样式覆盖。
-已有导出文件不会自动改写，需要重新导出。当前对象中的精细元素编辑只保留在
-当前画布，须导出保存成品，不等同于项目统一样式。</p>
-<p>默认 Arial，轴标题/刻度/图例 8 pt、子图标题 9 pt、轴线 0.75 pt、数据线 0.8 pt、
-向外刻度 3 pt、无网格、隐藏上右边框、白底深灰字、低饱和度紫绿分类色；位图 600 DPI。
-默认浅紫 / 柔绿 / 浅赭 / 灰蓝，另可选择高对比分类型配色或原始配色。
-统一样式不会改变数值、单位、范围、对数尺度、统计结果或热图归一化。</p>
-<p>期刊要求有差异：<a class="reference external" href="https://www.nature.com/nature/for-authors/final-submission">Nature 最终稿规范</a>
-常用 5–7 pt、0.25–1 pt 线宽，而
-<a class="reference external" href="https://journals.plos.org/plosmedicine/s/figures">PLOS 图件要求</a> 为 8–12 pt。
-因此 Nature 参考预设单独使用 7 pt；无网格等属于产品设计选择，不是全部期刊强制规范。
-详细参数、颜色和官方出处见
-<a class="reference external" href="https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/FIGURE_STYLE_STANDARD_ZH.md">科研作图标准</a>。</p>
-<p>尺寸按最终输出核对。在整图页选择 89 mm 或 183 mm 尺寸后，使用编辑器的导出按钮
-保持该物理宽度。预设不等于目标期刊的自动合规认证。</p>
+<h2>现场保障<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<p>同时准备完整安装版、标准安装版、便携版、离线手册、已导出的模拟项目、真实项目、
+截图和短录屏。现场不重新跑长时 sorter；用已保存项目展示结果，网络不可用时切到
+手动模式，所有确定性分析与导出仍可运行。</p>
+<p>点击对话框中的 <strong>导出演示准备包</strong> 会生成 Markdown 和 JSON，方便后续制作 PPT、
+录屏脚本和最终核对表。该清单不是科学有效性认证，候选 Unit 和生物学结论仍需人工审核。</p>
 </section>
-<section id="id5">
-<h2>导出前检查<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
-<p>运行“11 论文与复现”后，在项目的 <code class="docutils literal notranslate"><span class="pre">exports/publication/index.html</span></code> 打开英文分析报告。
-报告按行为背景、神经响应、统计证据组织主图，其余已导出图表进入附图索引；不按显著性挑选结果。
-图中附有子图字母，<code class="docutils literal notranslate"><span class="pre">figure_legends.md</span></code> 提供英文图注草稿，<code class="docutils literal notranslate"><span class="pre">结果阅读说明.md</span></code> 解释当前单元数、
-事件数与统计结果。<code class="docutils literal notranslate"><span class="pre">artifact_inventory.json</span></code> 包含每个文件的校验值和归属，便于发现遗漏。</p>
-<p>报告强制使用英文图件，但不会改变App界面语言。图注仍须由研究者补充实验设计和生物学解释；
-这份排版草稿不是CNS期刊的自动合规认证。事件概览的Wilcoxon检验与统计套件的置换检验不能混用。</p>
-<p>核对单位、条件数量、标准化方式、基线、不确定性定义、统计标记和色觉可达性。后续
-矢量编辑不得改动数据值，也不应删除必要的方法信息。</p>
-<img class="product-shot" src="../assets/neuroephys-format-shared.png"
-     alt="NeuroEphys AI 图表编辑器"></section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="页脚">
-        <a href="statistics-ml.html" class="btn btn-neutral float-left" title="统计、机器学习与科学边界" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> 上一页</a>
-        <a href="ai-assistant.html" class="btn btn-neutral float-right" title="受控 AI 助手" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="ai-assistant.html" class="btn btn-neutral float-left" title="受控 AI 助手" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> 上一页</a>
+        <a href="parameter-reference.html" class="btn btn-neutral float-right" title="操作与方法参数参考" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

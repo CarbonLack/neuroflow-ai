@@ -68,6 +68,7 @@ from .analysis import (
 )
 from .audit import audited_stage
 from .connectivity import project_interval_sets, run_connectivity_suite
+from .competition_readiness import readiness_snapshot, write_readiness_bundle
 from .data_import import (
     DEVICE_READERS,
     SUPPORTED_FORMATS,
@@ -3927,6 +3928,11 @@ class NeuroFlowWindow(QMainWindow):
         self.menu_docs_action = action(
             self.help_menu, "产品文档", self._open_documentation
         )
+        self.menu_competition_action = action(
+            self.help_menu,
+            "决赛演示准备…",
+            self._open_competition_readiness,
+        )
         self.menu_about_action = action(
             self.help_menu, "关于 NeuroEphys AI", self._show_about
         )
@@ -3988,10 +3994,87 @@ class NeuroFlowWindow(QMainWindow):
             self.menu_reset_guides_action: "Reset beginner guidance" if english else "重置新手引导",
             self.menu_tutorial_action: "Tutorial center…" if english else "教程中心…",
             self.menu_docs_action: "Product documentation" if english else "产品文档",
+            self.menu_competition_action: "Final demo readiness…" if english else "决赛演示准备…",
             self.menu_about_action: "About NeuroEphys AI" if english else "关于 NeuroEphys AI",
         }
         for item, label in labels.items():
             item.setText(label)
+
+    def _open_competition_readiness(self) -> None:
+        installed = [
+            item["key"] for item in refresh_sorter_catalog() if item.get("installed")
+        ]
+        snapshot = readiness_snapshot(
+            self.state,
+            workspace=Path(__file__).resolve().parents[1],
+            ai_configured=load_ai_settings().configured,
+            installed_sorters=installed,
+        )
+        english = self.language == "en_US"
+        dialog = QDialog(self)
+        dialog.setWindowTitle(
+            "Final demo readiness" if english else "决赛演示准备"
+        )
+        dialog.resize(860, 680)
+        dialog.setMinimumSize(560, 440)
+        layout = QVBoxLayout(dialog)
+        heading = QLabel(
+            (
+                f"{snapshot['ready_count']}/{snapshot['check_count']} evidence checks ready"
+                if english
+                else f"{snapshot['ready_count']}/{snapshot['check_count']} 项演示证据已就绪"
+            )
+        )
+        heading.setStyleSheet("font-size: 22px; font-weight: 700;")
+        layout.addWidget(heading)
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(False)
+        rows = []
+        for item in snapshot["checks"]:
+            mark = "✓" if item["ready"] else "○"
+            rows.append(f"<li><b>{mark}</b> {escape(item['label'])}</li>")
+        story = "".join(
+            f"<h3>{escape(item['section'])}</h3><p>{escape(item['message'])}</p>"
+            for item in snapshot["demo_story"]
+        )
+        schedule = "".join(
+            f"<li>{escape(item)}</li>" for item in snapshot["run_of_show"]
+        )
+        browser.setHtml(
+            "<h2>Evidence checklist</h2><ul>"
+            + "".join(rows)
+            + "</ul><h2>5–10 minute run of show</h2><ol>"
+            + schedule
+            + "</ol><h2>Story</h2>"
+            + story
+        )
+        layout.addWidget(browser, 1)
+        actions = QHBoxLayout()
+        export_button = QPushButton(
+            "Export readiness bundle" if english else "导出演示准备包"
+        )
+        close_button = QPushButton("Close" if english else "关闭")
+        actions.addStretch()
+        actions.addWidget(export_button)
+        actions.addWidget(close_button)
+        layout.addLayout(actions)
+
+        def export_bundle() -> None:
+            root = (
+                self.state.root / "exports" / "competition_demo"
+                if self.state is not None
+                else self.workspace / "competition_demo"
+            )
+            target = write_readiness_bundle(snapshot, root)
+            QMessageBox.information(
+                dialog,
+                "Exported" if english else "已导出",
+                str(target),
+            )
+
+        export_button.clicked.connect(export_bundle)
+        close_button.clicked.connect(dialog.accept)
+        dialog.exec()
 
     def _home_page(self) -> QWidget:
         page = QWidget()

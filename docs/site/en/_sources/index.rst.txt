@@ -3,7 +3,7 @@ NeuroEphys AI user manual
 
 .. raw:: html
 
-   <p class="manual-kicker">Local electrophysiology workbench · v1.2.2</p>
+   <p class="manual-kicker">Local electrophysiology workbench · v1.2.3</p>
 
 Work from the files you have: inspect raw recordings, sort spikes, review units,
 align events, and export results. These guides follow the application's controls.
@@ -61,6 +61,7 @@ Check the selected analysis in the bottom run bar before starting it.
    statistics-ml
    figures
    ai-assistant
+   competition-demo
 
 .. toctree::
    :maxdepth: 1

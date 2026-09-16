@@ -6,7 +6,12 @@ import json
 from pathlib import Path
 
 # Content-based grouping, never significance-based selection.
-MAIN = ('behavior', 'raster_psth_population', 'statistics')
+MAIN = ('behavior', 'raster_psth_population', 'statistics', 'decoding')
+MAIN_STORY = (
+    ("Experimental context and evidence quality", ("behavior", "raw_qc", "unit_qc")),
+    ("Event-aligned and population activity", ("raster_psth_population", "spike_train_statistics", "population_dynamics")),
+    ("Effect sizes, uncertainty and prediction", ("statistics", "decoding", "regression")),
+)
 CAPTIONS = {
     'behavior': ('Behavioral context', 'Observed event timing and available trial summaries. Event rows are not necessarily independent trials.', '行为发生的时间与已有试次信息。事件条数不等于独立试次数。'),
     'raster_psth_population': ('Event-aligned neural activity', '(a) Raster for the displayed unit, one event per row. (b) Mean PSTH, shading: SEM across available events. (c) Baseline-normalized population activity. (d) Per-unit event-related rate changes. Zero denotes the selected event. Association does not establish causation.', 'a：点阵每行一个事件；b：PSTH显示事件附近的平均放电和标准误；c：热图显示相对基线的变化；d：各单元的放电变化。不能据此断言因果。'),
@@ -27,6 +32,10 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
     folder.mkdir(parents=True, exist_ok=True)
     from .publication_layout import write_sized_figures
     write_sized_figures(output, figure_names)
+    available = list(dict.fromkeys(figure_names))
+    main_names = {
+        name for _, names in MAIN_STORY for name in names if name in available
+    }
     inventory = []
     for path in sorted(output.rglob('*')):
         if not path.is_file() or folder in path.parents:
@@ -34,10 +43,23 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
         relative = path.relative_to(output).as_posix()
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         inventory.append({'path': relative, 'bytes': path.stat().st_size, 'sha256': digest,
-            'role': 'main' if path.parent.name == 'figures' and path.stem in MAIN and path.stem in figure_names else 'supplementary',
+            'role': 'main' if path.parent.name == 'figures' and path.stem in main_names else 'supplementary',
             'current_figure': path.parent.name == 'figures' and path.stem in figure_names})
-    groups = [(name, 'main') for name in MAIN if name in figure_names]
-    groups += [(name, 'supplementary') for name in figure_names if name not in MAIN]
+    story_groups = []
+    assigned = set()
+    for title, candidates in MAIN_STORY:
+        names = [name for name in candidates if name in available]
+        if names:
+            story_groups.append({"role": "main", "title": title, "figures": names})
+            assigned.update(names)
+    remaining = [name for name in available if name not in assigned]
+    for start in range(0, len(remaining), 4):
+        names = remaining[start:start + 4]
+        story_groups.append({
+            "role": "supplementary",
+            "title": "Supporting diagnostics and complete secondary evidence",
+            "figures": names,
+        })
     chunks = []
     legends = ['# Figure legends — author review required', '',
         'Organization follows measurement → event response → statistical evidence. No panel is selected or removed based on significance. These are descriptive drafts, not a manuscript conclusion.', '']
@@ -67,21 +89,52 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
     if state.source_type in ('simulated', 'benchmark_binary') or state.metadata.get('source_metadata', {}).get('benchmark_schema_version'):
         guide += ['本项目为模拟数据：这里验证的是算法与流程表现，不是新的生物学发现。真实单元恢复率应另查独立ground truth评估，不能仅凭PSTH好看判断分选正确。', '']
     counters = {'main': 0, 'supplementary': 0}
-    for name, role in groups:
+    storyboard = []
+    for group in story_groups:
+        role = group["role"]
         counters[role] += 1
         number = str(counters[role]) if role == 'main' else 'S' + str(counters[role])
-        title, caption, explanation = CAPTIONS.get(name, (name.replace('_', ' ').title(),
-            'Output of the named analysis. Review the methods, scope and source table before interpretation.',
-            '该分析已导出；需要结合方法参数和源数据表审核。'))
         label = f'Figure {number}'
-        legends += [f'## {label}. {title}', '', caption, '',
-            'Panel-specific interpretation / author additions: ____________________', '']
-        guide += [f'## {label}：{name}', '', explanation, '',
-            f'英文图：../figures/{name}.svg', '']
-        chunks.append(f'<section><h2>{html.escape(label + ". " + title)}</h2><img src="../figures/{name}.svg" alt="{html.escape(title)}"><p>{html.escape(caption)}</p><p class="note">Author interpretation: ____________________</p></section>')
+        legends += [f'## {label}. {group["title"]}', '']
+        panels = []
+        panel_html = []
+        for panel_index, name in enumerate(group["figures"]):
+            letter = chr(ord('a') + panel_index)
+            title, caption, explanation = CAPTIONS.get(name, (name.replace('_', ' ').title(),
+                'Output of the named analysis. Review the methods, scope and source table before interpretation.',
+                '该分析已导出；需要结合方法参数和源数据表审核。'))
+            panel_label = f'{label}{letter}'
+            legends += [f'**({letter}) {title}.** {caption}', '']
+            guide += [f'## {panel_label}：{name}', '', explanation, '',
+                f'英文图：../figures/{name}.svg', '']
+            panels.append({
+                'panel': letter,
+                'figure_name': name,
+                'title': title,
+                'caption_draft': caption,
+                'source_svg': f'figures/{name}.svg',
+            })
+            panel_html.append(
+                f'<div class="panel"><h3>({letter}) {html.escape(title)}</h3>'
+                f'<img src="../figures/{name}.svg" alt="{html.escape(title)}">'
+                f'<p>{html.escape(caption)}</p></div>'
+            )
+        legends += ['Panel-specific interpretation / author additions: ____________________', '']
+        storyboard.append({
+            'figure': label,
+            'role': role,
+            'story_role': group['title'],
+            'panels': panels,
+            'author_interpretation': '',
+        })
+        chunks.append(
+            f'<section><h2>{html.escape(label + ". " + group["title"])}</h2>'
+            + ''.join(panel_html)
+            + '<p class="note">Author interpretation: ____________________</p></section>'
+        )
     links = ''.join(f'<li><a href="../{html.escape(item["path"], quote=True)}">{html.escape(item["path"])}</a> ({item["role"]})</li>' for item in inventory)
     document = ('<!doctype html><html lang="en"><meta charset="utf-8"><title>Analysis figure report</title>'
-        '<style>body{font:15px Arial,sans-serif;color:#222;max-width:1050px;margin:40px auto;padding:0 24px;background:white}h1,h2{font-weight:600}section{margin:36px 0;break-inside:avoid}img{width:100%;height:auto}p{line-height:1.6}.note{color:#666}a{color:#654c80}@media print{body{margin:0}section{break-before:page}}</style>'
+        '<style>body{font:15px Arial,sans-serif;color:#222;max-width:1050px;margin:40px auto;padding:0 24px;background:white}h1,h2{font-weight:600}section{margin:36px 0;break-inside:avoid}.panel{margin:24px 0}.panel img{width:100%;height:auto}p{line-height:1.6}.note{color:#666}a{color:#654c80}@media print{body{margin:0}section{break-before:page}}</style>'
         f'<h1>{html.escape(state.name)}</h1><p>English analysis figures and supplementary evidence. Draft organization; scientific review and target-journal checks remain required.</p>'
         '<p>Main figures follow behavioral context, neural response and statistical uncertainty. All remaining artifacts are indexed below, including alternative formats and prior files. No significance-based filtering is applied.</p>'
         + '<p><a href="sized_figures/README.md">Physical-size artwork and checks</a> · <a href="sized_figures/layout_checks.json">Layout diagnostics</a></p>'
@@ -90,4 +143,11 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
     (folder / 'figure_legends.md').write_text('\n'.join(legends), encoding='utf-8')
     (folder / '结果阅读说明.md').write_text('\n'.join(guide), encoding='utf-8')
     (folder / 'artifact_inventory.json').write_text(json.dumps(inventory, ensure_ascii=False, indent=2), encoding='utf-8')
+    (folder / 'storyboard.json').write_text(json.dumps({
+        'schema': 'neuroephys.publication-storyboard.v1',
+        'policy': 'Content-based grouping; no significance-based inclusion or omission.',
+        'narrative_order': ['measurement and quality', 'event-related neural evidence', 'effect size and uncertainty', 'supporting diagnostics'],
+        'figures': storyboard,
+        'complete_artifact_inventory': 'artifact_inventory.json',
+    }, ensure_ascii=False, indent=2), encoding='utf-8')
     return folder / 'index.html'

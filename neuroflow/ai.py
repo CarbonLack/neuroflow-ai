@@ -218,6 +218,13 @@ PROVIDER_PROFILES: dict[str, dict[str, Any]] = {
         "models": [],
         "api_style": "chat",
     },
+    "institute_harness": {
+        "label": "Institute model harness · OpenAI-compatible",
+        "base_url": "https://model-harness.example/v1",
+        "models": [],
+        "api_style": "chat",
+        "managed": True,
+    },
 }
 
 
@@ -506,7 +513,17 @@ def build_project_summary(
     ]
     summary: dict[str, Any] = {
         "project_open": True,
-        "context_schema": "neuroephys.cloud-project-summary.v1",
+        "context_schema": "neuroephys.cloud-project-summary.v2",
+        "application_contract": {
+            "product": "NeuroEphys AI",
+            "workflow_order": list(WORKFLOW_STAGES),
+            "current_stage": current_step,
+            "advice_is_non_executing": True,
+            "tool_calls_require_registry_validation": True,
+            "high_risk_actions_require_confirmation": True,
+            "raw_voltage_is_never_embedded": True,
+            "local_paths_are_redacted": True,
+        },
         "source_type": state.source_type,
         "recording_system": state.metadata.get(
             "recording_system",

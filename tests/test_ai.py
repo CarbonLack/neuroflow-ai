@@ -482,3 +482,21 @@ def test_ollama_local_provider_does_not_require_a_secret():
 
     assert settings.configured is True
     assert settings.request_api_key == "ollama"
+
+
+def test_institute_harness_uses_constrained_openai_compatible_contract(
+    tmp_path: Path,
+):
+    state = ProjectState(root=tmp_path / "project", channel_count=32)
+    summary = build_project_summary(state, "sorting")
+    settings = AISettings(
+        provider="institute_harness",
+        base_url="https://institution.example/v1",
+        model="managed-model",
+        api_key="managed-key",
+    )
+
+    assert settings.configured is True
+    assert summary["context_schema"] == "neuroephys.cloud-project-summary.v2"
+    assert summary["application_contract"]["raw_voltage_is_never_embedded"] is True
+    assert summary["application_contract"]["tool_calls_require_registry_validation"] is True

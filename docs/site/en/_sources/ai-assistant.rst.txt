@@ -23,11 +23,17 @@ Collaborative
 Providers
 ---------
 
-The current provider layer supports DeepSeek, OpenAI-compatible endpoints,
+The current provider layer supports DeepSeek, OpenAI Responses,
+OpenAI-compatible endpoints, an institute-managed harness,
 laboratory/private compatible services, and local Ollama. Provider URL, model,
 timeout, retries, streaming, and reasoning options are configurable. API keys
 are stored in the operating-system credential service or current session and
 are excluded from projects, logs, exports, and Git.
+
+When an institution supplies a non-vendor key, select **Institute model harness ·
+OpenAI-compatible** and enter the institution's ``/v1`` endpoint, model name and
+key. The app targets the compatible ``chat/completions`` contract and does not
+assume that the key works on the model vendor's official domain.
 
 Cloud-data preview
 ------------------
@@ -43,6 +49,10 @@ Result explanations are divided into observed results, statistical evidence,
 possible biological interpretations, unsupported conclusions, limitations,
 and suggested validation. Model output remains advisory. Tool names,
 parameters, and workflow stages must pass local JSON Schema and rule checks.
+The versioned context contract includes workflow order, current stage, available
+inputs, summarized results, failed/skipped stages, artifacts and UI context. A new
+module becomes AI-readable only after its structured output and registered tools
+are added; the model still cannot read arbitrary local files or raw voltage.
 
 Local Ollama
 ------------

@@ -16,14 +16,14 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f470d208"></script>
+      <script src="_static/documentation_options.js?v=e6b6ee12"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="索引" href="genindex.html" />
     <link rel="search" title="搜索" href="search.html" />
-    <link rel="next" title="操作与方法参数参考" href="parameter-reference.html" />
+    <link rel="next" title="决赛演示与离线保障" href="competition-demo.html" />
     <link rel="prev" title="图表检查与论文导出" href="figures.html" />
 </head>
 
@@ -159,6 +159,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#id2">发送内容预览</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id3">科学解释结构</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ollama">本机 Ollama</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="competition-demo.html">决赛演示与离线保障</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="competition-demo.html#id2">推荐 5–10 分钟顺序</a></li>
+<li class="toctree-l2"><a class="reference internal" href="competition-demo.html#id3">现场保障</a></li>
 </ul>
 </li>
 </ul>
@@ -330,9 +335,12 @@
 </section>
 <section id="provider">
 <h2>模型 Provider<a class="headerlink" href="#provider" title="Link to this heading"></a></h2>
-<p>当前 Provider 层支持 DeepSeek、OpenAI 兼容服务、实验室/私有兼容服务和本机
-Ollama。服务地址、模型、超时、重试、流式输出和推理选项均可配置。API 密钥保存在
+<p>当前 Provider 层支持 DeepSeek、OpenAI Responses、OpenAI 兼容服务、机构托管
+harness、实验室/私有兼容服务和本机 Ollama。服务地址、模型、超时、重试、流式输出和推理选项均可配置。API 密钥保存在
 操作系统凭据区或当前会话中，不写入项目、日志、导出文件和 Git。</p>
+<p>机构只提供非官方 Key 时，选择 <strong>机构模型 harness · OpenAI-compatible</strong>，填写机构
+给出的 <code class="docutils literal notranslate"><span class="pre">/v1</span></code> 地址、模型名和 Key。应用只依赖兼容的 <code class="docutils literal notranslate"><span class="pre">chat/completions</span></code> 协议，
+不会假定该 Key 能直接访问模型厂商官方域名。先用“测试连接”确认模型列表或一次最小请求。</p>
 </section>
 <section id="id2">
 <h2>发送内容预览<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
@@ -344,6 +352,9 @@ Ollama。服务地址、模型、超时、重试、流式输出和推理选项�
 <p>结果说明分为：已观察结果、统计证据、可考虑的生物学解释、当前证据无法支持的结论、
 数据和方法限制、建议增加的验证。模型输出用于辅助判断。工具名称、参数和工作流节点
 必须通过本地 JSON Schema 与规则检查。</p>
+<p>上下文协议使用版本号。每次请求都包含工作流顺序、当前节点、已有输入、分析摘要、
+失败/跳过节点、输出清单和 UI 位置；新增模块只要把结构化结果注册到项目摘要与工具白名单，
+AI 即可读取，同时仍不能直接读取原始电压、任意本地文件或调用未注册功能。</p>
 </section>
 <section id="ollama">
 <h2>本机 Ollama<a class="headerlink" href="#ollama" title="Link to this heading"></a></h2>
@@ -362,7 +373,7 @@ Ollama。服务地址、模型、超时、重试、流式输出和推理选项�
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="页脚">
         <a href="figures.html" class="btn btn-neutral float-left" title="图表检查与论文导出" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> 上一页</a>
-        <a href="parameter-reference.html" class="btn btn-neutral float-right" title="操作与方法参数参考" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="competition-demo.html" class="btn btn-neutral float-right" title="决赛演示与离线保障" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

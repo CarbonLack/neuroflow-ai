@@ -16,13 +16,13 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fd7cadf9"></script>
+      <script src="_static/documentation_options.js?v=590429e0"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Controls and method parameters" href="parameter-reference.html" />
+    <link rel="next" title="Final demonstration and offline fallback" href="competition-demo.html" />
     <link rel="prev" title="Figure inspection and publication export" href="figures.html" />
 </head>
 
@@ -157,6 +157,10 @@
 <li class="toctree-l2"><a class="reference internal" href="#cloud-data-preview">Cloud-data preview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#scientific-response-structure">Scientific response structure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#local-ollama">Local Ollama</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="competition-demo.html">Final demonstration and offline fallback</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="competition-demo.html#suggested-510-minute-sequence">Suggested 5–10 minute sequence</a></li>
 </ul>
 </li>
 </ul>
@@ -331,11 +335,16 @@ a confirmation dialog before execution.</p>
 </section>
 <section id="providers">
 <h2>Providers<a class="headerlink" href="#providers" title="Link to this heading"></a></h2>
-<p>The current provider layer supports DeepSeek, OpenAI-compatible endpoints,
+<p>The current provider layer supports DeepSeek, OpenAI Responses,
+OpenAI-compatible endpoints, an institute-managed harness,
 laboratory/private compatible services, and local Ollama. Provider URL, model,
 timeout, retries, streaming, and reasoning options are configurable. API keys
 are stored in the operating-system credential service or current session and
 are excluded from projects, logs, exports, and Git.</p>
+<p>When an institution supplies a non-vendor key, select <strong>Institute model harness ·
+OpenAI-compatible</strong> and enter the institution’s <code class="docutils literal notranslate"><span class="pre">/v1</span></code> endpoint, model name and
+key. The app targets the compatible <code class="docutils literal notranslate"><span class="pre">chat/completions</span></code> contract and does not
+assume that the key works on the model vendor’s official domain.</p>
 </section>
 <section id="cloud-data-preview">
 <h2>Cloud-data preview<a class="headerlink" href="#cloud-data-preview" title="Link to this heading"></a></h2>
@@ -348,7 +357,11 @@ voltage, large arrays, and API credentials are redacted.</p>
 <p>Result explanations are divided into observed results, statistical evidence,
 possible biological interpretations, unsupported conclusions, limitations,
 and suggested validation. Model output remains advisory. Tool names,
-parameters, and workflow stages must pass local JSON Schema and rule checks.</p>
+parameters, and workflow stages must pass local JSON Schema and rule checks.
+The versioned context contract includes workflow order, current stage, available
+inputs, summarized results, failed/skipped stages, artifacts and UI context. A new
+module becomes AI-readable only after its structured output and registered tools
+are added; the model still cannot read arbitrary local files or raw voltage.</p>
 </section>
 <section id="local-ollama">
 <h2>Local Ollama<a class="headerlink" href="#local-ollama" title="Link to this heading"></a></h2>
@@ -369,7 +382,7 @@ authorization.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="figures.html" class="btn btn-neutral float-left" title="Figure inspection and publication export" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="parameter-reference.html" class="btn btn-neutral float-right" title="Controls and method parameters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="competition-demo.html" class="btn btn-neutral float-right" title="Final demonstration and offline fallback" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
