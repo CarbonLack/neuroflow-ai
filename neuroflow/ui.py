@@ -126,7 +126,12 @@ from .models import ProjectState, WorkflowStep
 from .population import run_population_dynamics_suite
 from .medpc import import_medpc_behavior
 from .project import MANIFEST_NAME, load_project, save_project
-from .product import PRODUCT_NAME, PRODUCT_VERSION
+from .product import (
+    FULL_INSTALLER_NAME,
+    PRODUCT_NAME,
+    PRODUCT_VERSION,
+    RELEASE_DOWNLOAD_URL,
+)
 from .public_examples import (
     PUBLIC_EXAMPLES,
     download_public_example,
@@ -1422,15 +1427,52 @@ class SorterManagerDialog(QDialog):
         self.note.setObjectName("Muted")
         layout.addWidget(self.note)
         row = QHBoxLayout()
+        self.full_edition_button = QPushButton(
+            "获取 GPU Full 离线版…"
+            if language == "zh_CN"
+            else "Get the GPU Full offline edition…"
+        )
+        self.full_edition_button.setObjectName("FullEditionDownloadButton")
+        self.full_edition_button.setToolTip(
+            (
+                f"打开 v{PRODUCT_VERSION} 官方下载页并选择 {FULL_INSTALLER_NAME}。"
+                "标准版无需重装即可继续使用导入、质控、已有 sorting、统计和绘图。"
+            )
+            if language == "zh_CN"
+            else (
+                f"Open the official v{PRODUCT_VERSION} download page and choose "
+                f"{FULL_INSTALLER_NAME}. The standard edition remains usable for "
+                "import, QC, existing sortings, statistics, and figures."
+            )
+        )
+        self.full_edition_button.clicked.connect(self._open_full_release)
         refresh = QPushButton(tr("refresh", language))
         refresh.clicked.connect(self._refresh)
         close = QPushButton(tr("close", language))
         close.clicked.connect(self.accept)
+        row.addWidget(self.full_edition_button)
         row.addStretch()
         row.addWidget(refresh)
         row.addWidget(close)
         layout.addLayout(row)
         self._refresh()
+
+    def _open_full_release(self) -> None:
+        if QDesktopServices.openUrl(QUrl(RELEASE_DOWNLOAD_URL)):
+            return
+        QMessageBox.warning(
+            self,
+            "无法打开下载页" if self.language == "zh_CN" else "Could not open downloads",
+            (
+                f"请在浏览器打开：\n{RELEASE_DOWNLOAD_URL}\n\n"
+                f"选择：{FULL_INSTALLER_NAME}"
+                if self.language == "zh_CN"
+                else (
+                    f"Open this address in a browser:\n{RELEASE_DOWNLOAD_URL}\n\n"
+                    f"Choose: {FULL_INSTALLER_NAME}"
+                )
+            ),
+        )
 
     def _refresh(self) -> None:
         catalog = refresh_sorter_catalog()

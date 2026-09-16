@@ -3,7 +3,7 @@ NeuroEphys AI 操作手册
 
 .. raw:: html
 
-   <p class="manual-kicker">本地电生理分析工作台 · v1.2.1</p>
+   <p class="manual-kicker">本地电生理分析工作台 · v1.2.2</p>
 
 从手头的数据出发，完成质控、sorting、Unit 复核、事件分析和结果导出。
 这里按 App 中的实际操作组织教程；第一次使用，可以先用教学示例完成一次保存和重新打开。

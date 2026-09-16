@@ -17,12 +17,12 @@ VSVersionInfo(
           [
             StringStruct("CompanyName", "NeuroEphys AI team"),
             StringStruct("FileDescription", "NeuroEphys AI electrophysiology workbench"),
-            StringStruct("FileVersion", "1.2.1"),
+            StringStruct("FileVersion", "1.2.2"),
             StringStruct("InternalName", "NeuroEphysAI"),
             StringStruct("LegalCopyright", "Copyright 2026 NeuroEphys AI team"),
             StringStruct("OriginalFilename", "NeuroEphysAI.exe"),
             StringStruct("ProductName", "NeuroEphys AI"),
-            StringStruct("ProductVersion", "1.2.1"),
+            StringStruct("ProductVersion", "1.2.2"),
           ],
         )
       ]

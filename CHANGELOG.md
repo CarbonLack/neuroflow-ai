@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.2.2
+
+- Make the compact standard installer and portable archive the default public downloads.
+- Give the CUDA/PyTorch/Kilosort bundle explicit `-Full` offline artifact names.
+- Add Full/compact/custom setup types to the Full installer, with the validated GPU/Kilosort component selected by default.
+- Publish four clearly described routes: Full installer, standard installer, standard portable archive, and Python wheel.
+- Link the Sorter manager to the version-matched official Full download without silently substituting another sorter.
+- Keep large benchmark and experimental datasets outside the application installer.
+- Add a non-destructive local project index for source, releases, validation, datasets, and archives.
+
 ## v1.2.1
 
 - Name panels from their real left/center/right titles and correctly preselect a double-clicked panel.

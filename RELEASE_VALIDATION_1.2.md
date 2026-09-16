@@ -54,3 +54,18 @@
 - 各发行文件的 SHA-256 校验值保存在同目录 `SHA256SUMS.txt`。正式成品位于 `D:\PhD\AI大赛\neuroflow-ai\release\v1.2.1`；独立验收证据位于 `D:\PhD\AI大赛\发布验证\v1.2.1_d1eaa4a_build`、`v1.2.1_d1eaa4a_install`、`v1.2.1_d1eaa4a_portable` 和 `v1.2.1_d1eaa4a_wheel`。
 
 这里的“通过”限定为上述机器与明确列出的自检数据，不代表任意第三方数据、任意驱动或任意参数组合均自动通过。真实数据必须继续保留原始文件、参数、日志、人工 Unit 复核与失败记录。
+
+## 1.2.2 三路线与组件式安装验收（2026-09-16）
+
+- 源码完整回归：132 项通过；311 条输出为第三方科学库弃用或数值边界提醒，不是测试失败。
+- 本版同时生成 Full 自选安装版、标准安装版、标准便携版和 Python wheel。Full 安装器的默认类型是“完整 GPU/Kilosort”，也可选择“仅通用核心”或自定义组件；不是只改变下载文件名。
+- `NeuroEphysAI-Setup-1.2.2-Full.exe` 为 2,081,261,980 字节，低于 GitHub 单文件 2 GiB 限制。它分别以 `/TYPE=full` 和 `/TYPE=compact` 安装到隔离目录，退出码均为 0。
+- Full 默认安装占用约 4.78 GiB，实际包含 Torch 与 Kilosort；安装后的程序通过启动、离线 AI 权限边界、SVG/PDF/PNG 导出、MountainSort5、内置 sorter 和 Kilosort 4 六项自检。Kilosort 再次在 NVIDIA GeForce RTX 3080 20 GB 上实际运行，不是仅检查模块存在。
+- 同一个 Full 安装器选择“仅通用核心”后占用约 0.80 GiB；启动、AI 和图形导出通过，Kilosort 负向检查退出码为 1，证明未安装的 GPU 后端不会被误报为可运行。
+- `NeuroEphysAI-Setup-1.2.2.exe` 为 244,446,912 字节；独立标准安装后的启动、AI 和图形导出通过。标准安装目录不含 Torch/Kilosort。
+- `NeuroEphysAI-1.2.2-Windows-x64-portable.zip` 为 345,463,383 字节；完整解压后的程序再次通过启动、AI 和图形导出。不能只复制其中的单个 EXE。
+- `NeuroEphysAI-1.2.2-Windows-x64-Full-portable.zip` 为 3,129,902,527 字节，保留作本地完整归档；因超过 GitHub 单文件限制，不列为普通用户的线上下载入口。
+- `neuroephys_ai-1.2.2-py3-none-any.whl` 为 427,527 字节；安装到隔离目录后从源码仓库之外导入成功，版本为 1.2.2，公开 API 为 61 项。
+- 安装与自检证据位于 `D:\PhD\AI大赛\发布验证\v1.2.2_*`。正式文件及 SHA-256 位于 `D:\PhD\AI大赛\neuroflow-ai\release\v1.2.2`。
+
+组件式安装验证只证明本机上三条安装路径工作正确。Kilosort 仍要求兼容 NVIDIA GPU 和驱动；Full 安装包包含 GPU 运行库不等于任意电脑都能运行 GPU sorter。

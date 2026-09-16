@@ -32,6 +32,7 @@ try {
     $ReleaseSeries = "$($VersionParts[0]).$($VersionParts[1])"
     $ReleaseRoot = Join-Path $Root "release"
     $ReleaseDir = Join-Path $ReleaseRoot "v$Version"
+    $ArtifactSuffix = if ($Lite) { "" } else { "-Full" }
     $ResolvedReleaseRoot = [System.IO.Path]::GetFullPath($ReleaseRoot)
     $ResolvedReleaseDir = [System.IO.Path]::GetFullPath($ReleaseDir)
     if (-not $ResolvedReleaseDir.StartsWith($ResolvedReleaseRoot + [System.IO.Path]::DirectorySeparatorChar)) {
@@ -114,7 +115,7 @@ try {
     }
     Remove-Item Env:NEUROEPHYS_HOME -ErrorAction SilentlyContinue
 
-    $PortableZip = Join-Path $ResolvedReleaseDir "NeuroEphysAI-$Version-Windows-x64-portable.zip"
+    $PortableZip = Join-Path $ResolvedReleaseDir "NeuroEphysAI-$Version-Windows-x64$ArtifactSuffix-portable.zip"
     # The native archive tool tolerates short-lived antivirus/indexer handles
     # more reliably than Compress-Archive for a large scientific one-folder app.
     & tar.exe -a -c -f $PortableZip -C (Join-Path $Root "dist") "NeuroEphysAI"
@@ -143,7 +144,16 @@ try {
         if (-not $InnoCompiler) {
             throw "Inno Setup 6 is required to build the installer. Use -SkipInstaller only for diagnostics."
         }
-        & $InnoCompiler "/DMyAppVersion=$Version" "/O$ResolvedReleaseDir" "/FNeuroEphysAI-Setup-$Version" (Join-Path $Root "installer\NeuroEphysAI.iss")
+        $InnoArguments = @("/DMyAppVersion=$Version")
+        if (-not $Lite) {
+            $InnoArguments += "/DFullBuild=1"
+        }
+        $InnoArguments += @(
+            "/O$ResolvedReleaseDir",
+            "/FNeuroEphysAI-Setup-$Version$ArtifactSuffix",
+            (Join-Path $Root "installer\NeuroEphysAI.iss")
+        )
+        & $InnoCompiler @InnoArguments
         if ($LASTEXITCODE -ne 0) {
             throw "Installer build failed with exit code $LASTEXITCODE."
         }
@@ -152,7 +162,8 @@ try {
     foreach ($ReleaseDocument in @(
         "README_FIRST.md",
         "RELEASE_NOTES_$ReleaseSeries.md",
-        "RELEASE_VALIDATION_$ReleaseSeries.md"
+        "RELEASE_VALIDATION_$ReleaseSeries.md",
+        "docs\RELEASE_DOWNLOAD_${ReleaseSeries}_ZH.md"
     )) {
         $SourceDocument = Join-Path $Root $ReleaseDocument
         if (-not (Test-Path -LiteralPath $SourceDocument)) {

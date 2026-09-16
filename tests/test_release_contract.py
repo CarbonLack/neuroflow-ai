@@ -7,7 +7,14 @@ import numpy as np
 
 from neuroephys.cli import main
 from neuroflow.paths import default_workspace, initialize_workspace
-from neuroflow.product import PRODUCT_NAME, PRODUCT_VERSION
+from neuroflow.product import (
+    FULL_INSTALLER_NAME,
+    PRODUCT_NAME,
+    PRODUCT_VERSION,
+    RELEASE_DOWNLOAD_URL,
+    STANDARD_INSTALLER_NAME,
+    STANDARD_PORTABLE_NAME,
+)
 from neuroflow.self_test import run_packaged_startup_self_test
 
 
@@ -19,10 +26,14 @@ def test_release_identity_is_consistent():
     )
 
     assert PRODUCT_NAME == "NeuroEphys AI"
-    assert PRODUCT_VERSION == "1.2.1"
+    assert PRODUCT_VERSION == "1.2.2"
     assert ne.__version__ == PRODUCT_VERSION
     assert metadata["project"]["name"] == "neuroephys-ai"
     assert metadata["project"]["version"] == PRODUCT_VERSION
+    assert RELEASE_DOWNLOAD_URL.endswith(f"/releases/tag/v{PRODUCT_VERSION}")
+    assert STANDARD_INSTALLER_NAME == f"NeuroEphysAI-Setup-{PRODUCT_VERSION}.exe"
+    assert FULL_INSTALLER_NAME == f"NeuroEphysAI-Setup-{PRODUCT_VERSION}-Full.exe"
+    assert STANDARD_PORTABLE_NAME.endswith("-Windows-x64-portable.zip")
 
 
 def test_release_workflow_does_not_hardcode_an_old_version():
@@ -36,6 +47,7 @@ def test_release_workflow_does_not_hardcode_an_old_version():
     assert "release/v1.0.0/*" not in workflow
     assert workflow.count("release/v*/*") == 2
     assert "build_release.ps1 -SkipTests -SkipDocs -Lite" in workflow
+    assert "body_path: docs/RELEASE_DOWNLOAD_1.2_ZH.md" in workflow
 
     release_script = (
         Path(__file__).resolve().parents[1] / "scripts" / "build_release.ps1"
@@ -43,6 +55,35 @@ def test_release_workflow_does_not_hardcode_an_old_version():
     assert "[switch]$Lite" in release_script
     assert 'if ($Lite) {' in release_script
     assert '"--self-test-kilosort"' in release_script
+    assert '$ArtifactSuffix = if ($Lite) { "" } else { "-Full" }' in release_script
+    assert '"/DFullBuild=1"' in release_script
+    assert '"docs\\RELEASE_DOWNLOAD_${ReleaseSeries}_ZH.md"' in release_script
+
+    dual_script = (
+        Path(__file__).resolve().parents[1] / "scripts" / "build_dual_release.ps1"
+    ).read_text(encoding="utf-8")
+    assert '"NeuroEphysAI-Setup-$Version.exe"' in dual_script
+    assert '"NeuroEphysAI-$Version-Windows-x64-portable.zip"' in dual_script
+    assert "-Lite" in dual_script
+
+    installer = (
+        Path(__file__).resolve().parents[1] / "installer" / "NeuroEphysAI.iss"
+    ).read_text(encoding="utf-8")
+    assert "#ifdef FullBuild" in installer
+    assert 'Name: "gpu"' in installer
+    assert "Recommended Full GPU/Kilosort" in installer
+    assert "_internal\\torch\\*" in installer
+    assert "_internal\\kilosort\\*" in installer
+
+
+def test_sorter_manager_links_to_the_versioned_full_offline_edition():
+    source = (
+        Path(__file__).resolve().parents[1] / "neuroflow" / "ui.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'setObjectName("FullEditionDownloadButton")' in source
+    assert "QDesktopServices.openUrl(QUrl(RELEASE_DOWNLOAD_URL))" in source
+    assert "FULL_INSTALLER_NAME" in source
 
 
 def test_workspace_override_creates_stable_layout(tmp_path: Path, monkeypatch):

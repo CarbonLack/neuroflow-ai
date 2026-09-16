@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.2.0 — 操作体验与手册
+# NeuroEphys AI v1.2.2 — 下载与安装
 
 保留紫黑配色、原 Logo 及科学分析选择，重新整理首页、教程中心和工作区。
 
@@ -6,12 +6,14 @@
 
 | 使用方式 | 下载文件 | 说明 |
 | --- | --- | --- |
-| Windows 完整 App | `NeuroEphysAI-Setup-1.2.0-Full.exe` | 含 Kilosort 4、PyTorch/CUDA 运行库及本轮验证的六个 sorter；约 2.08 GB。GPU 分析仍需要兼容硬件和驱动。 |
-| Windows 核心 App | `NeuroEphysAI-Setup-1.2.0.exe` | 约 237 MB，不含完整 GPU 运行库；可用 sorter 以环境探测为准。 |
-| 免安装核心版 | `NeuroEphysAI-1.2.0-Windows-x64-portable.zip` | 完整解压后运行，不能只复制其中的 exe。依赖范围与核心版一致。 |
-| Python 调用 | `neuroephys_ai-1.2.0-py3-none-any.whl` | 给使用 Python 3.12 的用户；通过 pip 安装并按需要配置可选依赖。 |
+| Windows GPU Full 自选安装版（科研复现/比赛推荐） | `NeuroEphysAI-Setup-1.2.2-Full.exe` | 默认安装全部功能，包含 Kilosort 4、PyTorch/CUDA 与全部已适配 sorter；安装时也可取消 GPU 组件，仅装通用核心。安装包约2GB，Kilosort仍要求兼容NVIDIA硬件和驱动。 |
+| Windows 标准安装版（日常推荐） | `NeuroEphysAI-Setup-1.2.2.exe` | 较小、安装最简单。包含 App 与核心科学分析，不包含数GB的GPU运行库；适合没有NVIDIA GPU或暂时不用Kilosort的用户。 |
+| 免安装标准版 | `NeuroEphysAI-1.2.2-Windows-x64-portable.zip` | 完整解压后运行，不能只复制其中的exe；功能范围与标准安装版一致。 |
+| Python 调用 | `neuroephys_ai-1.2.2-py3-none-any.whl` | 给使用Python 3.12的用户；通过pip安装并按需要配置可选依赖。 |
 
-App 安装版自带 Python 运行环境；普通桌面用户不需要另装 Python。完整包与核心包是不同依赖配置，不是不同界面版本。
+App安装版自带Python运行环境；普通桌面用户不需要另装Python。需要完整复现能力时优先选 Full 并保留默认的 GPU 组件；只做 CPU 分析或电脑没有兼容 NVIDIA GPU 时选标准版。两版拥有相同界面和项目格式，只是随包提供的计算后端不同。标准版或取消 GPU 组件后，Kilosort 会明确显示不可用，并在 Sorter 管理页提供同版本 Full 下载入口，不会自动改用其他算法。
+
+完整20分钟benchmark、公开数据缓存和实验记录都作为独立数据资产管理，不塞入安装包。下载App并不自动下载数十GB实验数据。
 
 ## 这次改了什么
 
@@ -24,7 +26,7 @@ App 安装版自带 Python 运行环境；普通桌面用户不需要另装 Pyth
 
 ## 已验证与边界
 
-107 项自动测试通过；打包程序启动、离线 AI 确认保护及 SVG/PDF/PNG 导出通过。本机完整包使用教学数据实际运行 Kilosort 4、MountainSort5、SpyKING CIRCUS 2、Tridesclous 2、Simple、Lupin，并保存比较结果。云端核心包构建已成功。
+132 项自动测试通过；Full、Full仅核心、标准安装版和标准便携版均经过独立安装或解压后的启动、离线 AI 确认保护及 SVG/PDF/PNG 导出检查。本机 Full 使用教学数据实际运行 Kilosort 4、MountainSort5、SpyKING CIRCUS 2、Tridesclous 2、Simple、Lupin，并保存比较结果。
 
 本轮不修改科学算法默认值，不声称新增真实实验数据验证或任意电脑兼容性保证。真实记录上不同 sorter 的一致度不是准确率；预处理桌面页仍是预览，Unit 复核不提供通用合并/拆分工具。
 
