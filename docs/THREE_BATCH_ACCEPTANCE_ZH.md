@@ -1,33 +1,66 @@
 # 三批数据交付验收清单
 
-状态：实施中，尚未完成三批端到端验收。
+状态：**三批端到端链路已完成；真实 Unit 人工科学复核尚未完成。**  
+最后刷新：2026-09-17。
 
 ## 数据范围
 
-1. Standard_Benchmark_20min_v2 Neuropixels：从原始 recording.bin 新建导入，单独导入 events.csv。
-2. Standard_Benchmark_20min_v2 tetrode：同上。优先完成两类 session_01 全长20分钟，然后扩展其他会话；不得把单会话结果称为全部14会话分析完成。
-3. 电生理数据+行为-王淑霏：Open Ephys 多动物会话、Subject行为文件、已有NEX5结果。必须确认动物—通道—行为—TTL映射后分动物运行。采集已滤除300 Hz以下信号，跳过不受数据支持的LFP/频谱耦合分析并显示原因。
+1. **20 分钟 Neuropixels-like benchmark**：从原始 `recording.bin` 和行为/事件文件创建项目；几何修正版 session_01 完成 Kilosort4、MountainSort5、SpyKING CIRCUS2、ground-truth 评估、事件分析、图表和英文 publication 导出。
+2. **20 分钟 tetrode benchmark**：从原始电压和行为文件导入；session_01 完成相同的三-sorter、ground-truth、行为、统计、图表和 publication 链路。
+3. **王淑霏单日真实数据**：101、102、104、105、108 五个已确认动物组全部完成三 sorter、MED–电生理同步、事件分析、sorter 比较、英文图表和主/附图报告。12:58:41 记录的 33–64 通道无对应动物，不进入动物汇总和行为结论。采集时已滤除 300 Hz 以下信号，因此不做不受数据支持的 LFP/频谱耦合分析。
 
-## 每批必须交付
+两个 benchmark 的“完成”指最终选定的两个 session_01，不扩大为整个 14-session 数据族均已跑完。
 
-- 独立新建项目的导入记录、输入元数据、行为时钟检查和来源清单。
-- 至少三个实际执行的sorter：优先Kilosort4、MountainSort5、SpyKING CIRCUS 2；失败时记录原因与替代，不把内置教学算法冒称正式sorter。
-- 每个sorter独立保存原生结果、Unit QC、下游分析与评估；真实数据一致度不得叫准确率。模拟数据仅在最后评估时读取ground truth。
-- 每个阶段的参数、有效样本量、数值检查、图像检查、中文解释和英文图注。
-- 每个图表均进入主图、附图或源数据表清单；记录归属理由与文件路径。失败和不适用项目列入说明，不画伪结果。
-- 主图按数据质量→行为与时序→单元事件响应→群体结果→稳健性组织；选择不按显著性筛选，不能隐藏反例。
-- 单会话结论不得扩大为跨动物结论；同一动物的Unit不等于独立动物样本。
+## 模拟数据结果摘要
 
-## 产品修改
+### Tetrode
 
-- 工作区顶部显示紧凑语言切换入口，维持现有配色。
-- 每项分析说明输入、计算、坐标轴、解释边界、下一步及常见错误。
-- 论文模块导出英文图板、逐panel图注、主图/附图索引和完整图表清单。
-- 期刊分别提供预设，不声称C/N/S具有一个共同的强制标准。
+| Sorter | 候选 Unit | 全体真值平均召回 |
+|---|---:|---:|
+| Kilosort4 | 26 | 0.964 |
+| MountainSort5 | 24 | 0.871 |
+| SpyKING CIRCUS2 | 25 | 0.952 |
 
-## 已核对
+### 几何修正版 Neuropixels-like
 
-- Kilosort4 4.1.7、MountainSort5 0.5.9、SpikeInterface 0.104.8可用；CUDA GPU可用。安装可用不等于三个sorter端到端成功。
-- Nature最终制图指南：https://www.nature.com/nature/for-authors/final-submission
-- Nature图板指南：https://research-figure-guide.nature.com/figures/building-and-exporting-figure-panels/
-- 真实数据尚需确认：动物编号到通道映射、行为事件码、TTL通道与脉冲含义。
+| Sorter | 候选 Unit | 已配对中位 F1 | 全体真值平均召回 |
+|---|---:|---:|---:|
+| Kilosort4 | 345 | 0.653 | 0.502 |
+| MountainSort5 | 216 | 0.500 | 0.405 |
+| SpyKING CIRCUS2 | 211 | 0.601 | 0.496 |
+
+候选之间的高一致度不能掩盖真值召回不足；必须同时报告未恢复的 ground-truth Unit，不只展示成功配对中位数。早期双探针几何重叠输出作为诊断证据保留，正式结果使用保留 `probe_id` 的修正版。
+
+## 真实数据结果摘要
+
+| Sorter | 五动物候选簇合计 | 保守自动筛选暂留 |
+|---|---:|---:|
+| Kilosort4 | 60 | 18 |
+| MountainSort5 | 282 | 136 |
+| SpyKING CIRCUS2 | 20 | 0 |
+
+候选簇不是已确认 single unit；自动暂留只是人工复核队列。MountainSort5 与其他工具的数量差异必须通过波形、ISI、漂移、存在性、重复和合并/拆分复核解释。SpyKING CIRCUS2 的候选没有通过当前保守自动筛选，软件因此不生成筛选后推断图，而不是伪造结果。
+
+同步锚点为 603–744 个；全局平均绝对残差约 7.99–15.21 ms。事件×候选 Unit 的显著组合不是显著细胞数，单动物事件结果也不能扩大为跨动物结论。
+
+## 图件、排版与解释
+
+- 模拟数据最终范围 407 张 SVG 机械审计为 0 个标记。
+- 真实数据刷新 216 份英文 publication 报告；1057 张 SVG 机械审计为 0 个标记。
+- 英文主图/附图、panel 字母、图注草稿、Methods、文件清单和校验值已生成。没有进主图的图和表保留在补充证据索引中。
+- 机械审计仅检查文件结构、物理尺寸、英文文本和配对导出，不代替统计、人工视觉、生物学解释或期刊终审。
+
+## 交付入口
+
+- 模拟数据：`D:\PhD\AI大赛\NeuroEphysAI_Workspace\Delivery_Validation_20260915`
+- 模拟详解：`模拟数据完整验收与结果解释.md`
+- 真实数据：`E:\NeuroEphysValidation`
+- 真实详解：`真实数据完整验收与结果解释.md`
+- 两个目录均以 `实验结果导航.html` 为人工审阅入口。
+
+## 仍需研究者完成
+
+1. 真实 Unit 人工复核、重复检查和合并/拆分决策。
+2. 数据提供者核对动物映射、代表波形与行为语义。
+3. 跨动物正式统计、实验设计对照和目标期刊技术终审。
+4. 如要宣称整个 14-session benchmark 完成，必须逐 session 重复当前验收，不得从两个 session_01 外推。
