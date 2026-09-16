@@ -28,6 +28,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--electrode', required=True, choices=['tetrode', 'neuropixels'])
     parser.add_argument('--sorter', required=True)
+    parser.add_argument('--sorter-settings', type=Path, help='Optional JSON parameters')
+    parser.add_argument('--attempt', default='', help='Separate result-folder suffix to preserve failed attempts')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     def log(message):
@@ -70,7 +72,9 @@ def main():
         save_project(state)
         log(f'SORT full duration {state.duration_seconds} s using {args.sorter}')
         if not state.sorted_spikes:
-            run_sorter(state,args.sorter,args.output / 'results' / args.sorter,log)
+            settings = json.loads(args.sorter_settings.read_text(encoding='utf-8')) if args.sorter_settings else None
+            attempt = Path(args.attempt).name if args.attempt else ''
+            run_sorter(state,args.sorter,args.output / 'results' / (args.sorter + ('_' + attempt if attempt else '')),log,settings=settings)
             save_project(state)
         log(f'SORT COMPLETE: {len(state.sorted_spikes)} units')
         compute_unit_metrics(state)

@@ -2004,6 +2004,7 @@ def neural_toolkit_figure(state: ProjectState, view: str) -> Figure:
                     frequencies,
                     10 * np.log10(np.maximum(psd[index], 1e-12)),
                     label=f"Ch {channel}",
+                    color=(GREEN, CORAL, BLUE, GOLD)[index % 4],
                 )
             axes[0, 0].set_xlim(0, min(150, frequencies[-1] if frequencies.size else 150))
             axes[0, 0].legend(frameon=False, fontsize=8)
@@ -2017,6 +2018,7 @@ def neural_toolkit_figure(state: ProjectState, view: str) -> Figure:
                         values[:, channel_index],
                         width=width,
                         label=f"Ch {result['channel_ids'][channel_index]}",
+                        color=(GREEN, CORAL, BLUE, GOLD)[channel_index % 4],
                     )
                 axes[0, 1].set_xticks(
                     np.arange(len(bands)) + width * (values.shape[1] - 1) / 2,
@@ -2026,8 +2028,9 @@ def neural_toolkit_figure(state: ProjectState, view: str) -> Figure:
                 axes[0, 1].legend(frameon=False, fontsize=8)
             axes[0, 0].set_title("Welch PSD", loc="left", fontsize=11, color=INK)
             axes[0, 0].set_xlabel("Frequency (Hz)", color=MUTED)
+            axes[0, 0].set_ylabel("PSD (dB re 1 µV²/Hz)", color=MUTED)
             axes[0, 1].set_title("Band power", loc="left", fontsize=11, color=INK)
-            axes[0, 1].set_ylabel("Integrated power", color=MUTED)
+            axes[0, 1].set_ylabel("Integrated power (µV²)", color=MUTED)
             return fig
         if view == "lfp:coherence":
             frequencies = np.asarray(

@@ -17,6 +17,8 @@ def main():
     summaries = []
     for electrode in ('tetrode', 'neuropixels'):
         for manifest in sorted((args.delivery / electrode).glob('*/neuroflow_project.json')):
+            if manifest.parent.name not in ('kilosort4', 'mountainsort5', 'spykingcircus2'):
+                continue
             state = load_project(manifest)
             if not state.sorted_spikes:
                 continue

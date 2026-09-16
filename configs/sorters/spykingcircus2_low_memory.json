@@ -1,0 +1,4 @@
+{
+  "job_kwargs": {"n_jobs": 1, "chunk_duration": "0.1s"},
+  "cache_preprocessing": {"mode": "no-cache", "memory_limit": 0.25}
+}

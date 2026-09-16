@@ -1080,14 +1080,18 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
             "condition-averaged population trajectories were summarized with PCA. "
         )
     lfp_sentence = (
-        "The LFP branch was resampled to 1 kHz and analyzed using Welch power "
+        f"The LFP branch used the initial {state.lfp_analysis.get('duration_seconds', 'unspecified')} s "
+        f"on channels {state.lfp_analysis.get('channel_ids', [])}, resampled to "
+        f"{state.lfp_analysis.get('sampling_rate_hz', 'unspecified')} Hz and analyzed using Welch power "
         "spectral density, magnitude-squared coherence, cross-spectral phase lag, "
         "spectrograms, and integrated canonical-band power. "
         if state.lfp_analysis
         else ""
     )
     coupling_sentence = (
-        "Spike-field coupling was assessed from 1-5 Hz analytic phase using "
+        f"Spike-field coupling used the initial {state.spike_field_analysis.get('duration_seconds', 'unspecified')} s "
+        f"on channel {state.spike_field_analysis.get('channel_id', 'unspecified')}, "
+        f"with {state.spike_field_analysis.get('phase_band_hz', [])} Hz analytic phase using "
         "spike-triggered phase, mean vector length, a Rayleigh approximation, and "
         "circular-shift surrogate tests. Phase-amplitude coupling used 18 phase "
         "bins and Kullback-Leibler divergence from the uniform distribution. "

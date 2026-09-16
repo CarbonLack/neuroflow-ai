@@ -23,6 +23,8 @@ def main():
     parser.add_argument('--highpass-hz', type=float, default=0)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--sorter', required=True)
+    parser.add_argument('--sorter-settings', type=Path, help='Optional JSON parameters, preserved in sorting provenance')
+    parser.add_argument('--attempt', default='', help='Separate result-folder suffix; preserves failed attempts')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     def log(message):
@@ -64,7 +66,9 @@ def main():
         save_project(state)
         if not state.sorted_spikes:
             log(f'SORT full {state.duration_seconds:.3f} seconds, no animal pooling')
-            run_sorter(state, args.sorter, args.output / 'results' / args.sorter, log)
+            settings = json.loads(args.sorter_settings.read_text(encoding='utf-8')) if args.sorter_settings else None
+            attempt = Path(args.attempt).name if args.attempt else ''
+            run_sorter(state, args.sorter, args.output / 'results' / (args.sorter + ('_' + attempt if attempt else '')), log, settings=settings)
             save_project(state)
         compute_unit_metrics(state)
         save_project(state)

@@ -595,6 +595,17 @@ def run_spike_field_suite(
     phase_histograms = {}
     for unit_id, train in zip(unit_ids, trains):
         in_range = train[(train >= 0 * pq.s) & (train < duration * pq.s)]
+        if len(in_range) == 0:
+            edges = np.linspace(-np.pi, np.pi, 19)
+            phase_histograms[int(unit_id)] = {
+                "centers": (edges[:-1] + edges[1:]) / 2,
+                "counts": np.zeros(18, dtype=int),
+            }
+            rows.append({"unit_id": int(unit_id), "spike_count": 0,
+                         "preferred_phase_rad": float("nan"),
+                         "vector_strength": float("nan"), "rayleigh_p": float("nan"),
+                         "surrogate_p": float("nan"), "status": "no_spikes_in_analysis_interval"})
+            continue
         phases, _, _ = spike_triggered_phase(analytic, [in_range], interpolate=True)
         phase_values = np.asarray(phases[0], dtype=float)
         preferred_phase, vector_strength = mean_phase_vector(phase_values)
@@ -642,6 +653,8 @@ def run_spike_field_suite(
         "provider": provider_status(),
         "channel_id": int(channels[0]),
         "phase_band_hz": list(phase_band),
+        "start_seconds": 0.0,
+        "duration_seconds": duration,
         "surrogate_count": int(surrogate_count),
         "rows": rows,
         "phase_histograms": phase_histograms,
