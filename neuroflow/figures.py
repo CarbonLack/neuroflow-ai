@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 from matplotlib import rcParams
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from scipy import signal as scipy_signal
 
 from .analysis import load_recording
@@ -1901,6 +1902,7 @@ def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
     fig, axes = _base_figure(1, 2, 4.8)
     metrics = state.unit_metrics
     if metrics:
+        unit_ids = np.asarray([int(row["unit_id"]) for row in metrics], dtype=int)
         rates = np.asarray([row["firing_rate_hz"] for row in metrics])
         snr = np.asarray([row["snr"] for row in metrics])
         violations = np.asarray([row["isi_violation_rate"] for row in metrics])
@@ -1911,7 +1913,45 @@ def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
             for row in metrics
         ]
         axes[0, 0].scatter(rates, snr, c=colors, s=42, edgecolor="white", linewidth=0.7)
-        axes[0, 1].bar(np.arange(len(metrics)), violations * 100, color=colors)
+        axes[0, 0].legend(
+            handles=[
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    linestyle="none",
+                    markerfacecolor=GREEN,
+                    markeredgecolor="white",
+                    markersize=7,
+                    label=_text(
+                        state,
+                        "自动标签：候选单神经元",
+                        "Automatic label: candidate single unit",
+                    ),
+                ),
+                Line2D(
+                    [0],
+                    [0],
+                    marker="o",
+                    linestyle="none",
+                    markerfacecolor=CORAL,
+                    markeredgecolor="white",
+                    markersize=7,
+                    label=_text(
+                        state,
+                        "自动标签：需要复核",
+                        "Automatic label: review required",
+                    ),
+                ),
+            ],
+            frameon=False,
+            fontsize=7,
+            loc="best",
+        )
+        axes[0, 1].bar(unit_ids, violations * 100, color=colors)
+        if unit_ids.size <= 24:
+            axes[0, 1].set_xticks(unit_ids)
+            axes[0, 1].tick_params(axis="x", labelrotation=45)
     axes[0, 0].set_title(
         _text(state, "放电率与 SNR", "Firing rate and SNR"),
         loc="left",

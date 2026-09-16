@@ -4,6 +4,7 @@ from matplotlib.colors import to_hex
 from PySide6.QtWidgets import QApplication, QWidget
 
 from neuroflow.figure_studio import FigureStudioDialog, figure_artist_catalog
+from neuroflow.figures import unit_metrics_figure
 from neuroflow.models import ProjectState
 from neuroflow.project import save_project, load_project
 from neuroflow.publication_style import DEFAULT_STYLE, apply_publication_style, publication_figure
@@ -96,6 +97,35 @@ def test_palette_switching_is_reversible_and_matches_legend(tmp_path):
         apply_publication_style(fig, {"palette": palette})
         assert to_hex(axis.lines[0].get_color()) == colour
         assert to_hex(axis.get_legend().legend_handles[0].get_color()) == colour
+
+
+def test_unit_metrics_overview_explains_colours_and_uses_real_unit_ids(tmp_path):
+    state = ProjectState(tmp_path)
+    state.metadata["language"] = "en_US"
+    state.unit_metrics = [
+        {
+            "unit_id": 7,
+            "firing_rate_hz": 4.2,
+            "snr": 6.1,
+            "isi_violation_rate": 0.004,
+            "label": "candidate_single_unit",
+        },
+        {
+            "unit_id": 42,
+            "firing_rate_hz": 8.8,
+            "snr": 2.5,
+            "isi_violation_rate": 0.08,
+            "label": "review_required",
+        },
+    ]
+    figure = unit_metrics_figure(state)
+    legend = figure.axes[0].get_legend()
+    assert legend is not None
+    assert [item.get_text() for item in legend.get_texts()] == [
+        "Automatic label: candidate single unit",
+        "Automatic label: review required",
+    ]
+    assert [int(value) for value in figure.axes[1].get_xticks()] == [7, 42]
 
 
 def test_title_and_background_edits_preserve_ranges_and_locators(tmp_path):
