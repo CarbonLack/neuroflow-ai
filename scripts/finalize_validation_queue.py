@@ -86,7 +86,10 @@ def main():
                                 'manual_review': 'pending'}
                 output.write_text(json.dumps(results, indent=2), encoding='utf-8')
         if all(status.get(j['name'], {}).get('status') in ('complete', 'failed') for j in config['jobs']):
-            run('summarize_real_validation.py', ['--delivery', str(args.manifest.parent)], 'summary')
+            summary_arguments = ['--delivery', str(args.manifest.parent)]
+            if config.get('summary_subjects'):
+                summary_arguments += ['--subjects', ','.join(str(item) for item in config['summary_subjects'])]
+            run('summarize_real_validation.py', summary_arguments, 'summary')
             run('prepare_publication_layouts.py', ['--delivery', str(args.manifest.parent)], 'publication_layouts')
             run('audit_exported_figures.py', ['--delivery', str(args.manifest.parent)], 'figure_audit')
             run('build_delivery_index.py', ['--delivery', str(args.manifest.parent)], 'navigation')

@@ -14,21 +14,31 @@ SORTERS = ('kilosort4', 'mountainsort5', 'spykingcircus2')
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--delivery', type=Path, required=True)
+    parser.add_argument(
+        '--subjects',
+        help='Optional comma-separated confirmed subject groups to include (for example 101,102,104).',
+    )
     args = parser.parse_args()
+    selected_subjects = {
+        item.strip() for item in (args.subjects or '').split(',') if item.strip()
+    }
     rows = []
     for subject in sorted((args.delivery / 'real').glob('subject*')):
+        subject_group = subject.name.removeprefix('subject')
+        if selected_subjects and subject_group not in selected_subjects:
+            continue
         for sorter in SORTERS:
             root = subject / sorter
             manifest = root / 'neuroflow_project.json'
             if not manifest.exists():
-                rows.append({'subject_group': subject.name.removeprefix('subject'), 'sorter': sorter,
+                rows.append({'subject_group': subject_group, 'sorter': sorter,
                              'status': 'not_completed'})
                 continue
             state = load_project(manifest)
             execution_log = root / 'execution.log'
             completed = execution_log.exists() and 'SORT AND QC COMPUTED:' in execution_log.read_text(encoding='utf-8', errors='replace')
             if not completed:
-                rows.append({'subject_group': subject.name.removeprefix('subject'), 'sorter': sorter,
+                rows.append({'subject_group': subject_group, 'sorter': sorter,
                              'status': 'in_progress', 'project': str(manifest)})
                 continue
             screen_file = root / 'screened_review/screening_decisions.json'
@@ -37,7 +47,7 @@ def main():
             event = json.loads(event_file.read_text(encoding='utf-8')) if event_file.exists() else {}
             sync = state.metadata.get('synchronization', {})
             identity = state.metadata.get('subject_identity', {})
-            rows.append({'subject_group': subject.name.removeprefix('subject'), 'sorter': sorter,
+            rows.append({'subject_group': subject_group, 'sorter': sorter,
                          'status': 'computed_empty' if not state.sorted_spikes else 'computed', 'candidate_clusters': len(state.sorted_spikes),
                          'candidate_spikes': sum(len(v) for v in state.sorted_spikes.values()),
                          'automated_screen_retained': len(screen.get('included_units', [])) if screen else None,
@@ -48,6 +58,7 @@ def main():
                          'significant_event_unit_tests_across_family': event.get('significant_test_count'),
                          'project': str(manifest)})
     payload = {'scope': 'Independent channel-group projects; candidate clusters are not manually accepted single units',
+               'included_subject_groups': sorted(selected_subjects) if selected_subjects else 'all_discovered',
                'screen': 'ISI violation <=0.01, SNR >=5, spikes >=500 when available; automated only',
                'rows': rows}
     (args.delivery / 'real_validation_summary.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')

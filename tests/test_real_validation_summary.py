@@ -24,3 +24,16 @@ def test_saved_project_without_completion_marker_is_in_progress(tmp_path):
     row = next(r for r in report['rows'] if r['sorter'] == 'kilosort4')
     assert row['status'] == 'in_progress'
     assert 'candidate_clusters' not in row
+
+
+def test_summary_can_exclude_unassigned_channel_groups(tmp_path):
+    (tmp_path / 'real/subject102').mkdir(parents=True)
+    (tmp_path / 'real/subjectunassigned_12h_ch33_64').mkdir(parents=True)
+    script = Path(__file__).resolve().parents[1] / 'scripts/summarize_real_validation.py'
+    subprocess.run(
+        [sys.executable, str(script), '--delivery', str(tmp_path), '--subjects', '102'],
+        check=True,
+    )
+    report = json.loads((tmp_path / 'real_validation_summary.json').read_text(encoding='utf-8'))
+    assert {row['subject_group'] for row in report['rows']} == {'102'}
+    assert report['included_subject_groups'] == ['102']
