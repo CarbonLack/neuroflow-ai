@@ -22,6 +22,8 @@ App安装版自带Python运行环境；普通桌面用户不需要另装Python�
 
 完整20分钟benchmark、公开数据缓存和实验记录都作为独立数据资产管理，不塞入安装包。下载App并不自动下载数十GB实验数据。
 
+v1.2.6 的四种发行方式均已上线。Full 安装包已通过本机安装后六项检查，上传后大小与 SHA256 再次核对一致。下载后可使用[完整 SHA256 校验清单](https://github.com/CarbonLack/neuroflow-ai/releases/download/v1.2.6/SHA256SUMS-v1.2.6-complete.txt)核对文件。
+
 ## 这次改了什么
 
 - Harness SDK + MCP 项目查询，不再把机构 Harness 配置转换成直接模型 API 请求。

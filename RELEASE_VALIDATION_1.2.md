@@ -13,6 +13,7 @@
 - 最终证据目录：`D:\PhD\AI大赛\发布验证\v1.2.6_交付`。`installed_acceptance.json` 记录安装、版本、快捷方式和六项检查；`frozen_standard`、`frozen_full`、`installed_full` 分开保存，不混淆源码测试与安装包测试。
 - 验收脚本初次由 Windows PowerShell 5 启动，因 UTF-8 中文路径解析而报找不到安装包；改用 PowerShell 7 后完整通过，脚本增加版本要求。该问题不要求普通用户安装 PowerShell：用户直接运行 exe 安装包。
 - v1.2.6 原生窗口可启动且标题正确；补拍截图时，电脑操作工具出现 `CreateForMonitor (0x80070057)`，重选窗口后激活仍失败，已停止 UI 自动操作。这次不声称完成新的截图验收；此前 1.2.5 原生字体及紧凑布局检查保留为历史证据。
+- 云端发布已完成：官方 Windows 构建成功；Full 安装包另行上传，服务器返回的字节数和 SHA256 与上述本机验收包完全一致。GitHub 最新发布为 v1.2.6，标准安装版、标准便携版、Full 安装版、Python wheel 和源码包均为 uploaded 状态。完整云端校验清单为发布资产 `SHA256SUMS-v1.2.6-complete.txt`；本地重新构建的标准包与 CI 标准包不是同一二进制，核对下载文件时请使用云端清单，而非本地 release 目录的清单。
 
 ## 1.2.5 Harness SDK 与项目 MCP 验收（2026-09-17）
 
