@@ -847,7 +847,7 @@ class AIAssistantDialog(QDialog):
         self.loaded_project_token = project_token
         self.history = []
         self.conversation.clear()
-        for record in records[-6:]:
+        for record in records[-20:]:
             question = str(record.get("question", "")).strip()
             answer = str(record.get("answer", "")).strip()
             if question:
@@ -856,7 +856,7 @@ class AIAssistantDialog(QDialog):
             if answer:
                 self.history.append({"role": "assistant", "content": answer})
                 self._append_message("assistant", answer)
-        self.history = self.history[-12:]
+        self.history = self.history[-40:]
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -1370,7 +1370,7 @@ class AIAssistantDialog(QDialog):
     ) -> None:
         self._set_running(False)
         self.history.append({"role": "assistant", "content": response.answer})
-        self.history = self.history[-12:]
+        self.history = self.history[-40:]
         rendered = response.answer
         if response.warnings:
             heading = (

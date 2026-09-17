@@ -557,6 +557,12 @@ def build_project_summary(
             )
         ),
         "event_inventory": _event_inventory(state),
+        "data_preview": {
+            "events": _compact_json_value(state.events[:20]),
+            "trials": _compact_json_value(state.trials[:10]),
+            "scope": "Bounded samples, not the full dataset; times retain their stored units.",
+        },
+        "recent_operations": [redact_sensitive_text(str(item)) for item in state.run_log[-15:]],
         "synchronization_summary": sync_summary,
         "sorting_results": {
             sorter: details["unit_count"]
@@ -719,6 +725,23 @@ Hard boundaries:
     is supplied, state that a source lookup is still required.
 14. The current task type is {task!r}. Return the required JSON object with no
     markdown code fence.
+
+Conversation behavior:
+Answer the user's actual question directly, including open-ended discussion of
+this project, methods, data contents and existing results. Do not force every
+conversation into a workflow plan. Use current_ui_context, data_preview,
+recent_operations and all available result summaries as evidence. The supplied
+snapshot is fresh for this request. Missing fields are unknown, not zero.
+Recent conversation belongs to this project; do not claim access to other projects.
+An inspect_project or summarize_recording call is unnecessary when the supplied
+snapshot already answers the question. Always provide a substantive answer.
+
+Required response format (answer must contain your actual response):
+{{"answer":"Your response in {output_language}","warnings":[],"plan":[],
+"suggested_next_stage":"import","requires_user_confirmation":false,
+"tool_calls":[]}}
+Only populate plan or tool_calls when relevant. Any tool arguments must match
+the registered tool schema. Scientific interpretation may be supplied separately.
 """.strip()
 
 
@@ -728,7 +751,7 @@ def build_user_input(
     history: list[dict[str, str]] | None = None,
 ) -> str:
     safe_history = []
-    for item in (history or [])[-6:]:
+    for item in (history or [])[-40:]:
         role = "assistant" if item.get("role") == "assistant" else "user"
         safe_history.append(
             {"role": role, "content": redact_sensitive_text(item.get("content", ""))}
@@ -1062,6 +1085,18 @@ def _parse_structured_text(text: str) -> dict[str, Any]:
     return value
 
 
+def _parse_conversation_text(text: str) -> dict[str, Any]:
+    """Accept prose from compatible providers without interpreting it as actions."""
+    if not text.strip():
+        return {}
+    try:
+        return _parse_structured_text(text)
+    except AIRequestError:
+        if text.lstrip().startswith(("{", "[", "```json")):
+            raise
+        return {"answer": text.strip()}
+
+
 def normalize_ai_response(
     value: dict[str, Any],
     *,
@@ -1105,7 +1140,7 @@ def normalize_ai_response(
     next_stage = str(value.get("suggested_next_stage", "import"))
     if next_stage not in WORKFLOW_STAGES:
         next_stage = plan[0]["stage"] if plan else "import"
-    answer = str(value.get("answer", "")).strip()
+    answer = str(value.get("answer") or "").strip()
     if not answer:
         # Managed OpenAI-compatible harnesses sometimes preserve the requested
         # JSON format but choose descriptive field names of their own. Recover a
@@ -1189,7 +1224,9 @@ def normalize_ai_response(
         )
     if not answer:
         raise AIRequestError("The model returned an empty answer.")
-    interpretation = value.get("scientific_interpretation", {})
+    interpretation = value.get("scientific_interpretation") or {}
+    if not isinstance(interpretation, dict):
+        interpretation = {}
     normalized_interpretation = {
         key: [str(entry) for entry in interpretation.get(key, [])[:20]]
         for key in (
@@ -1353,8 +1390,28 @@ def request_ai_advice(
                     "requires_user_confirmation": True,
                 }
             )
+        parsed = _parse_conversation_text(text)
+        proposals = native_tool_calls or parsed.get("tool_calls", [])
+        read_names = {"inspect_project", "summarize_recording"}
+        read_only = isinstance(proposals, list) and proposals and all(
+            isinstance(call, dict) and call.get("name") in read_names
+            for call in proposals
+        )
+        if read_only:
+            payload["stream"] = False
+            payload.pop("stream_options", None)
+            payload.pop("tools", None)
+            payload.pop("tool_choice", None)
+            payload["messages"].append({"role": "user", "content":
+                "Read-only project inspection result: " + json.dumps(cloud_context, ensure_ascii=False)
+                + "\nUse this result to answer the original question now. Return a nonempty answer; no further tool calls."})
+            raw = _post_json(url, payload, settings.request_api_key,
+                settings.timeout_seconds, settings.retry_count,
+                allow_insecure_private_network=settings.allow_insecure_private_network)
+            parsed = _parse_conversation_text(_extract_chat_text(raw))
+            native_tool_calls = []
         return normalize_ai_response(
-            _parse_structured_text(text),
+            parsed,
             settings=settings,
             response_id=str(raw.get("id", "")),
             usage=raw.get("usage", {}),

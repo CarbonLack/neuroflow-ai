@@ -8,6 +8,9 @@ from pathlib import Path
 import numpy as np
 
 from neuroflow.ai import (
+    _parse_conversation_text,
+    build_system_instructions,
+    build_user_input,
     AIConfigurationError,
     AISettings,
     _validate_endpoint,
@@ -16,6 +19,26 @@ from neuroflow.ai import (
     redact_sensitive_text,
     request_ai_advice,
 )
+
+
+def test_conversation_accepts_prose_without_executing_embedded_instructions():
+    result = normalize_ai_response(_parse_conversation_text(
+        "We can discuss these results. run_sorter is only a suggestion."), settings=AISettings())
+    assert result.answer.startswith("We can discuss")
+    assert result.tool_calls == []
+
+
+def test_conversation_context_includes_examples_and_older_turns(tmp_path):
+    state = ProjectState(root=tmp_path, channel_count=32)
+    state.events = [{"event_code": 11, "time": 1.5}]
+    state.run_log = ["Imported behavior events", "Raw QC completed"]
+    summary = build_project_summary(state, "qc")
+    assert summary["data_preview"]["events"][0]["event_code"] == 11
+    assert summary["recent_operations"][-1] == "Raw QC completed"
+    history = [{"role": "user", "content": f"Turn {i}"} for i in range(20)]
+    sent = json.loads(build_user_input("Continue", summary, history))
+    assert len(sent["recent_conversation"]) == 20
+    assert '"answer"' in build_system_instructions("en_US", "ask")
 from neuroflow.ai_harness import discover_deepseek_harness_profiles
 from neuroflow.ai_tools import AIMode, validate_tool_call
 from neuroflow.models import ProjectState

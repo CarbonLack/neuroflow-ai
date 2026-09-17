@@ -7520,6 +7520,12 @@ class NeuroFlowWindow(QMainWindow):
             return
         self.state.metadata["ui_context"] = {
             "current_stage": self.current_step,
+            "visible_panels": [
+                {"title": axis.get_title(), "x_label": axis.get_xlabel(),
+                 "y_label": axis.get_ylabel(),
+                 "x_limits": list(axis.get_xlim()), "y_limits": list(axis.get_ylim())}
+                for axis in self.canvas.figure.axes
+            ] if hasattr(self, "canvas") else [],
             "selected_view": (
                 str(self.option_combo.currentData() or "")
                 if hasattr(self, "option_combo")
@@ -7609,6 +7615,7 @@ class NeuroFlowWindow(QMainWindow):
             )
 
     def _ensure_ai_dialog(self) -> AIAssistantDialog:
+        self._refresh_ai_sidebar()
         if self.ai_dialog is None:
             self.ai_dialog = AIAssistantDialog(
                 state_getter=lambda: self.state,
