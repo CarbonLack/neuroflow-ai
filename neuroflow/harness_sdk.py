@@ -12,23 +12,39 @@ import subprocess
 import threading
 import time
 import uuid
+import tempfile
+import yaml
 from pathlib import Path
 from typing import Callable
 
 
 def request_harness_sdk(*, provider: str, model: str, prompt: str,
                         timeout: int = 120, cancel_event=None,
-                        on_text: Callable[[str], None] | None = None) -> str:
+                        on_text: Callable[[str], None] | None = None,
+                        bridge=None) -> str:
     executable = shutil.which("dsh")
     if not executable:
         raise RuntimeError("DeepSeek Harness is not installed or dsh is not on PATH.")
     patch = Path(__file__).with_name("harness_sdk.patch.yml")
-    process = subprocess.Popen(
-        [executable, "--profile", "sdk", "--patch", str(patch)],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, encoding="utf-8", errors="replace",
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-    )
+    temporary = tempfile.TemporaryDirectory(prefix="neuroephys-harness-")
+    if bridge is not None:
+        rows = yaml.safe_load(patch.read_text(encoding="utf-8"))
+        rows.append({"insert": [{"id": "mcp-neuroephys", "name": "@deepseek-ai/dsh-mcp-client",
+            "config": {"serverName": "neuroephys", "transport": "streamable-http",
+                       "url": bridge.url, "headers": {"Authorization": "Bearer " + bridge.token},
+                       "failOnStartupError": True}}]})
+        patch = Path(temporary.name) / "bridge.patch.yml"
+        patch.write_text(yaml.safe_dump(rows, allow_unicode=True), encoding="utf-8")
+    try:
+        process = subprocess.Popen(
+            [executable, "--profile", "sdk", "--patch", str(patch)],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            text=True, encoding="utf-8", errors="replace",
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except Exception:
+        temporary.cleanup()
+        raise
     frames: queue.Queue = queue.Queue()
 
     def read_frames():
@@ -65,7 +81,7 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
         raise RuntimeError("Harness SDK request timed out.")
 
     try:
-        send("initialize", {"cwd": str(patch.parent), "provider": provider,
+        send("initialize", {"cwd": temporary.name, "provider": provider,
              "model": model, "maxTokens": 8192}, 1)
         while True:
             frame = receive()
@@ -77,6 +93,7 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
             "contentBlocks": [{"type": "text", "text": prompt}]}, 2)
         answer = ""
         running = False
+        finish_reason = None
         while True:
             frame = receive()
             params = frame.get("params", {})
@@ -84,6 +101,8 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
                 continue
             if frame.get("method") == "session.event":
                 event = params.get("event", {})
+                if event.get("type") == "turn/end":
+                    finish_reason = event.get("data", {}).get("reason", {}).get("kind")
                 if event.get("type") == "assistant/message":
                     data = event.get("data", {})
                     blocks = data.get("message", {}).get("content", [])
@@ -96,6 +115,8 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
                 if params.get("status") == "running":
                     running = True
                 elif running and params.get("status") == "idle":
+                    if finish_reason in {"error", "cancelled", "max-tokens"}:
+                        raise RuntimeError("Harness turn did not complete: " + finish_reason)
                     if not answer.strip():
                         raise RuntimeError("Harness completed without an assistant answer.")
                     return answer
@@ -110,3 +131,4 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
         for pipe in (process.stdin, process.stdout):
             if pipe:
                 pipe.close()
+        temporary.cleanup()

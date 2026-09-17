@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neuroephys-ai"
-version = "1.2.4"
+version = "1.2.5"
 description = "Local-first extracellular electrophysiology analysis workbench and Python toolkit"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -43,6 +43,7 @@ dependencies = [
   "keyring==25.6.0",
   "nex5file==0.1.3",
   "PyYAML==6.0.3",
+  "mcp==1.30.0",
 ]
 
 [project.optional-dependencies]
@@ -74,6 +75,9 @@ Issues = "https://github.com/CarbonLack/neuroflow-ai/issues"
 where = ["."]
 include = ["neuroflow*", "neuroephys*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+neuroflow = ["harness_sdk.patch.yml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

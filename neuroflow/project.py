@@ -13,6 +13,27 @@ from .product import PRODUCT_NAME, PRODUCT_VERSION
 MANIFEST_NAME = "neuroflow_project.json"
 
 
+def save_ai_conversation(state: ProjectState) -> None:
+    """Persist chat independently of large signal/sorting caches."""
+    path = state.root / "ai" / "conversation.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(state.metadata.get("ai_history", []),
+                                   ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(path)
+
+
+def restore_ai_conversation(state: ProjectState) -> None:
+    path = state.root / "ai" / "conversation.json"
+    if path.is_file():
+        try:
+            records = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(records, list) and all(isinstance(r, dict) for r in records):
+                state.metadata["ai_history"] = records
+        except (OSError, ValueError):
+            state.log("AI conversation archive could not be read; manifest history retained.")
+
+
 def _migrate_event_trial_semantics(state: ProjectState) -> None:
     """Repair legacy MED-PC projects that stored every event as a trial."""
     is_medpc = bool(
@@ -283,4 +304,5 @@ def load_project(path: Path) -> ProjectState:
     ensure_sorting_registry(state)
     _migrate_event_trial_semantics(state)
     state.log("NeuroEphys AI project restored")
+    restore_ai_conversation(state)
     return state

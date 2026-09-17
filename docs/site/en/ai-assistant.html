@@ -152,6 +152,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Controlled AI assistant</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#project-aware-harness-conversations-v1-2-5">Project-aware Harness conversations (v1.2.5)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#providers">Providers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cloud-data-preview">Cloud-data preview</a></li>
@@ -316,9 +317,28 @@
 
   <section id="controlled-ai-assistant">
 <h1>Controlled AI assistant<a class="headerlink" href="#controlled-ai-assistant" title="Link to this heading"></a></h1>
+<section id="project-aware-harness-conversations-v1-2-5">
+<h2>Project-aware Harness conversations (v1.2.5)<a class="headerlink" href="#project-aware-harness-conversations-v1-2-5" title="Link to this heading"></a></h2>
+<p>For an institute-managed DeepSeek Harness account, use <strong>Read local DeepSeek
+Harness configuration</strong> in AI settings. The Harness SDK route calls the installed
+official dsh runtime; the app does not extract its model credentials or bypass it
+with direct API requests. Install and configure Harness separately using
+<a class="reference external" href="https://deepseek.com/harness/en/">https://deepseek.com/harness/en/</a> .</p>
+<p>Allow on-demand project data, results and conversation queries in the send preview.
+The model can then query specific units, events, trials, spike times and result
+tables through a local MCP interface, with evidence values and snapshot identifiers.
+Try: “Query unit 25’s SNR and ISI violation rate and explain the limitations.”
+Chart metadata is not image-pixel access; raw voltage is not sent by this interface.</p>
+<p>Conversations are saved to the project’s <code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code> and can be
+searched after reopening it. Each request uses a fresh project snapshot. Switching
+projects or provider settings requires renewed context approval. Analysis proposals
+still require user confirmation and pass the existing application validators.
+New analysis features require explicit tool registration; arbitrary shell, code
+execution and file-system access are not granted.</p>
 <p>The AI assistant occupies a collapsible right-side panel beside the active
 analysis. It receives a small structured project summary produced by local
 deterministic code. Raw voltage arrays are excluded.</p>
+</section>
 <section id="operating-modes">
 <h2>Operating modes<a class="headerlink" href="#operating-modes" title="Link to this heading"></a></h2>
 <dl class="simple">

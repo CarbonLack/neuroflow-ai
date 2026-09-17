@@ -59,11 +59,12 @@ def test_ai_settings_can_import_installed_harness_without_credential_access(
     dialog = AISettingsDialog(AISettings(), "zh_CN")
     dialog._import_harness()
 
-    assert dialog.provider_combo.currentData() == "institute_harness"
-    assert dialog.base_url_edit.text() == profile.base_url
+    assert dialog.provider_combo.currentData() == "harness_sdk"
+    assert dialog.base_url_edit.text() == "harness://local"
     assert dialog.model_edit.currentText() == profile.default_model
-    assert dialog.api_key_env_edit.text() == "CDSC_API_KEY"
-    assert dialog.private_http_check.isChecked() is True
+    assert dialog.api_key_env_edit.text() == ""
+    assert dialog.private_http_check.isChecked() is False
+    assert dialog._candidate_settings().harness_provider == "cdsc"
     assert dialog.api_key_edit.text() == ""
     dialog.close()
     app.processEvents()

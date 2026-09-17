@@ -108,12 +108,29 @@ def run_packaged_ai_self_test(workspace: Path) -> int:
             },
             settings=AISettings(model="offline-self-test"),
         )
+        import asyncio
+        from mcp import ClientSession
+        from mcp.client.streamable_http import streamablehttp_client
+        from .ai_project_bridge import ProjectQueries, ProjectMCPBridge
+        if not Path(__file__).with_name("harness_sdk.patch.yml").is_file():
+            raise RuntimeError("Packaged Harness profile is missing")
+        state.unit_metrics = [{"unit_id": 17, "snr": 8.5}]
+        with ProjectMCPBridge(ProjectQueries(state, "qc", "assistant")) as bridge:
+            async def verify_bridge():
+                async with streamablehttp_client(bridge.url, headers={"Authorization": "Bearer " + bridge.token}) as (read, write, _):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        result = await session.call_tool("query_project_data", {"section": "unit_metrics"})
+                        if result.isError or json.loads(result.content[0].text)["result"]["data"][0]["snr"] != 8.5:
+                            raise RuntimeError("Packaged MCP query failed")
+            asyncio.run(verify_bridge())
         report = {
             "ok": True,
             "summary_keys": sorted(summary),
             "suggested_next_stage": response.suggested_next_stage,
             "requires_user_confirmation": response.requires_user_confirmation,
             "network_request_made": False,
+            "loopback_mcp_verified": True,
         }
     except Exception as exc:  # noqa: BLE001 - persist the complete packaged failure
         report = {

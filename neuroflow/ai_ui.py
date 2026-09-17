@@ -45,6 +45,7 @@ from .ai import (
 from .ai_credentials import get_api_key, store_api_key
 from .ai_harness import discover_deepseek_harness_profiles
 from .ai_tools import AIMode, validate_tool_call
+from .ai_project_bridge import ProjectQueries
 from .models import ProjectState
 from .product import PRODUCT_NAME
 
@@ -93,8 +94,9 @@ def load_ai_settings() -> AISettings:
         managed_harness_name=str(
             store.value("managed_harness_name", "")
         ),
+        harness_provider=str(store.value("harness_provider", "")),
     )
-    settings.api_key = get_api_key(
+    settings.api_key = "" if settings.provider == "harness_sdk" else get_api_key(
         settings.provider,
         settings.api_key_env,
     )
@@ -126,6 +128,7 @@ def save_ai_preferences(settings: AISettings) -> None:
         settings.allow_insecure_private_network,
     )
     store.setValue("managed_harness_name", settings.managed_harness_name)
+    store.setValue("harness_provider", settings.harness_provider)
     store.endGroup()
 
 
@@ -143,6 +146,7 @@ class AIWorker(QThread):
         language: str,
         project_summary: dict[str, Any],
         history: list[dict[str, str]],
+        project_queries=None,
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
@@ -152,6 +156,7 @@ class AIWorker(QThread):
         self.language = language
         self.project_summary = project_summary
         self.history = history
+        self.project_queries = project_queries
         self.cancel_event = threading.Event()
 
     def run(self) -> None:
@@ -165,6 +170,7 @@ class AIWorker(QThread):
                 history=self.history,
                 on_stream_text=self.streamed.emit,
                 cancel_event=self.cancel_event,
+                project_queries=self.project_queries,
             )
             self.completed.emit(response)
         except Exception as exc:  # noqa: BLE001 - remote boundary
@@ -494,28 +500,19 @@ class AISettingsDialog(QDialog):
             self._refresh_harness_status()
             return
         profile = profiles[0]
-        existing_key = self.api_key_edit.text().strip()
-        index = self.provider_combo.findData("institute_harness")
+        index = self.provider_combo.findData("harness_sdk")
         self.provider_combo.blockSignals(True)
         self.provider_combo.setCurrentIndex(max(index, 0))
         self.provider_combo.blockSignals(False)
         self._provider_changed()
-        self.base_url_edit.setText(profile.base_url)
+        self.base_url_edit.setText("harness://local")
         self.model_edit.clear()
         self.model_edit.addItems(list(profile.models))
         self.model_edit.setCurrentText(profile.default_model)
-        self.api_key_env_edit.setText(profile.api_key_env)
-        stored_harness_key = get_api_key(
-            "institute_harness",
-            profile.api_key_env,
-        )
-        if stored_harness_key:
-            self.api_key_edit.setText(stored_harness_key)
-        elif existing_key:
-            self.api_key_edit.setText(existing_key)
-        self.private_http_check.setChecked(
-            profile.base_url.lower().startswith("http://")
-        )
+        self.api_key_env_edit.clear()
+        self.api_key_edit.clear()
+        self.private_http_check.setChecked(False)
+        self.settings.harness_provider = profile.provider_id
         self.settings.managed_harness_name = profile.display_name
         self.recommendation.setText(
             (
@@ -524,8 +521,8 @@ class AISettingsDialog(QDialog):
                 "not copy the harness conversation."
                 if self.language == "en_US"
                 else (
-                    "已读取本机 harness 连接信息。保存前请点击“检测服务状态”。"
-                    "App 会发送自己的受控项目摘要，不会复制 harness 中的对话。"
+                    "已选择本机 Harness SDK。模型和密钥由 Harness 管理，首次提问验证服务。"
+                    "AI 可查询当前项目数据和结果；分析操作需在 app 内确认。"
                 )
             )
         )
@@ -545,9 +542,11 @@ class AISettingsDialog(QDialog):
             self.model_edit.clear()
             self.model_edit.addItems(models)
             self.model_edit.setCurrentIndex(0)
-        stored = get_api_key(provider)
+        sdk = provider == "harness_sdk"
+        stored = "" if sdk else get_api_key(provider)
         self.api_key_edit.setText(stored)
-        local = bool(profile.get("local"))
+        local = bool(profile.get("local")) or sdk
+        self.base_url_edit.setEnabled(not sdk)
         self.api_key_edit.setEnabled(not local)
         self.show_key.setEnabled(not local)
         self.persist_key_check.setEnabled(not local)
@@ -566,7 +565,16 @@ class AISettingsDialog(QDialog):
                 else "粘贴 Provider API 密钥"
             )
         )
-        if local:
+        if sdk:
+            profiles = discover_deepseek_harness_profiles()
+            if profiles:
+                chosen = next((p for p in profiles if p.provider_id == self.settings.harness_provider), profiles[0])
+                self.settings.harness_provider = chosen.provider_id
+                self.model_edit.clear()
+                self.model_edit.addItems(list(chosen.models))
+                self.model_edit.setCurrentText(self.settings.model if self.settings.model in chosen.models else chosen.default_model)
+            self.key_note.setText("模型和凭据由本机 Harness 管理；无需复制密钥。" if self.language != "en_US" else "The installed Harness owns models and credentials. No key is copied.")
+        elif local:
             self.key_note.setText(
                 (
                     "Ollama runs on this computer. Project summaries stay local, "
@@ -653,6 +661,7 @@ class AISettingsDialog(QDialog):
                 self.private_http_check.isChecked()
             ),
             managed_harness_name=self.settings.managed_harness_name,
+            harness_provider=self.settings.harness_provider,
             api_key=self.api_key_edit.text().strip(),
         )
 
@@ -684,11 +693,12 @@ class AISettingsDialog(QDialog):
             )
             return
         try:
-            store_api_key(
-                self.settings.provider,
-                self.settings.api_key,
-                persist_in_os_store=self.persist_key_check.isChecked(),
-            )
+            if self.settings.provider != "harness_sdk":
+                store_api_key(
+                    self.settings.provider,
+                    self.settings.api_key,
+                    persist_in_os_store=self.persist_key_check.isChecked(),
+                )
         except RuntimeError as exc:
             QMessageBox.warning(
                 self,
@@ -725,13 +735,14 @@ class ContextPreviewDialog(QDialog):
         layout = QVBoxLayout(self)
         explanation = QLabel(
             (
-                "This is the complete project summary supplied with the next AI "
-                "request. Your question and recent AI conversation are added separately."
+                "These fields accompany questions in this project. Queryable data also permits "
+                "on-demand reading of project results and saved conversation. Your question and "
+                "recent conversation are included separately. Review once; change this selection any time."
             )
             if language == "en_US"
             else (
-                "这是下一次 AI 请求会携带的完整项目摘要；你的问题和最近的 AI "
-                "对话会单独附加。"
+                "这是本项目对话可读取的上下文。“按需查询项目数据”还允许查询数据、结果和历史对话。"
+                "问题与近期对话另行附加；本次打开项目确认一次即可，之后可随时调整。"
             )
         )
         explanation.setWordWrap(True)
@@ -751,7 +762,8 @@ class ContextPreviewDialog(QDialog):
         for key in sorted(summary):
             if key == "local_only":
                 continue
-            box = QCheckBox(key)
+            box = QCheckBox(("按需查询项目数据、结果与历史对话" if language != "en_US" else
+                            "On-demand project data, results and conversation") if key == "queryable_data" else key)
             box.setChecked(not explicit or key in explicit)
             box.toggled.connect(self._refresh_preview)
             self.checks[key] = box
@@ -830,6 +842,8 @@ class AIAssistantDialog(QDialog):
         self.loaded_project_token = ""
         self.current_tool_calls: list[dict[str, Any]] = []
         self.stream_buffer = ""
+        self.context_authorized = False
+        self.request_project = None
 
         self.resize(1280, 790)
         self.setMinimumSize(520, 420)
@@ -844,6 +858,10 @@ class AIAssistantDialog(QDialog):
     ) -> None:
         if project_token == self.loaded_project_token:
             return
+        self._cancel_request()
+        self.context_authorized = False
+        self.current_tool_calls = []
+        self.current_plan = []
         self.loaded_project_token = project_token
         self.history = []
         self.conversation.clear()
@@ -888,10 +906,13 @@ class AIAssistantDialog(QDialog):
         self.manual_button.clicked.connect(self.manual_handler)
         self.settings_button = QPushButton()
         self.settings_button.clicked.connect(self._open_settings)
-        header.addWidget(self.context_button)
-        header.addWidget(self.manual_button)
-        header.addWidget(self.settings_button)
         root.addLayout(header)
+        actions = QHBoxLayout()
+        actions.addWidget(self.context_button)
+        actions.addWidget(self.manual_button)
+        actions.addWidget(self.settings_button)
+        actions.addStretch()
+        root.addLayout(actions)
 
         self.status_frame = QFrame()
         self.status_frame.setObjectName("InsetPanel")
@@ -1011,6 +1032,7 @@ class AIAssistantDialog(QDialog):
         self.apply_plan_button.clicked.connect(self._apply_plan)
         plan_layout.addWidget(self.apply_plan_button)
         body.addWidget(plan_frame, 2)
+        plan_frame.setVisible(False)
         root.addLayout(body, 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
@@ -1164,11 +1186,18 @@ class AIAssistantDialog(QDialog):
             )
 
     def _summary(self) -> dict[str, Any]:
-        return build_project_summary(
+        summary = build_project_summary(
             self.state_getter(),
             self.stage_getter(),
             include_recent_log=self.settings.include_recent_log,
         )
+        if self.settings.provider == "harness_sdk":
+            summary["queryable_data"] = {
+                "enabled": True,
+                "description": "Allow on-demand pages of events, trials, spikes, Unit metrics, analysis results, logs and project conversation. No raw voltage or local paths.",
+                "scope": "Current project only; snapshot refreshed for each question",
+            }
+        return summary
 
     def _show_context(self) -> None:
         dialog = ContextPreviewDialog(
@@ -1180,6 +1209,7 @@ class AIAssistantDialog(QDialog):
         if dialog.exec() == QDialog.Accepted:
             self.settings.selected_context_fields = dialog.selected_fields()
             save_ai_preferences(self.settings)
+            self.context_authorized = True
 
     def _mode_changed(self) -> None:
         self.settings.mode = str(self.mode_combo.currentData())
@@ -1203,6 +1233,7 @@ class AIAssistantDialog(QDialog):
         )
         if dialog.exec() == QDialog.Accepted:
             self.settings = dialog.settings
+            self.context_authorized = False
             self.mode_combo.blockSignals(True)
             self.mode_combo.setCurrentIndex(
                 max(self.mode_combo.findData(self.settings.mode), 0)
@@ -1278,20 +1309,21 @@ class AIAssistantDialog(QDialog):
             self._open_settings()
             if not self.settings.configured:
                 return
-        preview = ContextPreviewDialog(
-            self._summary(),
-            self.language_getter(),
-            self.settings.selected_context_fields,
-            self,
-        )
-        if preview.exec() != QDialog.Accepted:
-            return
-        self.settings.selected_context_fields = preview.selected_fields()
-        save_ai_preferences(self.settings)
+        if not self.context_authorized:
+            preview = ContextPreviewDialog(
+                self._summary(), self.language_getter(), self.settings.selected_context_fields, self)
+            if preview.exec() != QDialog.Accepted:
+                return
+            self.settings.selected_context_fields = preview.selected_fields()
+            save_ai_preferences(self.settings)
+            self.context_authorized = True
         language = self.language_getter()
         self._append_message("user", question)
         self.history.append({"role": "user", "content": question})
         self._set_running(True)
+        self.request_project = self.state_getter()
+        queries = (ProjectQueries(self.request_project, self.stage_getter(), self.settings.mode)
+                   if self.settings.provider == "harness_sdk" else None)
         self.worker = AIWorker(
             self.settings,
             question=question,
@@ -1299,6 +1331,7 @@ class AIAssistantDialog(QDialog):
             language=language,
             project_summary=self._summary(),
             history=self.history[:-1],
+            project_queries=queries,
             parent=self,
         )
         self.worker.completed.connect(
@@ -1369,6 +1402,8 @@ class AIAssistantDialog(QDialog):
         task: str,
     ) -> None:
         self._set_running(False)
+        if self.request_project is not self.state_getter():
+            return
         self.history.append({"role": "assistant", "content": response.answer})
         self.history = self.history[-40:]
         rendered = response.answer
@@ -1420,11 +1455,29 @@ class AIAssistantDialog(QDialog):
         self.current_tool_calls = response.tool_calls
         self._render_plan()
         self._render_tool_calls()
+        self.plan_frame.setVisible(bool(self.current_plan or self.current_tool_calls))
         self.response_handler(response, question, task)
+        if response.query_evidence:
+            self.status_label.setText(
+                f"已查询 {len(response.query_evidence)} 项项目证据；详情保存在项目对话记录。"
+                if self.language_getter() != "en_US" else
+                f"Read {len(response.query_evidence)} project evidence items; recorded with the conversation.")
 
     def _on_failed(self, details: str) -> None:
         self._set_running(False)
+        if self.request_project is not self.state_getter():
+            return
+        self._append_message("assistant", "请求未完成 / Request incomplete: " + details)
+        parent = self.parent()
+        if parent is not None and hasattr(parent, "ai_sidebar_status"):
+            parent.ai_sidebar_status.setText(details)
         english = self.language_getter() == "en_US"
+        if self.settings.provider == "harness_sdk":
+            QMessageBox.critical(self, "AI", details + (
+                "\n\nNo analysis was changed. Check the installed Harness login, selected model, network and account quota. Do not copy its key into this app."
+                if english else
+                "\n\n没有修改分析。请检查本机 Harness 登录、所选模型、网络和账户额度，无需把 Harness 密钥复制到 App。"))
+            return
         QMessageBox.critical(
             self,
             "AI request failed" if english else "AI 请求失败",

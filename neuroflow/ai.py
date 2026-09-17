@@ -188,6 +188,12 @@ class AIRequestError(RuntimeError):
 
 
 PROVIDER_PROFILES: dict[str, dict[str, Any]] = {
+    "harness_sdk": {
+        "label": "DeepSeek Harness · SDK + project tools",
+        "base_url": "harness://local",
+        "models": [],
+        "api_style": "harness_sdk",
+    },
     "deepseek": {
         "label": "DeepSeek API",
         "base_url": "https://api.deepseek.com",
@@ -245,6 +251,7 @@ class AISettings:
     api_key_env: str = ""
     allow_insecure_private_network: bool = False
     managed_harness_name: str = ""
+    harness_provider: str = ""
     api_key: str = field(
         default="",
         repr=False,
@@ -252,6 +259,9 @@ class AISettings:
 
     @property
     def configured(self) -> bool:
+        if self.provider == "harness_sdk":
+            import shutil
+            return bool(self.model.strip() and self.harness_provider.strip() and shutil.which("dsh"))
         credentials_ready = bool(self.request_api_key)
         return bool(
             credentials_ready and self.base_url.strip() and self.model.strip()
@@ -259,6 +269,8 @@ class AISettings:
 
     @property
     def request_api_key(self) -> str:
+        if self.provider == "harness_sdk":
+            return ""
         if self.api_key.strip():
             return self.api_key.strip()
         environment_key = get_api_key(
@@ -302,6 +314,7 @@ class AIResponse:
         default_factory=dict
     )
     sent_field_categories: list[str] = field(default_factory=list)
+    query_evidence: list[dict[str, Any]] = field(default_factory=list)
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -325,6 +338,7 @@ class AIResponse:
             "tool_calls": self.tool_calls,
             "scientific_interpretation": self.scientific_interpretation,
             "sent_field_categories": self.sent_field_categories,
+            "query_evidence": self.query_evidence,
             "online_request_authorized": True,
             "result_purpose": task,
             "raw_voltage_sent": False,
@@ -959,6 +973,9 @@ def _post_chat_stream(
 
 
 def check_provider_health(settings: AISettings) -> dict[str, Any]:
+    if settings.provider == "harness_sdk":
+        return {"ok": settings.configured, "message": "Installed Harness SDK and provider selected; a conversation verifies the service.",
+                "models": [settings.model], "latency_ms": 0}
     if not settings.configured:
         return {
             "ok": False,
@@ -1266,6 +1283,7 @@ def request_ai_advice(
     history: list[dict[str, str]] | None = None,
     on_stream_text: Callable[[str], None] | None = None,
     cancel_event: threading.Event | None = None,
+    project_queries=None,
 ) -> AIResponse:
     if not settings.configured:
         raise AIConfigurationError(
@@ -1282,6 +1300,38 @@ def request_ai_advice(
         settings.ai_mode,
     )
     user_input = build_user_input(question, cloud_context, history)
+
+    if settings.provider == "harness_sdk":
+        from .harness_sdk import request_harness_sdk
+        from .ai_project_bridge import ProjectMCPBridge, ProjectQueries
+        queries = project_queries or ProjectQueries(None, project_summary.get("current_stage", "import"), settings.mode)
+        queries.summary = cloud_context
+        if settings.selected_context_fields and "queryable_data" not in settings.selected_context_fields:
+            queries.allowed_sections = set()
+        sdk_instructions = (
+            "You are NeuroEphys AI's research collaborator. Answer naturally in "
+            + ("Simplified Chinese" if language == "zh_CN" else "English")
+            + ". Discuss the user's actual question, not a mandatory workflow checklist. "
+            "Use NeuroEphys MCP tools to inspect actual current data or results whenever details are needed. "
+            "Tools read an immutable snapshot captured for this request; cite returned Q evidence IDs and snapshot time. "
+            "Use list_project_data to discover sections, nested paths and action schemas. Query pages rather than guessing. "
+            "Earlier conversation is searchable within this project. Distinguish historical answers from current results. "
+            "Missing data is unknown, not zero. Ground truth is not ordinary sorting output. "
+            "Only propose_analysis_action can propose app changes; it never executes them. "
+            "Explain pending proposals as awaiting confirmation, never as completed. "
+            "Do not propose actions when the user only asks for interpretation. "
+            "Never invent measurements or claim an image was visually inspected; chart context describes labels and ranges, not pixels. "
+            "Write plain conversational text, not JSON. Keep reasoning and conclusions proportional to evidence.\n"
+        )
+        with ProjectMCPBridge(queries) as bridge:
+            text = request_harness_sdk(provider=settings.harness_provider, model=settings.model,
+                prompt=sdk_instructions + user_input, timeout=settings.timeout_seconds,
+                cancel_event=cancel_event, on_text=on_stream_text, bridge=bridge)
+        response = normalize_ai_response({"answer": text, "tool_calls": queries.proposals,
+            "requires_user_confirmation": bool(queries.proposals)}, settings=settings,
+            sent_field_categories=sent_fields)
+        response.query_evidence = list(queries.audit)
+        return response
 
     if settings.provider == "openai_responses":
         url = _endpoint(settings.base_url, "responses")

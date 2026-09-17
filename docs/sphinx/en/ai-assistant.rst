@@ -1,6 +1,28 @@
 Controlled AI assistant
 =======================
 
+Project-aware Harness conversations (v1.2.5)
+----------------------------------------------------------------------
+
+For an institute-managed DeepSeek Harness account, use **Read local DeepSeek
+Harness configuration** in AI settings. The Harness SDK route calls the installed
+official dsh runtime; the app does not extract its model credentials or bypass it
+with direct API requests. Install and configure Harness separately using
+https://deepseek.com/harness/en/ .
+
+Allow on-demand project data, results and conversation queries in the send preview.
+The model can then query specific units, events, trials, spike times and result
+tables through a local MCP interface, with evidence values and snapshot identifiers.
+Try: “Query unit 25's SNR and ISI violation rate and explain the limitations.”
+Chart metadata is not image-pixel access; raw voltage is not sent by this interface.
+
+Conversations are saved to the project's ``ai/conversation.json`` and can be
+searched after reopening it. Each request uses a fresh project snapshot. Switching
+projects or provider settings requires renewed context approval. Analysis proposals
+still require user confirmation and pass the existing application validators.
+New analysis features require explicit tool registration; arbitrary shell, code
+execution and file-system access are not granted.
+
 The AI assistant occupies a collapsible right-side panel beside the active
 analysis. It receives a small structured project summary produced by local
 deterministic code. Raw voltage arrays are excluded.

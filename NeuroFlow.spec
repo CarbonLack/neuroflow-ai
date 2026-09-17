@@ -56,6 +56,7 @@ def runtime_submodule(name):
         "._build_utils",
         "mountainsort5.quip",
         "kilosort.gui",
+        "mcp.cli",
     )
     return not any(part in name for part in blocked_parts)
 
@@ -72,6 +73,8 @@ packages = [
     "sklearn",
     "keyring",
     "nex5file",
+    "mcp",
+    "uvicorn",
 ]
 if not lite_build:
     packages.insert(0, "kilosort")
@@ -94,6 +97,7 @@ for package in packages:
     hiddenimports += package_hidden
 
 datas += [
+    ("neuroflow/harness_sdk.patch.yml", "neuroflow"),
     ("docs/site", "neuroflow_docs"),
     ("assets/brand", "neuroephys_brand"),
     ("README_FIRST.md", "."),

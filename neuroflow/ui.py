@@ -126,7 +126,7 @@ from .ibl import download_bwm_trials_aggregate
 from .models import ProjectState, WorkflowStep
 from .population import run_population_dynamics_suite
 from .medpc import import_medpc_behavior
-from .project import MANIFEST_NAME, load_project, save_project
+from .project import MANIFEST_NAME, load_project, save_project, save_ai_conversation
 from .product import (
     FULL_INSTALLER_NAME,
     PRODUCT_NAME,
@@ -7262,6 +7262,7 @@ class NeuroFlowWindow(QMainWindow):
                 pending["error"] = details.splitlines()[0]
                 save_project(self.state)
                 self._set_project_clean()
+                self._report_ai_action_result(pending)
         self._refresh_warnings()
         self._refresh_ai_sidebar()
         failed_record = {}
@@ -7358,6 +7359,7 @@ class NeuroFlowWindow(QMainWindow):
                 )
                 save_project(self.state)
                 self._set_project_clean()
+                self._report_ai_action_result(pending)
         inputs = list(
             dict.fromkeys(
                 str(path)
@@ -7707,7 +7709,12 @@ class NeuroFlowWindow(QMainWindow):
             return
         history = list(self.state.metadata.get("ai_history", []))
         history.append(response.audit_record(question, task))
-        self.state.metadata["ai_history"] = history[-20:]
+        self.state.metadata["ai_history"] = history
+        try:
+            save_ai_conversation(self.state)
+        except OSError as exc:
+            self.state.log(f"AI conversation remains in memory; disk save failed: {exc}")
+            QMessageBox.warning(self, "AI", "对话暂时保留在内存中，写入项目失败。请检查项目目录权限和磁盘空间，并保存项目。")
         self.state.metadata["ai_last_model"] = response.model
         self.state.metadata["ai_last_provider"] = response.provider
         self.state.log(
@@ -7823,6 +7830,31 @@ class NeuroFlowWindow(QMainWindow):
             if event_option >= 0:
                 self.option_combo.setCurrentIndex(event_option)
         self._start_worker([stage], tool_arguments=arguments)
+
+    def _report_ai_action_result(self, record: dict) -> None:
+        """Expose completed/failed task evidence, then interpret it in its project."""
+        if not self.state or not self.ai_dialog or record.get("reported_to_ai"):
+            return
+        record["reported_to_ai"] = True
+        dialog = self.ai_dialog
+        project = self.state
+        message = (
+            f"本地已确认操作 {record.get('name')} 的状态为 {record.get('status')}。"
+            "请查询当前项目的 ai_tool_audit、recent_stage_runs 和对应结果，解释实际结果；"
+            "若失败解释原因，不要再次提出运行操作。"
+            if self.language != "en_US" else
+            f"The confirmed local action {record.get('name')} is now {record.get('status')}. "
+            "Inspect current task audit and analysis results and explain the actual outcome. Do not propose another run."
+        )
+        def interpret():
+            if self.state is not project or (dialog.worker and dialog.worker.isRunning()):
+                return
+            draft = dialog.question_edit.toPlainText()
+            self._refresh_ai_sidebar()
+            dialog.question_edit.setPlainText(message)
+            dialog._submit("action_result")
+            dialog.question_edit.setPlainText(draft)
+        QTimer.singleShot(0, interpret)
 
     def _apply_ai_plan(
         self,
