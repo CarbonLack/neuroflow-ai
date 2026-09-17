@@ -1,6 +1,9 @@
 System requirements and installation
 ====================================
 
+Download the current version from `GitHub Releases <https://github.com/CarbonLack/neuroflow-ai/releases/latest>`_.
+In filenames below, ``<version>`` means the release version, not a literal filename.
+
 Choose the installation route according to the task you intend to run.
 Browsing a project, reviewing figures, or importing processed spike times
 requires substantially less hardware than sorting a long high-density
@@ -22,15 +25,15 @@ Install the Windows application
 -------------------------------
 
 For complete scientific reproduction and competition demonstrations, download
-``NeuroEphysAI-Setup-1.2.4-Full.exe`` from GitHub **Releases** and keep the
+``NeuroEphysAI-Setup-<version>-Full.exe`` from GitHub **Releases** and keep the
 default **Full GPU/Kilosort** component selected. Its setup-type page can also
 install the core application without the GPU component. Users without a
 compatible NVIDIA GPU can instead download the smaller
-``NeuroEphysAI-Setup-1.2.4.exe`` standard edition. Both per-user installers
+``NeuroEphysAI-Setup-<version>.exe`` standard edition. Both per-user installers
 require no administrator access and create desktop and Start-menu shortcuts. Uninstalling the program
 does not delete projects under ``Documents\NeuroEphysAI``.
 
-The portable ``NeuroEphysAI-1.2.4-Windows-x64-portable.zip`` needs no
+The portable ``NeuroEphysAI-<version>-Windows-x64-portable.zip`` needs no
 installation. Extract the complete archive and run
 ``NeuroEphysAI\NeuroEphysAI.exe``; the EXE does not work by itself. This
 one-folder layout keeps scientific libraries inspectable and avoids unpacking
@@ -40,7 +43,7 @@ Both editions run data import, QC, existing sorting import, Unit curation,
 behavior, statistics, machine learning, Elephant, figures, AI controls, and
 the manual locally. The CUDA-enabled PyTorch runtime required by Kilosort4 is
 several GiB and is therefore delivered in the separate
-``NeuroEphysAI-Setup-1.2.4-Full.exe`` component-selectable offline installer rather than duplicated
+``NeuroEphysAI-Setup-<version>-Full.exe`` component-selectable offline installer rather than duplicated
 in the standard application. Full GPU/Kilosort is selected by default. The Sorter page displays the actual state, links
 to the version-matched Full download, and never substitutes another sorter.
 
@@ -57,7 +60,7 @@ The validated Python distribution targets 64-bit Python 3.12:
 .. code-block:: powershell
 
    python -m venv .venv
-   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.2.4-py3-none-any.whl
+   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-<version>-py3-none-any.whl
    .\.venv\Scripts\neuroephys.exe info
 
 .. code-block:: python

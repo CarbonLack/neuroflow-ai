@@ -1,6 +1,9 @@
 系统要求与安装
 ==============
 
+请从 `GitHub 最新发布 <https://github.com/CarbonLack/neuroflow-ai/releases/latest>`_ 下载当前版本。
+下面文件名中的 ``<version>`` 代表发布版本号，不是要输入的文件名文字。
+
 硬件需求由准备运行的任务决定。打开项目、检查图表和导入已处理 spike 时间所需资源
 较少；长时间高密度记录的 sorting 会消耗更多内存、磁盘和计算资源。
 
@@ -16,19 +19,19 @@
 ----------------
 
 需要完整科研复现和比赛演示时，推荐从 GitHub **Releases** 下载
-``NeuroEphysAI-Setup-1.2.4-Full.exe``，并保留默认的“完整 GPU/Kilosort”组件。
+``NeuroEphysAI-Setup-<version>-Full.exe``，并保留默认的“完整 GPU/Kilosort”组件。
 安装页也可选择“仅通用核心”。没有兼容 NVIDIA GPU 或暂时不用 Kilosort 的用户，
-可直接下载更小的 ``NeuroEphysAI-Setup-1.2.4.exe`` 标准版。两种安装程序都只安装到当前用户目录，不要求管理员权限，
+可直接下载更小的 ``NeuroEphysAI-Setup-<version>.exe`` 标准版。两种安装程序都只安装到当前用户目录，不要求管理员权限，
 并创建桌面和开始菜单快捷方式。卸载程序不会删除
 ``Documents\NeuroEphysAI`` 中的项目数据。
 
-便携版 ``NeuroEphysAI-1.2.4-Windows-x64-portable.zip`` 无需安装。完整解压后启动
+便携版 ``NeuroEphysAI-<version>-Windows-x64-portable.zip`` 无需安装。完整解压后启动
 ``NeuroEphysAI\NeuroEphysAI.exe``，不能只复制单独的 EXE。one-folder 结构让科学
 计算依赖可以检查，启动时也无需反复解压。
 
 安装版与便携版都在本机运行数据导入、质控、已有 sorting 导入、Unit 人工复核、
 行为、统计、机器学习、Elephant、图表、AI 控制和教程。Kilosort4 所需 CUDA PyTorch
-运行库有数 GiB，因此通过 ``NeuroEphysAI-Setup-1.2.4-Full.exe`` 作为独立 GPU Full 自选安装版交付，不在标准 App 中重复打包。Full 安装程序默认选中 GPU 后端，也允许取消该组件。Sorter 页面
+运行库有数 GiB，因此通过 ``NeuroEphysAI-Setup-<version>-Full.exe`` 作为独立 GPU Full 自选安装版交付，不在标准 App 中重复打包。Full 安装程序默认选中 GPU 后端，也允许取消该组件。Sorter 页面
 显示实际状态，不会用其他 sorter 冒充 Kilosort。
 
 首次打开后进入 **Sorter 管理**。该页面显示实际检测到的后端、版本、硬件要求、
@@ -42,7 +45,7 @@ Python 包
 .. code-block:: powershell
 
    python -m venv .venv
-   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-1.2.4-py3-none-any.whl
+   .\.venv\Scripts\python.exe -m pip install neuroephys_ai-<version>-py3-none-any.whl
    .\.venv\Scripts\neuroephys.exe info
 
 .. code-block:: python
