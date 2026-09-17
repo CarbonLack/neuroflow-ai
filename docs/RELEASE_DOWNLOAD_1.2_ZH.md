@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.2.5 — 下载与安装
+# NeuroEphys AI v1.2.6 — 下载与安装
 
 首次使用请先阅读 GitHub 内的[安装与完整使用教程](https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/GITHUB_USER_GUIDE_ZH.md)；
 英文版见 [Installation and complete user guide](https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/GITHUB_USER_GUIDE_EN.md)。
@@ -9,12 +9,12 @@
 
 | 使用方式 | 下载文件 | 说明 |
 | --- | --- | --- |
-| Windows GPU Full 自选安装版（科研复现/比赛推荐） | `NeuroEphysAI-Setup-1.2.5-Full.exe` | 默认安装全部功能，包含 Kilosort 4、PyTorch/CUDA 与全部已适配 sorter；安装时也可取消 GPU 组件，仅装通用核心。安装包约2GB，Kilosort仍要求兼容NVIDIA硬件和驱动。 |
-| Windows 标准安装版（日常推荐） | `NeuroEphysAI-Setup-1.2.5.exe` | 较小、安装最简单。包含 App 与核心科学分析，不包含数GB的GPU运行库；适合没有NVIDIA GPU或暂时不用Kilosort的用户。 |
-| 免安装标准版 | `NeuroEphysAI-1.2.5-Windows-x64-portable.zip` | 完整解压后运行，不能只复制其中的exe；功能范围与标准安装版一致。 |
-| Python 调用 | `neuroephys_ai-1.2.5-py3-none-any.whl` | 给使用Python 3.12的用户；通过pip安装并按需要配置可选依赖。 |
+| Windows GPU Full 自选安装版（科研复现/比赛推荐） | `NeuroEphysAI-Setup-1.2.6-Full.exe` | 默认安装全部功能，包含 Kilosort 4、PyTorch/CUDA 与全部已适配 sorter；安装时也可取消 GPU 组件，仅装通用核心。安装包约2GB，Kilosort仍要求兼容NVIDIA硬件和驱动。 |
+| Windows 标准安装版（日常推荐） | `NeuroEphysAI-Setup-1.2.6.exe` | 较小、安装最简单。包含 App 与核心科学分析，不包含数GB的GPU运行库；适合没有NVIDIA GPU或暂时不用Kilosort的用户。 |
+| 免安装标准版 | `NeuroEphysAI-1.2.6-Windows-x64-portable.zip` | 完整解压后运行，不能只复制其中的exe；功能范围与标准安装版一致。 |
+| Python 调用 | `neuroephys_ai-1.2.6-py3-none-any.whl` | 给使用Python 3.12的用户；通过pip安装并按需要配置可选依赖。 |
 
-v1.2.5 增加官方 Harness SDK 路径和本机 MCP 查询：AI 可按需读取实际 Unit、
+v1.2.6 增加官方 Harness SDK 路径和本机 MCP 查询：AI 可按需读取实际 Unit、
 事件、结果表与本项目历史对话；密钥由 Harness 管理。分析运行仍须确认。AI 设置、上下文预览和完整
 工作台均能在窄窗口自适应，不改变既有科学分析功能和紫黑配色。
 

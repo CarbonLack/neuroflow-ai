@@ -83,6 +83,10 @@ try {
     if (-not (Test-Path -LiteralPath $AppExe)) {
         throw "The packaged executable was not created: $AppExe"
     }
+    $ExecutableVersion = (Get-Item -LiteralPath $AppExe).VersionInfo
+    if ($ExecutableVersion.FileVersion -ne $Version -or $ExecutableVersion.ProductVersion -ne $Version) {
+        throw "Packaged Windows version metadata does not match release $Version."
+    }
 
     $VerificationDir = Join-Path $ResolvedReleaseDir "verification"
     New-Item -ItemType Directory -Path $VerificationDir | Out-Null

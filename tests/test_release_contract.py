@@ -1,5 +1,9 @@
 import json
 import tomllib
+import re
+import sys
+
+import pytest
 from pathlib import Path
 
 import neuroephys as ne
@@ -26,7 +30,7 @@ def test_release_identity_is_consistent():
     )
 
     assert PRODUCT_NAME == "NeuroEphys AI"
-    assert PRODUCT_VERSION == "1.2.5"
+    assert re.fullmatch(r"\d+\.\d+\.\d+", PRODUCT_VERSION)
     assert ne.__version__ == PRODUCT_VERSION
     assert metadata["project"]["name"] == "neuroephys-ai"
     assert metadata["project"]["version"] == PRODUCT_VERSION
@@ -34,6 +38,20 @@ def test_release_identity_is_consistent():
     assert STANDARD_INSTALLER_NAME == f"NeuroEphysAI-Setup-{PRODUCT_VERSION}.exe"
     assert FULL_INSTALLER_NAME == f"NeuroEphysAI-Setup-{PRODUCT_VERSION}-Full.exe"
     assert STANDARD_PORTABLE_NAME.endswith("-Windows-x64-portable.zip")
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows executable resource")
+def test_windows_version_resource_tracks_application_version():
+    pytest.importorskip("PyInstaller")
+    from neuroflow.windows_version import build_windows_version_info
+    resource = build_windows_version_info()
+    major, minor, patch = map(int, PRODUCT_VERSION.split("."))
+    assert resource.ffi.fileVersionMS == (major << 16) | minor
+    assert resource.ffi.fileVersionLS == patch << 16
+    assert resource.ffi.productVersionMS == resource.ffi.fileVersionMS
+    assert resource.ffi.productVersionLS == resource.ffi.fileVersionLS
+    strings = {s.name: s.val for s in resource.kids[0].kids[0].kids}
+    assert strings["FileVersion"] == strings["ProductVersion"] == PRODUCT_VERSION
 
 
 def test_release_workflow_does_not_hardcode_an_old_version():

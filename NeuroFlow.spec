@@ -10,6 +10,7 @@ from PyInstaller.utils.hooks import (
     collect_dynamic_libs,
 )
 from neuroflow.product import PRODUCT_VERSION
+from neuroflow.windows_version import build_windows_version_info
 
 release_series = ".".join(PRODUCT_VERSION.split(".")[:2])
 
@@ -144,7 +145,7 @@ exe = EXE(
     exclude_binaries=True,
     name="NeuroEphysAI",
     icon="assets/brand/neuroephys-ai.ico",
-    version="assets/windows_version_info.txt",
+    version=build_windows_version_info(),
     console=False,
 )
 collection = COLLECT(
