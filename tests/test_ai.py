@@ -39,6 +39,13 @@ def test_conversation_context_includes_examples_and_older_turns(tmp_path):
     sent = json.loads(build_user_input("Continue", summary, history))
     assert len(sent["recent_conversation"]) == 20
     assert '"answer"' in build_system_instructions("en_US", "ask")
+
+
+def test_ai_prompt_defaults_to_a_low_burden_answer():
+    instructions = build_system_instructions("zh_CN", "ask")
+    assert "under 450" in instructions
+    assert "no more than three short bullets" in instructions
+    assert "private chain-of-thought" in instructions
 from neuroflow.ai_harness import discover_deepseek_harness_profiles
 from neuroflow.ai_tools import AIMode, validate_tool_call
 from neuroflow.models import ProjectState

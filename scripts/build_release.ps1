@@ -33,6 +33,9 @@ try {
     $ReleaseRoot = Join-Path $Root "release"
     $ReleaseDir = Join-Path $ReleaseRoot "v$Version"
     $ArtifactSuffix = if ($Lite) { "" } else { "-Full" }
+    if (-not $Lite -and -not $SkipInstaller) {
+        throw "A selectable Full installer requires both Standard and Full payloads. Use scripts\build_dual_release.ps1, or pass -SkipInstaller for a Full portable build."
+    }
     $ResolvedReleaseRoot = [System.IO.Path]::GetFullPath($ReleaseRoot)
     $ResolvedReleaseDir = [System.IO.Path]::GetFullPath($ReleaseDir)
     if (-not $ResolvedReleaseDir.StartsWith($ResolvedReleaseRoot + [System.IO.Path]::DirectorySeparatorChar)) {
@@ -189,6 +192,14 @@ try {
 
     Write-Host "NeuroEphys AI $Version release created at $ResolvedReleaseDir" -ForegroundColor Green
     Get-ChildItem -LiteralPath $ResolvedReleaseDir -File | Select-Object Name, Length
+
+    $ArchiveRefresh = Join-Path $PSScriptRoot "update_project_archive.ps1"
+    if (Test-Path -LiteralPath $ArchiveRefresh) {
+        & $ArchiveRefresh `
+            -SourceRoot $Root `
+            -ReleaseStatus "release artifacts built" `
+            -TestSummary "Source tests, documentation checks, and packaged self-tests completed by build_release.ps1"
+    }
 } finally {
     Remove-Item Env:NEUROEPHYS_LITE_BUILD -ErrorAction SilentlyContinue
     Remove-Item Env:NEUROEPHYS_HOME -ErrorAction SilentlyContinue

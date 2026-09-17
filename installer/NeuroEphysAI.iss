@@ -58,14 +58,18 @@ Name: "desktopicon"; Description: "创建桌面快捷方式 / Create a desktop s
 
 [Files]
 #ifdef FullBuild
-; The Full installer exposes a genuine component choice. The shared core is
-; always installed; the large Torch and Kilosort trees are optional on disk.
-; The first and default setup type is the tested Full configuration.
-Source: "..\dist\NeuroEphysAI\*"; DestDir: "{app}"; Excludes: "_internal\torch\*,_internal\torch-*.dist-info\*,_internal\kilosort\*,_internal\kilosort-*.dist-info\*"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: core
-Source: "..\dist\NeuroEphysAI\_internal\torch\*"; DestDir: "{app}\_internal\torch"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: gpu
-Source: "..\dist\NeuroEphysAI\_internal\torch-2.11.0+cu128.dist-info\*"; DestDir: "{app}\_internal\torch-2.11.0+cu128.dist-info"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist; Components: gpu
-Source: "..\dist\NeuroEphysAI\_internal\kilosort\*"; DestDir: "{app}\_internal\kilosort"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: gpu
-Source: "..\dist\NeuroEphysAI\_internal\kilosort-4.1.7.dist-info\*"; DestDir: "{app}\_internal\kilosort-4.1.7.dist-info"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist; Components: gpu
+#ifndef CoreAppDir
+  #error CoreAppDir must point to the validated Standard application directory
+#endif
+#ifndef GpuOverlayDir
+  #error GpuOverlayDir must point to the generated Full-minus-Standard overlay
+#endif
+; The Full installer exposes a genuine component choice. The shared core
+; always installs the independently validated Standard application. The GPU
+; component overlays every added or changed file from the validated Full app.
+; This avoids an incomplete torch namespace when the user chooses Core only.
+Source: "{#CoreAppDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: core
+Source: "{#GpuOverlayDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: gpu
 #else
 Source: "..\dist\NeuroEphysAI\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif

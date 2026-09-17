@@ -1,8 +1,8 @@
 Controlled AI assistant
 =======================
 
-Project-aware Harness conversations and Studies (v1.3.0)
-----------------------------------------------------------------------
+Project-aware Harness conversations, readable answers, and Studies (v1.3.1)
+----------------------------------------------------------------------------
 
 For an institute-managed DeepSeek Harness account, use **Read local DeepSeek
 Harness configuration** in AI settings. The Harness SDK route calls the installed
@@ -31,6 +31,23 @@ checks the local Study, validates parameters, and asks the user to confirm. Stud
 names, local paths, animal/session row identities, large trajectories, and raw
 voltage are excluded from the cloud summary. The assistant must distinguish
 session-held-out from animal-held-out validation and must not match cells by Unit ID.
+
+Read the answer first; open detail when needed
+-----------------------------------------------
+
+AI conversations default to **Concise** view. A response card leads with the
+conclusion, keeps at most three decision-relevant points, and separates project
+evidence reads, pending actions, the next step, and important warnings. The full
+answer, scientific interpretation, limitations, evidence identifiers, and proposed
+actions are preserved behind **View full answer and evidence**. Both the right-side
+assistant and expanded dialog can switch between **Concise** and **Full**, and the
+choice is remembered.
+
+This changes presentation, not scientific safeguards. Unsupported conclusions,
+limitations, and safety-critical warnings remain visible. The original answer is
+still stored in ``ai/conversation.json`` for review and audit. By default the model
+does not narrate internal query plumbing, raw logs, or long parameter dumps unless
+the user explicitly asks for detail.
 
 The AI assistant occupies a collapsible right-side panel beside the active
 analysis. It receives a small structured project summary produced by local
@@ -68,9 +85,11 @@ the Harness credential file. Plain HTTP remains blocked unless the user enables
 it for that specific trusted private-network provider, after which **Check
 service** validates the model list and latency.
 
-This is a native provider adapter, not UI automation of the Harness website.
-Harness supplies model access; NeuroEphys AI owns the versioned project context,
-tool validation, scientific constraints, audit trail, and user confirmation.
+The Harness SDK route calls the installed official ``dsh`` runtime. It is not UI
+automation of the Harness website and does not copy institutional credentials into
+the app. Harness supplies model access; NeuroEphys AI owns the project snapshot,
+MCP queries, tool validation, scientific constraints, audit trail, and user
+confirmation. Generic APIs and Ollama remain available for other users.
 
 Cloud-data preview
 ------------------

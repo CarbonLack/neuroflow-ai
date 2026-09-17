@@ -8,10 +8,10 @@
 
 | 版本 | 适合谁 | 怎么用 | 注意 |
 |---|---|---|---|
-| **Full 离线安装版（推荐）** `NeuroEphysAI-Setup-1.3.0-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 体积最大；GPU 还取决于 NVIDIA 驱动和硬件 |
-| **标准安装版** `NeuroEphysAI-Setup-1.3.0.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 后续可在 Sorter 管理器补齐组件 |
-| **标准便携版** `NeuroEphysAI-1.3.0-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
-| **Python 包** `neuroephys_ai-1.3.0-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
+| **Full 离线安装版（推荐）** `NeuroEphysAI-Setup-1.3.1-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 体积最大；GPU 还取决于 NVIDIA 驱动和硬件 |
+| **标准安装版** `NeuroEphysAI-Setup-1.3.1.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 后续可在 Sorter 管理器补齐组件 |
+| **标准便携版** `NeuroEphysAI-1.3.1-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
+| **Python 包** `neuroephys_ai-1.3.1-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
 
 完整 Full 便携 ZIP 大于 GitHub 2 GiB 单文件限制，因此 GitHub 主要提供 Full 安装包。本地构建可另行生成 Full 便携版。
 
@@ -110,6 +110,8 @@ Unit 复核、行为同步与事件对齐，然后选择 **文件 → 多 Sessio
 
 AI 使用版本化的受控项目摘要，不依赖 Harness 网页。原始电压和本地路径不发送；协作模式下也只能提出白名单工具，实际操作由 App 在本地校验并按风险要求确认。
 
+回复默认使用“简洁阅读”：先给结论，再显示不超过三个关键点、已读取的项目证据、下一步和重要警告。完整科学解释、限制、证据编号与候选操作没有删除，点击“查看完整说明与依据”即可打开。需要逐项检查时，可将“回复显示”切换为“完整内容”。
+
 App 自动生成受控的结构化项目上下文：当前步骤、已有结果、导出件、约束和允许的工具。默认不发送原始电压、大数组、本地路径和身份信息。协作模式中的本地操作仍需要白名单检查和用户确认。
 
 保存 Study 后，AI 可读取脱敏的 Study ID、计数、条件、验证设计和结果摘要，并在协作模式
@@ -134,7 +136,7 @@ App 自动生成受控的结构化项目上下文：当前步骤、已有结果�
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.3.0-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.1-py3-none-any.whl
 neuroephys info --json
 ```
 

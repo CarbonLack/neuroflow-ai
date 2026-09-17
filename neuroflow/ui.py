@@ -57,7 +57,19 @@ from PySide6.QtWidgets import (
 
 from .ai import STAGE_LABELS, AIResponse
 from .ai_tools import AIMode
-from .ai_ui import AIAssistantDialog, load_ai_settings, save_ai_preferences
+from .ai_presentation import (
+    build_readable_ai_view,
+    full_response_html,
+    readable_view_html,
+)
+from .ai_ui import (
+    AIAssistantDialog,
+    AIResponseDetailDialog,
+    load_ai_reading_mode,
+    load_ai_settings,
+    save_ai_preferences,
+    save_ai_reading_mode,
+)
 from .analysis import (
     compute_unit_metrics,
     event_aligned_analysis,
@@ -4819,6 +4831,21 @@ class NeuroFlowWindow(QMainWindow):
         )
         mode_row.addWidget(self.sidebar_ai_mode_combo, 1)
         ai_layout.addLayout(mode_row)
+        reading_row = QHBoxLayout()
+        self.sidebar_reading_label = QLabel("回复显示")
+        self.sidebar_reading_label.setObjectName("Muted")
+        reading_row.addWidget(self.sidebar_reading_label)
+        self.sidebar_reading_combo = QComboBox()
+        self.sidebar_reading_combo.addItem("简洁阅读", "compact")
+        self.sidebar_reading_combo.addItem("完整内容", "full")
+        self.sidebar_reading_combo.setCurrentIndex(
+            max(self.sidebar_reading_combo.findData(load_ai_reading_mode()), 0)
+        )
+        self.sidebar_reading_combo.currentIndexChanged.connect(
+            self._sidebar_reading_mode_changed
+        )
+        reading_row.addWidget(self.sidebar_reading_combo, 1)
+        ai_layout.addLayout(reading_row)
         self.ai_context_label = QLabel("尚未打开项目")
         self.ai_context_label.setObjectName("Muted")
         self.ai_context_label.setWordWrap(True)
@@ -4837,6 +4864,9 @@ class NeuroFlowWindow(QMainWindow):
         ai_layout.addLayout(ai_quick_row)
         self.ai_sidebar_conversation = QTextBrowser()
         self.ai_sidebar_conversation.setOpenExternalLinks(False)
+        self.ai_sidebar_conversation.anchorClicked.connect(
+            self._open_sidebar_response_detail
+        )
         self.ai_sidebar_conversation.setPlaceholderText("AI 对话会显示在这里。")
         ai_layout.addWidget(self.ai_sidebar_conversation, 1)
         self.ai_sidebar_question = QPlainTextEdit()
@@ -5066,6 +5096,15 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.assistant_mode.setText(
             "AI mode" if language == "en_US" else "AI 模式"
+        )
+        self.sidebar_reading_label.setText(
+            "Answer view" if language == "en_US" else "回复显示"
+        )
+        self.sidebar_reading_combo.setItemText(
+            0, "Concise" if language == "en_US" else "简洁阅读"
+        )
+        self.sidebar_reading_combo.setItemText(
+            1, "Full" if language == "en_US" else "完整内容"
         )
         current_mode = self.sidebar_ai_mode_combo.currentData()
         self.sidebar_ai_mode_combo.blockSignals(True)
@@ -7639,9 +7678,13 @@ class NeuroFlowWindow(QMainWindow):
         history = self.state.metadata.get("ai_history", [])
         if history:
             blocks = []
-            for record in history[-5:]:
+            visible_history = list(history[-5:])
+            history_offset = len(history) - len(visible_history)
+            reading_mode = load_ai_reading_mode()
+            for local_index, record in enumerate(visible_history):
+                record_index = history_offset + local_index
                 question = escape(str(record.get("question", "")).strip())
-                answer = escape(str(record.get("answer", "")).strip())
+                answer_text = str(record.get("answer", "")).strip()
                 if question:
                     blocks.append(
                         (
@@ -7652,22 +7695,30 @@ class NeuroFlowWindow(QMainWindow):
                         + question.replace("\n", "<br>")
                         + "</div>"
                     )
-                if answer:
-                    calls = record.get("tool_calls", [])
-                    action_text = ""
-                    if calls:
-                        names = ", ".join(
-                            escape(str(item.get("name", ""))) for item in calls
+                if answer_text:
+                    if reading_mode == "compact":
+                        view = build_readable_ai_view(
+                            answer_text,
+                            warnings=list(record.get("warnings", [])),
+                            suggested_next_stage=str(
+                                record.get("suggested_next_stage", "")
+                            ),
+                            tool_calls=list(record.get("tool_calls", [])),
+                            query_evidence=list(record.get("query_evidence", [])),
+                            language=self.language,
                         )
-                        action_text = (
-                            f"<br><span class='actions'>Proposed: {names}</span>"
-                            if english
-                            else f"<br><span class='actions'>建议操作：{names}</span>"
+                        answer_html = readable_view_html(
+                            view,
+                            detail_url=(
+                                f"neuroephys://ai-detail/{record_index}"
+                            ),
+                            language=self.language,
                         )
+                    else:
+                        answer_html = full_response_html(record, self.language)
                     blocks.append(
                         '<div class="message assistant"><b>NeuroEphys AI</b><br>'
-                        + answer.replace("\n", "<br>")
-                        + action_text
+                        + answer_html
                         + "</div>"
                     )
             self.ai_sidebar_conversation.setHtml(
@@ -7677,7 +7728,14 @@ class NeuroFlowWindow(QMainWindow):
                   .message { margin:8px 2px; padding:9px 10px; border-radius:5px; }
                   .user { background:#211d2d; border:1px solid #3b354a; }
                   .assistant { background:#171521; border:1px solid #5c4968; }
-                  .actions { color:#62d8a4; }
+                  .answer-lead { font-size:15px; font-weight:600; margin:7px 0; }
+                  .answer-points { margin:7px 0 7px 17px; padding:0; }
+                  .answer-points li { margin:4px 0; }
+                  .activity { color:#9edbc1; margin-top:8px; }
+                  .next { color:#e3b3ee; margin-top:8px; }
+                  .warning { color:#efc887; margin-top:8px; }
+                  .detail-link { margin-top:10px; }
+                  .detail-link a { color:#d58be8; text-decoration:none; }
                 </style>
                 """
                 + "".join(blocks)
@@ -7730,6 +7788,30 @@ class NeuroFlowWindow(QMainWindow):
         token = str(self.state.root) if self.state else "<no-project>"
         self.ai_dialog.load_project_history(records, token)
         return self.ai_dialog
+
+    def _sidebar_reading_mode_changed(self) -> None:
+        mode = str(self.sidebar_reading_combo.currentData() or "compact")
+        save_ai_reading_mode(mode)
+        if self.ai_dialog is not None:
+            self.ai_dialog.reading_mode = mode
+            self.ai_dialog.reading_combo.blockSignals(True)
+            self.ai_dialog.reading_combo.setCurrentIndex(
+                max(self.ai_dialog.reading_combo.findData(mode), 0)
+            )
+            self.ai_dialog.reading_combo.blockSignals(False)
+        self._refresh_ai_sidebar()
+
+    def _open_sidebar_response_detail(self, url: QUrl) -> None:
+        if url.scheme() != "neuroephys" or url.host() != "ai-detail":
+            return
+        if self.state is None:
+            return
+        try:
+            index = int(url.path().strip("/"))
+            record = list(self.state.metadata.get("ai_history", []))[index]
+        except (ValueError, IndexError, TypeError):
+            return
+        AIResponseDetailDialog(record, self.language, self).exec()
 
     def _sidebar_ai_settings(self) -> None:
         dialog = self._ensure_ai_dialog()

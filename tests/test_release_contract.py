@@ -76,6 +76,7 @@ def test_release_workflow_does_not_hardcode_an_old_version():
     assert '$ArtifactSuffix = if ($Lite) { "" } else { "-Full" }' in release_script
     assert '"/DFullBuild=1"' in release_script
     assert '"docs\\RELEASE_DOWNLOAD_${ReleaseSeries}_ZH.md"' in release_script
+    assert "selectable Full installer requires both Standard and Full payloads" in release_script
 
     dual_script = (
         Path(__file__).resolve().parents[1] / "scripts" / "build_dual_release.ps1"
@@ -90,8 +91,17 @@ def test_release_workflow_does_not_hardcode_an_old_version():
     assert "#ifdef FullBuild" in installer
     assert 'Name: "gpu"' in installer
     assert "Recommended Full GPU/Kilosort" in installer
-    assert "_internal\\torch\\*" in installer
-    assert "_internal\\kilosort\\*" in installer
+    assert "CoreAppDir" in installer
+    assert "GpuOverlayDir" in installer
+    assert 'Source: "{#CoreAppDir}\\*"' in installer
+    assert 'Source: "{#GpuOverlayDir}\\*"' in installer
+
+    overlay_script = (
+        Path(__file__).resolve().parents[1] / "scripts" / "make_gpu_overlay.ps1"
+    ).read_text(encoding="utf-8")
+    assert '"changed-content"' in overlay_script
+    assert '"_internal\\torch"' in overlay_script
+    assert '"_internal\\kilosort"' in overlay_script
 
 
 def test_sorter_manager_links_to_the_versioned_full_offline_edition():

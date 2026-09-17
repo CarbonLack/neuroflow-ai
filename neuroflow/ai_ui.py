@@ -8,7 +8,7 @@ from dataclasses import replace
 from html import escape
 from typing import Any
 
-from PySide6.QtCore import QSettings, QThread, Qt, Signal
+from PySide6.QtCore import QSettings, QThread, Qt, QUrl, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QBoxLayout,
@@ -46,6 +46,11 @@ from .ai_credentials import get_api_key, store_api_key
 from .ai_harness import discover_deepseek_harness_profiles
 from .ai_tools import AIMode, validate_tool_call
 from .ai_project_bridge import ProjectQueries
+from .ai_presentation import (
+    build_readable_ai_view,
+    full_response_html,
+    readable_view_html,
+)
 from .models import ProjectState
 from .product import PRODUCT_NAME
 
@@ -130,6 +135,59 @@ def save_ai_preferences(settings: AISettings) -> None:
     store.setValue("managed_harness_name", settings.managed_harness_name)
     store.setValue("harness_provider", settings.harness_provider)
     store.endGroup()
+
+
+def load_ai_reading_mode() -> str:
+    store = QSettings(PRODUCT_NAME, PRODUCT_NAME)
+    value = str(store.value("ai/reading_mode", "compact") or "compact")
+    return value if value in {"compact", "full"} else "compact"
+
+
+def save_ai_reading_mode(value: str) -> None:
+    QSettings(PRODUCT_NAME, PRODUCT_NAME).setValue(
+        "ai/reading_mode", "full" if value == "full" else "compact"
+    )
+
+
+class AIResponseDetailDialog(QDialog):
+    def __init__(
+        self,
+        record: dict[str, Any],
+        language: str = "zh_CN",
+        parent: QWidget | None = None,
+    ):
+        super().__init__(parent)
+        english = language == "en_US"
+        self.setWindowTitle(
+            "AI answer details" if english else "AI 完整说明与依据"
+        )
+        self.resize(860, 680)
+        self.setMinimumSize(500, 380)
+        layout = QVBoxLayout(self)
+        title = QLabel(
+            "Full answer, evidence and limitations"
+            if english
+            else "完整回答、依据与限制"
+        )
+        title.setStyleSheet("font-size: 20px; font-weight: 700;")
+        layout.addWidget(title)
+        hint = QLabel(
+            "This detail view preserves scientific context; the chat keeps only the decision-relevant summary."
+            if english
+            else "这里保留科研语境和技术细节；聊天区只显示当前决策真正需要的信息。"
+        )
+        hint.setObjectName("Muted")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        viewer = QTextBrowser()
+        viewer.setHtml(full_response_html(record, language))
+        layout.addWidget(viewer, 1)
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.button(QDialogButtonBox.Close).setText(
+            "Close" if english else "关闭"
+        )
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
 
 
 class AIWorker(QThread):
@@ -844,6 +902,9 @@ class AIAssistantDialog(QDialog):
         self.stream_buffer = ""
         self.context_authorized = False
         self.request_project = None
+        self.reading_mode = load_ai_reading_mode()
+        self.response_details: dict[str, dict[str, Any]] = {}
+        self.response_detail_counter = 0
 
         self.resize(1280, 790)
         self.setMinimumSize(520, 420)
@@ -864,6 +925,8 @@ class AIAssistantDialog(QDialog):
         self.current_plan = []
         self.loaded_project_token = project_token
         self.history = []
+        self.response_details = {}
+        self.response_detail_counter = 0
         self.conversation.clear()
         for record in records[-20:]:
             question = str(record.get("question", "")).strip()
@@ -873,7 +936,7 @@ class AIAssistantDialog(QDialog):
                 self._append_message("user", question)
             if answer:
                 self.history.append({"role": "assistant", "content": answer})
-                self._append_message("assistant", answer)
+                self._append_message("assistant", answer, record=record)
         self.history = self.history[-40:]
 
     def _build_ui(self) -> None:
@@ -931,9 +994,23 @@ class AIAssistantDialog(QDialog):
         chat_frame.setObjectName("Card")
         chat_layout = QVBoxLayout(chat_frame)
         chat_layout.setContentsMargins(12, 12, 12, 12)
+        quick_header = QHBoxLayout()
         self.quick_title = QLabel()
         self.quick_title.setStyleSheet("font-weight: 700;")
-        chat_layout.addWidget(self.quick_title)
+        quick_header.addWidget(self.quick_title)
+        quick_header.addStretch()
+        self.reading_label = QLabel()
+        self.reading_label.setObjectName("Muted")
+        quick_header.addWidget(self.reading_label)
+        self.reading_combo = QComboBox()
+        self.reading_combo.addItem("简洁", "compact")
+        self.reading_combo.addItem("完整", "full")
+        self.reading_combo.setCurrentIndex(
+            max(self.reading_combo.findData(self.reading_mode), 0)
+        )
+        self.reading_combo.currentIndexChanged.connect(self._reading_mode_changed)
+        quick_header.addWidget(self.reading_combo)
+        chat_layout.addLayout(quick_header)
         quick_row = QHBoxLayout()
         self.explain_button = QPushButton()
         self.review_button = QPushButton()
@@ -962,6 +1039,7 @@ class AIAssistantDialog(QDialog):
 
         self.conversation = QTextBrowser()
         self.conversation.setOpenExternalLinks(False)
+        self.conversation.anchorClicked.connect(self._open_response_detail)
         chat_layout.addWidget(self.conversation, 1)
 
         self.question_edit = QPlainTextEdit()
@@ -1078,6 +1156,9 @@ class AIAssistantDialog(QDialog):
         self.quick_title.setText(
             "Start from a defined task" if english else "从明确任务开始"
         )
+        self.reading_label.setText("View" if english else "阅读")
+        self.reading_combo.setItemText(0, "Concise" if english else "简洁")
+        self.reading_combo.setItemText(1, "Full" if english else "完整")
         self.explain_button.setText(
             "Explain this stage" if english else "解释当前阶段"
         )
@@ -1380,7 +1461,33 @@ class AIAssistantDialog(QDialog):
         else:
             self._refresh_status()
 
-    def _append_message(self, role: str, text: str) -> None:
+    def _reading_mode_changed(self) -> None:
+        self.reading_mode = str(self.reading_combo.currentData() or "compact")
+        save_ai_reading_mode(self.reading_mode)
+        records: list[dict[str, Any]] = []
+        state = self.state_getter()
+        if state is not None:
+            records = list(state.metadata.get("ai_history", []))[-20:]
+        if records:
+            token = self.loaded_project_token
+            self.loaded_project_token = ""
+            self.load_project_history(records, token)
+
+    def _open_response_detail(self, url: QUrl) -> None:
+        if url.scheme() != "neuroephys" or url.host() != "ai-detail":
+            return
+        key = url.path().strip("/")
+        record = self.response_details.get(key)
+        if record:
+            AIResponseDetailDialog(record, self.language_getter(), self).exec()
+
+    def _append_message(
+        self,
+        role: str,
+        text: str,
+        *,
+        record: dict[str, Any] | None = None,
+    ) -> None:
         english = self.language_getter() == "en_US"
         label = (
             ("You" if english else "你")
@@ -1388,11 +1495,35 @@ class AIAssistantDialog(QDialog):
             else ("AI advisory response" if english else "AI 辅助建议")
         )
         color = "#1f7a63" if role == "assistant" else "#33433d"
-        body = escape(text).replace("\n", "<br>")
+        if role == "assistant" and self.reading_mode == "compact":
+            detail_record = dict(record or {})
+            detail_record.setdefault("answer", text)
+            self.response_detail_counter += 1
+            detail_key = str(self.response_detail_counter)
+            self.response_details[detail_key] = detail_record
+            view = build_readable_ai_view(
+                text,
+                warnings=list(detail_record.get("warnings", [])),
+                suggested_next_stage=str(
+                    detail_record.get("suggested_next_stage", "")
+                ),
+                tool_calls=list(detail_record.get("tool_calls", [])),
+                query_evidence=list(detail_record.get("query_evidence", [])),
+                language=self.language_getter(),
+            )
+            body = readable_view_html(
+                view,
+                detail_url=f"neuroephys://ai-detail/{detail_key}",
+                language=self.language_getter(),
+            )
+        elif role == "assistant" and record:
+            body = full_response_html(record, self.language_getter())
+        else:
+            body = escape(text).replace("\n", "<br>")
         self.conversation.append(
             f'<div style="margin:8px 0 14px 0;">'
             f'<b style="color:{color};">{escape(label)}</b><br>'
-            f'<span style="line-height:1.45;">{body}</span></div>'
+            f'<div style="line-height:1.45;">{body}</div></div>'
         )
 
     def _on_completed(
@@ -1406,50 +1537,12 @@ class AIAssistantDialog(QDialog):
             return
         self.history.append({"role": "assistant", "content": response.answer})
         self.history = self.history[-40:]
-        rendered = response.answer
-        if response.warnings:
-            heading = (
-                "Warnings to review"
-                if self.language_getter() == "en_US"
-                else "需要复核的警告"
-            )
-            rendered += "\n\n" + heading + ":\n- " + "\n- ".join(
-                response.warnings
-            )
-        interpretation_labels = {
-            "observed_results": (
-                "Observed results",
-                "已观察到的结果",
-            ),
-            "statistical_evidence": (
-                "Statistical evidence",
-                "支持结果的统计证据",
-            ),
-            "possible_interpretations": (
-                "Possible biological interpretations",
-                "可以考虑的生物学解释",
-            ),
-            "unsupported_conclusions": (
-                "Unsupported conclusions",
-                "当前结果不能推出的结论",
-            ),
-            "limitations": ("Data and method limitations", "数据和方法限制"),
-            "suggested_validation": (
-                "Suggested validation",
-                "建议增加的验证",
-            ),
-        }
-        for key, values in response.scientific_interpretation.items():
-            if not values:
-                continue
-            labels = interpretation_labels.get(key, (key, key))
-            rendered += (
-                "\n\n"
-                + labels[0 if self.language_getter() == "en_US" else 1]
-                + ":\n- "
-                + "\n- ".join(values)
-            )
-        self._append_message("assistant", rendered)
+        response_record = response.audit_record(question, task)
+        self._append_message(
+            "assistant",
+            response.answer,
+            record=response_record,
+        )
         self.current_plan = response.plan
         self.current_next_stage = response.suggested_next_stage
         self.current_tool_calls = response.tool_calls

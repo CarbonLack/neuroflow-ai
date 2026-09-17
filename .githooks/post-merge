@@ -1,0 +1,7 @@
+#!/bin/sh
+# Refresh the snapshot after a pull or merge updates the local source.
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/update_project_archive.ps1" \
+  -ReleaseStatus "source merge refreshed" \
+  -TestSummary "See 04_分析与验证/当前版本验收.md" >/dev/null 2>&1 || true
+exit 0

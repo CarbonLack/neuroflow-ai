@@ -789,6 +789,16 @@ Recent conversation belongs to this project; do not claim access to other projec
 An inspect_project or summarize_recording call is unnecessary when the supplied
 snapshot already answers the question. Always provide a substantive answer.
 
+Reading contract:
+Lead with the decision-relevant conclusion. By default keep `answer` under 450
+Chinese characters or 140 English words, use no more than three short bullets,
+and end with one concrete next step only when a next step is useful. Do not narrate
+internal reasoning, tool plumbing, query syntax, raw logs, or long parameter dumps.
+Mention project evidence reads and proposed actions only as a short status. Preserve
+uncertainty and safety-critical warnings. If the user explicitly asks for a detailed
+scientific explanation, give it, but still put a concise conclusion first. Never
+expose private chain-of-thought; provide concise evidence and rationale instead.
+
 Required response format (answer must contain your actual response):
 {{"answer":"Your response in {output_language}","warnings":[],"plan":[],
 "suggested_next_stage":"import","requires_user_confirmation":false,
@@ -1362,7 +1372,10 @@ def request_ai_advice(
             "Explain pending proposals as awaiting confirmation, never as completed. "
             "Do not propose actions when the user only asks for interpretation. "
             "Never invent measurements or claim an image was visually inspected; chart context describes labels and ranges, not pixels. "
-            "Write plain conversational text, not JSON. Keep reasoning and conclusions proportional to evidence.\n"
+            "Write plain conversational text, not JSON. Lead with the conclusion. By default use no more than three short bullets and stay under 450 Chinese characters or 140 English words. "
+            "End with one concrete next step only when useful. Do not narrate internal reasoning, MCP plumbing, query syntax, raw logs or long parameter dumps. "
+            "Mention evidence reads and proposed actions only as a short status. Preserve uncertainty and important warnings. If the user explicitly requests detail, expand after a concise conclusion. "
+            "Never expose private chain-of-thought; provide concise evidence and rationale instead.\n"
         )
         with ProjectMCPBridge(queries) as bridge:
             text = request_harness_sdk(provider=settings.harness_provider, model=settings.model,
@@ -1383,7 +1396,7 @@ def request_ai_advice(
             "store": False,
             "reasoning": {"effort": settings.reasoning_effort},
             "text": {
-                "verbosity": "high",
+                "verbosity": "low",
                 "format": {
                     "type": "json_schema",
                     "name": "neuroflow_advice",

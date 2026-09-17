@@ -2,7 +2,7 @@ from __future__ import annotations
 
 PRODUCT_NAME = "NeuroEphys AI"
 PRODUCT_SLUG = "neuroephys-ai"
-PRODUCT_VERSION = "1.3.0"
+PRODUCT_VERSION = "1.3.1"
 LEGACY_PROJECT_NAME = "NeuroFlow"
 
 GITHUB_REPOSITORY_URL = "https://github.com/CarbonLack/neuroflow-ai"

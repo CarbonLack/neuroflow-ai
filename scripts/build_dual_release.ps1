@@ -6,6 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $BuildScript = Join-Path $PSScriptRoot "build_release.ps1"
+$OverlayScript = Join-Path $PSScriptRoot "make_gpu_overlay.ps1"
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
 if (-not (Test-Path -LiteralPath $Python)) {
     throw "The managed Python environment is missing: $Python"
@@ -41,10 +42,48 @@ try {
         Copy-Item -LiteralPath $Source -Destination $Staging -Force
     }
 
-    $FullParams = @{ SkipTests = $true; SkipDocs = $true }
+    $StandardApp = Join-Path $Staging "standard-app"
+    $BuiltApp = Join-Path $Root "dist\NeuroEphysAI"
+    if (-not (Test-Path -LiteralPath $BuiltApp)) {
+        throw "Validated Standard application directory is missing: $BuiltApp"
+    }
+    Move-Item -LiteralPath $BuiltApp -Destination $StandardApp
+
+    $FullParams = @{ SkipTests = $true; SkipDocs = $true; SkipInstaller = $true }
     & $BuildScript @FullParams
     if ($LASTEXITCODE -ne 0) {
         throw "Full offline release build failed with exit code $LASTEXITCODE."
+    }
+
+    $FullApp = Join-Path $Root "dist\NeuroEphysAI"
+    $GpuOverlay = Join-Path $Staging "gpu-overlay"
+    & $OverlayScript `
+        -StandardAppDir $StandardApp `
+        -FullAppDir $FullApp `
+        -OutputDir $GpuOverlay
+    if ($LASTEXITCODE -ne 0) {
+        throw "GPU overlay generation failed with exit code $LASTEXITCODE."
+    }
+
+    $InnoCandidates = @(
+        "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+        "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+    )
+    $InnoCompiler = $InnoCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if (-not $InnoCompiler) {
+        throw "Inno Setup 6 is required to build the selectable Full installer."
+    }
+    & $InnoCompiler `
+        "/DMyAppVersion=$Version" `
+        "/DFullBuild=1" `
+        "/DCoreAppDir=$StandardApp" `
+        "/DGpuOverlayDir=$GpuOverlay" `
+        "/O$ReleaseDir" `
+        "/FNeuroEphysAI-Setup-$Version-Full" `
+        (Join-Path $Root "installer\NeuroEphysAI.iss")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Selectable Full installer build failed with exit code $LASTEXITCODE."
     }
     Get-ChildItem -LiteralPath $Staging -File | ForEach-Object {
         Copy-Item -LiteralPath $_.FullName -Destination $ReleaseDir -Force

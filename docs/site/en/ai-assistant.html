@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=1f29e9d3"></script>
+      <script src="_static/documentation_options.js?v=bb516dca"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -158,7 +158,8 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Controlled AI assistant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#project-aware-harness-conversations-and-studies-v1-3-0">Project-aware Harness conversations and Studies (v1.3.0)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#project-aware-harness-conversations-readable-answers-and-studies-v1-3-1">Project-aware Harness conversations, readable answers, and Studies (v1.3.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#read-the-answer-first-open-detail-when-needed">Read the answer first; open detail when needed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#providers">Providers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cloud-data-preview">Cloud-data preview</a></li>
@@ -323,8 +324,8 @@
 
   <section id="controlled-ai-assistant">
 <h1>Controlled AI assistant<a class="headerlink" href="#controlled-ai-assistant" title="Link to this heading"></a></h1>
-<section id="project-aware-harness-conversations-and-studies-v1-3-0">
-<h2>Project-aware Harness conversations and Studies (v1.3.0)<a class="headerlink" href="#project-aware-harness-conversations-and-studies-v1-3-0" title="Link to this heading"></a></h2>
+<section id="project-aware-harness-conversations-readable-answers-and-studies-v1-3-1">
+<h2>Project-aware Harness conversations, readable answers, and Studies (v1.3.1)<a class="headerlink" href="#project-aware-harness-conversations-readable-answers-and-studies-v1-3-1" title="Link to this heading"></a></h2>
 <p>For an institute-managed DeepSeek Harness account, use <strong>Read local DeepSeek
 Harness configuration</strong> in AI settings. The Harness SDK route calls the installed
 official dsh runtime; the app does not extract its model credentials or bypass it
@@ -349,6 +350,21 @@ checks the local Study, validates parameters, and asks the user to confirm. Stud
 names, local paths, animal/session row identities, large trajectories, and raw
 voltage are excluded from the cloud summary. The assistant must distinguish
 session-held-out from animal-held-out validation and must not match cells by Unit ID.</p>
+</section>
+<section id="read-the-answer-first-open-detail-when-needed">
+<h2>Read the answer first; open detail when needed<a class="headerlink" href="#read-the-answer-first-open-detail-when-needed" title="Link to this heading"></a></h2>
+<p>AI conversations default to <strong>Concise</strong> view. A response card leads with the
+conclusion, keeps at most three decision-relevant points, and separates project
+evidence reads, pending actions, the next step, and important warnings. The full
+answer, scientific interpretation, limitations, evidence identifiers, and proposed
+actions are preserved behind <strong>View full answer and evidence</strong>. Both the right-side
+assistant and expanded dialog can switch between <strong>Concise</strong> and <strong>Full</strong>, and the
+choice is remembered.</p>
+<p>This changes presentation, not scientific safeguards. Unsupported conclusions,
+limitations, and safety-critical warnings remain visible. The original answer is
+still stored in <code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code> for review and audit. By default the model
+does not narrate internal query plumbing, raw logs, or long parameter dumps unless
+the user explicitly asks for detail.</p>
 <p>The AI assistant occupies a collapsible right-side panel beside the active
 analysis. It receives a small structured project summary produced by local
 deterministic code. Raw voltage arrays are excluded.</p>
@@ -381,9 +397,11 @@ list, default model, and credential environment-variable name. It never opens
 the Harness credential file. Plain HTTP remains blocked unless the user enables
 it for that specific trusted private-network provider, after which <strong>Check
 service</strong> validates the model list and latency.</p>
-<p>This is a native provider adapter, not UI automation of the Harness website.
-Harness supplies model access; NeuroEphys AI owns the versioned project context,
-tool validation, scientific constraints, audit trail, and user confirmation.</p>
+<p>The Harness SDK route calls the installed official <code class="docutils literal notranslate"><span class="pre">dsh</span></code> runtime. It is not UI
+automation of the Harness website and does not copy institutional credentials into
+the app. Harness supplies model access; NeuroEphys AI owns the project snapshot,
+MCP queries, tool validation, scientific constraints, audit trail, and user
+confirmation. Generic APIs and Ollama remain available for other users.</p>
 </section>
 <section id="cloud-data-preview">
 <h2>Cloud-data preview<a class="headerlink" href="#cloud-data-preview" title="Link to this heading"></a></h2>

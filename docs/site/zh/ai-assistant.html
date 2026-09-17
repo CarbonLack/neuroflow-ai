@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4ebe3ea6"></script>
+      <script src="_static/documentation_options.js?v=5c7802bc"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -160,11 +160,12 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#harness-study-v1-3-0">Harness 项目对话与 Study（v1.3.0）</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id1">三种模式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#harness-study-v1-3-1">Harness 项目对话、低负担阅读与 Study（v1.3.1）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">先看懂，再看细节</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#provider">模型 Provider</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id2">发送内容预览</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id3">科学解释结构</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">发送内容预览</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">科学解释结构</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ollama">本机 Ollama</a></li>
 </ul>
 </li>
@@ -326,8 +327,8 @@
 
   <section id="ai">
 <h1>受控 AI 助手<a class="headerlink" href="#ai" title="Link to this heading"></a></h1>
-<section id="harness-study-v1-3-0">
-<h2>Harness 项目对话与 Study（v1.3.0）<a class="headerlink" href="#harness-study-v1-3-0" title="Link to this heading"></a></h2>
+<section id="harness-study-v1-3-1">
+<h2>Harness 项目对话、低负担阅读与 Study（v1.3.1）<a class="headerlink" href="#harness-study-v1-3-1" title="Link to this heading"></a></h2>
 <p>已配置机构 DeepSeek Harness 时，在 AI 设置点击“读取本机 DeepSeek Harness 配置”，
 选择 Harness SDK。App 通过官方 dsh 运行时请求模型，不读取或复制机构密钥。
 Harness 须单独安装并完成账号配置，参考 <a class="reference external" href="https://deepseek.com/harness/en/">https://deepseek.com/harness/en/</a> 。</p>
@@ -345,11 +346,22 @@ AI 不会因此获得任意代码或文件访问权限。分析提案经用户�
 按 Session 留出与按动物留出，不得把同号 Unit 当成跨 Session 的同一细胞。</p>
 <p>每轮使用发送时的项目快照，完成分析后下一轮读取新结果。切换项目或服务设置会
 重新确认可发送内容。没有待确认任务时隐藏空计划表，保留更多聊天空间。</p>
+</section>
+<section id="id1">
+<h2>先看懂，再看细节<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>AI 对话默认使用 <strong>简洁阅读</strong>。聊天卡片首先给出结论，最多保留三个关键点，并将
+“已读取多少项目证据”“是否提出待确认操作”“下一步”和重要警告分开显示。模型的
+完整回答、科学解释、限制、证据编号和候选操作没有被删除，点击 <strong>查看完整说明与依据</strong>
+即可打开。右侧助手和展开后的独立对话窗口都可以在 <strong>简洁阅读／完整内容</strong> 间切换，
+选择会被记住。</p>
+<p>这种分层只改变阅读方式，不降低科学约束：不能支持的结论、数据限制和关键警告仍会在
+简洁卡片中出现；原始完整内容继续随项目保存在 <code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code>，用于复核与审计。
+AI 默认不复述内部查询过程、接口细节或长参数清单，除非用户明确要求详细说明。</p>
 <p>AI 助手位于分析工作区右侧，可以收起。它接收本地确定性代码生成的小型结构化项目
 摘要，原始电压数组不会进入模型请求。</p>
 </section>
-<section id="id1">
-<h2>三种模式<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<section id="id2">
+<h2>三种模式<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
 <dl class="simple">
 <dt>手动模式</dt><dd><p>不发送模型请求，全部科学控件保持可用。</p>
 </dd>
@@ -368,16 +380,17 @@ harness、实验室/私有兼容服务和本机 Ollama。服务地址、模型�
 <p>本机已部署 DeepSeek Harness 时，点击 <strong>读取本机 DeepSeek Harness 配置</strong>。应用只读取
 Provider、<code class="docutils literal notranslate"><span class="pre">/v1</span></code> 地址、模型列表和环境变量名，不读取 Harness 凭据文件。内网 HTTP
 必须对该 Provider 显式启用，然后用“检测服务状态”验证模型列表和延迟。</p>
-<p>这是 App 内置的 OpenAI-compatible Provider 适配，不是用界面自动化操作 Harness 网页。
-Harness 只负责模型访问；NeuroEphys AI 负责生成项目上下文、校验工具和要求用户确认。</p>
+<p>Harness SDK 路径调用本机官方 <code class="docutils literal notranslate"><span class="pre">dsh</span></code> 运行时，不是用界面自动化操作 Harness 网页，也不
+把机构密钥复制到 App。Harness 负责模型访问；NeuroEphys AI 负责项目快照、MCP 查询、
+工具校验、科学约束、审计记录和用户确认。其他用户仍可选择通用 API 或 Ollama Provider。</p>
 </section>
-<section id="id2">
-<h2>发送内容预览<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<section id="id3">
+<h2>发送内容预览<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
 <p>在线请求前，点击 <strong>预览云端数据</strong> 可以查看准备发送的字段类别。用户可以删除可选
 字段或取消请求。本地路径、原始电压、大型数组和 API 密钥会被排除。</p>
 </section>
-<section id="id3">
-<h2>科学解释结构<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<section id="id4">
+<h2>科学解释结构<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
 <p>结果说明分为：已观察结果、统计证据、可考虑的生物学解释、当前证据无法支持的结论、
 数据和方法限制、建议增加的验证。模型输出用于辅助判断。工具名称、参数和工作流节点
 必须通过本地 JSON Schema 与规则检查。</p>

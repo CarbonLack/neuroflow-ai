@@ -574,12 +574,32 @@ def test_ai_assistant_is_discoverable_and_plan_never_auto_runs(
     )
     state.recording_path.write_bytes(b"\0" * (30_000 * 8 * 2))
     state.workflow_status = {"import": "completed", "qc": "pending"}
+    state.metadata["ai_history"] = [
+        {
+            "question": "现在可以做什么？",
+            "answer": (
+                "结论：当前数据可以进入原始质控。\n"
+                "下一步：先检查噪声、削顶和坏通道。\n"
+                "技术细节：" + "这是一段默认不应挤满聊天区的说明。" * 30
+            ),
+            "warnings": ["尚未运行原始质控。"],
+            "suggested_next_stage": "qc",
+            "query_evidence": [{"evidence_id": "Q-1"}],
+        }
+    ]
     window._load_state(state)
     window.show()
     app.processEvents()
 
     assert window.ai_button.isVisible()
     assert window.open_ai_button.isVisible()
+    window.sidebar_reading_combo.setCurrentIndex(
+        window.sidebar_reading_combo.findData("compact")
+    )
+    window._refresh_ai_sidebar()
+    compact_text = window.ai_sidebar_conversation.toPlainText()
+    assert "查看完整说明与依据" in compact_text
+    assert compact_text.count("这是一段默认不应挤满聊天区的说明") < 8
     window._open_ai_assistant()
     app.processEvents()
     assert window.ai_dialog is not None
