@@ -8,6 +8,11 @@
 - v1.2.6 将数字版本和显示版本统一从 PRODUCT_VERSION 构建，并增加回归测试。构建脚本直接检查产出的 exe 文件属性，不一致即停止发布。
 - 不改变 1.2.5 已验证的 AI 和科学计算逻辑，保留真实查询与操作闭环验收记录。
 - 为释放 D 盘空间，本轮生成的 v1.2.5 Full 历史安装包和便携备份移动至 `E:\NeuroEphysAI_Archive\Release_v1.2.5`，移动前后 SHA256 一致，未删除原始数据或分析项目。
+- v1.2.6 标准冻结包五项自检通过；Full 冻结包六项自检通过。Full 安装到 `D:\PhD\AI大赛\本地正式版\v1.2.6` 后，再次通过启动、AI/MCP 实际查询、SVG/PDF/PNG 导出、MountainSort5、内部 sorter 和 Kilosort4 六项检查。Kilosort 实际使用本机 RTX 3080，不只是检查依赖是否存在。
+- 安装后 FileVersion、ProductVersion 均为 1.2.6；桌面快捷方式指向该版本，实际启动窗口标题亦为 v1.2.6。安装包为 2,086,921,894 字节，SHA256 为 `d61c8d0a3f5fcdff248c6273e76e2075c52b45acc6e5b355f7d1f4cc487d37dd`。
+- 最终证据目录：`D:\PhD\AI大赛\发布验证\v1.2.6_交付`。`installed_acceptance.json` 记录安装、版本、快捷方式和六项检查；`frozen_standard`、`frozen_full`、`installed_full` 分开保存，不混淆源码测试与安装包测试。
+- 验收脚本初次由 Windows PowerShell 5 启动，因 UTF-8 中文路径解析而报找不到安装包；改用 PowerShell 7 后完整通过，脚本增加版本要求。该问题不要求普通用户安装 PowerShell：用户直接运行 exe 安装包。
+- v1.2.6 原生窗口可启动且标题正确；补拍截图时，电脑操作工具出现 `CreateForMonitor (0x80070057)`，重选窗口后激活仍失败，已停止 UI 自动操作。这次不声称完成新的截图验收；此前 1.2.5 原生字体及紧凑布局检查保留为历史证据。
 
 ## 1.2.5 Harness SDK 与项目 MCP 验收（2026-09-17）
 

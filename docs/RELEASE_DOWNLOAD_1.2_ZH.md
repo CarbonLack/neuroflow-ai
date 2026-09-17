@@ -42,7 +42,7 @@ App安装版自带Python运行环境；普通桌面用户不需要另装Python�
 
 ## 已验证与边界
 
-137 项自动测试通过；Full、Full仅核心、标准安装版和标准便携版均经过独立安装或解压后的启动、离线 AI 确认保护及 SVG/PDF/PNG 导出检查。本机 Full 使用教学数据实际运行 Kilosort 4、MountainSort5、SpyKING CIRCUS 2、Tridesclous 2、Simple、Lupin，并保存比较结果。
+v1.2.6 源码回归 155 项通过。此前版本已分别检查 Full、Full 仅核心、标准安装版和标准便携版的启动、离线 AI 确认保护及 SVG/PDF/PNG 导出；这些历史检查不等同于每个新版本都重新完成四种安装组合。各版本实际验收范围以[完整验证记录](https://github.com/CarbonLack/neuroflow-ai/blob/main/RELEASE_VALIDATION_1.2.md)为准。本机 Full 使用教学数据实际运行 Kilosort 4、MountainSort5、SpyKING CIRCUS 2、Tridesclous 2、Simple、Lupin，并保存比较结果。
 
 本轮不修改科学算法默认值，也不作任意电脑兼容性保证。两套 20 分钟模拟 benchmark 和五个已确认真实动物组已完成三-sorter、行为同步、事件分析、导出和英文排版链路；但真实记录上不同 sorter 的一致度不是准确率，候选 Unit 仍必须人工复核。预处理桌面页仍是预览，Unit 复核不提供通用合并/拆分工具。
 
