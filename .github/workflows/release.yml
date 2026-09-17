@@ -52,5 +52,5 @@ jobs:
         with:
           prerelease: false
           generate_release_notes: true
-          body_path: docs/RELEASE_DOWNLOAD_1.2_ZH.md
+          body_path: docs/RELEASE_DOWNLOAD_1.3_ZH.md
           files: release/v*/*

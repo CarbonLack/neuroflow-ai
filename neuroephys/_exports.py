@@ -98,6 +98,27 @@ PUBLIC_EXPORTS: dict[str, tuple[str, str]] = {
     "trial_feature_matrix": ("neuroflow.decoding", "trial_feature_matrix"),
     "run_decoding_suite": ("neuroflow.decoding", "run_decoding_suite"),
     "run_regression_suite": ("neuroflow.decoding", "run_regression_suite"),
+    # Multi-session / multi-animal studies
+    "StudySession": ("neuroflow.multi_session", "StudySession"),
+    "StudyState": ("neuroflow.multi_session", "StudyState"),
+    "save_study": ("neuroflow.multi_session", "save_study"),
+    "load_study": ("neuroflow.multi_session", "load_study"),
+    "add_project": ("neuroflow.multi_session", "add_project"),
+    "inspect_sessions": ("neuroflow.multi_session", "inspect_sessions"),
+    "shared_conditions": ("neuroflow.multi_session", "shared_conditions"),
+    "build_trial_table": ("neuroflow.multi_session", "build_trial_table"),
+    "run_multi_session_analysis": (
+        "neuroflow.multi_session",
+        "run_multi_session_analysis",
+    ),
+    "run_latent_dynamics": (
+        "neuroflow.multi_session",
+        "run_latent_dynamics",
+    ),
+    "export_study_results": (
+        "neuroflow.multi_session",
+        "export_study_results",
+    ),
     # Single-trial and continuous population analysis
     "POPULATION_ORDERING_METHODS": (
         "neuroflow.population",

@@ -26,6 +26,7 @@ from neuroflow.sorting_results import (
     register_sorting_result,
 )
 from neuroflow.sorting_workbench import SortingWorkbench
+from neuroflow.study_ui import MultiSessionStudyDialog
 from neuroflow.ui import (
     ConnectivitySettingsDialog,
     ImportDialog,
@@ -34,6 +35,20 @@ from neuroflow.ui import (
     PopulationSettingsDialog,
 )
 from neuroflow.unit_curation_ui import UnitCurationDialog
+
+
+def test_multi_session_dialog_reflows_on_narrow_windows(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    dialog = MultiSessionStudyDialog(tmp_path, "zh_CN")
+    dialog.show()
+    dialog.resize(760, 620)
+    app.processEvents()
+
+    assert dialog.splitter.orientation() == Qt.Vertical
+    assert "多 Session" in dialog.windowTitle()
+    assert dialog.condition_a_combo.count() == 0
+    dialog.close()
+    app.processEvents()
 
 
 def test_ai_settings_can_import_installed_harness_without_credential_access(

@@ -164,6 +164,54 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     connectivity.add_argument("--seed", type=int, default=20260817)
     connectivity.add_argument("--json", action="store_true")
+
+    study_create = commands.add_parser(
+        "study-create", help="create a multi-session study manifest"
+    )
+    study_create.add_argument("output", type=Path)
+    study_create.add_argument("--name", required=True)
+
+    study_add = commands.add_parser(
+        "study-add", help="add one NeuroEphys project to a study"
+    )
+    study_add.add_argument("study", type=Path)
+    study_add.add_argument("project", type=Path)
+    study_add.add_argument("--animal", required=True)
+    study_add.add_argument("--session", required=True)
+
+    study_inspect = commands.add_parser(
+        "study-inspect", help="inspect multi-session readiness"
+    )
+    study_inspect.add_argument("study", type=Path)
+    study_inspect.add_argument("--json", action="store_true")
+
+    study_run = commands.add_parser(
+        "study-run", help="run grouped cross-session decoding and latent dynamics"
+    )
+    study_run.add_argument("study", type=Path)
+    study_run.add_argument(
+        "--model",
+        choices=(
+            "Logistic regression",
+            "Linear SVM",
+            "RBF SVM",
+            "Linear discriminant analysis",
+            "Random forest",
+        ),
+        default="Linear SVM",
+    )
+    study_run.add_argument(
+        "--group-by", choices=("auto", "animal", "session"), default="auto"
+    )
+    study_run.add_argument("--folds", type=int, default=5)
+    study_run.add_argument("--permutations", type=int, default=200)
+    study_run.add_argument(
+        "--conditions",
+        nargs=2,
+        metavar=("CONDITION_A", "CONDITION_B"),
+        help="two named conditions shared by every included session",
+    )
+    study_run.add_argument("--json", action="store_true")
     return parser
 
 
@@ -352,6 +400,74 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_population_command(args, parser)
     if args.command == "connectivity":
         return _run_connectivity_command(args, parser)
+    if args.command == "study-create":
+        from neuroflow.multi_session import StudyState, save_study
+
+        target = args.output.resolve()
+        study = StudyState(target, args.name)
+        print(save_study(study))
+        return 0
+    if args.command == "study-add":
+        from neuroflow.multi_session import add_project, load_study, save_study
+
+        study = load_study(args.study.resolve())
+        add_project(
+            study,
+            args.project.resolve(),
+            animal_id=args.animal,
+            session_id=args.session,
+        )
+        print(save_study(study))
+        return 0
+    if args.command == "study-inspect":
+        from neuroflow.multi_session import inspect_sessions, load_study
+
+        study = load_study(args.study.resolve())
+        payload = {"study": study.name, "sessions": inspect_sessions(study)}
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(f"{study.name}: {len(payload['sessions'])} sessions")
+            for row in payload["sessions"]:
+                print(
+                    f"{row['session_id']} | {row['animal_id']} | {row['status']} | "
+                    f"{row['trial_count']} trials | {row['unit_count']} units"
+                )
+        return 0
+    if args.command == "study-run":
+        from neuroflow.multi_session import load_study, run_multi_session_analysis
+
+        if args.folds < 2 or args.permutations < 0:
+            parser.error("--folds must be >=2 and --permutations must be >=0")
+        study = load_study(args.study.resolve())
+        result = run_multi_session_analysis(
+            study,
+            model_name=args.model,
+            group_by=args.group_by,
+            n_splits=args.folds,
+            n_permutations=args.permutations,
+            selected_conditions=args.conditions,
+        )
+        payload = {
+            "study": study.name,
+            "model": result["model"],
+            "group_by": result["group_by"],
+            "balanced_accuracy": result["balanced_accuracy"],
+            "roc_auc": result["roc_auc"],
+            "permutation_p": result["permutation_p"],
+            "session_count": result["session_count"],
+            "animal_count": result["animal_count"],
+            "output": str(study.root / "results" / "multi_session"),
+        }
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(
+                f"Multi-session analysis saved: {payload['session_count']} sessions, "
+                f"balanced accuracy={payload['balanced_accuracy']:.3f}, "
+                f"permutation p={payload['permutation_p']:.4f}"
+            )
+        return 0
 
     parser.print_help()
     return 0

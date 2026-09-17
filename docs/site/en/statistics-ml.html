@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/statistics-ml.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=928db92d"></script>
+      <script src="_static/documentation_options.js?v=1f29e9d3"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -97,6 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-fine-spike-timing">Inspect fine spike timing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-statistical-evidence">Inspect statistical evidence</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#run-classification-or-regression">Run classification or regression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task-guide.html#combine-sessions-or-animals">Combine sessions or animals</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#save-projects-figures-and-records">Save projects, figures, and records</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#arrange-panels-ai-and-guidance">Arrange panels, AI, and guidance</a></li>
 </ul>
@@ -143,6 +144,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#statistical-suite">Statistical suite</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#decoding">Decoding</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#interpreting-the-figure">Interpreting the figure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multi-session-and-multi-animal-studies">Multi-session and multi-animal studies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#recommended-order">Recommended order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#python-and-command-line">Python and command line</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="figures.html">Figure inspection and publication export</a><ul>
@@ -152,7 +158,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">Controlled AI assistant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#project-aware-harness-conversations-v1-2-5">Project-aware Harness conversations (v1.2.5)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#project-aware-harness-conversations-and-studies-v1-3-0">Project-aware Harness conversations and Studies (v1.3.0)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#providers">Providers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#cloud-data-preview">Cloud-data preview</a></li>
@@ -357,11 +363,65 @@ score without held-out evidence is not shown as a scientific result.</p>
 <p>Machine-learning performance establishes predictive information under the
 specified validation design. Causality, mechanism, and generalization to new
 animals require additional evidence.</p>
+</section>
+<section id="multi-session-and-multi-animal-studies">
+<h2>Multi-session and multi-animal studies<a class="headerlink" href="#multi-session-and-multi-animal-studies" title="Link to this heading"></a></h2>
+<p>A project still represents one recording session. After completing event-aligned
+analysis in each session, choose <strong>File → Multi-session study…</strong> and add the relevant
+<code class="docutils literal notranslate"><span class="pre">neuroflow_project.json</span></code> manifests. Every row needs a biological animal ID and a
+unique session ID; an electrode, region, or channel group is not an animal.</p>
+<p>The Study workspace preserves the hierarchy <code class="docutils literal notranslate"><span class="pre">trial</span> <span class="pre">→</span> <span class="pre">session</span> <span class="pre">→</span> <span class="pre">animal</span></code> and provides:</p>
+<ul class="simple">
+<li><p>logistic regression, linear/RBF SVM, shrinkage LDA, and random forest with entire
+sessions or animals held out;</p></li>
+<li><p>scaling fitted inside each training fold;</p></li>
+<li><p>group-bootstrap intervals, within-group label permutations, and per-held-out-group
+performance;</p></li>
+<li><p>session-level condition summaries and, when enough animals are available, a linear
+mixed model with an animal random intercept and session variance component;</p></li>
+<li><p>fixed-dimensional population-distribution features, so Unit 7 in two sessions is
+never silently treated as the same neuron;</p></li>
+<li><p>descriptive latent dynamics: PCA followed by a regularized linear state-transition
+fit with trajectories, explained variance, and transition fit quality.</p></li>
+</ul>
+<p>LDA (linear discriminant analysis) is a supervised classifier. The separate latent-
+dynamics analysis is neither LDA nor a deep generative model. It summarizes low-
+dimensional trajectories and approximate linear evolution; it does not establish a
+dynamical mechanism or causality.</p>
+<section id="recommended-order">
+<h3>Recommended order<a class="headerlink" href="#recommended-order" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Import, curate Units, align behavior/TTL, and run identical event windows in each session.</p></li>
+<li><p>Check condition names, baseline/response windows, and time bins across sessions.</p></li>
+<li><p>Create a Study and verify animal/session identities and exclusions.</p></li>
+<li><p>Inspect coverage and session-level effects, then start with an animal-held-out linear baseline.</p></li>
+<li><p>Keep the same grouped design when comparing nonlinear models and inspect the permutation null.</p></li>
+<li><p>Interpret latent trajectories as population-state descriptions, not replacements for
+hierarchical inference or independent validation.</p></li>
+</ol>
+<p>With one animal, the application falls back to session-held-out validation and explicitly
+withholds cross-animal inference. Cell identities are unmatched unless separate tracking
+evidence is supplied; “unmatched” is the safe default.</p>
+</section>
+<section id="python-and-command-line">
+<h3>Python and command line<a class="headerlink" href="#python-and-command-line" title="Link to this heading"></a></h3>
+<p>The Python package exports <code class="docutils literal notranslate"><span class="pre">StudyState</span></code>, <code class="docutils literal notranslate"><span class="pre">add_project</span></code>,
+<code class="docutils literal notranslate"><span class="pre">run_multi_session_analysis</span></code>, and <code class="docutils literal notranslate"><span class="pre">run_latent_dynamics</span></code>. The CLI can create,
+inspect, and run a Study:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">neuroephys</span> <span class="n">study-create</span> <span class="n">D</span><span class="p">:\</span><span class="n">Study01</span> <span class="p">-</span><span class="n">-name</span> <span class="s2">"Learning cohort"</span>
+<span class="n">neuroephys</span> <span class="n">study-add</span> <span class="n">D</span><span class="p">:\</span><span class="n">Study01</span> <span class="n">D</span><span class="p">:\</span><span class="n">Projects</span><span class="p">\</span><span class="n">S01</span><span class="p">\</span><span class="n">neuroflow_project</span><span class="p">.</span><span class="n">json</span> <span class="p">-</span><span class="n">-animal</span> <span class="n">A01</span> <span class="p">-</span><span class="n">-session</span> <span class="n">S01</span>
+<span class="n">neuroephys</span> <span class="n">study-inspect</span> <span class="n">D</span><span class="p">:\</span><span class="n">Study01</span>
+<span class="n">neuroephys</span> <span class="n">study-run</span> <span class="n">D</span><span class="p">:\</span><span class="n">Study01</span> <span class="p">-</span><span class="n">-model</span> <span class="s2">"Linear SVM"</span> <span class="p">-</span><span class="n">-group-by</span> <span class="n">animal</span> <span class="p">-</span><span class="n">-conditions</span> <span class="n">correct</span> <span class="n">error</span>
+</pre></div>
+</div>
+<p>English SVG/PNG figures, trial features, held-out metrics, predictions, session summaries,
+and full JSON are written to <code class="docutils literal notranslate"><span class="pre">results/multi_session</span></code> inside the Study.</p>
 <img class="product-shot" src="../assets/neuroephys-decoding-en.png"
      alt="NeuroEphys AI cross-validation, permutation, and ROC panels"><p>The lower row keeps time-resolved performance, population trajectories, and
 unit feature importance visible as separate editable panels.</p>
 <img class="product-shot" src="../assets/neuroephys-decoding-detail-en.png"
      alt="NeuroEphys AI time-resolved decoding and population detail"></section>
+</section>
 </section>
 
 

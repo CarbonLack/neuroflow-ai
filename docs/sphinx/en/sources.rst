@@ -30,6 +30,16 @@ Core sources
 * `Rastermap paper and official code <https://github.com/MouseLand/rastermap>`_
   — optional population-ordering backend; built-in peak-time and PCA ordering
   remain available when it is not installed.
+* `scikit-learn grouped cross-validation <https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data>`_
+  and `LDA <https://scikit-learn.org/stable/modules/lda_qda.html>`_
+  — whole-session/animal validation and supervised linear discrimination.
+* `statsmodels MixedLM <https://www.statsmodels.org/stable/mixed_linear.html>`_
+  — linear mixed-effects interface for animal/session hierarchy.
+* `Yu et al. GPFA <https://doi.org/10.1152/jn.90941.2008>`_ and
+  `Cunningham & Yu review <https://doi.org/10.1038/nn.3776>`_
+  — population latent-variable and dimensionality-reduction context. The Study
+  layer currently uses transparent PCA plus linear-transition descriptions and
+  does not claim GPFA or a deep generative model.
 * `DeepSeek API documentation <https://api-docs.deepseek.com/>`_
   — optional online structured generation and tool-call transport.
 * `Ollama OpenAI compatibility <https://docs.ollama.com/api/openai-compatibility>`_

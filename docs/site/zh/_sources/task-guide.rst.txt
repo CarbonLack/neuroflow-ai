@@ -583,6 +583,51 @@ Unit 对结果、运行设置和网络统计随项目保存。
 
 `方法参考 <https://scikit-learn.org/stable/common_pitfalls.html>`__
 
+.. _task-multi_session:
+
+汇总多个 Session 或多只动物
+----------------------------------------------------------------------------------------------------
+
+把已完成的单 Session 项目组织成 Study，进行整组验证、层级汇总和群体动力学描述。
+
+**先准备好**
+
+每个 Session 已完成 Unit 复核和同一参数的事件对齐分析；已确认真实动物编号、唯一 Session 编号及两个共有条件。
+
+1. **新建 Study**
+
+   选择“文件 → 多 Session 研究…”，新建研究并指定独立保存位置。Study 只索引项目，不复制原始电压。
+
+2. **加入并核对 Session**
+
+   添加各项目的 neuroflow\_project.json。逐行核对动物、Session、状态和共有条件；电极或通道组不能当作动物编号。
+
+3. **选择问题和验证层级**
+
+   选择两个条件、模型及整组留出层级。多只动物优先按动物留出；只有一只动物时使用 Session 留出。
+
+4. **解释而不越界**
+
+   先看逐留出组分数和 Session 条件效应，再看混淆矩阵与潜在轨迹。LDA 是分类器；潜在动力学是单独的 PCA + 线性转移描述。
+
+**完成检查**
+
+训练与测试必须没有同一动物或 Session；不同 Session 的同号 Unit 默认不匹配。高分只能说明指定验证设计下存在可预测信息。
+
+**保存位置**
+
+Study 的 results/multi\_session 保存英文图、trial 特征、留出组指标、预测、Session 汇总和完整 JSON。
+
+**没有两个共有条件**
+
+返回各 Session，统一条件名称和事件分析窗；不要把不同事件强行改成同一标签。
+
+**只有一只动物**
+
+可以做 Session 留出和描述性汇总，但不能表述为跨动物泛化或动物层级重复。
+
+`方法参考 <https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/MULTI_SESSION_ANALYSIS_ZH.md>`__
+
 .. _task-export:
 
 保存项目、图和实验记录

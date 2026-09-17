@@ -65,7 +65,7 @@ def test_release_workflow_does_not_hardcode_an_old_version():
     assert "release/v1.0.0/*" not in workflow
     assert workflow.count("release/v*/*") == 2
     assert "build_release.ps1 -SkipTests -SkipDocs -Lite" in workflow
-    assert "body_path: docs/RELEASE_DOWNLOAD_1.2_ZH.md" in workflow
+    assert "body_path: docs/RELEASE_DOWNLOAD_1.3_ZH.md" in workflow
 
     release_script = (
         Path(__file__).resolve().parents[1] / "scripts" / "build_release.ps1"

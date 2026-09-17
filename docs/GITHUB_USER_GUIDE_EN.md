@@ -8,10 +8,10 @@ Download from [GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/relea
 
 | Edition | Recommended for | How to start | Important note |
 |---|---|---|---|
-| **Full offline installer (recommended)** `NeuroEphysAI-Setup-1.2.4-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | GPU availability still depends on compatible NVIDIA hardware and drivers |
-| **Standard installer** `NeuroEphysAI-Setup-1.2.4.exe` | General Windows, teaching, CPU workflows | Run the installer | Optional sorter components can be added later |
-| **Standard portable ZIP** `NeuroEphysAI-1.2.4-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
-| **Python wheel** `neuroephys_ai-1.2.4-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
+| **Full offline installer (recommended)** `NeuroEphysAI-Setup-1.3.0-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | GPU availability still depends on compatible NVIDIA hardware and drivers |
+| **Standard installer** `NeuroEphysAI-Setup-1.3.0.exe` | General Windows, teaching, CPU workflows | Run the installer | Optional sorter components can be added later |
+| **Standard portable ZIP** `NeuroEphysAI-1.3.0-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
+| **Python wheel** `neuroephys_ai-1.3.0-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
 
 The Full portable ZIP is larger than GitHub's 2 GiB per-file limit, so GitHub primarily distributes the Full installer.
 
@@ -82,7 +82,24 @@ Real recordings have no ground truth. Precision, recall, and F1 between two sort
 - **Publication and reproduction** creates English main/supplementary storyboards, panel letters, draft legends, Methods, file inventory, and checksums.
 - Automated layout does not replace scientific, statistical, visual, or target-journal review.
 
-## 9. AI assistant and institute harness
+## 9. Multi-session and multi-animal studies
+
+One project represents one session. First curate units, synchronize behavior, and
+run event-aligned analysis with the same definitions, windows, and bins in every
+project. Then choose **File > Multi-session study…**:
+
+1. Create a Study and add each `neuroflow_project.json`.
+2. Verify biological animal IDs, unique session IDs, inclusion, and shared conditions.
+3. Choose two shared conditions, whole-animal/session holdout, a model, and permutations.
+4. Inspect held-out-group performance, confusion, session effects, and descriptive trajectories.
+5. Find English SVG/PNG, CSV, and JSON output under `results/multi_session` in the Study.
+
+Equal Unit IDs across sessions are not matched cells. With one animal, validation can
+hold out sessions but cannot establish cross-animal generalization. LDA is a classifier;
+latent dynamics is a separate PCA plus regularized linear-transition description. See
+the [method guide](MULTI_SESSION_ANALYSIS_ZH.md) and the English web manual.
+
+## 10. AI assistant and institute harness
 
 Open **Help > AI settings** and choose Manual, Assistant, or Collaborative mode. If DeepSeek Harness is installed locally, choose **Import installed DeepSeek Harness**, then run **Check service**. NeuroEphys AI imports only non-secret endpoint, model, and environment-variable metadata; it never opens the Harness credential file.
 
@@ -90,7 +107,11 @@ The assistant uses a versioned, constrained project-summary contract rather than
 
 The app supplies a versioned, constrained project context: current stage, completed evidence, outputs, limitations, and registered tools. Raw voltage, large arrays, local paths, and identity data are excluded by default. Collaboration-mode actions remain allowlisted and require local validation and user confirmation. Deterministic analysis continues when AI is unavailable.
 
-## 10. Project layout
+After a Study is saved, AI can read its redacted ID, counts, conditions, validation
+design, and result summary and can propose a controlled run in Collaborative mode.
+Paths, animal/session rows, raw voltage, and large arrays are excluded.
+
+## 11. Project layout
 
 | Path | Contents |
 |---|---|
@@ -104,12 +125,12 @@ The app supplies a versioned, constrained project context: current stage, comple
 
 Back up the entire project directory together with the source data. A copied figure alone is not a reproducible project.
 
-## 11. Python installation
+## 12. Python installation
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.2.4-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.0-py3-none-any.whl
 neuroephys info --json
 ```
 
@@ -124,7 +145,7 @@ print(quality["quality_score"])
 
 See the [README](../README.md) and [Python package manual](https://carbonlack.github.io/neuroflow-ai/en/python-package.html) for optional dependencies and additional APIs.
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 - **Missing DLL at startup:** reinstall or fully extract the portable ZIP; do not copy only the EXE.
 - **Kilosort unavailable:** verify the Full edition, NVIDIA driver, CUDA/PyTorch detection, and GPU memory, or choose a CPU sorter.

@@ -26,6 +26,15 @@ NeuroEphys AI 通过公开接口调用成熟库，并自主开发项目、适配
   ——NHP 高密度记录的外部验收和单 trial/精细时序方法定义。
 * `Rastermap 论文与官方代码 <https://github.com/MouseLand/rastermap>`_
   ——可选群体活动排序后端；未捆绑时使用内置峰值时间或 PCA 排序。
+* `scikit-learn 分组交叉验证 <https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data>`_
+  与 `LDA <https://scikit-learn.org/stable/modules/lda_qda.html>`_
+  ——跨 Session/动物整组留出与监督线性判别方法。
+* `statsmodels MixedLM <https://www.statsmodels.org/stable/mixed_linear.html>`_
+  ——动物/Session 层级条件效应的线性混合模型接口。
+* `Yu et al. GPFA <https://doi.org/10.1152/jn.90941.2008>`_ 与
+  `Cunningham & Yu 综述 <https://doi.org/10.1038/nn.3776>`_
+  ——群体潜变量与降维方法背景；当前 Study 使用透明的 PCA + 线性转移描述，
+  不宣称实现 GPFA 或深度生成模型。
 * `DeepSeek API 文档 <https://api-docs.deepseek.com/>`_
   ——可选在线结构化生成和工具调用传输。
 * `Ollama OpenAI 兼容接口 <https://docs.ollama.com/api/openai-compatibility>`_

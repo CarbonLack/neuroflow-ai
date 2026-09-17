@@ -252,6 +252,49 @@ TOOL_REGISTRY: dict[str, AIToolSpec] = {
         ),
         risk="medium",
     ),
+    "run_multi_session_analysis": AIToolSpec(
+        "run_multi_session_analysis",
+        "decoding",
+        "Run a registered multi-session study with grouped validation, hierarchical summaries and latent dynamics.",
+        _object_schema(
+            {
+                "study_id": {"type": "string", "minLength": 1, "maxLength": 64},
+                "model": {
+                    "type": "string",
+                    "enum": [
+                        "Logistic regression",
+                        "Linear SVM",
+                        "RBF SVM",
+                        "Linear discriminant analysis",
+                        "Random forest",
+                    ],
+                },
+                "group_by": {
+                    "type": "string",
+                    "enum": ["auto", "animal", "session"],
+                },
+                "cv_folds": {"type": "integer", "minimum": 2, "maximum": 20},
+                "permutations": {
+                    "type": "integer",
+                    "minimum": 20,
+                    "maximum": 5000,
+                },
+                "conditions": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "uniqueItems": True,
+                    "description": (
+                        "Optional pair of named conditions shared by all sessions; "
+                        "omit to use the two most frequent shared conditions."
+                    ),
+                },
+            },
+            required=["study_id", "model", "group_by", "cv_folds", "permutations"],
+        ),
+        risk="medium",
+    ),
     "edit_figure": AIToolSpec(
         "edit_figure",
         "export",
@@ -346,6 +389,19 @@ def validate_tool_call(
     if name in {"align_events", "generate_psth", "run_statistics", "run_decoding"}:
         if not state.events:
             errors.append("No behavior or event data are available.")
+    if name == "run_multi_session_analysis":
+        studies = state.metadata.get("multi_session_studies", {})
+        study_id = str(arguments.get("study_id", ""))
+        if study_id not in studies:
+            errors.append(
+                "The requested study is not registered in this project. Open the "
+                "Multi-session study workspace and save it first."
+            )
+        else:
+            warnings.append(
+                "This analysis holds out whole sessions or animals. Review animal "
+                "identifiers and included sessions before confirming."
+            )
     if name == "generate_psth":
         available = {
             int(event.get("event_code", event.get("code", -1)))

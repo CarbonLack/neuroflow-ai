@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/task-guide.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=928db92d"></script>
+      <script src="_static/documentation_options.js?v=1f29e9d3"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -97,6 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#inspect-fine-spike-timing">Inspect fine spike timing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#inspect-statistical-evidence">Inspect statistical evidence</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#run-classification-or-regression">Run classification or regression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#combine-sessions-or-animals">Combine sessions or animals</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#save-projects-figures-and-records">Save projects, figures, and records</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#arrange-panels-ai-and-guidance">Arrange panels, AI, and guidance</a></li>
 </ul>
@@ -143,6 +144,11 @@
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#statistical-suite">Statistical suite</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#decoding">Decoding</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#interpreting-the-figure">Interpreting the figure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#multi-session-and-multi-animal-studies">Multi-session and multi-animal studies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#recommended-order">Recommended order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#python-and-command-line">Python and command line</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="figures.html">Figure inspection and publication export</a><ul>
@@ -152,7 +158,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">Controlled AI assistant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#project-aware-harness-conversations-v1-2-5">Project-aware Harness conversations (v1.2.5)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#project-aware-harness-conversations-and-studies-v1-3-0">Project-aware Harness conversations and Studies (v1.3.0)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#providers">Providers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#cloud-data-preview">Cloud-data preview</a></li>
@@ -337,8 +343,9 @@
 <li><p><a class="reference internal" href="#inspect-fine-spike-timing" id="id14">Inspect fine spike timing</a></p></li>
 <li><p><a class="reference internal" href="#inspect-statistical-evidence" id="id15">Inspect statistical evidence</a></p></li>
 <li><p><a class="reference internal" href="#run-classification-or-regression" id="id16">Run classification or regression</a></p></li>
-<li><p><a class="reference internal" href="#save-projects-figures-and-records" id="id17">Save projects, figures, and records</a></p></li>
-<li><p><a class="reference internal" href="#arrange-panels-ai-and-guidance" id="id18">Arrange panels, AI, and guidance</a></p></li>
+<li><p><a class="reference internal" href="#combine-sessions-or-animals" id="id17">Combine sessions or animals</a></p></li>
+<li><p><a class="reference internal" href="#save-projects-figures-and-records" id="id18">Save projects, figures, and records</a></p></li>
+<li><p><a class="reference internal" href="#arrange-panels-ai-and-guidance" id="id19">Arrange panels, AI, and guidance</a></p></li>
 </ul>
 </nav>
 <section id="try-an-example">
@@ -716,8 +723,37 @@
 <p>Return to Behavior analysis and check valid trials and conditions. Do not duplicate trials to meet cross-validation sample requirements.</p>
 <p><a class="reference external" href="https://scikit-learn.org/stable/common_pitfalls.html">Method reference</a></p>
 </section>
+<section id="combine-sessions-or-animals">
+<span id="task-multi-session"></span><h2><a class="toc-backref" href="#id17" role="doc-backlink">Combine sessions or animals</a><a class="headerlink" href="#combine-sessions-or-animals" title="Link to this heading"></a></h2>
+<p>Organize completed session projects into a Study for grouped validation, hierarchical summaries, and population dynamics.</p>
+<p><strong>Have ready</strong></p>
+<p>Each session has curated units and matching event-aligned analysis. Biological animal IDs, unique session IDs, and two shared conditions are known.</p>
+<ol class="arabic">
+<li><p><strong>Create a Study</strong></p>
+<p>Choose File → Multi-session study…, create a Study, and select its own folder. A Study indexes projects without copying raw voltage.</p>
+</li>
+<li><p><strong>Add and verify sessions</strong></p>
+<p>Add each neuroflow_project.json. Verify animal, session, readiness, and shared conditions row by row; an electrode or channel group is not an animal.</p>
+</li>
+<li><p><strong>Choose the question and validation level</strong></p>
+<p>Choose two conditions, a model, and the held-out level. Prefer animal-held-out validation across animals; use session-held-out validation for one animal.</p>
+</li>
+<li><p><strong>Interpret within limits</strong></p>
+<p>Inspect held-out-group scores and session effects before confusion and latent trajectories. LDA is a classifier; latent dynamics is a separate PCA plus linear-transition description.</p>
+</li>
+</ol>
+<p><strong>Check the result</strong></p>
+<p>Training and test sets must not share the held-out animal or session. Equal unit numbers across sessions remain unmatched. A high score only establishes predictive information under the stated design.</p>
+<p><strong>Saved output</strong></p>
+<p>The Study’s results/multi_session folder stores English figures, trial features, held-out metrics, predictions, session summaries, and full JSON.</p>
+<p><strong>Fewer than two shared conditions</strong></p>
+<p>Return to each session and harmonize condition names and event windows. Do not relabel genuinely different events as one condition.</p>
+<p><strong>Only one animal</strong></p>
+<p>Session-held-out and descriptive analyses remain possible, but do not claim cross-animal generalization or animal-level replication.</p>
+<p><a class="reference external" href="https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/MULTI_SESSION_ANALYSIS_ZH.md">Method reference</a></p>
+</section>
 <section id="save-projects-figures-and-records">
-<span id="task-export"></span><h2><a class="toc-backref" href="#id17" role="doc-backlink">Save projects, figures, and records</a><a class="headerlink" href="#save-projects-figures-and-records" title="Link to this heading"></a></h2>
+<span id="task-export"></span><h2><a class="toc-backref" href="#id18" role="doc-backlink">Save projects, figures, and records</a><a class="headerlink" href="#save-projects-figures-and-records" title="Link to this heading"></a></h2>
 <p>Save to resume later; export figures, tables, and records for review, editing, and sharing.</p>
 <p><strong>Have ready</strong></p>
 <p>An open project with the analyses you want to export completed.</p>
@@ -740,7 +776,7 @@
 <p>Saving the project and running Publication and reproducibility are separate actions. Complete the analysis, run export, and inspect exports.</p>
 </section>
 <section id="arrange-panels-ai-and-guidance">
-<span id="task-layout-ai"></span><h2><a class="toc-backref" href="#id18" role="doc-backlink">Arrange panels, AI, and guidance</a><a class="headerlink" href="#arrange-panels-ai-and-guidance" title="Link to this heading"></a></h2>
+<span id="task-layout-ai"></span><h2><a class="toc-backref" href="#id19" role="doc-backlink">Arrange panels, AI, and guidance</a><a class="headerlink" href="#arrange-panels-ai-and-guidance" title="Link to this heading"></a></h2>
 <p>Allocate space to workflow, figures, and AI, and collapse or restore panels as needed.</p>
 <p><strong>Have ready</strong></p>
 <p>Open a project to arrange the three columns. Online AI requires a configured service in AI settings.</p>

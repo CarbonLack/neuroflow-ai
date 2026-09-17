@@ -373,6 +373,40 @@ def _compact_json_value(value: Any, *, depth: int = 0) -> Any:
     return str(value)
 
 
+def _multi_session_registry_summary(state: ProjectState) -> dict[str, Any]:
+    """Expose scientific status and counts, never study names, IDs within rows, or paths."""
+    registry = state.metadata.get("multi_session_studies", {})
+    if not isinstance(registry, dict):
+        return {}
+    allowed = {
+        "study_id",
+        "status",
+        "animal_count",
+        "session_count",
+        "selected_conditions",
+        "model",
+        "group_by",
+        "balanced_accuracy",
+        "roc_auc",
+        "permutation_p",
+        "hierarchical_condition_effect",
+        "latent_dynamics",
+        "safeguards",
+    }
+    summary: dict[str, Any] = {}
+    for study_id, entry in list(registry.items())[:20]:
+        if not isinstance(entry, dict):
+            continue
+        safe_entry = {key: entry[key] for key in allowed if key in entry}
+        summary[str(study_id)[:64]] = _compact_json_value(safe_entry)
+        # Counts are scientifically necessary and not identifying values. The generic
+        # metadata redactor intentionally removes animal-like keys, so restore only counts.
+        for key in ("animal_count", "session_count"):
+            if key in entry:
+                summary[str(study_id)[:64]][key] = int(entry[key])
+    return summary
+
+
 def _normalized_acquisition_settings(state: ProjectState) -> dict[str, Any]:
     """Merge legacy and current acquisition metadata into a path-free summary."""
     legacy = state.metadata.get("acquisition", {})
@@ -609,6 +643,7 @@ def build_project_summary(
         "statistics_summary": _compact_json_value(state.statistics),
         "decoding_summary": _compact_json_value(state.decoding),
         "regression_summary": _compact_json_value(state.regression),
+        "multi_session_studies": _multi_session_registry_summary(state),
         "current_ui_context": ui_context,
         "artifact_inventory": artifacts,
         "recent_stage_runs": _stage_run_summary(state),
@@ -739,6 +774,10 @@ Hard boundaries:
     is supplied, state that a source lookup is still required.
 14. The current task type is {task!r}. Return the required JSON object with no
     markdown code fence.
+15. In a multi-session study, preserve trial -> session -> animal hierarchy. Never
+    treat equal Unit IDs across sessions as the same cell without explicit tracking
+    evidence, never call session-held-out validation cross-animal validation, and
+    distinguish supervised LDA from the separate descriptive latent-dynamics model.
 
 Conversation behavior:
 Answer the user's actual question directly, including open-ended discussion of
@@ -1317,6 +1356,8 @@ def request_ai_advice(
             "Use list_project_data to discover sections, nested paths and action schemas. Query pages rather than guessing. "
             "Earlier conversation is searchable within this project. Distinguish historical answers from current results. "
             "Missing data is unknown, not zero. Ground truth is not ordinary sorting output. "
+            "For multi-session studies preserve trial-to-session-to-animal hierarchy; equal Unit IDs are not matched cells, and session-held-out is not cross-animal validation. "
+            "Supervised LDA and descriptive latent dynamics are different analyses. "
             "Only propose_analysis_action can propose app changes; it never executes them. "
             "Explain pending proposals as awaiting confirmation, never as completed. "
             "Do not propose actions when the user only asks for interpretation. "

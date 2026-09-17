@@ -3764,6 +3764,7 @@ class NeuroFlowWindow(QMainWindow):
         self.preview: dict | None = None
         self.matches: list[dict] = []
         self.worker: PipelineWorker | None = None
+        self.study_worker: QThread | None = None
         self.active_run_keys: list[str] = []
         self.active_run_started: datetime | None = None
         self.run_elapsed_timer = QTimer(self)
@@ -3842,6 +3843,12 @@ class NeuroFlowWindow(QMainWindow):
         self.recent_menu.aboutToShow.connect(self._refresh_recent_menu)
         self.menu_examples_action = action(
             self.file_menu, "示例项目…", self._open_examples, "Ctrl+Shift+O"
+        )
+        self.menu_study_action = action(
+            self.file_menu,
+            "多 Session 研究…",
+            self._open_multi_session_study,
+            "Ctrl+Shift+M",
         )
         self.file_menu.addSeparator()
         self.menu_save_action = action(
@@ -3976,6 +3983,7 @@ class NeuroFlowWindow(QMainWindow):
             self.menu_new_action: "New project…" if english else "新建项目…",
             self.menu_open_action: "Open / import project…" if english else "打开／导入项目…",
             self.menu_examples_action: "Example projects…" if english else "示例项目…",
+            self.menu_study_action: "Multi-session study…" if english else "多 Session 研究…",
             self.menu_save_action: "Save project" if english else "保存项目",
             self.menu_project_folder_action: "Open project folder" if english else "打开项目文件夹",
             self.menu_exit_action: "Exit" if english else "退出",
@@ -4212,11 +4220,15 @@ class NeuroFlowWindow(QMainWindow):
         self.sample_button.setProperty("neuroflow_help_key", "home.demo")
         self.sample_button.clicked.connect(self._open_sample)
         self.sample_button.setVisible(False)
+        self.study_button = QPushButton("多 Session 研究")
+        self.study_button.setMinimumHeight(42)
+        self.study_button.clicked.connect(self._open_multi_session_study)
         self.demo_folder_button = QPushButton("查看示例数据文件夹")
         self.demo_folder_button.clicked.connect(self._open_demo_folder)
         self.demo_folder_button.setVisible(False)
         primary_actions.insertWidget(3, self.public_button)
         secondary_actions.addStretch()
+        secondary_actions.addWidget(self.study_button)
         secondary_actions.addWidget(self.sample_button)
         secondary_actions.addWidget(self.demo_folder_button)
         secondary_actions.addStretch()
@@ -5099,6 +5111,9 @@ class NeuroFlowWindow(QMainWindow):
             if language == "en_US"
             else "生成教学模拟项目"
         )
+        self.study_button.setText(
+            "Multi-session study" if language == "en_US" else "多 Session 研究"
+        )
         self.project_button.setText(tr("restore", language))
         self.demo_folder_button.setText(
             "Open demo data folder" if language == "en_US" else "查看示例数据文件夹"
@@ -5904,6 +5919,61 @@ class NeuroFlowWindow(QMainWindow):
             return
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(index)))
 
+    def _open_multi_session_study(self) -> None:
+        from .study_ui import MultiSessionStudyDialog
+
+        MultiSessionStudyDialog(self.workspace, self.language, self).exec()
+
+    def _register_study_result(self, study, result: dict) -> None:
+        """Expose bounded study evidence to the current project's AI context."""
+        self._register_study(study)
+        if self.state is None:
+            return
+        registry = self.state.metadata.setdefault("multi_session_studies", {})
+        hierarchy = dict(result.get("hierarchical_condition_effect", {}))
+        hierarchy.pop("session_summary", None)
+        registry[study.study_id].update({
+            "status": "completed",
+            "model": result.get("model"),
+            "group_by": result.get("group_by"),
+            "balanced_accuracy": result.get("balanced_accuracy"),
+            "roc_auc": result.get("roc_auc"),
+            "permutation_p": result.get("permutation_p"),
+            "hierarchical_condition_effect": hierarchy,
+            "latent_dynamics": {
+                key: value
+                for key, value in result.get("latent_dynamics", {}).items()
+                if key not in {"labels", "trajectories", "transition_matrix"}
+            },
+            "safeguards": result.get("safeguards", []),
+        })
+        self.state.log(
+            f"Multi-session study registered for AI: {study.name} ({study.study_id})"
+        )
+        save_project(self.state)
+        self._refresh_ai_sidebar()
+
+    def _register_study(self, study) -> None:
+        """Register a local study id without exposing its filesystem path to AI."""
+        self.settings.setValue(f"studies/{study.study_id}", str(study.manifest_path))
+        if self.state is None:
+            return
+        registry = self.state.metadata.setdefault("multi_session_studies", {})
+        entry = registry.setdefault(study.study_id, {})
+        entry.update({
+            "name": study.name,
+            "study_id": study.study_id,
+            "status": (
+                "completed"
+                if study.results or entry.get("status") == "completed"
+                else "configured"
+            ),
+            "animal_count": len({item.animal_id for item in study.sessions if item.included}),
+            "session_count": sum(item.included for item in study.sessions),
+            "selected_conditions": list(study.settings.get("conditions", [])),
+        })
+        save_project(self.state)
+
     def _open_project(self) -> None:
         if not self._can_switch_project():
             return
@@ -6064,6 +6134,18 @@ class NeuroFlowWindow(QMainWindow):
                     if self.language == "en_US"
                     else "请等待当前分析完成后再关闭 NeuroEphys AI；完成结果会自动保存到项目。"
                 ),
+            )
+            event.ignore()
+            return
+        if self.study_worker and self.study_worker.isRunning():
+            QMessageBox.warning(
+                self,
+                "Study analysis is running"
+                if self.language == "en_US"
+                else "跨 Session 分析仍在运行",
+                "Wait for grouped validation to finish before closing."
+                if self.language == "en_US"
+                else "请等待整组交叉验证完成后再关闭软件。",
             )
             event.ignore()
             return
@@ -7780,6 +7862,49 @@ class NeuroFlowWindow(QMainWindow):
             self._open_figure_settings()
             record["status"] = "editor_opened"
             return
+        if name == "run_multi_session_analysis":
+            from .study_ui import StudyAnalysisWorker
+
+            study_id = str(arguments.get("study_id", ""))
+            manifest = str(self.settings.value(f"studies/{study_id}", ""))
+            try:
+                if not manifest or not Path(manifest).is_file():
+                    raise FileNotFoundError(
+                        "The registered study manifest is unavailable on this computer."
+                    )
+                if self.study_worker and self.study_worker.isRunning():
+                    raise RuntimeError("A multi-session analysis is already running.")
+                parameters = {
+                    "model_name": str(arguments.get("model", "Linear SVM")),
+                    "group_by": str(arguments.get("group_by", "auto")),
+                    "n_splits": int(arguments.get("cv_folds", 5)),
+                    "n_permutations": int(arguments.get("permutations", 200)),
+                    "selected_conditions": arguments.get("conditions"),
+                }
+                record["status"] = "running"
+                record["study_id"] = study_id
+                project = self.state
+                self.study_worker = StudyAnalysisWorker(
+                    Path(manifest), parameters, self
+                )
+                self.study_worker.succeeded.connect(
+                    lambda study, result: self._finish_ai_study_analysis(
+                        project, record, study, result
+                    )
+                )
+                self.study_worker.failed.connect(
+                    lambda message: self._fail_ai_study_analysis(
+                        project, record, message
+                    )
+                )
+                self.study_worker.start()
+            except Exception as exc:  # noqa: BLE001 - confirmed action audit
+                record["status"] = "failed"
+                record["error"] = str(exc)
+                QMessageBox.warning(self, "Multi-session analysis", str(exc))
+                save_project(self.state)
+                self._report_ai_action_result(record)
+            return
 
         stage_by_tool = {
             "run_raw_qc": "qc",
@@ -7830,6 +7955,59 @@ class NeuroFlowWindow(QMainWindow):
             if event_option >= 0:
                 self.option_combo.setCurrentIndex(event_option)
         self._start_worker([stage], tool_arguments=arguments)
+
+    def _finish_ai_study_analysis(
+        self,
+        project: ProjectState,
+        record: dict,
+        study,
+        result: dict,
+    ) -> None:
+        self.study_worker = None
+        if self.state is not project:
+            record["status"] = "failed"
+            record["error"] = "The active project changed before analysis completed."
+            return
+        self._register_study_result(study, result)
+        record["status"] = "completed"
+        record["result_summary"] = {
+            "animal_count": result["animal_count"],
+            "session_count": result["session_count"],
+            "balanced_accuracy": result["balanced_accuracy"],
+            "permutation_p": result["permutation_p"],
+            "selected_conditions": result["classes"],
+        }
+        save_project(project)
+        QMessageBox.information(
+            self,
+            "Multi-session analysis"
+            if self.language == "en_US"
+            else "多 Session 分析",
+            (
+                f"Completed. Balanced accuracy={result['balanced_accuracy']:.3f}; "
+                f"permutation p={result['permutation_p']:.4f}"
+                if self.language == "en_US"
+                else (
+                    f"已完成。平衡准确率={result['balanced_accuracy']:.3f}；"
+                    f"置换 p={result['permutation_p']:.4f}"
+                )
+            ),
+        )
+        self._report_ai_action_result(record)
+
+    def _fail_ai_study_analysis(
+        self,
+        project: ProjectState,
+        record: dict,
+        message: str,
+    ) -> None:
+        self.study_worker = None
+        record["status"] = "failed"
+        record["error"] = message
+        if self.state is project:
+            save_project(project)
+            QMessageBox.warning(self, "Multi-session analysis", message)
+            self._report_ai_action_result(record)
 
     def _report_ai_action_result(self, record: dict) -> None:
         """Expose completed/failed task evidence, then interpret it in its project."""
@@ -8010,6 +8188,15 @@ class NeuroFlowWindow(QMainWindow):
         if self.worker is not None and self.worker.isRunning():
             QMessageBox.information(self, PRODUCT_NAME, "Wait for the analysis to finish." if self.language == "en_US" else "分析正在运行，请完成后再切换项目。")
             return False
+        if self.study_worker is not None and self.study_worker.isRunning():
+            QMessageBox.information(
+                self,
+                PRODUCT_NAME,
+                "Wait for grouped study validation to finish."
+                if self.language == "en_US"
+                else "跨 Session 整组验证正在运行，请完成后再切换项目。",
+            )
+            return False
         if self.ai_dialog and self.ai_dialog.worker and self.ai_dialog.worker.isRunning():
             QMessageBox.information(self, PRODUCT_NAME, "Wait for the AI response to finish." if self.language == "en_US" else "AI 回复正在生成，请完成后再切换项目。")
             return False
@@ -8029,7 +8216,7 @@ class NeuroFlowWindow(QMainWindow):
         from .command_palette import CommandPaletteDialog
         english = self.language == "en_US"
         commands = []
-        for name in ("new", "open", "examples", "save", "project_folder", "sorters", "sidebar", "ai_panel", "reset_layout", "tutorial", "docs"):
+        for name in ("new", "open", "examples", "study", "save", "project_folder", "sorters", "sidebar", "ai_panel", "reset_layout", "tutorial", "docs"):
             item = getattr(self, f"menu_{name}_action")
             needs_project = name in {"save", "project_folder", "sidebar", "ai_panel", "reset_layout"}
             commands.append({

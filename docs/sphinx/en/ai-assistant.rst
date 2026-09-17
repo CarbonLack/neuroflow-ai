@@ -1,7 +1,7 @@
 Controlled AI assistant
 =======================
 
-Project-aware Harness conversations (v1.2.5)
+Project-aware Harness conversations and Studies (v1.3.0)
 ----------------------------------------------------------------------
 
 For an institute-managed DeepSeek Harness account, use **Read local DeepSeek
@@ -22,6 +22,15 @@ projects or provider settings requires renewed context approval. Analysis propos
 still require user confirmation and pass the existing application validators.
 New analysis features require explicit tool registration; arbitrary shell, code
 execution and file-system access are not granted.
+
+After a multi-session Study is saved, the active project summary registers its
+random Study ID, animal/session counts, selected conditions, validation level,
+and available metrics. AI can explain the evidence and, in Collaborative mode,
+propose the controlled ``run_multi_session_analysis`` action. The application still
+checks the local Study, validates parameters, and asks the user to confirm. Study
+names, local paths, animal/session row identities, large trajectories, and raw
+voltage are excluded from the cloud summary. The assistant must distinguish
+session-held-out from animal-held-out validation and must not match cells by Unit ID.
 
 The AI assistant occupies a collapsible right-side panel beside the active
 analysis. It receives a small structured project summary produced by local

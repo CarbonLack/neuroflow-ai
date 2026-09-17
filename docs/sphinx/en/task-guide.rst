@@ -583,6 +583,51 @@ Return to Behavior analysis and check valid trials and conditions. Do not duplic
 
 `Method reference <https://scikit-learn.org/stable/common_pitfalls.html>`__
 
+.. _task-multi_session:
+
+Combine sessions or animals
+----------------------------------------------------------------------------------------------------
+
+Organize completed session projects into a Study for grouped validation, hierarchical summaries, and population dynamics.
+
+**Have ready**
+
+Each session has curated units and matching event-aligned analysis. Biological animal IDs, unique session IDs, and two shared conditions are known.
+
+1. **Create a Study**
+
+   Choose File → Multi-session study…, create a Study, and select its own folder. A Study indexes projects without copying raw voltage.
+
+2. **Add and verify sessions**
+
+   Add each neuroflow\_project.json. Verify animal, session, readiness, and shared conditions row by row; an electrode or channel group is not an animal.
+
+3. **Choose the question and validation level**
+
+   Choose two conditions, a model, and the held-out level. Prefer animal-held-out validation across animals; use session-held-out validation for one animal.
+
+4. **Interpret within limits**
+
+   Inspect held-out-group scores and session effects before confusion and latent trajectories. LDA is a classifier; latent dynamics is a separate PCA plus linear-transition description.
+
+**Check the result**
+
+Training and test sets must not share the held-out animal or session. Equal unit numbers across sessions remain unmatched. A high score only establishes predictive information under the stated design.
+
+**Saved output**
+
+The Study's results/multi\_session folder stores English figures, trial features, held-out metrics, predictions, session summaries, and full JSON.
+
+**Fewer than two shared conditions**
+
+Return to each session and harmonize condition names and event windows. Do not relabel genuinely different events as one condition.
+
+**Only one animal**
+
+Session-held-out and descriptive analyses remain possible, but do not claim cross-animal generalization or animal-level replication.
+
+`Method reference <https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/MULTI_SESSION_ANALYSIS_ZH.md>`__
+
 .. _task-export:
 
 Save projects, figures, and records

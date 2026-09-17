@@ -287,6 +287,51 @@ def test_ai_modes_block_tools_until_collaborative(tmp_path: Path):
     assert unknown.valid is False
 
 
+def test_ai_can_read_and_validate_registered_multi_session_study(tmp_path: Path):
+    state = ProjectState(root=tmp_path / "project")
+    state.metadata["multi_session_studies"] = {
+        "study-1": {
+            "name": "Cohort study",
+            "status": "configured",
+            "animal_count": 3,
+            "session_count": 6,
+            "selected_conditions": ["correct", "error"],
+        }
+    }
+
+    summary = build_project_summary(state, "decoding")
+    assert summary["multi_session_studies"]["study-1"]["animal_count"] == 3
+    allowed = validate_tool_call(
+        "run_multi_session_analysis",
+        {
+            "study_id": "study-1",
+            "model": "Linear SVM",
+            "group_by": "animal",
+            "cv_folds": 3,
+            "permutations": 200,
+            "conditions": ["correct", "error"],
+        },
+        state,
+        AIMode.COLLABORATIVE,
+    )
+    blocked = validate_tool_call(
+        "run_multi_session_analysis",
+        {
+            "study_id": "missing",
+            "model": "Linear SVM",
+            "group_by": "animal",
+            "cv_folds": 3,
+            "permutations": 200,
+        },
+        state,
+        AIMode.COLLABORATIVE,
+    )
+
+    assert allowed.valid is True
+    assert any("holds out whole sessions" in item for item in allowed.warnings)
+    assert blocked.valid is False
+
+
 def test_ai_context_reports_online_highpass_and_never_exposes_path(tmp_path: Path):
     recording = tmp_path / "private" / "ap_recording.bin"
     recording.parent.mkdir()

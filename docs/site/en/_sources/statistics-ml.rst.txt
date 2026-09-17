@@ -49,6 +49,65 @@ Machine-learning performance establishes predictive information under the
 specified validation design. Causality, mechanism, and generalization to new
 animals require additional evidence.
 
+Multi-session and multi-animal studies
+--------------------------------------
+
+A project still represents one recording session. After completing event-aligned
+analysis in each session, choose **File → Multi-session study…** and add the relevant
+``neuroflow_project.json`` manifests. Every row needs a biological animal ID and a
+unique session ID; an electrode, region, or channel group is not an animal.
+
+The Study workspace preserves the hierarchy ``trial → session → animal`` and provides:
+
+* logistic regression, linear/RBF SVM, shrinkage LDA, and random forest with entire
+  sessions or animals held out;
+* scaling fitted inside each training fold;
+* group-bootstrap intervals, within-group label permutations, and per-held-out-group
+  performance;
+* session-level condition summaries and, when enough animals are available, a linear
+  mixed model with an animal random intercept and session variance component;
+* fixed-dimensional population-distribution features, so Unit 7 in two sessions is
+  never silently treated as the same neuron;
+* descriptive latent dynamics: PCA followed by a regularized linear state-transition
+  fit with trajectories, explained variance, and transition fit quality.
+
+LDA (linear discriminant analysis) is a supervised classifier. The separate latent-
+dynamics analysis is neither LDA nor a deep generative model. It summarizes low-
+dimensional trajectories and approximate linear evolution; it does not establish a
+dynamical mechanism or causality.
+
+Recommended order
+~~~~~~~~~~~~~~~~~
+
+1. Import, curate Units, align behavior/TTL, and run identical event windows in each session.
+2. Check condition names, baseline/response windows, and time bins across sessions.
+3. Create a Study and verify animal/session identities and exclusions.
+4. Inspect coverage and session-level effects, then start with an animal-held-out linear baseline.
+5. Keep the same grouped design when comparing nonlinear models and inspect the permutation null.
+6. Interpret latent trajectories as population-state descriptions, not replacements for
+   hierarchical inference or independent validation.
+
+With one animal, the application falls back to session-held-out validation and explicitly
+withholds cross-animal inference. Cell identities are unmatched unless separate tracking
+evidence is supplied; “unmatched” is the safe default.
+
+Python and command line
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The Python package exports ``StudyState``, ``add_project``,
+``run_multi_session_analysis``, and ``run_latent_dynamics``. The CLI can create,
+inspect, and run a Study:
+
+.. code-block:: powershell
+
+   neuroephys study-create D:\Study01 --name "Learning cohort"
+   neuroephys study-add D:\Study01 D:\Projects\S01\neuroflow_project.json --animal A01 --session S01
+   neuroephys study-inspect D:\Study01
+   neuroephys study-run D:\Study01 --model "Linear SVM" --group-by animal --conditions correct error
+
+English SVG/PNG figures, trial features, held-out metrics, predictions, session summaries,
+and full JSON are written to ``results/multi_session`` inside the Study.
+
 .. raw:: html
 
    <img class="product-shot" src="../assets/neuroephys-decoding-en.png"

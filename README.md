@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.2.6
+# NeuroEphys AI v1.3.0
 
 AI 项目对话：本版可通过已配置的官方 DeepSeek Harness 查询当前数据、指定 Unit、事件、结果与项目历史对话；分析操作仍需确认。机构账号使用 Harness SDK，不复制其密钥到 App。Harness 须独立安装配置，详见 [AI 使用手册](AI_USER_GUIDE_ZH.md) 和 [实现及验收边界](docs/AI_HARNESS_IMPLEMENTATION_1.2.5_ZH.md)。
 
@@ -17,7 +17,7 @@ AI 项目对话：本版可通过已配置的官方 DeepSeek Harness 查询当�
   [English](docs/GITHUB_USER_GUIDE_EN.md)**
 - 下载测试：[GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/releases)
 - 问题反馈：[GitHub Issues](https://github.com/CarbonLack/neuroflow-ai/issues)
-- 本次发行说明：[RELEASE_NOTES_1.2.md](RELEASE_NOTES_1.2.md)
+- 本次发行说明：[RELEASE_NOTES_1.3.md](RELEASE_NOTES_1.3.md)
 - 三批数据验证范围、结果与科学边界：
   [THREE_BATCH_ACCEPTANCE_ZH.md](docs/THREE_BATCH_ACCEPTANCE_ZH.md)
 
@@ -26,9 +26,15 @@ NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道
 复核、行为对齐、Neo/Elephant 神经分析、统计、机器学习、论文图和复现记录组织成
 可逐步检查、替换和恢复的工作流。
 
+单个项目对应一个 recording Session；新增的 **Study 层** 可把多个已完成项目组织成
+多 Session／多动物研究。它保留 ``trial → session → animal`` 层级，提供按整只动物或
+整个 Session 留出的 Logistic、SVM、LDA、随机森林、层级条件汇总和描述性潜在动力学，
+不会把不同 Session 中相同编号的 Unit 默认当成同一细胞。方法、适用边界与完整操作见
+[多 Session 分析路径](docs/MULTI_SESSION_ANALYSIS_ZH.md)。
+
 ## 开始使用
 
-v1.2.6 同时提供标准安装版、标准便携版与可选择组件的 GPU/CUDA/Kilosort Full
+v1.3.0 同时提供标准安装版、标准便携版与可选择组件的 GPU/CUDA/Kilosort Full
 离线安装版；科研复现与比赛演示推荐 Full，普通 CPU 工作站可选标准版。v1.2.1 增加按实际图名选择的子图格式编辑、
 分页并排参数、项目统一样式与期刊参考预设。
 字体、轴线、网格及配色的默认参数与依据见 [科研作图标准](docs/FIGURE_STYLE_STANDARD_ZH.md)。
@@ -41,7 +47,8 @@ v1.2.6 同时提供标准安装版、标准便携版与可选择组件的 GPU/CU
 打开可搜索的教程中心。图表样式、子图选择、波形窗口在 **图表工具** 中展开。
 
 v1.2 优化了首页、三栏工作区、线条图标和阅读排版，新增最近项目、教程字号/已读记录，
-并修正单次运行进度和切换项目的未保存检查。App 与网页共用 18 项操作教程。
+并修正单次运行进度和切换项目的未保存检查。App 内置 19 项可搜索操作教程；
+网页手册另有完整方法说明。
 
 <p align="center"><img src="docs/site/assets/neuroephys-tutorial-zh.png" width="880" alt="新版任务教程中心"></p>
 
@@ -174,7 +181,7 @@ chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度
 
 ## 启动
 
-普通用户安装 ``NeuroEphysAI-Setup-1.2.6.exe`` 后，双击桌面上的 **NeuroEphys AI**
+普通用户安装 ``NeuroEphysAI-Setup-1.3.0.exe`` 后，双击桌面上的 **NeuroEphys AI**
 快捷方式即可启动。便携版需完整解压 ZIP，然后双击
 ``NeuroEphysAI\NeuroEphysAI.exe``；不要只复制单独的 EXE。两种版本都不要求用户安装
 Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
@@ -182,7 +189,7 @@ Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
 Python 用户可以安装构建出的 wheel：
 
 ```powershell
-python -m pip install neuroephys_ai-1.2.6-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.0-py3-none-any.whl
 neuroephys info
 ```
 
@@ -204,6 +211,33 @@ print(quality["quality_score"])
 neuroephys population example_project --bin-ms 1 --sigma-ms 25 --ordering pca_loading
 neuroephys connectivity example_project --normalization trial_rate --jitter-ms 25
 ```
+
+多 Session 研究可在 App 的 **文件 → 多 Session 研究…** 中建立，也可批处理：
+
+```powershell
+neuroephys study-create D:\Study01 --name "Learning cohort"
+neuroephys study-add D:\Study01 D:\Projects\S01\neuroflow_project.json --animal A01 --session S01
+neuroephys study-inspect D:\Study01
+neuroephys study-run D:\Study01 --model "Linear SVM" --group-by animal --conditions correct error
+```
+
+```python
+from pathlib import Path
+import neuroephys as ne
+
+study = ne.StudyState(Path(r"D:\Study01"), "Learning cohort")
+ne.add_project(study, Path(r"D:\Projects\S01"), "A01", "S01")
+ne.save_study(study)
+result = ne.run_multi_session_analysis(
+    study,
+    model_name="Linear SVM",
+    group_by="animal",
+    selected_conditions=["correct", "error"],
+)
+```
+
+这里的 LDA 是监督分类器；潜在动力学是单独的 PCA + 正则化线性状态转移描述。
+只有一只动物时会自动改用 Session 留出，并拒绝把结果表述为跨动物验证。
 
 ```python
 aligned = ne.align_spike_population(

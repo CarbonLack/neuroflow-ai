@@ -8,10 +8,10 @@
 
 | 版本 | 适合谁 | 怎么用 | 注意 |
 |---|---|---|---|
-| **Full 离线安装版（推荐）** `NeuroEphysAI-Setup-1.2.4-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 体积最大；GPU 还取决于 NVIDIA 驱动和硬件 |
-| **标准安装版** `NeuroEphysAI-Setup-1.2.4.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 后续可在 Sorter 管理器补齐组件 |
-| **标准便携版** `NeuroEphysAI-1.2.4-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
-| **Python 包** `neuroephys_ai-1.2.4-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
+| **Full 离线安装版（推荐）** `NeuroEphysAI-Setup-1.3.0-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 体积最大；GPU 还取决于 NVIDIA 驱动和硬件 |
+| **标准安装版** `NeuroEphysAI-Setup-1.3.0.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 后续可在 Sorter 管理器补齐组件 |
+| **标准便携版** `NeuroEphysAI-1.3.0-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
+| **Python 包** `neuroephys_ai-1.3.0-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
 
 完整 Full 便携 ZIP 大于 GitHub 2 GiB 单文件限制，因此 GitHub 主要提供 Full 安装包。本地构建可另行生成 Full 便携版。
 
@@ -89,7 +89,22 @@ TTL CSV 提供同一同步脉冲在电生理时钟中的时间。平台按顺序
 - “论文与复现”使用英文标签生成主图、附图、子图字母、图注草稿、Methods、完整文件清单和校验值。
 - 自动排版不代替研究者对生物学故事、统计、图注和目标期刊规格的终审。
 
-## 9. AI 助手与机构 harness
+## 9. 多 Session／多动物研究
+
+单个项目对应一个 Session。先在每个项目内使用相同的事件定义、基线/响应窗和 bin 完成
+Unit 复核、行为同步与事件对齐，然后选择 **文件 → 多 Session 研究…**：
+
+1. 新建 Study 并加入各项目的 `neuroflow_project.json`；
+2. 核对真实动物编号、唯一 Session 编号、纳入状态和共有条件；
+3. 选择两个共有条件、按动物或 Session 整组留出、模型及置换次数；
+4. 查看逐留出组性能、混淆矩阵、Session 条件效应和描述性潜在轨迹；
+5. 在 Study 的 `results/multi_session` 取得英文 SVG/PNG、CSV 和 JSON。
+
+不同 Session 的同号 Unit 默认不是同一细胞；只有一只动物时只能做 Session 留出，不能
+宣称跨动物泛化。LDA 是分类器，潜在动力学是独立的 PCA + 正则化线性转移描述。详见
+[完整方法与操作](MULTI_SESSION_ANALYSIS_ZH.md)。
+
+## 10. AI 助手与机构 harness
 
 在 **帮助 → AI 设置** 中选择手动、助手或协作模式。本机已部署 DeepSeek Harness 时，点击“读取本机 DeepSeek Harness 配置”，再点击“检测服务状态”。软件只读取地址、模型和环境变量名，不读取 Harness 凭据文件。
 
@@ -97,7 +112,10 @@ AI 使用版本化的受控项目摘要，不依赖 Harness 网页。原始电�
 
 App 自动生成受控的结构化项目上下文：当前步骤、已有结果、导出件、约束和允许的工具。默认不发送原始电压、大数组、本地路径和身份信息。协作模式中的本地操作仍需要白名单检查和用户确认。
 
-## 10. 项目文件放在哪里？
+保存 Study 后，AI 可读取脱敏的 Study ID、计数、条件、验证设计和结果摘要，并在协作模式
+提出受控运行；路径、动物/Session 行明细、原始电压和大数组不发送。
+
+## 11. 项目文件放在哪里？
 
 | 路径 | 内容 |
 |---|---|
@@ -111,12 +129,12 @@ App 自动生成受控的结构化项目上下文：当前步骤、已有结果�
 
 备份时至少保留整个项目目录和原始数据。只复制一张图无法恢复分析。
 
-## 11. Python 安装与最小例子
+## 12. Python 安装与最小例子
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.2.4-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.0-py3-none-any.whl
 neuroephys info --json
 ```
 
@@ -131,7 +149,7 @@ print(quality["quality_score"])
 
 可选依赖和更多 API 见 [README](../README.md) 与[Python 包手册](https://carbonlack.github.io/neuroflow-ai/zh/python-package.html)。
 
-## 12. 常见问题
+## 13. 常见问题
 
 - **启动时缺 DLL：** 不要单独拷贝 EXE；重新完整安装或完整解压便携版。
 - **Kilosort 不可用：** 检查是否使用 Full 版、NVIDIA 驱动、CUDA/PyTorch 探测和显存。也可选择 CPU sorter。

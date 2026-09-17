@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/task-guide.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=9ae45a54"></script>
+      <script src="_static/documentation_options.js?v=4ebe3ea6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -98,6 +98,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#task-connectivity">检查毫秒级时序关系</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#task-statistics">查看条件差异与统计依据</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#task-decoding">运行分类或回归模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#session">汇总多个 Session 或多只动物</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#task-export">保存项目、图和实验记录</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ai">调整三栏、AI 助手与提示</a></li>
 </ul>
@@ -144,6 +145,11 @@
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id2">统计检验</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id3">神经解码</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id4">阅读图表</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#session">多 Session／多动物研究</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#id5">推荐顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#python">Python 与命令行</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="figures.html">图表检查与论文导出</a><ul>
@@ -154,7 +160,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-v1-2-5">Harness 项目对话（v1.2.5）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-study-v1-3-0">Harness 项目对话与 Study（v1.3.0）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id1">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#provider">模型 Provider</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id2">发送内容预览</a></li>
@@ -340,8 +346,9 @@
 <li><p><a class="reference internal" href="#task-connectivity" id="id27">检查毫秒级时序关系</a></p></li>
 <li><p><a class="reference internal" href="#task-statistics" id="id28">查看条件差异与统计依据</a></p></li>
 <li><p><a class="reference internal" href="#task-decoding" id="id29">运行分类或回归模型</a></p></li>
-<li><p><a class="reference internal" href="#task-export" id="id30">保存项目、图和实验记录</a></p></li>
-<li><p><a class="reference internal" href="#ai" id="id31">调整三栏、AI 助手与提示</a></p></li>
+<li><p><a class="reference internal" href="#session" id="id30">汇总多个 Session 或多只动物</a></p></li>
+<li><p><a class="reference internal" href="#task-export" id="id31">保存项目、图和实验记录</a></p></li>
+<li><p><a class="reference internal" href="#ai" id="id32">调整三栏、AI 助手与提示</a></p></li>
 </ul>
 </nav>
 <section id="task-examples">
@@ -719,8 +726,37 @@
 <p>返回行为分析核对有效 trial 与条件数量。不要通过复制 trial 来凑够交叉验证样本。</p>
 <p><a class="reference external" href="https://scikit-learn.org/stable/common_pitfalls.html">方法参考</a></p>
 </section>
+<section id="session">
+<span id="task-multi-session"></span><h2><a class="toc-backref" href="#id30" role="doc-backlink">汇总多个 Session 或多只动物</a><a class="headerlink" href="#session" title="Link to this heading"></a></h2>
+<p>把已完成的单 Session 项目组织成 Study，进行整组验证、层级汇总和群体动力学描述。</p>
+<p><strong>先准备好</strong></p>
+<p>每个 Session 已完成 Unit 复核和同一参数的事件对齐分析；已确认真实动物编号、唯一 Session 编号及两个共有条件。</p>
+<ol class="arabic">
+<li><p><strong>新建 Study</strong></p>
+<p>选择“文件 → 多 Session 研究…”，新建研究并指定独立保存位置。Study 只索引项目，不复制原始电压。</p>
+</li>
+<li><p><strong>加入并核对 Session</strong></p>
+<p>添加各项目的 neuroflow_project.json。逐行核对动物、Session、状态和共有条件；电极或通道组不能当作动物编号。</p>
+</li>
+<li><p><strong>选择问题和验证层级</strong></p>
+<p>选择两个条件、模型及整组留出层级。多只动物优先按动物留出；只有一只动物时使用 Session 留出。</p>
+</li>
+<li><p><strong>解释而不越界</strong></p>
+<p>先看逐留出组分数和 Session 条件效应，再看混淆矩阵与潜在轨迹。LDA 是分类器；潜在动力学是单独的 PCA + 线性转移描述。</p>
+</li>
+</ol>
+<p><strong>完成检查</strong></p>
+<p>训练与测试必须没有同一动物或 Session；不同 Session 的同号 Unit 默认不匹配。高分只能说明指定验证设计下存在可预测信息。</p>
+<p><strong>保存位置</strong></p>
+<p>Study 的 results/multi_session 保存英文图、trial 特征、留出组指标、预测、Session 汇总和完整 JSON。</p>
+<p><strong>没有两个共有条件</strong></p>
+<p>返回各 Session，统一条件名称和事件分析窗；不要把不同事件强行改成同一标签。</p>
+<p><strong>只有一只动物</strong></p>
+<p>可以做 Session 留出和描述性汇总，但不能表述为跨动物泛化或动物层级重复。</p>
+<p><a class="reference external" href="https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/MULTI_SESSION_ANALYSIS_ZH.md">方法参考</a></p>
+</section>
 <section id="task-export">
-<span id="id13"></span><h2><a class="toc-backref" href="#id30" role="doc-backlink">保存项目、图和实验记录</a><a class="headerlink" href="#task-export" title="Link to this heading"></a></h2>
+<span id="id13"></span><h2><a class="toc-backref" href="#id31" role="doc-backlink">保存项目、图和实验记录</a><a class="headerlink" href="#task-export" title="Link to this heading"></a></h2>
 <p>保存便于下次继续；导出提供便于查阅、编辑和交付的图表与记录。</p>
 <p><strong>先准备好</strong></p>
 <p>一个已打开的项目；要导出的分析应先完成。</p>
@@ -743,7 +779,7 @@
 <p>“保存项目”与“论文与复现”导出是两项操作。先完成分析，再运行导出并检查 exports。</p>
 </section>
 <section id="ai">
-<span id="task-layout-ai"></span><h2><a class="toc-backref" href="#id31" role="doc-backlink">调整三栏、AI 助手与提示</a><a class="headerlink" href="#ai" title="Link to this heading"></a></h2>
+<span id="task-layout-ai"></span><h2><a class="toc-backref" href="#id32" role="doc-backlink">调整三栏、AI 助手与提示</a><a class="headerlink" href="#ai" title="Link to this heading"></a></h2>
 <p>按窗口大小分配流程、图表和 AI 的空间，随时收起或恢复。</p>
 <p><strong>先准备好</strong></p>
 <p>打开项目后即可调整三栏；使用在线 AI 需要在 AI 设置中配置服务。</p>

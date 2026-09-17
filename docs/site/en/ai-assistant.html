@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=928db92d"></script>
+      <script src="_static/documentation_options.js?v=1f29e9d3"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -97,6 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-fine-spike-timing">Inspect fine spike timing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-statistical-evidence">Inspect statistical evidence</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#run-classification-or-regression">Run classification or regression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task-guide.html#combine-sessions-or-animals">Combine sessions or animals</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#save-projects-figures-and-records">Save projects, figures, and records</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#arrange-panels-ai-and-guidance">Arrange panels, AI, and guidance</a></li>
 </ul>
@@ -143,6 +144,11 @@
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#statistical-suite">Statistical suite</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#decoding">Decoding</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#interpreting-the-figure">Interpreting the figure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#multi-session-and-multi-animal-studies">Multi-session and multi-animal studies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#recommended-order">Recommended order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#python-and-command-line">Python and command line</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="figures.html">Figure inspection and publication export</a><ul>
@@ -152,7 +158,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Controlled AI assistant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#project-aware-harness-conversations-v1-2-5">Project-aware Harness conversations (v1.2.5)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#project-aware-harness-conversations-and-studies-v1-3-0">Project-aware Harness conversations and Studies (v1.3.0)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#providers">Providers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cloud-data-preview">Cloud-data preview</a></li>
@@ -317,8 +323,8 @@
 
   <section id="controlled-ai-assistant">
 <h1>Controlled AI assistant<a class="headerlink" href="#controlled-ai-assistant" title="Link to this heading"></a></h1>
-<section id="project-aware-harness-conversations-v1-2-5">
-<h2>Project-aware Harness conversations (v1.2.5)<a class="headerlink" href="#project-aware-harness-conversations-v1-2-5" title="Link to this heading"></a></h2>
+<section id="project-aware-harness-conversations-and-studies-v1-3-0">
+<h2>Project-aware Harness conversations and Studies (v1.3.0)<a class="headerlink" href="#project-aware-harness-conversations-and-studies-v1-3-0" title="Link to this heading"></a></h2>
 <p>For an institute-managed DeepSeek Harness account, use <strong>Read local DeepSeek
 Harness configuration</strong> in AI settings. The Harness SDK route calls the installed
 official dsh runtime; the app does not extract its model credentials or bypass it
@@ -335,6 +341,14 @@ projects or provider settings requires renewed context approval. Analysis propos
 still require user confirmation and pass the existing application validators.
 New analysis features require explicit tool registration; arbitrary shell, code
 execution and file-system access are not granted.</p>
+<p>After a multi-session Study is saved, the active project summary registers its
+random Study ID, animal/session counts, selected conditions, validation level,
+and available metrics. AI can explain the evidence and, in Collaborative mode,
+propose the controlled <code class="docutils literal notranslate"><span class="pre">run_multi_session_analysis</span></code> action. The application still
+checks the local Study, validates parameters, and asks the user to confirm. Study
+names, local paths, animal/session row identities, large trajectories, and raw
+voltage are excluded from the cloud summary. The assistant must distinguish
+session-held-out from animal-held-out validation and must not match cells by Unit ID.</p>
 <p>The AI assistant occupies a collapsible right-side panel beside the active
 analysis. It receives a small structured project summary produced by local
 deterministic code. Raw voltage arrays are excluded.</p>

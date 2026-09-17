@@ -39,6 +39,57 @@ ROC/F1、标签置换证据、时间分辨结果、群体轨迹和特征重要�
 
 机器学习性能说明指定验证设计下存在可预测信息。因果、机制和跨动物泛化仍需额外证据。
 
+多 Session／多动物研究
+----------------------
+
+单个项目仍对应一个 recording session。完成各 Session 的事件对齐分析后，从
+**文件 → 多 Session 研究…** 建立 Study，把多个 ``neuroflow_project.json`` 加入同一研究。
+每行都必须填写真实的动物编号和唯一 Session 编号；电极、脑区或通道组不能冒充动物。
+
+Study 工作区按以下层级处理数据：``trial → session → animal``。它提供：
+
+* Session/动物整组留出的 Logistic、线性或 RBF SVM、收缩 LDA 和随机森林；
+* 在每折训练集内部完成标准化，避免预处理信息泄漏；
+* 分组 bootstrap 区间、组内标签置换和逐留出组性能；
+* 每 Session 的条件效应汇总；动物数足够时才尝试动物随机截距、Session 方差分量的
+  线性混合模型；
+* 固定维度的群体分布特征，因此不会错误地把不同 Session 的 ``Unit 7`` 当作同一个细胞；
+* 描述性的潜在动力学：PCA 后拟合正则化线性状态转移，并报告轨迹、解释方差和转移
+  拟合度。
+
+LDA（linear discriminant analysis）是监督分类方法；界面中的潜在动力学不是 LDA，
+也不是深度生成模型。它只能概括当前数据中的低维轨迹与近似线性演化，不能证明动力学
+机制或因果关系。
+
+推荐顺序
+~~~~~~~~
+
+1. 每个 Session 单独完成导入、Unit 质控、TTL/行为同步和同一时间窗的事件分析；
+2. 检查所有 Session 的条件名称、基线窗、响应窗和 bin 是否一致；
+3. 建立 Study，核对动物与 Session 身份，明确排除项；
+4. 先看 Session 级效应和数据覆盖，再运行按动物留出的线性基线模型；
+5. 比较非线性模型时保留相同划分，并用置换分布判断性能是否超过该设计下的机会水平；
+6. 最后查看低维轨迹，作为群体状态描述，而不是替代分层统计或独立验证。
+
+只有一只动物时，软件自动退回 Session 留出，并明确标记结果不能作为跨动物推断。
+不同 Session 的 Unit 身份只有在另行提供细胞追踪证据时才能匹配；当前安全默认是“不匹配”。
+
+Python 与命令行
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Python 包提供 ``StudyState``、``add_project``、``run_multi_session_analysis`` 和
+``run_latent_dynamics``。命令行可建立、检查和运行 Study：
+
+.. code-block:: powershell
+
+   neuroephys study-create D:\Study01 --name "Learning cohort"
+   neuroephys study-add D:\Study01 D:\Projects\S01\neuroflow_project.json --animal A01 --session S01
+   neuroephys study-inspect D:\Study01
+   neuroephys study-run D:\Study01 --model "Linear SVM" --group-by animal --conditions correct error
+
+输出保存为英文 SVG/PNG、trial 特征、留出组指标、预测表、Session 条件汇总和完整 JSON，
+位于 Study 的 ``results/multi_session``。
+
 .. raw:: html
 
    <img class="product-shot" src="../assets/neuroephys-decoding-zh.png"

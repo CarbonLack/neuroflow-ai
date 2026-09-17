@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=9ae45a54"></script>
+      <script src="_static/documentation_options.js?v=4ebe3ea6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -98,6 +98,7 @@
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-connectivity">检查毫秒级时序关系</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-statistics">查看条件差异与统计依据</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-decoding">运行分类或回归模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task-guide.html#session">汇总多个 Session 或多只动物</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-export">保存项目、图和实验记录</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#ai">调整三栏、AI 助手与提示</a></li>
 </ul>
@@ -144,6 +145,11 @@
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id2">统计检验</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id3">神经解码</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id4">阅读图表</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#session">多 Session／多动物研究</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#id5">推荐顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#python">Python 与命令行</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="figures.html">图表检查与论文导出</a><ul>
@@ -154,7 +160,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#harness-v1-2-5">Harness 项目对话（v1.2.5）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#harness-study-v1-3-0">Harness 项目对话与 Study（v1.3.0）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id1">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#provider">模型 Provider</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id2">发送内容预览</a></li>
@@ -320,8 +326,8 @@
 
   <section id="ai">
 <h1>受控 AI 助手<a class="headerlink" href="#ai" title="Link to this heading"></a></h1>
-<section id="harness-v1-2-5">
-<h2>Harness 项目对话（v1.2.5）<a class="headerlink" href="#harness-v1-2-5" title="Link to this heading"></a></h2>
+<section id="harness-study-v1-3-0">
+<h2>Harness 项目对话与 Study（v1.3.0）<a class="headerlink" href="#harness-study-v1-3-0" title="Link to this heading"></a></h2>
 <p>已配置机构 DeepSeek Harness 时，在 AI 设置点击“读取本机 DeepSeek Harness 配置”，
 选择 Harness SDK。App 通过官方 dsh 运行时请求模型，不读取或复制机构密钥。
 Harness 须单独安装并完成账号配置，参考 <a class="reference external" href="https://deepseek.com/harness/en/">https://deepseek.com/harness/en/</a> 。</p>
@@ -332,6 +338,11 @@ Harness 须单独安装并完成账号配置，参考 <a class="reference extern
 或：“回顾这个项目里我们之前关于同步误差的讨论。”对话存入项目
 <code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code>，重开项目仍可读取。新功能须注册工具及参数权限，
 AI 不会因此获得任意代码或文件访问权限。分析提案经用户确认后才运行。</p>
+<p>保存多 Session Study 后，当前项目摘要会登记其随机 Study ID、动物/Session 数、所选
+条件、验证层级和已有指标。AI 可以解释这些结果，也可以在协作模式提出受控的
+<code class="docutils literal notranslate"><span class="pre">run_multi_session_analysis</span></code>；App 仍会核对本机 Study、参数和用户确认。Study 名称、
+本地路径、动物/Session 明细、轨迹大数组和原始电压不会进入云端摘要。AI 还必须区分
+按 Session 留出与按动物留出，不得把同号 Unit 当成跨 Session 的同一细胞。</p>
 <p>每轮使用发送时的项目快照，完成分析后下一轮读取新结果。切换项目或服务设置会
 重新确认可发送内容。没有待确认任务时隐藏空计划表，保留更多聊天空间。</p>
 <p>AI 助手位于分析工作区右侧，可以收起。它接收本地确定性代码生成的小型结构化项目

@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/statistics-ml.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=9ae45a54"></script>
+      <script src="_static/documentation_options.js?v=4ebe3ea6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -98,6 +98,7 @@
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-connectivity">检查毫秒级时序关系</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-statistics">查看条件差异与统计依据</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-decoding">运行分类或回归模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task-guide.html#session">汇总多个 Session 或多只动物</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-export">保存项目、图和实验记录</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#ai">调整三栏、AI 助手与提示</a></li>
 </ul>
@@ -144,6 +145,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#id2">统计检验</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id3">神经解码</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id4">阅读图表</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#session">多 Session／多动物研究</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id5">推荐顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#python">Python 与命令行</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="figures.html">图表检查与论文导出</a><ul>
@@ -154,7 +160,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-v1-2-5">Harness 项目对话（v1.2.5）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-study-v1-3-0">Harness 项目对话与 Study（v1.3.0）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id1">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#provider">模型 Provider</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id2">发送内容预览</a></li>
@@ -350,11 +356,57 @@ ROC/F1、标签置换证据、时间分辨结果、群体轨迹和特征重要�
 <p>混淆矩阵同时显示计数和按行归一化比例。置换面板标出观察值与机会水平。缺少独立
 验证的高训练分数不会作为科学结果展示。</p>
 <p>机器学习性能说明指定验证设计下存在可预测信息。因果、机制和跨动物泛化仍需额外证据。</p>
+</section>
+<section id="session">
+<h2>多 Session／多动物研究<a class="headerlink" href="#session" title="Link to this heading"></a></h2>
+<p>单个项目仍对应一个 recording session。完成各 Session 的事件对齐分析后，从
+<strong>文件 → 多 Session 研究…</strong> 建立 Study，把多个 <code class="docutils literal notranslate"><span class="pre">neuroflow_project.json</span></code> 加入同一研究。
+每行都必须填写真实的动物编号和唯一 Session 编号；电极、脑区或通道组不能冒充动物。</p>
+<p>Study 工作区按以下层级处理数据：<code class="docutils literal notranslate"><span class="pre">trial</span> <span class="pre">→</span> <span class="pre">session</span> <span class="pre">→</span> <span class="pre">animal</span></code>。它提供：</p>
+<ul class="simple">
+<li><p>Session/动物整组留出的 Logistic、线性或 RBF SVM、收缩 LDA 和随机森林；</p></li>
+<li><p>在每折训练集内部完成标准化，避免预处理信息泄漏；</p></li>
+<li><p>分组 bootstrap 区间、组内标签置换和逐留出组性能；</p></li>
+<li><p>每 Session 的条件效应汇总；动物数足够时才尝试动物随机截距、Session 方差分量的
+线性混合模型；</p></li>
+<li><p>固定维度的群体分布特征，因此不会错误地把不同 Session 的 <code class="docutils literal notranslate"><span class="pre">Unit</span> <span class="pre">7</span></code> 当作同一个细胞；</p></li>
+<li><p>描述性的潜在动力学：PCA 后拟合正则化线性状态转移，并报告轨迹、解释方差和转移
+拟合度。</p></li>
+</ul>
+<p>LDA（linear discriminant analysis）是监督分类方法；界面中的潜在动力学不是 LDA，
+也不是深度生成模型。它只能概括当前数据中的低维轨迹与近似线性演化，不能证明动力学
+机制或因果关系。</p>
+<section id="id5">
+<h3>推荐顺序<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>每个 Session 单独完成导入、Unit 质控、TTL/行为同步和同一时间窗的事件分析；</p></li>
+<li><p>检查所有 Session 的条件名称、基线窗、响应窗和 bin 是否一致；</p></li>
+<li><p>建立 Study，核对动物与 Session 身份，明确排除项；</p></li>
+<li><p>先看 Session 级效应和数据覆盖，再运行按动物留出的线性基线模型；</p></li>
+<li><p>比较非线性模型时保留相同划分，并用置换分布判断性能是否超过该设计下的机会水平；</p></li>
+<li><p>最后查看低维轨迹，作为群体状态描述，而不是替代分层统计或独立验证。</p></li>
+</ol>
+<p>只有一只动物时，软件自动退回 Session 留出，并明确标记结果不能作为跨动物推断。
+不同 Session 的 Unit 身份只有在另行提供细胞追踪证据时才能匹配；当前安全默认是“不匹配”。</p>
+</section>
+<section id="python">
+<h3>Python 与命令行<a class="headerlink" href="#python" title="Link to this heading"></a></h3>
+<p>Python 包提供 <code class="docutils literal notranslate"><span class="pre">StudyState</span></code>、<code class="docutils literal notranslate"><span class="pre">add_project</span></code>、<code class="docutils literal notranslate"><span class="pre">run_multi_session_analysis</span></code> 和
+<code class="docutils literal notranslate"><span class="pre">run_latent_dynamics</span></code>。命令行可建立、检查和运行 Study：</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">neuroephys</span> <span class="n">study-create</span> <span class="n">D</span><span class="p">:\</span><span class="n">Study01</span> <span class="p">-</span><span class="n">-name</span> <span class="s2">"Learning cohort"</span>
+<span class="n">neuroephys</span> <span class="n">study-add</span> <span class="n">D</span><span class="p">:\</span><span class="n">Study01</span> <span class="n">D</span><span class="p">:\</span><span class="n">Projects</span><span class="p">\</span><span class="n">S01</span><span class="p">\</span><span class="n">neuroflow_project</span><span class="p">.</span><span class="n">json</span> <span class="p">-</span><span class="n">-animal</span> <span class="n">A01</span> <span class="p">-</span><span class="n">-session</span> <span class="n">S01</span>
+<span class="n">neuroephys</span> <span class="n">study-inspect</span> <span class="n">D</span><span class="p">:\</span><span class="n">Study01</span>
+<span class="n">neuroephys</span> <span class="n">study-run</span> <span class="n">D</span><span class="p">:\</span><span class="n">Study01</span> <span class="p">-</span><span class="n">-model</span> <span class="s2">"Linear SVM"</span> <span class="p">-</span><span class="n">-group-by</span> <span class="n">animal</span> <span class="p">-</span><span class="n">-conditions</span> <span class="n">correct</span> <span class="n">error</span>
+</pre></div>
+</div>
+<p>输出保存为英文 SVG/PNG、trial 特征、留出组指标、预测表、Session 条件汇总和完整 JSON，
+位于 Study 的 <code class="docutils literal notranslate"><span class="pre">results/multi_session</span></code>。</p>
 <img class="product-shot" src="../assets/neuroephys-decoding-zh.png"
      alt="NeuroEphys AI 中文交叉验证、置换检验与 ROC 页面"><p>向下滚动后，时间分辨解码、群体 PCA 轨迹和 Unit 特征重要性分别作为独立可编辑子图
 显示。</p>
 <img class="product-shot" src="../assets/neuroephys-decoding-detail-zh.png"
      alt="NeuroEphys AI 中文时间分辨解码和群体分析明细"></section>
+</section>
 </section>
 
 

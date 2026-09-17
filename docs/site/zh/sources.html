@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/sources.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=9ae45a54"></script>
+      <script src="_static/documentation_options.js?v=4ebe3ea6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -97,6 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-connectivity">检查毫秒级时序关系</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-statistics">查看条件差异与统计依据</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-decoding">运行分类或回归模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task-guide.html#session">汇总多个 Session 或多只动物</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-export">保存项目、图和实验记录</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#ai">调整三栏、AI 助手与提示</a></li>
 </ul>
@@ -143,6 +144,11 @@
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id2">统计检验</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id3">神经解码</a></li>
 <li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#id4">阅读图表</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics-ml.html#session">多 Session／多动物研究</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#id5">推荐顺序</a></li>
+<li class="toctree-l3"><a class="reference internal" href="statistics-ml.html#python">Python 与命令行</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="figures.html">图表检查与论文导出</a><ul>
@@ -153,7 +159,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-v1-2-5">Harness 项目对话（v1.2.5）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-study-v1-3-0">Harness 项目对话与 Study（v1.3.0）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id1">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#provider">模型 Provider</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id2">发送内容预览</a></li>
@@ -343,6 +349,15 @@
 ——NHP 高密度记录的外部验收和单 trial/精细时序方法定义。</p></li>
 <li><p><a class="reference external" href="https://github.com/MouseLand/rastermap">Rastermap 论文与官方代码</a>
 ——可选群体活动排序后端；未捆绑时使用内置峰值时间或 PCA 排序。</p></li>
+<li><p><a class="reference external" href="https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data">scikit-learn 分组交叉验证</a>
+与 <a class="reference external" href="https://scikit-learn.org/stable/modules/lda_qda.html">LDA</a>
+——跨 Session/动物整组留出与监督线性判别方法。</p></li>
+<li><p><a class="reference external" href="https://www.statsmodels.org/stable/mixed_linear.html">statsmodels MixedLM</a>
+——动物/Session 层级条件效应的线性混合模型接口。</p></li>
+<li><p><a class="reference external" href="https://doi.org/10.1152/jn.90941.2008">Yu et al. GPFA</a> 与
+<a class="reference external" href="https://doi.org/10.1038/nn.3776">Cunningham &amp; Yu 综述</a>
+——群体潜变量与降维方法背景；当前 Study 使用透明的 PCA + 线性转移描述，
+不宣称实现 GPFA 或深度生成模型。</p></li>
 <li><p><a class="reference external" href="https://api-docs.deepseek.com/">DeepSeek API 文档</a>
 ——可选在线结构化生成和工具调用传输。</p></li>
 <li><p><a class="reference external" href="https://docs.ollama.com/api/openai-compatibility">Ollama OpenAI 兼容接口</a>

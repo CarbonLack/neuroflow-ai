@@ -43,7 +43,7 @@ AI 服务断开、未配置或关闭时，手动分析功能仍可运行。
 
 1. 打开“AI settings”。
 2. 如果本机已部署 DeepSeek Harness，点击“读取本机 DeepSeek Harness 配置”。
-3. v1.2.5 会选择 Harness SDK 连接，由已安装的官方 dsh 负责身份认证和模型请求。App 不读取、复制 Harness 的模型密钥，不绕过机构规定直接访问接口。
+3. v1.3.0 会选择 Harness SDK 连接，由已安装的官方 dsh 负责身份认证和模型请求。App 不读取、复制 Harness 的模型密钥，不绕过机构规定直接访问接口。
 4. 确保本机 dsh 已登录且 Provider/模型配置有效。Harness 是单独的运行环境，不包含在 App 安装包里。官方入口：https://deepseek.com/harness/en/ 。
 5. “检测服务状态”检查本机安装与配置；首次实际提问才能验证账号、网络和模型服务均可用。
 6. 选择是否流式回复、推理强度、超时和重试次数。
@@ -92,6 +92,7 @@ Provider 接口与分析代码分离。实验室私有服务、Ollama 和其他�
 - Unit QC 与人工复核摘要；
 - TTL、行为事件、正式 trial 数和同步残差；
 - 统计和机器学习摘要；
+- 已登记多 Session Study 的随机 ID、动物/Session 数、条件、验证层级与脱敏结果摘要；
 - 已完成、失败、跳过和待运行节点；
 - 当前页面、图表和 unit；
 - 可选的匿名化最新日志。
@@ -150,6 +151,7 @@ align_events
 generate_psth
 run_statistics
 run_decoding
+run_multi_session_analysis
 edit_figure
 export_project
 ```
@@ -165,6 +167,11 @@ export_project
 - 用户确认要求。
 
 模型不能创建未注册工具。原始数据删除、覆盖和未经授权的传输没有白名单入口。
+
+``run_multi_session_analysis`` 只能引用已经在“文件 → 多 Session 研究…”中保存并登记的
+Study。AI 看不到 Study 路径、名称或动物/Session 行明细；它可以读取计数、所选条件、
+验证层级和结果摘要。按 Session 留出不能被表述为跨动物验证，相同 Unit ID 也不能被
+当成跨 Session 的同一细胞。
 
 ## 9. 科学解释
 

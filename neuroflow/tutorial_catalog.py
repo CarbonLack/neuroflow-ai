@@ -340,6 +340,28 @@ TUTORIAL_CATALOG: list[dict[str, Any]] = [
         "https://scikit-learn.org/stable/common_pitfalls.html",
     ),
     _guide(
+        "multi_session", "汇总多个 Session 或多只动物", "Combine sessions or animals", ANALYSE, None,
+        "把已完成的单 Session 项目组织成 Study，进行整组验证、层级汇总和群体动力学描述。",
+        "Organize completed session projects into a Study for grouped validation, hierarchical summaries, and population dynamics.",
+        "每个 Session 已完成 Unit 复核和同一参数的事件对齐分析；已确认真实动物编号、唯一 Session 编号及两个共有条件。",
+        "Each session has curated units and matching event-aligned analysis. Biological animal IDs, unique session IDs, and two shared conditions are known.",
+        [
+            _step("新建 Study", "Create a Study", "选择“文件 → 多 Session 研究…”，新建研究并指定独立保存位置。Study 只索引项目，不复制原始电压。", "Choose File → Multi-session study…, create a Study, and select its own folder. A Study indexes projects without copying raw voltage."),
+            _step("加入并核对 Session", "Add and verify sessions", "添加各项目的 neuroflow_project.json。逐行核对动物、Session、状态和共有条件；电极或通道组不能当作动物编号。", "Add each neuroflow_project.json. Verify animal, session, readiness, and shared conditions row by row; an electrode or channel group is not an animal."),
+            _step("选择问题和验证层级", "Choose the question and validation level", "选择两个条件、模型及整组留出层级。多只动物优先按动物留出；只有一只动物时使用 Session 留出。", "Choose two conditions, a model, and the held-out level. Prefer animal-held-out validation across animals; use session-held-out validation for one animal."),
+            _step("解释而不越界", "Interpret within limits", "先看逐留出组分数和 Session 条件效应，再看混淆矩阵与潜在轨迹。LDA 是分类器；潜在动力学是单独的 PCA + 线性转移描述。", "Inspect held-out-group scores and session effects before confusion and latent trajectories. LDA is a classifier; latent dynamics is a separate PCA plus linear-transition description."),
+        ],
+        "训练与测试必须没有同一动物或 Session；不同 Session 的同号 Unit 默认不匹配。高分只能说明指定验证设计下存在可预测信息。",
+        "Training and test sets must not share the held-out animal or session. Equal unit numbers across sessions remain unmatched. A high score only establishes predictive information under the stated design.",
+        "Study 的 results/multi_session 保存英文图、trial 特征、留出组指标、预测、Session 汇总和完整 JSON。",
+        "The Study's results/multi_session folder stores English figures, trial features, held-out metrics, predictions, session summaries, and full JSON.",
+        [
+            _step("没有两个共有条件", "Fewer than two shared conditions", "返回各 Session，统一条件名称和事件分析窗；不要把不同事件强行改成同一标签。", "Return to each session and harmonize condition names and event windows. Do not relabel genuinely different events as one condition."),
+            _step("只有一只动物", "Only one animal", "可以做 Session 留出和描述性汇总，但不能表述为跨动物泛化或动物层级重复。", "Session-held-out and descriptive analyses remain possible, but do not claim cross-animal generalization or animal-level replication."),
+        ],
+        "https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/MULTI_SESSION_ANALYSIS_ZH.md",
+    ),
+    _guide(
         "export", "保存项目、图和实验记录", "Save projects, figures, and records", WORKSPACE, "export",
         "保存便于下次继续；导出提供便于查阅、编辑和交付的图表与记录。",
         "Save to resume later; export figures, tables, and records for review, editing, and sharing.",
