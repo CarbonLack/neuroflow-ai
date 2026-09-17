@@ -42,14 +42,14 @@ AI 服务断开、未配置或关闭时，手动分析功能仍可运行。
 ## 4. 配置 Provider
 
 1. 打开“AI settings”。
-2. Provider 选择 DeepSeek，或选择 OpenAI-compatible。
-3. 填写 Base URL。
-4. 填写模型名称。
-5. 填写 API 密钥。
-6. 选择是否使用流式回复。
-7. 设置超时和重试次数。
-8. 点击“Check service”检测状态。
-9. 点击“Save”保存非敏感配置。
+2. 如果本机已部署 DeepSeek Harness，点击“读取本机 DeepSeek Harness 配置”。
+3. 软件仅读取 Harness 中的 Provider、地址、模型和密钥环境变量名；不读取 Harness 密钥文件。
+4. 如果是机构内网 HTTP 地址，只有勾选“仅对此机构内网 harness 允许 HTTP”后才能连接。公网地址必须使用 HTTPS。
+5. 点击“检测服务状态”，确认模型列表与延迟。
+6. 选择是否流式回复、推理强度、超时和重试次数。
+7. 点击“应用设置”保存非敏感配置。
+
+也可手动选择 DeepSeek、OpenAI-compatible、Ollama 或其他受支持的 Provider。Provider 适配器与分析代码分离；AI 无论来自哪个服务，都只能读取同一套受控项目摘要，并只能提出已注册的工具请求。
 
 Provider 接口与分析代码分离。实验室私有服务、Ollama 和其他兼容端点可以复用 OpenAI-compatible 配置。
 
@@ -173,18 +173,22 @@ AI 解释结果时分成六部分：
 - 保存项目后关闭软件；
 - 重新打开 `neuroflow_project.json` 后恢复对话和工作流。
 
-## 11. 授权真实项目验证
+## 11. AI 如何“读懂” App
 
-30分钟项目的 AI 回归检查包含：
+- 应用使用有版本号的 `neuroephys.cloud-project-summary.v2` 上下文协议；
+- 每次请求自动加入当前项目、当前节点、已完成/失败/跳过的步骤、结果摘要和界面位置；
+- 新分析模块只要把结构化结果注册到项目摘要，AI 即可使用；
+- 新本地操作必须单独加入工具白名单和参数 Schema，因此“能理解新功能”不等于“可任意执行”。
 
-- 识别1,800秒、32通道、30 kHz；
-- 识别保存信号已在线高通至250 Hz；
-- 阻止 LFP 建议；
-- 概括 Kilosort4 的4个候选 cluster；
-- 把外部“8个细胞”记录为未验证观察；
-- 明确无法据此判定4或8哪个正确；
-- 提出 `compute_unit_qc` 工具调用；
-- 本地规则将该调用标记为需要用户确认；
-- 保存并重开项目后恢复2条对话和候选计划。
+这是 App 内置的 Provider 适配，不需要用界面自动化去操作 Harness 网页，也不依赖某个特定聊天窗口。
 
-协议测试使用本机 DeepSeek-compatible HTTP 服务完成，没有发送原始数据和本机路径。真实外部 DeepSeek API 需要用户提供密钥后继续验证。
+## 12. 当前实机验证
+
+当前 Windows 开发机已验证：
+
+- 自动识别已安装 DeepSeek Harness 的非敏感配置；
+- 机构内网 Provider 健康检查通过，并能返回模型列表；
+- `deepseek-v4.1-flash` 最小真实请求成功；
+- Harness 返回的紧凑工具建议可转换为本地受控工具请求；
+- `inspect_project` 已通过本地白名单和参数验证，但测试中没有执行任何 AI 建议的操作；
+- 原始电压、本地路径和密钥没有进入请求。

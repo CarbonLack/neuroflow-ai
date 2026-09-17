@@ -11,6 +11,7 @@ from typing import Any
 from PySide6.QtCore import QSettings, QThread, Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
+    QBoxLayout,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -42,6 +43,7 @@ from .ai import (
     request_ai_advice,
 )
 from .ai_credentials import get_api_key, store_api_key
+from .ai_harness import discover_deepseek_harness_profiles
 from .ai_tools import AIMode, validate_tool_call
 from .models import ProjectState
 from .product import PRODUCT_NAME
@@ -78,8 +80,24 @@ def load_ai_settings() -> AISettings:
             store.value("selected_context_fields", "[]")
         ),
         safety_identifier=installation_id,
+        api_key_env=str(store.value("api_key_env", "")),
+        allow_insecure_private_network=(
+            str(
+                store.value(
+                    "allow_insecure_private_network",
+                    "false",
+                )
+            ).lower()
+            == "true"
+        ),
+        managed_harness_name=str(
+            store.value("managed_harness_name", "")
+        ),
     )
-    settings.api_key = get_api_key(settings.provider)
+    settings.api_key = get_api_key(
+        settings.provider,
+        settings.api_key_env,
+    )
     store.endGroup()
     return settings
 
@@ -102,6 +120,12 @@ def save_ai_preferences(settings: AISettings) -> None:
         json.dumps(settings.selected_context_fields),
     )
     store.setValue("installation_id", settings.safety_identifier)
+    store.setValue("api_key_env", settings.api_key_env)
+    store.setValue(
+        "allow_insecure_private_network",
+        settings.allow_insecure_private_network,
+    )
+    store.setValue("managed_harness_name", settings.managed_harness_name)
     store.endGroup()
 
 
@@ -166,7 +190,7 @@ class AISettingsDialog(QDialog):
             else "AI 助手设置"
         )
         self.resize(760, 650)
-        self.setMinimumSize(520, 440)
+        self.setMinimumSize(420, 360)
 
         layout = QVBoxLayout(self)
         intro = QLabel(
@@ -183,6 +207,21 @@ class AISettingsDialog(QDialog):
         intro.setWordWrap(True)
         intro.setObjectName("Muted")
         layout.addWidget(intro)
+
+        harness_row = QHBoxLayout()
+        self.import_harness_button = QPushButton(
+            "Import installed DeepSeek Harness"
+            if language == "en_US"
+            else "读取本机 DeepSeek Harness 配置"
+        )
+        self.import_harness_button.clicked.connect(self._import_harness)
+        harness_row.addWidget(self.import_harness_button)
+        harness_row.addStretch()
+        layout.addLayout(harness_row)
+        self.harness_status = QLabel()
+        self.harness_status.setWordWrap(True)
+        self.harness_status.setObjectName("Muted")
+        layout.addWidget(self.harness_status)
 
         form = QFormLayout()
         self.mode_combo = QComboBox()
@@ -282,6 +321,40 @@ class AISettingsDialog(QDialog):
         form.addRow(
             "API key" if language == "en_US" else "API 密钥",
             key_widget,
+        )
+        self.api_key_env_edit = QLineEdit(settings.api_key_env)
+        self.api_key_env_edit.setPlaceholderText(
+            "CDSC_API_KEY / NEUROEPHYS_AI_API_KEY"
+        )
+        form.addRow(
+            "Key environment variable"
+            if language == "en_US"
+            else "密钥环境变量",
+            self.api_key_env_edit,
+        )
+        self.private_http_check = QCheckBox(
+            (
+                "Allow plain HTTP only for this private-network harness"
+                if language == "en_US"
+                else "仅对此机构内网 harness 允许 HTTP"
+            )
+        )
+        self.private_http_check.setChecked(
+            settings.allow_insecure_private_network
+        )
+        self.private_http_check.setToolTip(
+            (
+                "HTTP does not encrypt the key or request in transit. Enable only "
+                "for a trusted institute private-network endpoint."
+                if language == "en_US"
+                else (
+                    "HTTP 不会加密传输中的密钥与请求；只能对可信的机构内网地址启用。"
+                )
+            )
+        )
+        form.addRow(
+            "Private network" if language == "en_US" else "机构内网",
+            self.private_http_check,
         )
         self.persist_key_check = QCheckBox(
             (
@@ -385,7 +458,78 @@ class AISettingsDialog(QDialog):
         buttons.rejected.connect(self.reject)
         button_row.addWidget(buttons)
         layout.addLayout(button_row)
+        self._refresh_harness_status()
         self._provider_changed()
+
+    def _refresh_harness_status(self) -> None:
+        profiles = discover_deepseek_harness_profiles()
+        if not profiles:
+            self.harness_status.setText(
+                (
+                    "No supported local DeepSeek Harness configuration was found."
+                    if self.language == "en_US"
+                    else "未检测到受支持的本机 DeepSeek Harness 配置。"
+                )
+            )
+            self.import_harness_button.setEnabled(False)
+            return
+        profile = profiles[0]
+        self.import_harness_button.setEnabled(True)
+        self.harness_status.setText(
+            (
+                f"Detected {profile.display_name}: {profile.default_model or 'model not set'} · "
+                "endpoint metadata can be imported; the secret is not read."
+                if self.language == "en_US"
+                else (
+                    f"已检测到 {profile.display_name}："
+                    f"{profile.default_model or '未设置模型'}。可读取连接信息，"
+                    "但不会读取 harness 的密钥文件。"
+                )
+            )
+        )
+
+    def _import_harness(self) -> None:
+        profiles = discover_deepseek_harness_profiles()
+        if not profiles:
+            self._refresh_harness_status()
+            return
+        profile = profiles[0]
+        existing_key = self.api_key_edit.text().strip()
+        index = self.provider_combo.findData("institute_harness")
+        self.provider_combo.blockSignals(True)
+        self.provider_combo.setCurrentIndex(max(index, 0))
+        self.provider_combo.blockSignals(False)
+        self._provider_changed()
+        self.base_url_edit.setText(profile.base_url)
+        self.model_edit.clear()
+        self.model_edit.addItems(list(profile.models))
+        self.model_edit.setCurrentText(profile.default_model)
+        self.api_key_env_edit.setText(profile.api_key_env)
+        stored_harness_key = get_api_key(
+            "institute_harness",
+            profile.api_key_env,
+        )
+        if stored_harness_key:
+            self.api_key_edit.setText(stored_harness_key)
+        elif existing_key:
+            self.api_key_edit.setText(existing_key)
+        self.private_http_check.setChecked(
+            profile.base_url.lower().startswith("http://")
+        )
+        self.settings.managed_harness_name = profile.display_name
+        self.recommendation.setText(
+            (
+                "Imported from the installed harness. Use Check service before "
+                "saving. The App sends its own constrained project summary and does "
+                "not copy the harness conversation."
+                if self.language == "en_US"
+                else (
+                    "已读取本机 harness 连接信息。保存前请点击“检测服务状态”。"
+                    "App 会发送自己的受控项目摘要，不会复制 harness 中的对话。"
+                )
+            )
+        )
+        self._refresh_harness_status()
 
     def _provider_changed(self) -> None:
         provider = str(self.provider_combo.currentData())
@@ -407,6 +551,8 @@ class AISettingsDialog(QDialog):
         self.api_key_edit.setEnabled(not local)
         self.show_key.setEnabled(not local)
         self.persist_key_check.setEnabled(not local)
+        self.api_key_env_edit.setEnabled(not local)
+        self.private_http_check.setEnabled(provider == "institute_harness")
         self.api_key_edit.setPlaceholderText(
             (
                 "No key required for local Ollama"
@@ -437,6 +583,29 @@ class AISettingsDialog(QDialog):
                     else (
                         "请先启动 Ollama 并下载支持工具调用的模型，再点击“检测服务状态”"
                         "确认本机模型列表。"
+                    )
+                )
+            )
+        elif provider == "institute_harness":
+            self.key_note.setText(
+                (
+                    "Use the institute key or its environment-variable name. The "
+                    "App never copies the DeepSeek Harness credential file."
+                    if self.language == "en_US"
+                    else (
+                        "请使用机构密钥或对应的环境变量名称。App 不会复制或读取 "
+                        "DeepSeek Harness 的凭据文件。"
+                    )
+                )
+            )
+            self.recommendation.setText(
+                (
+                    "Use Import installed DeepSeek Harness to fill the endpoint and "
+                    "model, then check the service."
+                    if self.language == "en_US"
+                    else (
+                        "点击“读取本机 DeepSeek Harness 配置”自动填写地址与模型，"
+                        "然后检测服务状态。"
                     )
                 )
             )
@@ -479,6 +648,11 @@ class AISettingsDialog(QDialog):
             include_recent_log=self.include_log_check.isChecked(),
             selected_context_fields=list(self.settings.selected_context_fields),
             safety_identifier=self.settings.safety_identifier,
+            api_key_env=self.api_key_env_edit.text().strip(),
+            allow_insecure_private_network=(
+                self.private_http_check.isChecked()
+            ),
+            managed_harness_name=self.settings.managed_harness_name,
             api_key=self.api_key_edit.text().strip(),
         )
 
@@ -547,7 +721,7 @@ class ContextPreviewDialog(QDialog):
         self.language = language
         self.checks: dict[str, QCheckBox] = {}
         self.resize(1000, 680)
-        self.setMinimumSize(560, 440)
+        self.setMinimumSize(420, 360)
         layout = QVBoxLayout(self)
         explanation = QLabel(
             (
@@ -563,6 +737,7 @@ class ContextPreviewDialog(QDialog):
         explanation.setWordWrap(True)
         layout.addWidget(explanation)
         body = QHBoxLayout()
+        self.body_layout = body
         fields = QFrame()
         fields_layout = QVBoxLayout(fields)
         field_title = QLabel(
@@ -582,7 +757,11 @@ class ContextPreviewDialog(QDialog):
             self.checks[key] = box
             fields_layout.addWidget(box)
         fields_layout.addStretch()
-        body.addWidget(fields, 1)
+        fields_scroll = QScrollArea()
+        fields_scroll.setWidgetResizable(True)
+        fields_scroll.setFrameShape(QFrame.NoFrame)
+        fields_scroll.setWidget(fields)
+        body.addWidget(fields_scroll, 1)
         self.viewer = QPlainTextEdit()
         self.viewer.setReadOnly(True)
         body.addWidget(self.viewer, 3)
@@ -599,6 +778,14 @@ class ContextPreviewDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt API
+        super().resizeEvent(event)
+        self.body_layout.setDirection(
+            QBoxLayout.TopToBottom
+            if self.width() < 760
+            else QBoxLayout.LeftToRight
+        )
 
     def selected_fields(self) -> list[str]:
         return [key for key, box in self.checks.items() if box.isChecked()]
@@ -645,7 +832,7 @@ class AIAssistantDialog(QDialog):
         self.stream_buffer = ""
 
         self.resize(1280, 790)
-        self.setMinimumSize(680, 520)
+        self.setMinimumSize(520, 420)
         self.setModal(False)
         self._build_ui()
         self.set_language(self.language_getter())
@@ -716,6 +903,7 @@ class AIAssistantDialog(QDialog):
         root.addWidget(self.status_frame)
 
         body = QHBoxLayout()
+        self.body_layout = body
         body.setSpacing(12)
 
         chat_frame = QFrame()
@@ -779,7 +967,8 @@ class AIAssistantDialog(QDialog):
         plan_frame.setObjectName("Card")
         # Keep both work areas usable without forcing a desktop-sized dialog.
         # Layout stretch factors shrink the plan alongside chat on small screens.
-        plan_frame.setMinimumWidth(300)
+        plan_frame.setMinimumWidth(250)
+        self.plan_frame = plan_frame
         plan_layout = QVBoxLayout(plan_frame)
         plan_layout.setContentsMargins(12, 12, 12, 12)
         self.plan_title = QLabel()
@@ -828,6 +1017,16 @@ class AIAssistantDialog(QDialog):
         buttons.rejected.connect(self.hide)
         root.addWidget(buttons)
         self.close_buttons = buttons
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt API
+        super().resizeEvent(event)
+        compact = self.width() < 900
+        self.body_layout.setDirection(
+            QBoxLayout.TopToBottom
+            if compact
+            else QBoxLayout.LeftToRight
+        )
+        self.plan_frame.setMinimumWidth(0 if compact else 250)
 
     def set_language(self, language: str) -> None:
         english = language == "en_US"

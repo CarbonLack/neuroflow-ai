@@ -24,9 +24,12 @@ AI 助手位于分析工作区右侧，可以收起。它接收本地确定性�
 harness、实验室/私有兼容服务和本机 Ollama。服务地址、模型、超时、重试、流式输出和推理选项均可配置。API 密钥保存在
 操作系统凭据区或当前会话中，不写入项目、日志、导出文件和 Git。
 
-机构只提供非官方 Key 时，选择 **机构模型 harness · OpenAI-compatible**，填写机构
-给出的 ``/v1`` 地址、模型名和 Key。应用只依赖兼容的 ``chat/completions`` 协议，
-不会假定该 Key 能直接访问模型厂商官方域名。先用“测试连接”确认模型列表或一次最小请求。
+本机已部署 DeepSeek Harness 时，点击 **读取本机 DeepSeek Harness 配置**。应用只读取
+Provider、``/v1`` 地址、模型列表和环境变量名，不读取 Harness 凭据文件。内网 HTTP
+必须对该 Provider 显式启用，然后用“检测服务状态”验证模型列表和延迟。
+
+这是 App 内置的 OpenAI-compatible Provider 适配，不是用界面自动化操作 Harness 网页。
+Harness 只负责模型访问；NeuroEphys AI 负责生成项目上下文、校验工具和要求用户确认。
 
 发送内容预览
 ------------

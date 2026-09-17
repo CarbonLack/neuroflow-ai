@@ -9,12 +9,16 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
+    QBoxLayout,
     QFileDialog,
     QMessageBox,
     QScrollArea,
     QSplitter,
 )
 
+from neuroflow.ai import AISettings
+from neuroflow.ai_harness import HarnessProfile
+from neuroflow.ai_ui import AISettingsDialog, ContextPreviewDialog
 from neuroflow.models import ProjectState
 from neuroflow.project import MANIFEST_NAME, load_project
 from neuroflow.sorting_results import (
@@ -30,6 +34,59 @@ from neuroflow.ui import (
     PopulationSettingsDialog,
 )
 from neuroflow.unit_curation_ui import UnitCurationDialog
+
+
+def test_ai_settings_can_import_installed_harness_without_credential_access(
+    monkeypatch,
+):
+    app = QApplication.instance() or QApplication([])
+    profile = HarnessProfile(
+        provider_id="cdsc",
+        display_name="Institute DeepSeek",
+        api_style="openai-completions",
+        base_url="http://10.1.2.3:8080/api/v1",
+        models=("deepseek-v4.1-flash", "glm-5.3"),
+        default_model="deepseek-v4.1-flash",
+        api_key_env="CDSC_API_KEY",
+        source="C:/non-secret/settings.yaml",
+    )
+    monkeypatch.setattr(
+        "neuroflow.ai_ui.discover_deepseek_harness_profiles",
+        lambda: [profile],
+    )
+    monkeypatch.setattr("neuroflow.ai_ui.get_api_key", lambda *_args: "")
+
+    dialog = AISettingsDialog(AISettings(), "zh_CN")
+    dialog._import_harness()
+
+    assert dialog.provider_combo.currentData() == "institute_harness"
+    assert dialog.base_url_edit.text() == profile.base_url
+    assert dialog.model_edit.currentText() == profile.default_model
+    assert dialog.api_key_env_edit.text() == "CDSC_API_KEY"
+    assert dialog.private_http_check.isChecked() is True
+    assert dialog.api_key_edit.text() == ""
+    dialog.close()
+    app.processEvents()
+
+
+def test_ai_context_preview_stacks_on_a_narrow_window():
+    app = QApplication.instance() or QApplication([])
+    dialog = ContextPreviewDialog(
+        {
+            "context_schema": "neuroephys.cloud-project-summary.v2",
+            "workflow": {"stage": "sorting"},
+            "local_only": {"recording_path": "must-not-render"},
+        },
+        "en_US",
+    )
+    dialog.show()
+    dialog.resize(600, 500)
+    app.processEvents()
+
+    assert dialog.body_layout.direction() == QBoxLayout.TopToBottom
+    assert "must-not-render" not in dialog.viewer.toPlainText()
+    dialog.close()
+    app.processEvents()
 
 
 def test_sorting_workbench_lists_imported_read_only_results():

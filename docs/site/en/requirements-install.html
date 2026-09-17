@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/requirements-install.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=590429e0"></script>
+      <script src="_static/documentation_options.js?v=928db92d"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -336,14 +336,14 @@ compatible backend has passed the environment check.</p></li>
 <section id="install-the-windows-application">
 <h2>Install the Windows application<a class="headerlink" href="#install-the-windows-application" title="Link to this heading"></a></h2>
 <p>For complete scientific reproduction and competition demonstrations, download
-<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.3-Full.exe</span></code> from GitHub <strong>Releases</strong> and keep the
+<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.4-Full.exe</span></code> from GitHub <strong>Releases</strong> and keep the
 default <strong>Full GPU/Kilosort</strong> component selected. Its setup-type page can also
 install the core application without the GPU component. Users without a
 compatible NVIDIA GPU can instead download the smaller
-<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.3.exe</span></code> standard edition. Both per-user installers
+<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.4.exe</span></code> standard edition. Both per-user installers
 require no administrator access and create desktop and Start-menu shortcuts. Uninstalling the program
 does not delete projects under <code class="docutils literal notranslate"><span class="pre">Documents\NeuroEphysAI</span></code>.</p>
-<p>The portable <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.2.3-Windows-x64-portable.zip</span></code> needs no
+<p>The portable <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-1.2.4-Windows-x64-portable.zip</span></code> needs no
 installation. Extract the complete archive and run
 <code class="docutils literal notranslate"><span class="pre">NeuroEphysAI\NeuroEphysAI.exe</span></code>; the EXE does not work by itself. This
 one-folder layout keeps scientific libraries inspectable and avoids unpacking
@@ -352,7 +352,7 @@ them at every launch.</p>
 behavior, statistics, machine learning, Elephant, figures, AI controls, and
 the manual locally. The CUDA-enabled PyTorch runtime required by Kilosort4 is
 several GiB and is therefore delivered in the separate
-<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.3-Full.exe</span></code> component-selectable offline installer rather than duplicated
+<code class="docutils literal notranslate"><span class="pre">NeuroEphysAI-Setup-1.2.4-Full.exe</span></code> component-selectable offline installer rather than duplicated
 in the standard application. Full GPU/Kilosort is selected by default. The Sorter page displays the actual state, links
 to the version-matched Full download, and never substitutes another sorter.</p>
 <p>The first launch performs an environment inventory. Open <strong>Sorter manager</strong> to
@@ -364,7 +364,7 @@ probe succeeds.</p>
 <h2>Python package<a class="headerlink" href="#python-package" title="Link to this heading"></a></h2>
 <p>The validated Python distribution targets 64-bit Python 3.12:</p>
 <div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="n">venv</span>
-<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">2</span><span class="p">.</span><span class="n">3-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
+<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">neuroephys_ai</span><span class="p">-</span><span class="n">1</span><span class="p">.</span><span class="n">2</span><span class="p">.</span><span class="n">4-py3-none-any</span><span class="p">.</span><span class="n">whl</span>
 <span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">neuroephys</span><span class="p">.</span><span class="n">exe</span> <span class="n">info</span>
 </pre></div>
 </div>

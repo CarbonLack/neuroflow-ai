@@ -4940,6 +4940,24 @@ class NeuroFlowWindow(QMainWindow):
                 widget.setToolTip(f"{title}\n{description}")
 
     def eventFilter(self, watched, event) -> bool:
+        if event.type() == QEvent.Show and isinstance(watched, QDialog):
+            screen = watched.screen() or self.screen()
+            if screen is not None:
+                available = screen.availableGeometry()
+                max_width = max(360, int(available.width() * 0.94))
+                max_height = max(300, int(available.height() * 0.92))
+                if watched.minimumWidth() > max_width:
+                    watched.setMinimumWidth(max_width)
+                if watched.minimumHeight() > max_height:
+                    watched.setMinimumHeight(max_height)
+                if (
+                    watched.width() > max_width
+                    or watched.height() > max_height
+                ):
+                    watched.resize(
+                        min(watched.width(), max_width),
+                        min(watched.height(), max_height),
+                    )
         if (
             event.type() == QEvent.Wheel
             and hasattr(self, "main_scroll")

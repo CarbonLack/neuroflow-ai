@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=590429e0"></script>
+      <script src="_static/documentation_options.js?v=928db92d"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -341,10 +341,15 @@ laboratory/private compatible services, and local Ollama. Provider URL, model,
 timeout, retries, streaming, and reasoning options are configurable. API keys
 are stored in the operating-system credential service or current session and
 are excluded from projects, logs, exports, and Git.</p>
-<p>When an institution supplies a non-vendor key, select <strong>Institute model harness ·
-OpenAI-compatible</strong> and enter the institution’s <code class="docutils literal notranslate"><span class="pre">/v1</span></code> endpoint, model name and
-key. The app targets the compatible <code class="docutils literal notranslate"><span class="pre">chat/completions</span></code> contract and does not
-assume that the key works on the model vendor’s official domain.</p>
+<p>When DeepSeek Harness is installed locally, select <strong>Import installed DeepSeek
+Harness</strong>. The app reads only non-secret provider metadata: the endpoint, model
+list, default model, and credential environment-variable name. It never opens
+the Harness credential file. Plain HTTP remains blocked unless the user enables
+it for that specific trusted private-network provider, after which <strong>Check
+service</strong> validates the model list and latency.</p>
+<p>This is a native provider adapter, not UI automation of the Harness website.
+Harness supplies model access; NeuroEphys AI owns the versioned project context,
+tool validation, scientific constraints, audit trail, and user confirmation.</p>
 </section>
 <section id="cloud-data-preview">
 <h2>Cloud-data preview<a class="headerlink" href="#cloud-data-preview" title="Link to this heading"></a></h2>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import ipaddress
 import re
 import ssl
 import threading
@@ -241,17 +242,17 @@ class AISettings:
     include_recent_log: bool = False
     selected_context_fields: list[str] = field(default_factory=list)
     safety_identifier: str = ""
+    api_key_env: str = ""
+    allow_insecure_private_network: bool = False
+    managed_harness_name: str = ""
     api_key: str = field(
-        default_factory=lambda: get_api_key("deepseek"),
+        default="",
         repr=False,
     )
 
     @property
     def configured(self) -> bool:
-        profile = PROVIDER_PROFILES.get(self.provider, {})
-        credentials_ready = bool(self.api_key.strip()) or bool(
-            profile.get("local")
-        )
+        credentials_ready = bool(self.request_api_key)
         return bool(
             credentials_ready and self.base_url.strip() and self.model.strip()
         )
@@ -260,6 +261,12 @@ class AISettings:
     def request_api_key(self) -> str:
         if self.api_key.strip():
             return self.api_key.strip()
+        environment_key = get_api_key(
+            self.provider,
+            self.api_key_env,
+        )
+        if environment_key:
+            return environment_key
         if PROVIDER_PROFILES.get(self.provider, {}).get("local"):
             return "ollama"
         return ""
@@ -741,14 +748,26 @@ def _endpoint(base_url: str, suffix: str) -> str:
     return f"{base}/{suffix.lstrip('/')}"
 
 
-def _validate_endpoint(url: str) -> None:
+def _validate_endpoint(
+    url: str,
+    *,
+    allow_insecure_private_network: bool = False,
+) -> None:
     parsed = urlparse(url)
     if parsed.scheme == "https":
         return
     if parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost", "::1"}:
         return
+    if parsed.scheme == "http" and allow_insecure_private_network:
+        try:
+            address = ipaddress.ip_address(str(parsed.hostname))
+        except ValueError:
+            address = None
+        if address and (address.is_private or address.is_link_local):
+            return
     raise AIConfigurationError(
-        "The AI endpoint must use HTTPS. Plain HTTP is allowed only for localhost."
+        "The AI endpoint must use HTTPS. Plain HTTP is allowed only for localhost "
+        "or an explicitly approved private-network harness."
     )
 
 
@@ -758,8 +777,13 @@ def _post_json(
     api_key: str,
     timeout_seconds: int,
     retry_count: int = 0,
+    *,
+    allow_insecure_private_network: bool = False,
 ) -> dict[str, Any]:
-    _validate_endpoint(url)
+    _validate_endpoint(
+        url,
+        allow_insecure_private_network=allow_insecure_private_network,
+    )
     request = urllib.request.Request(
         url,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -817,8 +841,12 @@ def _post_chat_stream(
     *,
     on_text: Callable[[str], None] | None = None,
     cancel_event: threading.Event | None = None,
+    allow_insecure_private_network: bool = False,
 ) -> dict[str, Any]:
-    _validate_endpoint(url)
+    _validate_endpoint(
+        url,
+        allow_insecure_private_network=allow_insecure_private_network,
+    )
     request = urllib.request.Request(
         url,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -914,16 +942,21 @@ def check_provider_health(settings: AISettings) -> dict[str, Any]:
             "message": "Provider, endpoint, model, or API key is missing.",
         }
     url = _endpoint(settings.base_url, "models")
-    _validate_endpoint(url)
-    request = urllib.request.Request(
-        url,
-        headers={
-            "Authorization": f"Bearer {settings.request_api_key}",
-            "User-Agent": f"{PRODUCT_NAME}/{PRODUCT_VERSION}",
-        },
-    )
     started = time.perf_counter()
     try:
+        _validate_endpoint(
+            url,
+            allow_insecure_private_network=(
+                settings.allow_insecure_private_network
+            ),
+        )
+        request = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {settings.request_api_key}",
+                "User-Agent": f"{PRODUCT_NAME}/{PRODUCT_VERSION}",
+            },
+        )
         with urllib.request.urlopen(
             request,
             timeout=min(max(5, int(settings.timeout_seconds)), 30),
@@ -1073,8 +1106,62 @@ def normalize_ai_response(
     if next_stage not in WORKFLOW_STAGES:
         next_stage = plan[0]["stage"] if plan else "import"
     answer = str(value.get("answer", "")).strip()
+    if not answer:
+        # Managed OpenAI-compatible harnesses sometimes preserve the requested
+        # JSON format but choose descriptive field names of their own. Recover a
+        # readable advisory answer without treating any unregistered action as a
+        # tool call. The original structured value remains remote text only.
+        readiness = value.get("readiness_assessment")
+        if isinstance(readiness, dict):
+            answer = str(
+                readiness.get("summary")
+                or readiness.get("message")
+                or readiness.get("status")
+                or ""
+            ).strip()
+        if not answer:
+            for key in (
+                "summary",
+                "message",
+                "explanation",
+                "response",
+                "conclusion",
+            ):
+                candidate = value.get(key)
+                if isinstance(candidate, str) and candidate.strip():
+                    answer = candidate.strip()
+                    break
     tool_calls: list[dict[str, Any]] = []
-    for item in [*value.get("tool_calls", []), *(native_tool_calls or [])]:
+    structured_tool_calls = value.get("tool_calls", [])
+    if not isinstance(structured_tool_calls, list):
+        structured_tool_calls = []
+    # Some OpenAI-compatible managed harnesses return a constrained tool proposal
+    # as {"tool": "name", "arguments": {...}, "reason": "..."} instead of the
+    # native tool_calls envelope. Treat it as a proposal only; registry validation
+    # and the local confirmation dialog still remain mandatory.
+    if isinstance(value.get("tool"), str):
+        structured_tool_calls = [
+            *structured_tool_calls,
+            {
+                "name": value.get("tool"),
+                "arguments": value.get("arguments", {}),
+                "reason": value.get("reason", ""),
+            },
+        ]
+    for proposal_key in ("proposed_tool_call", "tool_call"):
+        proposal = value.get(proposal_key)
+        if not isinstance(proposal, dict):
+            continue
+        structured_tool_calls = [
+            *structured_tool_calls,
+            {
+                "name": proposal.get("tool") or proposal.get("name"),
+                "arguments": proposal.get("arguments", {}),
+                "reason": proposal.get("reason")
+                or proposal.get("rationale", ""),
+            },
+        ]
+    for item in [*structured_tool_calls, *(native_tool_calls or [])]:
         if not isinstance(item, dict):
             continue
         name = str(item.get("name", "")).strip()
@@ -1185,6 +1272,9 @@ def request_ai_advice(
             settings.request_api_key,
             settings.timeout_seconds,
             settings.retry_count,
+            allow_insecure_private_network=(
+                settings.allow_insecure_private_network
+            ),
         )
         text = _extract_responses_text(raw)
         return normalize_ai_response(
@@ -1233,6 +1323,9 @@ def request_ai_advice(
                 settings.timeout_seconds,
                 on_text=on_stream_text,
                 cancel_event=cancel_event,
+                allow_insecure_private_network=(
+                    settings.allow_insecure_private_network
+                ),
             )
         else:
             raw = _post_json(
@@ -1241,6 +1334,9 @@ def request_ai_advice(
                 settings.request_api_key,
                 settings.timeout_seconds,
                 settings.retry_count,
+                allow_insecure_private_network=(
+                    settings.allow_insecure_private_network
+                ),
             )
         native_tool_calls = _extract_chat_tool_calls(raw)
         try:

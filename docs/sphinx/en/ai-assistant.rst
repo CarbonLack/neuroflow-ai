@@ -30,10 +30,16 @@ timeout, retries, streaming, and reasoning options are configurable. API keys
 are stored in the operating-system credential service or current session and
 are excluded from projects, logs, exports, and Git.
 
-When an institution supplies a non-vendor key, select **Institute model harness ·
-OpenAI-compatible** and enter the institution's ``/v1`` endpoint, model name and
-key. The app targets the compatible ``chat/completions`` contract and does not
-assume that the key works on the model vendor's official domain.
+When DeepSeek Harness is installed locally, select **Import installed DeepSeek
+Harness**. The app reads only non-secret provider metadata: the endpoint, model
+list, default model, and credential environment-variable name. It never opens
+the Harness credential file. Plain HTTP remains blocked unless the user enables
+it for that specific trusted private-network provider, after which **Check
+service** validates the model list and latency.
+
+This is a native provider adapter, not UI automation of the Harness website.
+Harness supplies model access; NeuroEphys AI owns the versioned project context,
+tool validation, scientific constraints, audit trail, and user confirmation.
 
 Cloud-data preview
 ------------------

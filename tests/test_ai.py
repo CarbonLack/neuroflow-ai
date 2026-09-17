@@ -8,12 +8,15 @@ from pathlib import Path
 import numpy as np
 
 from neuroflow.ai import (
+    AIConfigurationError,
     AISettings,
+    _validate_endpoint,
     build_project_summary,
     normalize_ai_response,
     redact_sensitive_text,
     request_ai_advice,
 )
+from neuroflow.ai_harness import discover_deepseek_harness_profiles
 from neuroflow.ai_tools import AIMode, validate_tool_call
 from neuroflow.models import ProjectState
 from neuroflow.project import load_project, save_project
@@ -94,6 +97,32 @@ def test_ai_response_filters_unregistered_stages():
     assert [item["stage"] for item in response.plan] == ["qc"]
     assert response.suggested_next_stage == "qc"
     assert response.requires_user_confirmation is True
+
+
+def test_managed_harness_compact_tool_proposal_is_normalized():
+    settings = AISettings(
+        provider="institute_harness",
+        mode=AIMode.COLLABORATIVE.value,
+    )
+
+    response = normalize_ai_response(
+        {
+            "tool": "inspect_project",
+            "arguments": {},
+            "reason": "Inspect the structured inventory first.",
+        },
+        settings=settings,
+    )
+
+    assert response.tool_calls == [
+        {
+            "id": "",
+            "name": "inspect_project",
+            "arguments": {},
+            "reason": "Inspect the structured inventory first.",
+        }
+    ]
+    assert "registered local action" in response.answer
 
 
 def test_openai_responses_request_uses_schema_and_store_false():
@@ -500,3 +529,100 @@ def test_institute_harness_uses_constrained_openai_compatible_contract(
     assert summary["context_schema"] == "neuroephys.cloud-project-summary.v2"
     assert summary["application_contract"]["raw_voltage_is_never_embedded"] is True
     assert summary["application_contract"]["tool_calls_require_registry_validation"] is True
+
+
+def test_deepseek_harness_metadata_import_never_reads_credentials(tmp_path: Path):
+    settings_path = tmp_path / ".dsh" / "settings.yaml"
+    settings_path.parent.mkdir()
+    settings_path.write_text(
+        """
+llm-pi-ai:
+  providers:
+    cdsc:
+      displayName: Institute DeepSeek
+      apiKeyEnv: CDSC_API_KEY
+      api: openai-completions
+      baseURL: http://10.1.2.3:8080/api/v1
+      models:
+        - id: managed-model
+          contextWindow: 131072
+agent-default-model:
+  provider: cdsc
+  model: managed-model
+""".strip(),
+        encoding="utf-8",
+    )
+    (settings_path.parent / ".credentials.yaml").write_text(
+        "secret: must-not-be-read",
+        encoding="utf-8",
+    )
+
+    profiles = discover_deepseek_harness_profiles(settings_path)
+
+    assert len(profiles) == 1
+    profile = profiles[0]
+    assert profile.base_url == "http://10.1.2.3:8080/api/v1"
+    assert profile.default_model == "managed-model"
+    assert profile.api_key_env == "CDSC_API_KEY"
+    assert "secret" not in repr(profile)
+
+
+def test_institute_private_http_requires_explicit_opt_in(monkeypatch):
+    monkeypatch.setenv("CDSC_API_KEY", "test-managed-key")
+    settings = AISettings(
+        provider="institute_harness",
+        base_url="http://10.1.2.3:8080/api/v1",
+        model="managed-model",
+        api_key_env="CDSC_API_KEY",
+    )
+
+    assert settings.configured is True
+    assert settings.request_api_key == "test-managed-key"
+    try:
+        _validate_endpoint(settings.base_url)
+    except AIConfigurationError:
+        pass
+    else:
+        raise AssertionError("Private HTTP must be blocked without opt-in")
+    _validate_endpoint(
+        settings.base_url,
+        allow_insecure_private_network=True,
+    )
+
+
+def test_managed_harness_alternative_review_envelope_is_normalized():
+    settings = AISettings(
+        provider="institute_harness",
+        base_url="https://institution.example/v1",
+        model="managed-model",
+        mode=AIMode.COLLABORATIVE.value,
+        api_key="managed-key",
+    )
+
+    response = normalize_ai_response(
+        {
+            "task_type": "review",
+            "readiness_assessment": {
+                "status": "not_ready",
+                "summary": "Open a project before reviewing downstream evidence.",
+            },
+            "proposed_tool_call": {
+                "tool": "inspect_project",
+                "arguments": {},
+                "rationale": "Read the structured local inventory.",
+            },
+        },
+        settings=settings,
+    )
+
+    assert response.answer == (
+        "Open a project before reviewing downstream evidence."
+    )
+    assert response.tool_calls == [
+        {
+            "id": "",
+            "name": "inspect_project",
+            "arguments": {},
+            "reason": "Read the structured local inventory.",
+        }
+    ]

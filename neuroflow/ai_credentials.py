@@ -17,9 +17,13 @@ def provider_environment_variable(provider: str) -> str:
     return "NEUROEPHYS_AI_API_KEY"
 
 
-def get_api_key(provider: str) -> str:
+def get_api_key(provider: str, environment_variable: str = "") -> str:
     provider = provider.strip().lower()
-    environment = os.environ.get(provider_environment_variable(provider), "")
+    environment_name = (
+        environment_variable.strip()
+        or provider_environment_variable(provider)
+    )
+    environment = os.environ.get(environment_name, "")
     if environment:
         return environment.strip()
     if provider in _SESSION_KEYS:

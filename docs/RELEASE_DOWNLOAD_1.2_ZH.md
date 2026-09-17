@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.2.3 — 下载与安装
+# NeuroEphys AI v1.2.4 — 下载与安装
 
 首次使用请先阅读 GitHub 内的[安装与完整使用教程](https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/GITHUB_USER_GUIDE_ZH.md)；
 英文版见 [Installation and complete user guide](https://github.com/CarbonLack/neuroflow-ai/blob/main/docs/GITHUB_USER_GUIDE_EN.md)。
@@ -9,14 +9,14 @@
 
 | 使用方式 | 下载文件 | 说明 |
 | --- | --- | --- |
-| Windows GPU Full 自选安装版（科研复现/比赛推荐） | `NeuroEphysAI-Setup-1.2.3-Full.exe` | 默认安装全部功能，包含 Kilosort 4、PyTorch/CUDA 与全部已适配 sorter；安装时也可取消 GPU 组件，仅装通用核心。安装包约2GB，Kilosort仍要求兼容NVIDIA硬件和驱动。 |
-| Windows 标准安装版（日常推荐） | `NeuroEphysAI-Setup-1.2.3.exe` | 较小、安装最简单。包含 App 与核心科学分析，不包含数GB的GPU运行库；适合没有NVIDIA GPU或暂时不用Kilosort的用户。 |
-| 免安装标准版 | `NeuroEphysAI-1.2.3-Windows-x64-portable.zip` | 完整解压后运行，不能只复制其中的exe；功能范围与标准安装版一致。 |
-| Python 调用 | `neuroephys_ai-1.2.3-py3-none-any.whl` | 给使用Python 3.12的用户；通过pip安装并按需要配置可选依赖。 |
+| Windows GPU Full 自选安装版（科研复现/比赛推荐） | `NeuroEphysAI-Setup-1.2.4-Full.exe` | 默认安装全部功能，包含 Kilosort 4、PyTorch/CUDA 与全部已适配 sorter；安装时也可取消 GPU 组件，仅装通用核心。安装包约2GB，Kilosort仍要求兼容NVIDIA硬件和驱动。 |
+| Windows 标准安装版（日常推荐） | `NeuroEphysAI-Setup-1.2.4.exe` | 较小、安装最简单。包含 App 与核心科学分析，不包含数GB的GPU运行库；适合没有NVIDIA GPU或暂时不用Kilosort的用户。 |
+| 免安装标准版 | `NeuroEphysAI-1.2.4-Windows-x64-portable.zip` | 完整解压后运行，不能只复制其中的exe；功能范围与标准安装版一致。 |
+| Python 调用 | `neuroephys_ai-1.2.4-py3-none-any.whl` | 给使用Python 3.12的用户；通过pip安装并按需要配置可选依赖。 |
 
-v1.2.3 新增决赛演示准备清单、机构 OpenAI-compatible harness 入口、版本化受控 AI 上下文，
-并将所有英文图件按主图/附图组织为带 a/b/c/d panel 和图注草稿的 storyboard；同时修复
-GitHub Windows runner 在非 UTF-8 控制台输出中文路径导致的发布阻断。
+v1.2.4 完成本机 DeepSeek Harness 自动发现、机构内网连接、密钥隔离、
+版本化受控 AI 上下文和 Harness 工具建议兼容。AI 设置、上下文预览和完整
+工作台均能在窄窗口自适应，不改变既有科学分析功能和紫黑配色。
 
 App安装版自带Python运行环境；普通桌面用户不需要另装Python。需要完整复现能力时优先选 Full 并保留默认的 GPU 组件；只做 CPU 分析或电脑没有兼容 NVIDIA GPU 时选标准版。两版拥有相同界面和项目格式，只是随包提供的计算后端不同。标准版或取消 GPU 组件后，Kilosort 会明确显示不可用，并在 Sorter 管理页提供同版本 Full 下载入口，不会自动改用其他算法。
 
@@ -24,6 +24,10 @@ App安装版自带Python运行环境；普通桌面用户不需要另装Python�
 
 ## 这次改了什么
 
+- 新增“读取本机 DeepSeek Harness 配置”，只读非敏感连接信息。
+- 新增机构内网 HTTP 的显式安全开关、自定义密钥环境变量和 Provider 凭据隔离。
+- Harness 返回的工具建议进入 App 本地白名单、Schema、风险和确认链路，不直接执行。
+- AI 设置、云端数据预览和 AI 工作台在小窗口改为自动纵向布局。
 - 教程中心改为 18 个可搜索任务：操作步骤、参数说明、问题排查分开；可调字号、记录已读、跳转到对应页面。
 - 首页入口居中，保留 Logo 边框；紧凑导航、统一线条图标、折叠图表工具和窄栏换行。
 - 三栏可同时使用，左侧可缩略，右侧 AI 可收放，中间分析区域宽度可拖动调整。

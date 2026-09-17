@@ -8,10 +8,10 @@ Download from [GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/relea
 
 | Edition | Recommended for | How to start | Important note |
 |---|---|---|---|
-| **Full offline installer (recommended)** `NeuroEphysAI-Setup-1.2.3-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | GPU availability still depends on compatible NVIDIA hardware and drivers |
-| **Standard installer** `NeuroEphysAI-Setup-1.2.3.exe` | General Windows, teaching, CPU workflows | Run the installer | Optional sorter components can be added later |
-| **Standard portable ZIP** `NeuroEphysAI-1.2.3-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
-| **Python wheel** `neuroephys_ai-1.2.3-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
+| **Full offline installer (recommended)** `NeuroEphysAI-Setup-1.2.4-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | GPU availability still depends on compatible NVIDIA hardware and drivers |
+| **Standard installer** `NeuroEphysAI-Setup-1.2.4.exe` | General Windows, teaching, CPU workflows | Run the installer | Optional sorter components can be added later |
+| **Standard portable ZIP** `NeuroEphysAI-1.2.4-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
+| **Python wheel** `neuroephys_ai-1.2.4-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
 
 The Full portable ZIP is larger than GitHub's 2 GiB per-file limit, so GitHub primarily distributes the Full installer.
 
@@ -84,7 +84,9 @@ Real recordings have no ground truth. Precision, recall, and F1 between two sort
 
 ## 9. AI assistant and institute harness
 
-Open **Help > AI settings** and choose Manual, Assistant, or Collaboration mode. For an institute OpenAI-compatible harness, enter the real base URL, model, and key, then use **Check service**.
+Open **Help > AI settings** and choose Manual, Assistant, or Collaborative mode. If DeepSeek Harness is installed locally, choose **Import installed DeepSeek Harness**, then run **Check service**. NeuroEphys AI imports only non-secret endpoint, model, and environment-variable metadata; it never opens the Harness credential file.
+
+The assistant uses a versioned, constrained project-summary contract rather than automating the Harness web interface. Raw voltage and local paths are excluded. In Collaborative mode the model can only propose whitelisted tools; the App validates the request locally and asks for confirmation according to risk.
 
 The app supplies a versioned, constrained project context: current stage, completed evidence, outputs, limitations, and registered tools. Raw voltage, large arrays, local paths, and identity data are excluded by default. Collaboration-mode actions remain allowlisted and require local validation and user confirmation. Deterministic analysis continues when AI is unavailable.
 
@@ -107,7 +109,7 @@ Back up the entire project directory together with the source data. A copied fig
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.2.3-py3-none-any.whl
+python -m pip install neuroephys_ai-1.2.4-py3-none-any.whl
 neuroephys info --json
 ```
 

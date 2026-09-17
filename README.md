@@ -1,4 +1,4 @@
-# NeuroEphys AI v1.2.3
+# NeuroEphys AI v1.2.4
 
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
@@ -26,7 +26,7 @@ NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道
 
 ## 开始使用
 
-v1.2.3 同时提供标准安装版、标准便携版与可选择组件的 GPU/CUDA/Kilosort Full
+v1.2.4 同时提供标准安装版、标准便携版与可选择组件的 GPU/CUDA/Kilosort Full
 离线安装版；科研复现与比赛演示推荐 Full，普通 CPU 工作站可选标准版。v1.2.1 增加按实际图名选择的子图格式编辑、
 分页并排参数、项目统一样式与期刊参考预设。
 字体、轴线、网格及配色的默认参数与依据见 [科研作图标准](docs/FIGURE_STYLE_STANDARD_ZH.md)。
@@ -172,7 +172,7 @@ chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度
 
 ## 启动
 
-普通用户安装 ``NeuroEphysAI-Setup-1.2.3.exe`` 后，双击桌面上的 **NeuroEphys AI**
+普通用户安装 ``NeuroEphysAI-Setup-1.2.4.exe`` 后，双击桌面上的 **NeuroEphys AI**
 快捷方式即可启动。便携版需完整解压 ZIP，然后双击
 ``NeuroEphysAI\NeuroEphysAI.exe``；不要只复制单独的 EXE。两种版本都不要求用户安装
 Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
@@ -180,7 +180,7 @@ Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
 Python 用户可以安装构建出的 wheel：
 
 ```powershell
-python -m pip install neuroephys_ai-1.2.3-py3-none-any.whl
+python -m pip install neuroephys_ai-1.2.4-py3-none-any.whl
 neuroephys info
 ```
 

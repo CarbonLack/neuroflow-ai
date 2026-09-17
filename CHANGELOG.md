@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.2.4
+
+- Import installed DeepSeek Harness provider metadata with one click without opening its credential file.
+- Support a dedicated credential environment variable and explicit opt-in for trusted private-network HTTP endpoints while keeping public HTTP blocked.
+- Fix provider credential isolation so a selected provider cannot silently reuse another provider's default credential.
+- Accept the institute Harness compact tool-proposal format, then apply the same local registry, schema, risk, and confirmation checks as native tool calls.
+- Make AI settings, outbound-context preview, and the full assistant workbench responsive on narrow windows; add a screen-fit safeguard for application dialogs.
+- Validate the live institute model list, a minimal `deepseek-v4.1-flash` response, and a non-executed `inspect_project` proposal without sending raw voltage or local paths.
+
 ## v1.2.2
 
 - Make the compact standard installer and portable archive the default public downloads.
