@@ -1,0 +1,18 @@
+{
+  "output": "D:\\PhD\\AI大赛\\neuroflow-ai\\docs\\competition\\Final_Project_Information_Form_CN.docx",
+  "source_sha256": "39782172d083a3b72df93bfdb62d02bffece3409b14d690e851053f0b1b68427",
+  "section_character_counts": {
+    "project_introduction": {
+      "count": 499,
+      "limit": 500
+    },
+    "ai_application": {
+      "count": 396,
+      "limit": 400
+    },
+    "development_progress": {
+      "count": 382,
+      "limit": 400
+    }
+  }
+}
