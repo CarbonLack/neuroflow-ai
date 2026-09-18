@@ -18,8 +18,9 @@ from neuroflow.data_import import (
     import_kilosort_results,
     import_nwb_units,
 )
-from neuroflow.decoding import run_decoding_suite
+from neuroflow.decoding import decoding_input_diagnostics, run_decoding_suite
 from neuroflow.figures import behavior_figure, event_analysis_figure
+from neuroflow.ephys_toolkit import run_neural_toolkit
 from neuroflow.models import ProjectState
 from neuroflow.project import load_project, save_project
 from neuroflow.public_examples import (
@@ -395,6 +396,63 @@ def test_statistics_and_decoding_suite(tmp_path: Path):
     assert decoding["confusion_matrix"].shape == (2, 2)
     adjusted = adjust_pvalues(np.array([0.01, 0.04, 0.2]))
     assert np.all(adjusted >= np.array([0.01, 0.04, 0.2]))
+
+
+def test_event_label_fallback_preserves_benchmark_classes_for_decoding(
+    tmp_path: Path,
+):
+    state = create_simulated_project(
+        tmp_path / "label_fallback",
+        electrode_type="Tetrode array (4 x 4)",
+        duration_seconds=10,
+        sampling_rate=10_000,
+        channel_count=16,
+    )
+    state.sorted_spikes = state.ground_truth
+    for index, event in enumerate(state.events):
+        event.pop("condition", None)
+        event["label"] = "lever_press" if index % 2 == 0 else "reward_delivery"
+    result = event_aligned_analysis(state)
+    assert set(result["conditions"]) == {"lever_press", "reward_delivery"}
+    assert result["condition_diagnostics"]["event_labels"][
+        "label_source_counts"
+    ] == {"label": len(state.events)}
+    diagnostic = decoding_input_diagnostics(state)
+    assert diagnostic["status"] == "ready"
+    decoded = run_decoding_suite(state, n_permutations=5)
+    assert decoded["classes"] == ["lever_press", "reward_delivery"]
+
+
+def test_decoding_diagnostic_explains_missing_classes(tmp_path: Path):
+    state = ProjectState(root=tmp_path / "blocked")
+    state.analysis = {
+        "conditions": np.array(["unknown"] * 6),
+        "units": {1: {}},
+    }
+    diagnostic = decoding_input_diagnostics(state)
+    assert diagnostic["status"] == "blocked"
+    assert diagnostic["class_counts"] == {"unknown": 6}
+    assert "at least two usable labels" in diagnostic["message"]
+
+
+def test_complete_neural_toolkit_retains_every_attached_result(tmp_path: Path):
+    state = create_simulated_project(
+        tmp_path / "complete_toolkit",
+        electrode_type="Tetrode array (4 x 4)",
+        duration_seconds=4,
+        sampling_rate=10_000,
+        channel_count=16,
+    )
+    state.sorted_spikes = state.ground_truth
+    result = run_neural_toolkit(state)
+    assert result["spike_train"]["rows"]
+    assert result["connectivity"]
+    assert result["population_dynamics"]
+    assert state.spike_train_analysis["connectivity"] is result["connectivity"]
+    assert (
+        state.spike_train_analysis["population_dynamics"]
+        is result["population_dynamics"]
+    )
 
 
 def test_ibl_aggregate_import(tmp_path: Path):

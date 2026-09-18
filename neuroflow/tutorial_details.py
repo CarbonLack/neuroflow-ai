@@ -1036,20 +1036,31 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     },
     "analysis": {
         "narrative": (
-            "神经活动页提供四类可独立运行的分析入口：事件对齐"
-            "响应、spike train 统计、LFP 频谱/时频，以及 spike-field 耦合。每个子分析"
-            "都有自己的输入、参数、图和表；未运行时显示输入预览和运行目的，不伪造结果。"
+            "神经活动页先提供“完整神经活动分析包”：一次生成事件对齐、单 Unit 与总体"
+            "放电统计、精细时序筛查、群体热图/条件响应/PCA，以及数据允许时的 LFP 和"
+            "spike-field 结果。各专家入口继续保留，用于改变事件、Unit 对、窗口、频段或"
+            "surrogate 后重跑；单纯切换已完成图不再重复计算。"
         ),
         "narrative_en": (
-            "The neural page is not a single fixed PSTH. It contains independently "
-            "runnable event-response, spike-train, LFP spectral/time-frequency, and "
-            "spike-field coupling analyses. Every sub-analysis has its own inputs, "
-            "settings, figures, and tables; before execution it shows an input preview, "
-            "never fabricated results."
+            "The neural page starts with a Complete neural-activity package that "
+            "generates event-aligned unit and population summaries, fine-timing "
+            "screening, population heatmaps/condition responses/PCA, and applicable "
+            "LFP and spike-field outputs. Expert entries remain available for reruns "
+            "with different events, pairs, windows, bands, or surrogates."
         ),
         "before": "确认 active units、同步事件、有效 trial；LFP 或耦合分析还需要原始/LFP 电压。",
         "before_en": "Confirm active units, synchronized events, and valid trials; LFP and coupling also require voltage data.",
         "operations": [
+            _operation(
+                "完整神经活动分析包",
+                "Complete neural-activity package",
+                "一次运行并复用已经完成的模块，自动保存全部适用图、表、参数和 Methods。",
+                "Run once, reuse completed modules, and save all applicable figures, tables, settings, and Methods.",
+                "先获得完整证据地图，再决定哪些模块需要专家参数重跑。",
+                "Creates a complete evidence map before deciding which modules need expert reruns.",
+                "输出到项目 results/neural_activity_complete；精细时序筛查会明确记录 Unit 对抽样和 surrogate 次数。",
+                "Writes to results/neural_activity_complete and records pair sampling and surrogate counts for fine-timing screening.",
+            ),
             _operation(
                 "事件对齐 Raster/PSTH",
                 "Event-aligned Raster/PSTH",
@@ -1322,6 +1333,16 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
         "before": "确定预测目标、特征时间窗、分组变量、类别平衡和最小样本量。",
         "before_en": "Define prediction target, feature window, grouping variable, class balance, and minimum sample size.",
         "operations": [
+            _operation(
+                "输入可解码性诊断",
+                "Decoding-input diagnostic",
+                "先列出标签来源、每类 trial 数、有效 Unit 数和不可运行的具体原因。",
+                "List label sources, trials per class, usable units, and the exact blocking reason before fitting.",
+                "防止把导入字段缺失误判为数据没有神经信息。",
+                "Prevents a missing import field from being mistaken for absent neural information.",
+                "输出可读诊断并加入 AI 项目上下文；至少需要两个有效类别且每类不少于两个 trial。",
+                "Adds a readable diagnostic to AI context; at least two usable classes with two trials each are required.",
+            ),
             _operation(
                 "分类",
                 "Classification",

@@ -105,7 +105,7 @@ AI 参与了需求拆解、源代码实现、界面迭代、自动测试、错�
 
 ### 当前交付状态
 
-当前正式版本为 v1.3.1。项目已经形成 Windows 标准安装版、标准便携版、可选择 GPU/CUDA/Kilosort 组件的 Full 安装版、Python wheel 和源码包。普通用户安装后可从桌面启动，不需要另外安装 Python 或 Conda；脚本用户可以通过 `neuroephys-ai` 包调用公开 API 和命令行。项目同时提供中文和英文 GitHub 教程、网页手册、内置教程中心、发布说明和数据安全说明。
+当前正式版本为 v1.3.2。项目已经形成 Windows 标准安装版、标准便携版、可选择 GPU/CUDA/Kilosort 组件的 Full 安装版、Python wheel 和源码包。普通用户安装后可从桌面启动，不需要另外安装 Python 或 Conda；脚本用户可以通过 `neuroephys-ai` 包调用公开 API 和命令行。项目同时提供中文和英文 GitHub 教程、网页手册、内置教程中心、发布说明和数据安全说明。
 
 ### 已完成的主要功能
 
@@ -117,7 +117,7 @@ AI 参与了需求拆解、源代码实现、界面迭代、自动测试、错�
 
 当前源码完整测试结果为 169 passed。中文和英文 Sphinx 文档均以 warning-as-error 模式构建通过。Full 独立打包目录和全新安装目录通过启动、AI 安全桥、SVG/PDF/PNG 导出、MountainSort5、内置 sorter 集合和 Kilosort4 六项自检。可选安装的通用核心和完整 GPU/Kilosort 两条路径也分别验收。
 
-GitHub 已公开源码、安装教程和 v1.3.1 Release；中英文教程网站可在线访问。Full 安装器保存在云端 Release，本地同时保留完整便携归档和校验值。项目 living archive 保存当前源码 ZIP、完整 Git bundle、发布和验证文档，并在 Git 提交、切换、合并和打包后自动刷新。
+GitHub 已公开源码、安装教程和 v1.3.2 Release；中英文教程网站可在线访问。Full 安装器保存在云端 Release，本地同时保留完整便携归档和校验值。项目 living archive 保存当前源码 ZIP、完整 Git bundle、发布和验证文档，并在 Git 提交、切换、合并和打包后自动刷新。
 
 ### 科研验证状态
 

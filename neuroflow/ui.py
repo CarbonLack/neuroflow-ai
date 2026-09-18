@@ -98,6 +98,7 @@ from .nex5_adapter import (
     inspect_nex5_source,
 )
 from .decoding import (
+    decoding_input_diagnostics,
     MODEL_DESCRIPTIONS,
     MODELS,
     REGRESSION_DESCRIPTIONS,
@@ -119,6 +120,7 @@ from .figures import (
     behavior_figure,
     connectivity_figure,
     decoding_figure,
+    event_analysis_figure,
     neural_toolkit_figure,
     pending_step_figure,
     population_dynamics_figure,
@@ -3590,6 +3592,24 @@ class PipelineWorker(QThread):
             selection = self.analysis_selection
             if len(self.keys) > 1 or not selection:
                 value = run_neural_toolkit(self.state)
+            elif selection == "complete":
+                value = run_neural_toolkit(self.state)
+                package_root = (
+                    self.state.root / "results" / "neural_activity_complete"
+                )
+                export_reproducible_bundle(self.state, package_root)
+                value["complete_output"] = {
+                    "path": str(package_root),
+                    "figures": str(package_root / "figures"),
+                    "tables": str(package_root / "tables"),
+                    "description": (
+                        "All applicable neural-activity results generated in one run; "
+                        "individual views remain selectable without recomputation."
+                    ),
+                }
+                self.state.metadata["neural_activity_complete_package"] = value[
+                    "complete_output"
+                ]
             elif selection.startswith("event:"):
                 if self.tool_arguments.get("event_codes"):
                     value = {
@@ -6236,11 +6256,30 @@ class NeuroFlowWindow(QMainWindow):
                 else "No CUDA GPU detected"
             )
         )
+        frozen = bool(getattr(sys, "frozen", False))
+        if env["kilosort_available"] and env["cuda_available"]:
+            edition = (
+                "Full GPU/Kilosort 组件已就绪"
+                if self.language == "zh_CN"
+                else "Full GPU/Kilosort component ready"
+            )
+        elif frozen:
+            edition = (
+                "Standard 通用版（未安装 GPU/Kilosort 组件）"
+                if self.language == "zh_CN"
+                else "Standard edition (GPU/Kilosort component not installed)"
+            )
+        else:
+            edition = (
+                "源码开发环境（可选组件按当前 Python 环境检测）"
+                if self.language == "zh_CN"
+                else "Source environment (optional components detected from Python)"
+            )
         self.environment_label.setText(
-            f"计算环境\n{gpu}\n可运行 sorter：{', '.join(installed) or '无'}\n"
+            f"计算环境\n{edition}\n{gpu}\n可运行 sorter：{', '.join(installed) or '无'}\n"
             f"Elephant {toolkit['elephant']} · Neo {toolkit['neo']}"
             if self.language == "zh_CN"
-            else f"Environment\n{gpu}\nAvailable sorters: {', '.join(installed) or 'None'}\n"
+            else f"Environment\n{edition}\n{gpu}\nAvailable sorters: {', '.join(installed) or 'None'}\n"
             f"Elephant {toolkit['elephant']} · Neo {toolkit['neo']}"
         )
 
@@ -6522,6 +6561,14 @@ class NeuroFlowWindow(QMainWindow):
             for label, value in views:
                 self.option_combo.addItem(label, value)
         elif key == "analysis" and self.state:
+            self.option_combo.addItem(
+                (
+                    "完整神经活动分析包 · 一次生成全部适用图表"
+                    if self.language == "zh_CN"
+                    else "Complete neural-activity package · all applicable outputs"
+                ),
+                "complete",
+            )
             for unit_id in sorted(self.state.sorted_spikes):
                 self.option_combo.addItem(
                     (
@@ -6803,6 +6850,22 @@ class NeuroFlowWindow(QMainWindow):
             text += f"\n\n{model}\n{description}\n{validation}"
         elif self.current_step == "analysis":
             selection = str(self.option_combo.currentData() or "")
+            if selection == "complete":
+                text += (
+                    "\n\n一次运行事件对齐、单 Unit 与总体放电统计、Unit 间关系、"
+                    "抖动校正 CCG、群体热图/条件响应/PCA，以及数据允许时的 LFP、"
+                    "spike-field 和案例分析；PNG、SVG、表格、参数与方法说明保存到项目"
+                    "的 results/neural_activity_complete。完成后仍可在此逐图查看，不需重跑。"
+                    if self.language == "zh_CN"
+                    else "\n\nRuns event alignment, unit and population summaries, "
+                    "spike-train relationships, jitter-corrected CCG, population "
+                    "heatmaps/condition responses/PCA, and applicable LFP and "
+                    "spike-field analyses. PNG, SVG, tables, parameters, and methods "
+                    "are saved under results/neural_activity_complete; individual "
+                    "views remain available without recomputation."
+                )
+                self.help_text.setText(text)
+                return
             method = next(
                 (
                     item
@@ -6939,7 +7002,8 @@ class NeuroFlowWindow(QMainWindow):
         elif key == "behavior":
             figure = behavior_figure(self.state)
         elif key == "analysis" and (
-            (option.startswith("event:") and self.state.analysis)
+            (option == "complete" and self.state.analysis)
+            or (option.startswith("event:") and self.state.analysis)
             or (option.startswith("spike:") and self.state.spike_train_analysis)
             or (
                 option.startswith("connectivity:")
@@ -6956,7 +7020,9 @@ class NeuroFlowWindow(QMainWindow):
                 and self.state.case_studies.get("respiration")
             )
         ):
-            if option.startswith("connectivity:"):
+            if option == "complete":
+                figure = event_analysis_figure(self.state)
+            elif option.startswith("connectivity:"):
                 figure = connectivity_figure(self.state, option.partition(":")[2])
             elif option.startswith("population:"):
                 figure = population_dynamics_figure(
@@ -7018,6 +7084,32 @@ class NeuroFlowWindow(QMainWindow):
                 else f"当前所选分析：{option or self.current_step}"
             ),
         ]
+        if self.current_step == "decoding":
+            diagnostic = decoding_input_diagnostics(self.state)
+            class_counts = diagnostic.get("class_counts", {})
+            source_counts = diagnostic.get("label_sources", {})
+            inputs.extend(
+                [
+                    (
+                        "Input check: " + str(diagnostic.get("status", "blocked"))
+                        if self.language == "en_US"
+                        else "输入检查：" + (
+                            "可运行" if diagnostic.get("status") == "ready" else "暂不可运行"
+                        )
+                    ),
+                    (
+                        f"Class trials: {class_counts or 'none'}"
+                        if self.language == "en_US"
+                        else f"各类别 trial：{class_counts or '无'}"
+                    ),
+                    (
+                        f"Label sources: {source_counts or 'not recorded'}"
+                        if self.language == "en_US"
+                        else f"标签来源：{source_counts or '未记录'}"
+                    ),
+                    str(diagnostic.get("message", "")),
+                ]
+            )
         return pending_step_figure(
             self.state,
             step_text(step.key, self.language)[0] + " · ",

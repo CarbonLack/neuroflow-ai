@@ -44,6 +44,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, SVR
 
 from .models import ProjectState
+from .event_semantics import MISSING_EVENT_LABELS
 
 MODELS = {
     "Logistic regression": Pipeline(
@@ -223,6 +224,52 @@ def trial_feature_matrix(
     return x[valid], labels[valid], unit_ids
 
 
+def decoding_input_diagnostics(state: ProjectState) -> dict:
+    """Summarize whether the current event analysis can support classification."""
+
+    if not state.analysis:
+        return {
+            "status": "blocked",
+            "reason": "event_analysis_missing",
+            "message": "Run event-aligned neural analysis before decoding.",
+            "class_counts": {},
+        }
+    labels = np.asarray(state.analysis.get("conditions", [])).astype(str)
+    unique, counts = np.unique(labels, return_counts=True) if len(labels) else ([], [])
+    class_counts = {
+        str(label): int(count) for label, count in zip(unique, counts)
+    }
+    usable = {
+        label: count
+        for label, count in class_counts.items()
+        if label.strip().casefold() not in MISSING_EVENT_LABELS and count >= 2
+    }
+    diagnostic = {
+        "status": "ready" if len(usable) >= 2 else "blocked",
+        "reason": None if len(usable) >= 2 else "fewer_than_two_usable_classes",
+        "class_counts": class_counts,
+        "usable_class_counts": usable,
+        "usable_class_count": len(usable),
+        "trial_count": int(len(labels)),
+        "unit_count": int(len(state.analysis.get("units", {}))),
+        "label_sources": state.analysis.get("condition_diagnostics", {})
+        .get("event_labels", {})
+        .get("label_source_counts", {}),
+    }
+    if len(usable) < 2:
+        diagnostic["message"] = (
+            "Decoding needs at least two usable labels with two or more trials each. "
+            f"Found: {class_counts or {'none': 0}}. Re-run event analysis after "
+            "importing or selecting the intended condition/event labels."
+        )
+    else:
+        diagnostic["message"] = (
+            "Decoding input is ready. The two most frequent usable classes will be "
+            "compared with stratified cross-validation."
+        )
+    return diagnostic
+
+
 def _time_resolved_decoding(
     state: ProjectState,
     labels: np.ndarray,
@@ -280,6 +327,10 @@ def run_decoding_suite(
     n_splits: int = 5,
     n_permutations: int = 200,
 ) -> dict:
+    input_diagnostics = decoding_input_diagnostics(state)
+    state.metadata["decoding_input_diagnostics"] = input_diagnostics
+    if input_diagnostics["status"] != "ready":
+        raise ValueError(str(input_diagnostics["message"]))
     timing_diagnostics = state.analysis.get("condition_diagnostics", {})
     if not timing_diagnostics.get("valid_for_condition_comparison", True):
         detail = " ".join(timing_diagnostics.get("warnings", []))
@@ -292,7 +343,11 @@ def run_decoding_suite(
     valid_mask = np.isin(all_labels, np.unique(labels))
     classes, counts = np.unique(labels, return_counts=True)
     if len(classes) != 2:
-        raise ValueError("当前演示解码器需要恰好两个条件")
+        raise ValueError(
+            "Decoding currently compares the two most frequent usable classes. "
+            f"Found {len(classes)} after filtering: "
+            f"{input_diagnostics['class_counts']}."
+        )
     folds = min(n_splits, int(counts.min()))
     if folds < 2:
         raise ValueError("每个条件至少需要两个 trial")
@@ -407,6 +462,7 @@ def run_decoding_suite(
             "特征为 trial 级窗口放电率",
             "标签未进入特征构建",
         ],
+        "input_diagnostics": input_diagnostics,
     }
     state.decoding = result
     state.log(

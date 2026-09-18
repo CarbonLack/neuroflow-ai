@@ -43,7 +43,7 @@ AI 服务断开、未配置或关闭时，手动分析功能仍可运行。
 
 1. 打开“AI settings”。
 2. 如果本机已部署 DeepSeek Harness，点击“读取本机 DeepSeek Harness 配置”。
-3. v1.3.1 会选择 Harness SDK 连接，由已安装的官方 dsh 负责身份认证和模型请求。App 不读取、复制 Harness 的模型密钥，不绕过机构规定直接访问接口。
+3. v1.3.2 会选择 Harness SDK 连接，由已安装的官方 dsh 负责身份认证和模型请求。App 不读取、复制 Harness 的模型密钥，不绕过机构规定直接访问接口。
 4. 确保本机 dsh 已登录且 Provider/模型配置有效。Harness 是单独的运行环境，不包含在 App 安装包里。官方入口：https://deepseek.com/harness/en/ 。
 5. “检测服务状态”检查本机安装与配置；首次实际提问才能验证账号、网络和模型服务均可用。
 6. 选择是否流式回复、推理强度、超时和重试次数。

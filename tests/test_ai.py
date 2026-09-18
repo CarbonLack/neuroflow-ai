@@ -43,8 +43,9 @@ def test_conversation_context_includes_examples_and_older_turns(tmp_path):
 
 def test_ai_prompt_defaults_to_a_low_burden_answer():
     instructions = build_system_instructions("zh_CN", "ask")
-    assert "under 450" in instructions
-    assert "no more than three short bullets" in instructions
+    assert "清晰度优先于机械限字" in instructions
+    assert "不要逐字段朗读 qc_summary" in instructions
+    assert "它是什么 → 当前值/图说明什么 → 是否异常或可用" in instructions
     assert "private chain-of-thought" in instructions
 from neuroflow.ai_harness import discover_deepseek_harness_profiles
 from neuroflow.ai_tools import AIMode, validate_tool_call
@@ -401,6 +402,36 @@ def test_ai_context_normalizes_real_acquisition_metadata_and_provenance(
     assert summary["recent_stage_runs"][0]["artifact_ids"] == ["artifact-1"]
     assert "settings.xml" not in serialized
     assert "recording.bin" not in serialized
+
+
+def test_ai_context_exposes_actionable_failed_stage_message(tmp_path: Path):
+    state = ProjectState(root=tmp_path / "project")
+    state.metadata["decoding_input_diagnostics"] = {
+        "status": "blocked",
+        "class_counts": {"unknown": 132},
+        "usable_class_count": 0,
+    }
+    state.metadata["structured_run_log"] = [
+        {
+            "run_id": "failure123456789",
+            "stage": "decoding",
+            "tool": "scikit-learn decoding suite",
+            "status": "failed",
+            "warnings": [],
+            "error": {
+                "type": "ValueError",
+                "message": "Found only one usable class: unknown (132 trials)",
+            },
+            "artifacts": [],
+        }
+    ]
+    summary = build_project_summary(state, "decoding")
+    assert summary["decoding_input_diagnostics"]["class_counts"] == {
+        "unknown": 132
+    }
+    assert "one usable class" in summary["recent_stage_runs"][0][
+        "error_message"
+    ]
 
 
 def test_lfp_warning_uses_real_acquisition_preprocessing_schema(tmp_path: Path):

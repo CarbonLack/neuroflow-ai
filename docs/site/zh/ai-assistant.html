@@ -11,12 +11,12 @@
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
 
-
+  
     <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5c7802bc"></script>
+      <script src="_static/documentation_options.js?v=6b324692"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -24,17 +24,17 @@
     <link rel="index" title="索引" href="genindex.html" />
     <link rel="search" title="搜索" href="search.html" />
     <link rel="next" title="决赛演示与离线保障" href="competition-demo.html" />
-    <link rel="prev" title="图表检查与论文导出" href="figures.html" />
+    <link rel="prev" title="图表检查与论文导出" href="figures.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
 
-
-
+          
+          
           <a href="index.html" class="icon icon-home">
             NeuroEphys AI
               <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
@@ -160,7 +160,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#harness-study-v1-3-1">Harness 项目对话、低负担阅读与 Study（v1.3.1）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#harness-study-v1-3-2">Harness 项目对话、低负担阅读与 Study（v1.3.2）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id1">先看懂，再看细节</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id2">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#provider">模型 Provider</a></li>
@@ -324,11 +324,11 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-
+             
   <section id="ai">
 <h1>受控 AI 助手<a class="headerlink" href="#ai" title="Link to this heading"></a></h1>
-<section id="harness-study-v1-3-1">
-<h2>Harness 项目对话、低负担阅读与 Study（v1.3.1）<a class="headerlink" href="#harness-study-v1-3-1" title="Link to this heading"></a></h2>
+<section id="harness-study-v1-3-2">
+<h2>Harness 项目对话、低负担阅读与 Study（v1.3.2）<a class="headerlink" href="#harness-study-v1-3-2" title="Link to this heading"></a></h2>
 <p>已配置机构 DeepSeek Harness 时，在 AI 设置点击“读取本机 DeepSeek Harness 配置”，
 选择 Harness SDK。App 通过官方 dsh 运行时请求模型，不读取或复制机构密钥。
 Harness 须单独安装并完成账号配置，参考 <a class="reference external" href="https://deepseek.com/harness/en/">https://deepseek.com/harness/en/</a> 。</p>
@@ -354,6 +354,10 @@ AI 不会因此获得任意代码或文件访问权限。分析提案经用户�
 完整回答、科学解释、限制、证据编号和候选操作没有被删除，点击 <strong>查看完整说明与依据</strong>
 即可打开。右侧助手和展开后的独立对话窗口都可以在 <strong>简洁阅读／完整内容</strong> 间切换，
 选择会被记住。</p>
+<p>模型本身也遵循统一的清晰表达规则，而不是依赖界面事后删字：先直接回答问题，再按需
+说明“为什么”“你现在可以怎么做”和“需要注意”。内部字段必须先翻译成科研含义，
+数字必须说明对象、单位和意义。简单问题保持短小，结果解释和操作指导允许适当展开；
+清晰度优先于固定字数。用户明确要求详细时，回答仍先给结论，再分层展开。</p>
 <p>这种分层只改变阅读方式，不降低科学约束：不能支持的结论、数据限制和关键警告仍会在
 简洁卡片中出现；原始完整内容继续随项目保存在 <code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code>，用于复核与审计。
 AI 默认不复述内部查询过程、接口细节或长参数清单，除非用户明确要求详细说明。</p>
@@ -424,10 +428,10 @@ AI 即可读取，同时仍不能直接读取原始电压、任意本地文件�
     <p>&#169; 版权所有 2026, NeuroEphys AI 团队。</p>
   </div>
 
-  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的 
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
     由 <a href="https://readthedocs.org">Read the Docs</a> 开发.
-
+   
 
 </footer>
         </div>
@@ -438,7 +442,7 @@ AI 即可读取，同时仍不能直接读取原始电压、任意本地文件�
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
+  </script> 
 
 </body>
 </html>

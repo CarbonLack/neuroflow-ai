@@ -8,6 +8,7 @@ from typing import Any
 
 _HEADING_PREFIX = re.compile(r"^#{1,6}\s*")
 _BULLET_PREFIX = re.compile(r"^(?:[-*•]|\d+[.)])\s*")
+_MARKDOWN_EMPHASIS = re.compile(r"[*_`]+")
 _SPACE = re.compile(r"[ \t]+")
 _SENTENCE = re.compile(r"(?<=[。！？!?])\s*|(?<=[.!?])\s+")
 _STAGE_LABELS = {
@@ -53,6 +54,7 @@ class AIReadableView:
 def _clean_line(value: str) -> str:
     text = _HEADING_PREFIX.sub("", str(value).strip())
     text = _BULLET_PREFIX.sub("", text)
+    text = _MARKDOWN_EMPHASIS.sub("", text)
     return _SPACE.sub(" ", text).strip()
 
 
@@ -83,9 +85,15 @@ def _answer_lines(answer: str) -> list[str]:
 def _is_label_only(line: str, english: bool) -> bool:
     normalized = line.strip(" ：:。.!！?").lower()
     labels = (
-        {"conclusion", "summary", "answer", "result", "key points", "next step"}
+        {
+            "conclusion", "summary", "answer", "result", "key points",
+            "why", "what to do now", "important limitation", "next step",
+        }
         if english
-        else {"结论", "摘要", "回答", "结果", "重点", "关键点", "下一步"}
+        else {
+            "结论", "摘要", "回答", "结果", "重点", "关键点", "为什么",
+            "你现在可以怎么做", "现在怎么做", "需要注意", "下一步",
+        }
     )
     return normalized in labels
 
@@ -111,13 +119,20 @@ def build_readable_ai_view(
     next_candidates = [
         line
         for line in substantive_lines
-        if ("next" in line.lower() if english else "下一步" in line)
+        if (
+            any(token in line.lower() for token in ("next", "what to do now"))
+            if english
+            else any(token in line for token in ("下一步", "你现在可以怎么做", "现在怎么做"))
+        )
     ]
 
     priority_tokens = (
         ("next", "recommend", "result", "conclusion", "because", "cannot", "risk")
         if english
-        else ("下一步", "建议", "结果", "结论", "因为", "原因", "不能", "风险", "需要")
+        else (
+            "下一步", "建议", "结果", "结论", "为什么", "因为", "原因",
+            "不能", "风险", "需要", "说明", "意味着",
+        )
     )
     highlights: list[str] = []
     for line in substantive_lines[1:]:

@@ -2,7 +2,10 @@ param(
     [switch]$SkipTests,
     [switch]$SkipDocs,
     [switch]$SkipInstaller,
-    [switch]$Lite
+    [switch]$Lite,
+    [string]$ReleaseRoot,
+    [string]$DistRoot,
+    [string]$WorkRoot
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,7 +33,12 @@ try {
     }
     $VersionParts = $Version -split '\.'
     $ReleaseSeries = "$($VersionParts[0]).$($VersionParts[1])"
-    $ReleaseRoot = Join-Path $Root "release"
+    if (-not $ReleaseRoot) { $ReleaseRoot = Join-Path $Root "release" }
+    if (-not $DistRoot) { $DistRoot = Join-Path $Root "dist" }
+    if (-not $WorkRoot) { $WorkRoot = Join-Path $Root "build" }
+    $ReleaseRoot = [System.IO.Path]::GetFullPath($ReleaseRoot)
+    $DistRoot = [System.IO.Path]::GetFullPath($DistRoot)
+    $WorkRoot = [System.IO.Path]::GetFullPath($WorkRoot)
     $ReleaseDir = Join-Path $ReleaseRoot "v$Version"
     $ArtifactSuffix = if ($Lite) { "" } else { "-Full" }
     if (-not $Lite -and -not $SkipInstaller) {
@@ -75,13 +83,15 @@ try {
     } else {
         Remove-Item Env:NEUROEPHYS_LITE_BUILD -ErrorAction SilentlyContinue
     }
-    & $Python -m PyInstaller --noconfirm --clean (Join-Path $Root "NeuroFlow.spec")
+    & $Python -m PyInstaller --noconfirm --clean `
+        --distpath $DistRoot --workpath $WorkRoot `
+        (Join-Path $Root "NeuroFlow.spec")
     if ($LASTEXITCODE -ne 0) {
         throw "Windows application build failed with exit code $LASTEXITCODE."
     }
     Remove-Item Env:NEUROEPHYS_LITE_BUILD -ErrorAction SilentlyContinue
 
-    $AppDir = Join-Path $Root "dist\NeuroEphysAI"
+    $AppDir = Join-Path $DistRoot "NeuroEphysAI"
     $AppExe = Join-Path $AppDir "NeuroEphysAI.exe"
     if (-not (Test-Path -LiteralPath $AppExe)) {
         throw "The packaged executable was not created: $AppExe"
@@ -125,7 +135,7 @@ try {
     $PortableZip = Join-Path $ResolvedReleaseDir "NeuroEphysAI-$Version-Windows-x64$ArtifactSuffix-portable.zip"
     # The native archive tool tolerates short-lived antivirus/indexer handles
     # more reliably than Compress-Archive for a large scientific one-folder app.
-    & tar.exe -a -c -f $PortableZip -C (Join-Path $Root "dist") "NeuroEphysAI"
+    & tar.exe -a -c -f $PortableZip -C $DistRoot "NeuroEphysAI"
     if ($LASTEXITCODE -ne 0) {
         throw "Portable archive creation failed with exit code $LASTEXITCODE."
     }
@@ -151,7 +161,13 @@ try {
         if (-not $InnoCompiler) {
             throw "Inno Setup 6 is required to build the installer. Use -SkipInstaller only for diagnostics."
         }
-        $InnoArguments = @("/DMyAppVersion=$Version")
+        # Bind the installer to the exact application directory built and
+        # self-tested above. Release builds may use an external DistRoot, so a
+        # repository-relative source could otherwise package an older build.
+        $InnoArguments = @(
+            "/DMyAppVersion=$Version",
+            "/DCoreAppDir=$AppDir"
+        )
         if (-not $Lite) {
             $InnoArguments += "/DFullBuild=1"
         }

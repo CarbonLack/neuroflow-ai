@@ -41,6 +41,19 @@ def test_compact_html_links_to_preserved_detail():
     assert "neuroephys://ai-detail/4" in html
 
 
+def test_compact_view_understands_plain_language_response_contract():
+    answer = """**结论**：目前 32 个通道中，大多数通道可继续分析。
+**为什么**
+- 27 个通道被列为候选良好通道，这表示它们没有触发当前质控阈值。
+- 1 个通道有明显工频干扰，需要先查看原始波形确认。
+**你现在可以怎么做**：先检查被标记通道，再决定是否排除。"""
+    view = build_readable_ai_view(answer, language="zh_CN")
+
+    assert "*" not in view.conclusion
+    assert "大多数通道可继续分析" in view.conclusion
+    assert "先检查被标记通道" in view.next_step
+
+
 def test_full_detail_keeps_scientific_limits_and_proposals():
     html = full_response_html(
         {

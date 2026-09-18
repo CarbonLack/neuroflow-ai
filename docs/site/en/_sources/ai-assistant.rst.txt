@@ -1,7 +1,7 @@
 Controlled AI assistant
 =======================
 
-Project-aware Harness conversations, readable answers, and Studies (v1.3.1)
+Project-aware Harness conversations, readable answers, and Studies (v1.3.2)
 ----------------------------------------------------------------------------
 
 For an institute-managed DeepSeek Harness account, use **Read local DeepSeek
@@ -42,6 +42,12 @@ answer, scientific interpretation, limitations, evidence identifiers, and propos
 actions are preserved behind **View full answer and evidence**. Both the right-side
 assistant and expanded dialog can switch between **Concise** and **Full**, and the
 choice is remembered.
+
+The model follows the same clarity contract before presentation is applied: answer
+the question first, then add **Why**, **What to do now**, and **Important limitation**
+only when useful. Internal field names must be translated into scientific meaning,
+and every number needs an object, unit, and interpretation. Simple questions stay
+short; result explanations and procedures may expand when clarity requires it.
 
 This changes presentation, not scientific safeguards. Unsupported conclusions,
 limitations, and safety-critical warnings remain visible. The original answer is

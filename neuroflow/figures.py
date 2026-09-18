@@ -2127,7 +2127,13 @@ def neural_toolkit_figure(state: ProjectState, view: str) -> Figure:
             colors = [GREEN if value < 0.05 else MUTED for value in p_values]
             axes[0, 0].bar(ids, strengths, color=colors)
             first_id = ids[0]
-            histogram = state.spike_field_analysis["phase_histograms"][first_id]
+            histograms = state.spike_field_analysis["phase_histograms"]
+            histogram = histograms.get(first_id, histograms.get(str(first_id)))
+            if histogram is None:
+                raise KeyError(
+                    f"Missing phase histogram for Unit {first_id}; available keys: "
+                    f"{list(histograms)[:10]}"
+                )
             axes[0, 1].bar(
                 histogram["centers"],
                 histogram["counts"],

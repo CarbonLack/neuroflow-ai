@@ -1,5 +1,32 @@
 # NeuroEphys AI v1.3 验收记录
 
+## v1.3.2 AI 清晰表达修正
+
+验收范围：
+
+- 所有 Provider 共享自适应回答契约，不再用固定 450 汉字上限牺牲解释清晰度；
+- 内部字段先翻译为科研含义，数字说明对象、单位和意义；
+- 回答按需组织为结论、依据、可执行操作和重要限制，不倾倒 JSON、数组或日志；
+- 简洁阅读层正确识别新的中英文标题、Markdown 强调和“你现在可以怎么做”；
+- 安全边界、工具白名单、用户确认、项目隔离和完整对话审计保持不变。
+
+本机源码验收：2026-09-18，`174 passed`；中英文 Sphinx 文档均以
+warning-as-error 模式构建通过。pytest 结束后的 Windows 临时目录权限提示发生在进程
+已经返回 0 之后，不影响测试结论。
+
+Session 7 tetrode benchmark 端到端复验：132 个 trial（`lever_press` 66、
+`reward_delivery` 66）、25 个 Unit、5 折 Logistic regression，balanced accuracy
+0.9848、ROC AUC 0.9998；200 次标签置换 `p=0.004975`。该结果仅用于证明
+工作流能恢复模拟数据中预先注入的结构，不作为生物学推断。“完整神经活动
+分析包”实际导出 21 组图（PNG+SVG 共 42 个文件）、11 张表，覆盖事件
+对齐、spike-train、群体动力学、连接筛查、LFP、spike-field 和呼吸案例。
+
+v1.3.2 发行包验收：Standard 与 Full 均通过封装启动、AI 桥、图形导出、
+MountainSort5 和内置 sorter 自检；Full 额外通过 Kilosort4 及 CUDA/PyTorch
+组件自检。每个最终发布文件的字节数与 SHA256 以同目录、同一次构建生成的
+`SHA256SUMS.txt` 为唯一依据。验收文档不内嵌其所在安装包的哈希，避免重新打包
+导致循环变化或留下上一轮构建的校验值。
+
 ## v1.3.1 AI 低负担阅读层
 
 验收范围：

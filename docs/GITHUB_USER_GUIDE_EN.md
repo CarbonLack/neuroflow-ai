@@ -8,10 +8,10 @@ Download from [GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/relea
 
 | Edition | Recommended for | How to start | Important note |
 |---|---|---|---|
-| **Full offline installer (recommended)** `NeuroEphysAI-Setup-1.3.1-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | GPU availability still depends on compatible NVIDIA hardware and drivers |
-| **Standard installer** `NeuroEphysAI-Setup-1.3.1.exe` | General Windows, teaching, CPU workflows | Run the installer | Optional sorter components can be added later |
-| **Standard portable ZIP** `NeuroEphysAI-1.3.1-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
-| **Python wheel** `neuroephys_ai-1.3.1-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
+| **Full offline installer** `NeuroEphysAI-Setup-1.3.2-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | Includes all v1.3.2 features plus the complete offline GPU/CUDA/Kilosort component |
+| **Standard installer (recommended)** `NeuroEphysAI-Setup-1.3.2.exe` | General Windows, teaching, CPU workflows | Run the installer | Includes the latest AI readability fix; optional sorter components can be added later |
+| **Standard portable ZIP** `NeuroEphysAI-1.3.2-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
+| **Python wheel** `neuroephys_ai-1.3.2-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
 
 The Full portable ZIP is larger than GitHub's 2 GiB per-file limit, so GitHub primarily distributes the Full installer.
 
@@ -105,7 +105,7 @@ Open **Help > AI settings** and choose Manual, Assistant, or Collaborative mode.
 
 The assistant uses a versioned, constrained project-summary contract rather than automating the Harness web interface. Raw voltage and local paths are excluded. In Collaborative mode the model can only propose whitelisted tools; the App validates the request locally and asks for confirmation according to risk.
 
-Answers default to **Concise** view: conclusion first, no more than three key points, project-evidence status, the next step, and important warnings. The full scientific explanation, limitations, evidence identifiers, and proposed actions remain available through **View full answer and evidence**. Switch **Answer view** to **Full** when reviewing every detail.
+Answers default to **Concise** view: conclusion first, no more than three key points, project-evidence status, the next step, and important warnings. The model translates internal fields into scientific meaning and adds **Why**, **What to do now**, and **Important limitation** only when relevant; clarity is no longer sacrificed to a fixed word cap. The full scientific explanation, limitations, evidence identifiers, and proposed actions remain available through **View full answer and evidence**. Switch **Answer view** to **Full** when reviewing every detail.
 
 The app supplies a versioned, constrained project context: current stage, completed evidence, outputs, limitations, and registered tools. Raw voltage, large arrays, local paths, and identity data are excluded by default. Collaboration-mode actions remain allowlisted and require local validation and user confirmation. Deterministic analysis continues when AI is unavailable.
 
@@ -132,7 +132,7 @@ Back up the entire project directory together with the source data. A copied fig
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.3.1-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.2-py3-none-any.whl
 neuroephys info --json
 ```
 

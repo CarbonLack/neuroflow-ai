@@ -10,6 +10,7 @@ from scipy import signal, stats
 
 from .models import ProjectState
 from .product import PRODUCT_NAME, PRODUCT_VERSION
+from .event_semantics import event_analysis_label, event_label_diagnostics
 
 try:
     from numba import njit
@@ -802,7 +803,7 @@ def event_aligned_analysis(
         ):
             excluded["event_code_filter"] += 1
             continue
-        condition = str(event.get("condition", "unknown"))
+        condition, _ = event_analysis_label(event)
         if requested_conditions is not None and condition not in requested_conditions:
             excluded["condition_filter"] += 1
             continue
@@ -818,13 +819,14 @@ def event_aligned_analysis(
         dtype=float,
     )
     analysis_conditions = np.asarray(
-        [str(event.get("condition", "unknown")) for event in selected_events],
+        [event_analysis_label(event)[0] for event in selected_events],
         dtype=str,
     )
     condition_diagnostics = _condition_timing_diagnostics(
         events,
         analysis_conditions,
     )
+    condition_diagnostics["event_labels"] = event_label_diagnostics(selected_events)
     bins = np.arange(window[0], window[1] + bin_size, bin_size)
     centers = (bins[:-1] + bins[1:]) / 2
     condition_labels = np.unique(analysis_conditions).tolist()

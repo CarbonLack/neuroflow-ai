@@ -71,7 +71,10 @@ Name: "desktopicon"; Description: "创建桌面快捷方式 / Create a desktop s
 Source: "{#CoreAppDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: core
 Source: "{#GpuOverlayDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: gpu
 #else
-Source: "..\dist\NeuroEphysAI\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+#ifndef CoreAppDir
+  #error CoreAppDir must point to the validated Standard application directory
+#endif
+Source: "{#CoreAppDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
 
 [Icons]

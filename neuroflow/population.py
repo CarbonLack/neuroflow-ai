@@ -12,6 +12,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from .models import ProjectState
+from .event_semantics import event_analysis_label
 
 
 POPULATION_ORDERING_METHODS = (
@@ -545,10 +546,7 @@ def run_population_dynamics_suite(
     if event_times_seconds is None:
         event_times_seconds = [float(row["time_seconds"]) for row in state.events]
         if event_labels is None:
-            event_labels = [
-                str(row.get("condition", row.get("event", row.get("code", "all"))))
-                for row in state.events
-            ]
+            event_labels = [event_analysis_label(row)[0] for row in state.events]
     selected_spikes = state.sorted_spikes
     if unit_ids is not None:
         requested = [int(unit_id) for unit_id in unit_ids]

@@ -22,7 +22,9 @@ from elephant.statistics import cv, cv2, fanofactor, isi, lv, lvr, mean_firing_r
 from scipy import signal
 
 from .analysis import event_aligned_analysis, load_recording
+from .connectivity import run_connectivity_suite
 from .models import ProjectState
+from .population import run_population_dynamics_suite
 
 METHOD_CATALOG = (
     {
@@ -781,18 +783,45 @@ def run_respiration_case(state: ProjectState) -> dict:
 
 
 def run_neural_toolkit(state: ProjectState) -> dict:
+    event_aligned = state.analysis or event_aligned_analysis(state)
+    spike_train = (
+        state.spike_train_analysis
+        if state.spike_train_analysis.get("rows")
+        else run_spike_train_suite(state)
+    )
+    connectivity = state.spike_train_analysis.get("connectivity")
+    if not connectivity:
+        # The one-click package uses a reproducible screening configuration.
+        # Experts can still run an exhaustive all-pairs analysis from the
+        # dedicated Fine timing controls.
+        connectivity = run_connectivity_suite(
+            state,
+            max_pairs=30,
+            jitter_iterations=20,
+            pair_selection="random",
+        )
+    population_dynamics = (
+        state.spike_train_analysis.get("population_dynamics")
+        or run_population_dynamics_suite(state)
+    )
     result = {
-        "event_aligned": event_aligned_analysis(state),
-        "spike_train": run_spike_train_suite(state),
+        "event_aligned": event_aligned,
+        "spike_train": spike_train,
+        "connectivity": connectivity,
+        "population_dynamics": population_dynamics,
     }
     lfp_available = state.metadata.get("acquisition_preprocessing", {}).get(
         "lfp_available",
         True,
     )
     if state.ready and lfp_available:
-        result["lfp"] = run_lfp_suite(state)
-        result["spike_field"] = run_spike_field_suite(state)
-        result["respiration_case"] = run_respiration_case(state)
+        result["lfp"] = state.lfp_analysis or run_lfp_suite(state)
+        result["spike_field"] = (
+            state.spike_field_analysis or run_spike_field_suite(state)
+        )
+        result["respiration_case"] = (
+            state.case_studies.get("respiration") or run_respiration_case(state)
+        )
     else:
         reason = (
             state.metadata.get("acquisition_preprocessing", {}).get(

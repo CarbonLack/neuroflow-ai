@@ -457,6 +457,13 @@ def _stage_run_summary(state: ProjectState) -> list[dict[str, Any]]:
                         if isinstance(item.get("error"), dict)
                         else None
                     ),
+                    "error_message": (
+                        redact_sensitive_text(
+                            str(item.get("error", {}).get("message", ""))
+                        )[:800]
+                        if isinstance(item.get("error"), dict)
+                        else None
+                    ),
                     "artifact_ids": [
                         artifact.get("id")
                         for artifact in item.get("artifacts", [])[:30]
@@ -642,6 +649,9 @@ def build_project_summary(
         ),
         "statistics_summary": _compact_json_value(state.statistics),
         "decoding_summary": _compact_json_value(state.decoding),
+        "decoding_input_diagnostics": _compact_json_value(
+            state.metadata.get("decoding_input_diagnostics", {})
+        ),
         "regression_summary": _compact_json_value(state.regression),
         "multi_session_studies": _multi_session_registry_summary(state),
         "current_ui_context": ui_context,
@@ -725,6 +735,43 @@ def redact_sensitive_text(text: str) -> str:
     return _EMAIL.sub("<email-redacted>", redacted)
 
 
+def build_response_style_contract(language: str) -> str:
+    """Return one provider-independent contract for clear, low-burden replies."""
+    if language == "zh_CN":
+        return """
+回答应像一位耐心、可靠的科研同事，而不是字段说明书或运行日志。
+
+表达规则：
+1. 先直接回答用户真正问的问题。第一段用一到两句话说清结论；不要用“我来解释一下”开场。
+2. 随后只保留理解结论所必需的信息。优先使用以下自然结构，并省略不适用的小节：
+   - **结论**：这代表什么，当前能不能做出判断。
+   - **为什么**：最多三点，每一点都要把项目证据翻译成科研含义。
+   - **你现在可以怎么做**：只有存在有用操作时才给出，步骤必须具体且可执行。
+   - **需要注意**：只放会改变判断的重要限制或风险。
+3. 不要把内部字段、数组、JSON、工具名或参数列表直接倾倒给用户。首次需要提到内部名称时，先写中文含义，再在括号中写一次字段名；之后只用中文含义。例如写“线路噪声通道（line_noise_channel）”，不要逐字段朗读 qc_summary。
+4. 每个数字都说明对象、单位和意义。明确区分“当前项目实际观察”“软件默认值”“一般方法知识”和“尚未取得的证据”。
+5. 简单问题通常用 120–300 个汉字；结果解释或操作指导通常用 300–700 个汉字。清晰度优先于机械限字。用户明确要求详细时可以更长，但仍先给简短结论，再分层展开。
+6. 只在确有必要时使用项目符号；一个要点只表达一件事。不要重复用户问题、界面上下文或已经说过的结论。
+7. 如果信息不足，明确说“目前还不能判断”，紧接着说明缺哪一项证据以及怎样获得；不要用大段背景知识掩盖缺失信息。
+8. 用户问某个图、指标或字段时，回答顺序为：它是什么 → 当前值/图说明什么 → 是否异常或可用 → 下一步怎么确认。用户没有要求时，不扩展到无关模块。
+9. 不叙述内部推理、MCP/工具管线、查询语法、原始日志或隐私信息。可以给出简洁、可核查的依据。
+""".strip()
+    return """
+Write like a patient, reliable research colleague, not a schema reference or run log.
+
+Response rules:
+1. Answer the user's real question first. State the conclusion in one or two sentences; do not open with meta-commentary.
+2. Keep only information needed to understand or act on the conclusion. Use these natural sections when relevant and omit empty ones: **Conclusion**, **Why**, **What to do now**, and **Important limitation**.
+3. Do not dump internal fields, arrays, JSON, tool names, or parameter lists. Translate an internal identifier into plain scientific language and show the identifier in parentheses only once when it is genuinely useful.
+4. Give every number an object, unit, and meaning. Distinguish current-project observations, software defaults, general method knowledge, and evidence that has not yet been obtained.
+5. A simple answer is usually 60–120 words; a result explanation or procedure is usually 120–220 words. Clarity outranks a mechanical word cap. If detail is explicitly requested, expand after a concise conclusion.
+6. Use bullets only when they improve scanning; one point should carry one idea. Do not repeat the question, UI context, or conclusion.
+7. If evidence is insufficient, say so directly, then name the missing evidence and how to obtain it.
+8. For a plot, metric, or field, answer in this order: what it is, what the current value/plot means, whether it is usable or concerning, and how to confirm it. Do not expand into unrelated modules.
+9. Do not narrate private reasoning, MCP/tool plumbing, query syntax, raw logs, or private information. Provide concise, checkable evidence instead.
+""".strip()
+
+
 def build_system_instructions(
     language: str,
     task: str,
@@ -732,6 +779,7 @@ def build_system_instructions(
 ) -> str:
     output_language = "Simplified Chinese" if language == "zh_CN" else "English"
     mode_value = str(mode)
+    response_style = build_response_style_contract(language)
     return f"""
 You are {PRODUCT_NAME}'s controlled electrophysiology assistant. Reply in {output_language}.
 
@@ -789,15 +837,10 @@ Recent conversation belongs to this project; do not claim access to other projec
 An inspect_project or summarize_recording call is unnecessary when the supplied
 snapshot already answers the question. Always provide a substantive answer.
 
-Reading contract:
-Lead with the decision-relevant conclusion. By default keep `answer` under 450
-Chinese characters or 140 English words, use no more than three short bullets,
-and end with one concrete next step only when a next step is useful. Do not narrate
-internal reasoning, tool plumbing, query syntax, raw logs, or long parameter dumps.
+Reading and explanation contract:
+{response_style}
 Mention project evidence reads and proposed actions only as a short status. Preserve
-uncertainty and safety-critical warnings. If the user explicitly asks for a detailed
-scientific explanation, give it, but still put a concise conclusion first. Never
-expose private chain-of-thought; provide concise evidence and rationale instead.
+uncertainty and safety-critical warnings. Never expose private chain-of-thought.
 
 Required response format (answer must contain your actual response):
 {{"answer":"Your response in {output_language}","warnings":[],"plan":[],
@@ -1357,6 +1400,7 @@ def request_ai_advice(
         queries.summary = cloud_context
         if settings.selected_context_fields and "queryable_data" not in settings.selected_context_fields:
             queries.allowed_sections = set()
+        sdk_response_style = build_response_style_contract(language)
         sdk_instructions = (
             "You are NeuroEphys AI's research collaborator. Answer naturally in "
             + ("Simplified Chinese" if language == "zh_CN" else "English")
@@ -1372,10 +1416,10 @@ def request_ai_advice(
             "Explain pending proposals as awaiting confirmation, never as completed. "
             "Do not propose actions when the user only asks for interpretation. "
             "Never invent measurements or claim an image was visually inspected; chart context describes labels and ranges, not pixels. "
-            "Write plain conversational text, not JSON. Lead with the conclusion. By default use no more than three short bullets and stay under 450 Chinese characters or 140 English words. "
-            "End with one concrete next step only when useful. Do not narrate internal reasoning, MCP plumbing, query syntax, raw logs or long parameter dumps. "
-            "Mention evidence reads and proposed actions only as a short status. Preserve uncertainty and important warnings. If the user explicitly requests detail, expand after a concise conclusion. "
-            "Never expose private chain-of-thought; provide concise evidence and rationale instead.\n"
+            "Write plain conversational text, not JSON. Apply the following response contract to every new answer:\n"
+            + sdk_response_style
+            + "\nMention evidence reads and proposed actions only as a short status. Preserve uncertainty and important warnings. "
+            "Never expose private chain-of-thought; provide concise evidence and rationale instead.\n\n"
         )
         with ProjectMCPBridge(queries) as bridge:
             text = request_harness_sdk(provider=settings.harness_provider, model=settings.model,
@@ -1396,7 +1440,7 @@ def request_ai_advice(
             "store": False,
             "reasoning": {"effort": settings.reasoning_effort},
             "text": {
-                "verbosity": "low",
+                "verbosity": "medium",
                 "format": {
                     "type": "json_schema",
                     "name": "neuroflow_advice",

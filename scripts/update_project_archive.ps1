@@ -95,9 +95,10 @@ scripts\update_project_archive.ps1
 SOURCE CODE BACKUP
 ==================
 
-This folder contains two physical safeguards:
-1. CURRENT_SOURCE_SNAPSHOT.zip - the exact tracked source tree at the recorded commit.
-2. FULL_GIT_HISTORY.bundle - complete local Git history, branches, and tags.
+This folder contains three physical safeguards:
+1. CURRENT_SOURCE_TREE - an English-indexed, directly browsable copy of tracked source.
+2. CURRENT_SOURCE_SNAPSHOT.zip - the exact tracked source tree at the recorded commit.
+3. FULL_GIT_HISTORY.bundle - complete local Git history, branches, and tags.
 
 Restore the current source by extracting the ZIP. Restore the repository history
 with: git clone FULL_GIT_HISTORY.bundle neuroflow-ai
@@ -261,6 +262,7 @@ foreach ($entry in $readmeByFolder.GetEnumerator()) {
 $sourceFolder = Join-Path $archive "01_Source_Code"
 $snapshotTarget = Join-Path $sourceFolder "CURRENT_SOURCE_SNAPSHOT.zip"
 $bundleTarget = Join-Path $sourceFolder "FULL_GIT_HISTORY.bundle"
+$treeTarget = Join-Path $sourceFolder "CURRENT_SOURCE_TREE"
 $snapshotTemp = "$snapshotTarget.tmp"
 $bundleTemp = "$bundleTarget.tmp"
 Remove-Item -LiteralPath $snapshotTemp, $bundleTemp -Force -ErrorAction SilentlyContinue
@@ -273,6 +275,31 @@ if ($LASTEXITCODE -ne 0) { throw "git bundle verification failed" }
 Move-Item -LiteralPath $snapshotTemp -Destination $snapshotTarget -Force
 Move-Item -LiteralPath $bundleTemp -Destination $bundleTarget -Force
 
+# Keep a directly browsable source copy as well as the compact recovery files.
+# This contains only Git-tracked source/documentation, never virtual environments,
+# build caches, release payloads, raw recordings, credentials, or derived projects.
+if (Test-Path -LiteralPath $treeTarget) {
+    Remove-Item -LiteralPath $treeTarget -Recurse -Force
+}
+New-Item -ItemType Directory -Path $treeTarget | Out-Null
+$treeArchive = Join-Path $env:TEMP "neuroephys-source-$PID.tar"
+Remove-Item -LiteralPath $treeArchive -Force -ErrorAction SilentlyContinue
+git -C $source archive --format=tar --output=$treeArchive HEAD
+if ($LASTEXITCODE -ne 0) { throw "git archive for browsable tree failed" }
+tar -xf $treeArchive -C $treeTarget
+if ($LASTEXITCODE -ne 0) { throw "extracting browsable source tree failed" }
+Remove-Item -LiteralPath $treeArchive -Force
+$treeReadme = @(
+    "CURRENT SOURCE TREE",
+    "===================",
+    "",
+    "This is a directly browsable copy of every Git-tracked source and documentation file",
+    "at the commit recorded in ../SOURCE_VERSION.txt. It intentionally excludes generated",
+    "dependencies, build caches, installers, raw data, credentials, and analysis workspaces.",
+    "Use the active repository listed in SOURCE_VERSION.txt for development."
+) -join [Environment]::NewLine
+Set-Content -LiteralPath (Join-Path $treeTarget "ARCHIVE_README.txt") -Value $treeReadme -Encoding UTF8
+
 $sourceVersion = @(
     "NeuroEphys AI source backup",
     "Version: v$version",
@@ -282,6 +309,7 @@ $sourceVersion = @(
     "Remote: $remote",
     "Created: $timestamp",
     "",
+    "CURRENT_SOURCE_TREE contains a directly browsable copy of tracked files.",
     "CURRENT_SOURCE_SNAPSHOT.zip contains tracked files from the recorded commit.",
     "FULL_GIT_HISTORY.bundle contains the complete local Git history and tags.",
     "Uncommitted files are intentionally not represented as a restorable release."
@@ -380,6 +408,7 @@ $status = @(
     "Current release: $releaseUrl",
     "",
     "Safeguard contents:",
+    "- A directly browsable copy of every tracked source/documentation file.",
     "- A real ZIP snapshot of the tracked source at this commit.",
     "- A verified Git bundle containing full local history and tags.",
     "- Physical copies of current release notes, QA evidence, and key documentation.",
@@ -404,6 +433,7 @@ $manifest = [ordered]@{
     remote = $remote
     releaseUrl = $releaseUrl
     sourceSnapshot = "01_Source_Code/CURRENT_SOURCE_SNAPSHOT.zip"
+    browsableSourceTree = "01_Source_Code/CURRENT_SOURCE_TREE"
     gitBundle = "01_Source_Code/FULL_GIT_HISTORY.bundle"
     externalLocationIndex = "07_Backup_Manifests/EXTERNAL_LOCATIONS.csv"
 }

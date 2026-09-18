@@ -110,7 +110,17 @@ def _make_project(
         dtype="int16",
         scale_uv_per_bit=float(cfg["scale_uv_per_bit"]),
         electrode_type=electrode,
-        events=[{"label": row["event_type"], "time_seconds": row["time_seconds"], "sample_index": row["sample_index"], "trial": row["trial"]} for row in events],
+        events=[
+            {
+                "label": row["event_type"],
+                "condition": row["event_type"],
+                "event_type": row["event_type"],
+                "time_seconds": row["time_seconds"],
+                "sample_index": row["sample_index"],
+                "trial": row["trial"],
+            }
+            for row in events
+        ],
         trials=trials,
         ground_truth={},
         metadata=metadata,

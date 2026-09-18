@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Fixed benchmark/event imports whose valid `label` values were previously collapsed to `unknown` when `condition` was absent; decoding now records label sources and actionable class-count diagnostics for both the UI and AI assistant.
+- Added a one-click Complete neural-activity package that reuses completed computations and exports every applicable neural figure, table, array, method, and provenance record while retaining expert per-module reruns.
+- Added population-level decoding guidance and preflight reporting for confusion, balanced accuracy, ROC/AUC, F1, permutation baseline, time-resolved decoding, PCA trajectories, and Unit importance.
+- Fixed spike-field figure export after project reload when JSON converts Unit dictionary keys from integers to strings.
+- Fixed Standard installer builds with an external `DistRoot` so Inno Setup must package the exact newly built and self-tested application directory instead of a potentially stale repository-local `dist` folder.
+- Replace the fixed 450-character AI reply cap with an adaptive plain-language response contract shared by Harness and API providers.
+- Require the assistant to translate internal QC fields into scientific meaning, distinguish current evidence from defaults and general knowledge, and organize answers as conclusion, evidence, action, and important limitation only when relevant.
+- Improve concise-view parsing for the new Chinese and English response headings without exposing Markdown markers or dropping the actionable next step.
+
 ## v1.2.4
 
 - Import installed DeepSeek Harness provider metadata with one click without opening its credential file.

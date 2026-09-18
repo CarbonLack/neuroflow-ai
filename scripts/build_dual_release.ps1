@@ -1,6 +1,9 @@
 param(
     [switch]$SkipTests,
-    [switch]$SkipDocs
+    [switch]$SkipDocs,
+    [string]$ReleaseRoot,
+    [string]$BuildRoot,
+    [string]$DistRoot
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,8 +15,10 @@ if (-not (Test-Path -LiteralPath $Python)) {
     throw "The managed Python environment is missing: $Python"
 }
 $Version = (& $Python -c "from neuroflow.product import PRODUCT_VERSION; print(PRODUCT_VERSION)").Trim()
-$ReleaseDir = [System.IO.Path]::GetFullPath((Join-Path $Root "release\v$Version"))
-$BuildRoot = [System.IO.Path]::GetFullPath((Join-Path $Root "build"))
+$ReleaseRoot = if ($ReleaseRoot) { [System.IO.Path]::GetFullPath($ReleaseRoot) } else { [System.IO.Path]::GetFullPath((Join-Path $Root "release")) }
+$BuildRoot = if ($BuildRoot) { [System.IO.Path]::GetFullPath($BuildRoot) } else { [System.IO.Path]::GetFullPath((Join-Path $Root "build")) }
+$DistRoot = if ($DistRoot) { [System.IO.Path]::GetFullPath($DistRoot) } else { [System.IO.Path]::GetFullPath((Join-Path $Root "dist")) }
+$ReleaseDir = [System.IO.Path]::GetFullPath((Join-Path $ReleaseRoot "v$Version"))
 $Staging = [System.IO.Path]::GetFullPath((Join-Path $BuildRoot "dual-release-v$Version"))
 if (-not $Staging.StartsWith($BuildRoot + [System.IO.Path]::DirectorySeparatorChar)) {
     throw "Refusing to use an unsafe staging directory: $Staging"
@@ -24,7 +29,7 @@ if (Test-Path -LiteralPath $Staging) {
 New-Item -ItemType Directory -Path $Staging | Out-Null
 
 try {
-    $CoreParams = @{ Lite = $true }
+    $CoreParams = @{ Lite = $true; ReleaseRoot = $ReleaseRoot; DistRoot = $DistRoot; WorkRoot = (Join-Path $BuildRoot "pyinstaller-standard") }
     if ($SkipTests) { $CoreParams.SkipTests = $true }
     if ($SkipDocs) { $CoreParams.SkipDocs = $true }
     & $BuildScript @CoreParams
@@ -43,19 +48,19 @@ try {
     }
 
     $StandardApp = Join-Path $Staging "standard-app"
-    $BuiltApp = Join-Path $Root "dist\NeuroEphysAI"
+    $BuiltApp = Join-Path $DistRoot "NeuroEphysAI"
     if (-not (Test-Path -LiteralPath $BuiltApp)) {
         throw "Validated Standard application directory is missing: $BuiltApp"
     }
     Move-Item -LiteralPath $BuiltApp -Destination $StandardApp
 
-    $FullParams = @{ SkipTests = $true; SkipDocs = $true; SkipInstaller = $true }
+    $FullParams = @{ SkipTests = $true; SkipDocs = $true; SkipInstaller = $true; ReleaseRoot = $ReleaseRoot; DistRoot = $DistRoot; WorkRoot = (Join-Path $BuildRoot "pyinstaller-full") }
     & $BuildScript @FullParams
     if ($LASTEXITCODE -ne 0) {
         throw "Full offline release build failed with exit code $LASTEXITCODE."
     }
 
-    $FullApp = Join-Path $Root "dist\NeuroEphysAI"
+    $FullApp = Join-Path $DistRoot "NeuroEphysAI"
     $GpuOverlay = Join-Path $Staging "gpu-overlay"
     & $OverlayScript `
         -StandardAppDir $StandardApp `
