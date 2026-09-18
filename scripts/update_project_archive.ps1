@@ -347,8 +347,11 @@ if (Test-Path -LiteralPath $handoverSource) {
 # Record heavyweight payloads by authoritative location instead of fragile shortcuts.
 $externalRows = @(
     [pscustomobject]@{Category="Authoritative source repository"; Path=$source; Purpose="Active development and Git working tree"; Storage="D:"; IncludedPhysically="Snapshot and Git bundle"},
-    [pscustomobject]@{Category="Local formal installations"; Path="D:\PhD\AI大赛\本地正式版"; Purpose="Installed application versions"; Storage="D:"; IncludedPhysically="No - indexed"},
-    [pscustomobject]@{Category="Release validation"; Path="D:\PhD\AI大赛\发布验证"; Purpose="Installer and runtime QA workspaces"; Storage="D:"; IncludedPhysically="Reports only"},
+    [pscustomobject]@{Category="Current Full installation"; Path="E:\NeuroEphysAI_Archive\Installed\NeuroEphysAI-v1.3.2-Full"; Purpose="Current one-click Full application with GPU and Kilosort"; Storage="E:"; IncludedPhysically="No - indexed"},
+    [pscustomobject]@{Category="Legacy local installations"; Path="E:\NeuroEphysAI_Archive\Legacy\LocalFormalBuilds_Pre_v1.3.2"; Purpose="Preserved application versions older than the current Full installation"; Storage="E:"; IncludedPhysically="No - indexed"},
+    [pscustomobject]@{Category="Legacy release validation"; Path="E:\NeuroEphysAI_Archive\Legacy\ReleaseValidation_Pre_v1.3.2"; Purpose="Preserved installer and runtime QA workspaces for earlier releases"; Storage="E:"; IncludedPhysically="Reports only"},
+    [pscustomobject]@{Category="Legacy repository release copies"; Path="E:\NeuroEphysAI_Archive\Legacy\RepositoryReleaseCopies_PreFinal_v1.3.2"; Purpose="Preserved pre-final release payloads moved out of the active source repository"; Storage="E:"; IncludedPhysically="No - indexed"},
+    [pscustomobject]@{Category="Rebuildable obsolete caches"; Path="E:\NeuroEphysAI_Archive\ObsoleteBuildStaging"; Purpose="Clearly isolated candidate and build caches; not authoritative releases"; Storage="E:"; IncludedPhysically="No - safe to delete after manual review"},
     [pscustomobject]@{Category="Raw real data"; Path="D:\PhD\AI大赛\AI大赛"; Purpose="Original electrophysiology and behavior recordings"; Storage="D:"; IncludedPhysically="No - too large"},
     [pscustomobject]@{Category="Example projects"; Path="D:\PhD\AI大赛\NeuroEphysAI_Workspace"; Purpose="Simulated benchmarks and tutorial projects"; Storage="D:"; IncludedPhysically="No - too large"},
     [pscustomobject]@{Category="Current real-data validation"; Path="E:\NeuroEphysValidation"; Purpose="Processed real-data projects, results, figures, and logs"; Storage="E:"; IncludedPhysically="No - too large"},
@@ -384,7 +387,7 @@ if (Test-Path -LiteralPath $localReleaseRoot) {
 }
 $assetRows | Export-Csv -LiteralPath (Join-Path $latestRelease "LOCAL_RELEASE_ASSETS.csv") -NoTypeInformation -Encoding UTF8
 
-$previousRoot = Join-Path $source "release"
+$previousRoot = "E:\NeuroEphysAI_Archive\Legacy\RepositoryReleaseCopies_PreFinal_v1.3.2"
 $previousRows = @()
 if (Test-Path -LiteralPath $previousRoot) {
     $previousRows = @(Get-ChildItem -LiteralPath $previousRoot -Directory -Force | Sort-Object Name | ForEach-Object {
