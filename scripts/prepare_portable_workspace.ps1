@@ -90,5 +90,8 @@ if ($Launch) {
     if (-not (Test-Path -LiteralPath $app -PathType Leaf)) {
         throw "Application not found: $app"
     }
+    $runtimeHome = Join-Path $root '04_User_Projects\Runtime_Workspace'
+    New-Item -ItemType Directory -Path $runtimeHome -Force | Out-Null
+    $env:NEUROEPHYS_HOME = $runtimeHome
     Start-Process -FilePath $app -WorkingDirectory (Split-Path -Parent $app)
 }
