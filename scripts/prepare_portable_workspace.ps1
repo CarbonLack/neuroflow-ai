@@ -37,20 +37,39 @@ foreach ($manifest in $(if ($alreadyPrepared) { @() } else { $manifests })) {
     }
     if ($recording) {
         $jsonPath = $recording.Replace('\', '\\')
-        $text = Get-Content -LiteralPath $manifest.FullName -Raw -Encoding UTF8
-        $text = [regex]::Replace(
-            $text,
-            '(?m)^\s*"source_path"\s*:\s*"[^"]*"',
-            '  "source_path": "' + $jsonPath + '"',
-            1
-        )
-        $text = [regex]::Replace(
-            $text,
-            '(?m)^\s*"recording_path"\s*:\s*"[^"]*"',
-            '  "recording_path": "' + $jsonPath + '"',
-            1
-        )
-        Set-Content -LiteralPath $manifest.FullName -Value $text -Encoding UTF8
+        $temporary = $manifest.FullName + '.portable.tmp'
+        $utf8 = New-Object System.Text.UTF8Encoding($false)
+        $reader = New-Object System.IO.StreamReader($manifest.FullName, $utf8, $true)
+        $writer = New-Object System.IO.StreamWriter($temporary, $false, $utf8)
+        $sourceDone = $false
+        $recordingDone = $false
+        try {
+            while (($line = $reader.ReadLine()) -ne $null) {
+                if (-not $sourceDone -and $line -match '^\s*"source_path"\s*:') {
+                    $line = '  "source_path": "' + $jsonPath + '",'
+                    $sourceDone = $true
+                } elseif (-not $recordingDone -and $line -match '^\s*"recording_path"\s*:') {
+                    $line = '  "recording_path": "' + $jsonPath + '",'
+                    $recordingDone = $true
+                }
+                $writer.WriteLine($line)
+                if ($sourceDone -and $recordingDone) {
+                    $buffer = New-Object char[] (1024 * 1024)
+                    while (($read = $reader.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                        $writer.Write($buffer, 0, $read)
+                    }
+                    break
+                }
+            }
+        } finally {
+            $reader.Dispose()
+            $writer.Dispose()
+        }
+        if (-not ($sourceDone -and $recordingDone)) {
+            Remove-Item -LiteralPath $temporary -Force
+            throw "Portable path fields were not found in $($manifest.FullName)"
+        }
+        Move-Item -LiteralPath $temporary -Destination $manifest.FullName -Force
         $updated++
     }
 }
