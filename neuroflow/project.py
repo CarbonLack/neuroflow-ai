@@ -13,6 +13,38 @@ from .product import PRODUCT_NAME, PRODUCT_VERSION
 MANIFEST_NAME = "neuroflow_project.json"
 
 
+def _portable_path_value(path: Path | None, project_root: Path) -> str | None:
+    """Store project-owned paths relative to the manifest for relocatability."""
+    if path is None:
+        return None
+    candidate = Path(path)
+    try:
+        return candidate.resolve().relative_to(project_root.resolve()).as_posix()
+    except (OSError, ValueError):
+        return str(candidate)
+
+
+def _resolve_project_path(value: str | None, project_root: Path) -> Path | None:
+    """Resolve relative paths and recover moved projects with a local raw copy."""
+    if not value:
+        return None
+    stored = Path(value)
+    if not stored.is_absolute():
+        return project_root / stored
+    if stored.exists():
+        return stored
+
+    # Legacy manifests stored absolute workstation paths. Prefer a same-named
+    # recording inside the moved project before declaring the source missing.
+    for candidate in (
+        project_root / "raw" / stored.name,
+        project_root / stored.name,
+    ):
+        if candidate.exists():
+            return candidate
+    return stored
+
+
 def save_ai_conversation(state: ProjectState) -> None:
     """Persist chat independently of large signal/sorting caches."""
     path = state.root / "ai" / "conversation.json"
@@ -146,8 +178,8 @@ def save_project(state: ProjectState) -> Path:
         "application_version": PRODUCT_VERSION,
         "name": state.name,
         "source_type": state.source_type,
-        "source_path": str(state.source_path) if state.source_path else None,
-        "recording_path": str(state.recording_path) if state.recording_path else None,
+        "source_path": _portable_path_value(state.source_path, state.root),
+        "recording_path": _portable_path_value(state.recording_path, state.root),
         "sampling_rate": state.sampling_rate,
         "channel_count": state.channel_count,
         "duration_seconds": state.duration_seconds,
@@ -258,11 +290,9 @@ def load_project(path: Path) -> ProjectState:
         root=manifest_path.parent,
         name=payload.get("name", manifest_path.parent.name),
         source_type=payload.get("source_type", "unknown"),
-        source_path=Path(payload["source_path"])
-        if payload.get("source_path")
-        else None,
-        recording_path=(
-            Path(payload["recording_path"]) if payload.get("recording_path") else None
+        source_path=_resolve_project_path(payload.get("source_path"), manifest_path.parent),
+        recording_path=_resolve_project_path(
+            payload.get("recording_path"), manifest_path.parent
         ),
         sampling_rate=float(payload.get("sampling_rate", 30_000)),
         channel_count=int(payload.get("channel_count", 0)),

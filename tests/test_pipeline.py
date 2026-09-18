@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -322,6 +323,60 @@ def test_project_roundtrip_restores_results_and_resume_stage(tmp_path: Path):
     assert restored.analysis["time"] == [-0.1, 0.0, 0.1]
     assert restored.statistics["rows"][0]["p_value"] == 0.04
     assert "Preprocessing completed" in restored.run_log
+
+
+def test_project_owned_recording_survives_directory_move(tmp_path: Path):
+    original = tmp_path / "original_project"
+    raw = original / "raw"
+    raw.mkdir(parents=True)
+    recording = raw / "recording.bin"
+    recording.write_bytes(b"\0" * 64)
+    state = ProjectState(
+        root=original,
+        name="portable",
+        source_type="binary",
+        source_path=recording,
+        recording_path=recording,
+        sampling_rate=1_000,
+        channel_count=2,
+        duration_seconds=0.016,
+    )
+    manifest = save_project(state)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    assert payload["recording_path"] == "raw/recording.bin"
+
+    moved = tmp_path / "moved_project"
+    original.rename(moved)
+    restored = load_project(moved)
+    assert restored.recording_path == moved / "raw" / "recording.bin"
+    assert restored.recording_path.exists()
+
+
+def test_legacy_absolute_recording_recovers_from_moved_raw_copy(tmp_path: Path):
+    project = tmp_path / "moved_project"
+    raw = project / "raw"
+    raw.mkdir(parents=True)
+    recording = raw / "recording.bin"
+    recording.write_bytes(b"\0" * 64)
+    state = ProjectState(
+        root=project,
+        name="legacy portable",
+        source_type="binary",
+        source_path=recording,
+        recording_path=recording,
+        sampling_rate=1_000,
+        channel_count=2,
+        duration_seconds=0.016,
+    )
+    manifest = save_project(state)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    payload["source_path"] = "Z:/old-computer/project/raw/recording.bin"
+    payload["recording_path"] = "Z:/old-computer/project/raw/recording.bin"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = load_project(project)
+    assert restored.source_path == recording
+    assert restored.recording_path == recording
 
 
 def test_project_restore_does_not_recompute_event_analysis(tmp_path: Path):
