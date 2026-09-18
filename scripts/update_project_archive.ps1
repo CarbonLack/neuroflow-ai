@@ -409,6 +409,11 @@ $manifest = [ordered]@{
 }
 $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $archive "SYNC_MANIFEST.json") -Encoding UTF8
 
+$historyPath = Join-Path $archive "07_Backup_Manifests\SYNC_HISTORY.log"
+$historyLine = "$timestamp | v$version | $commit | $ReleaseStatus | $workingTree"
+$lastHistoryLine = if (Test-Path -LiteralPath $historyPath) { Get-Content -LiteralPath $historyPath -Tail 1 } else { "" }
+if ($lastHistoryLine -ne $historyLine) { Add-Content -LiteralPath $historyPath -Value $historyLine -Encoding UTF8 }
+
 $inventoryPath = Join-Path $archive "07_Backup_Manifests\ARCHIVE_FILE_INVENTORY.csv"
 $inventoryRows = @(Get-ChildItem -LiteralPath $archive -File -Recurse -Force | Where-Object { $_.FullName -ne $inventoryPath } | Sort-Object FullName | ForEach-Object {
     [pscustomobject]@{
@@ -419,11 +424,6 @@ $inventoryRows = @(Get-ChildItem -LiteralPath $archive -File -Recurse -Force | W
     }
 })
 $inventoryRows | Export-Csv -LiteralPath $inventoryPath -NoTypeInformation -Encoding UTF8
-
-$historyPath = Join-Path $archive "07_Backup_Manifests\SYNC_HISTORY.log"
-$historyLine = "$timestamp | v$version | $commit | $ReleaseStatus | $workingTree"
-$lastHistoryLine = if (Test-Path -LiteralPath $historyPath) { Get-Content -LiteralPath $historyPath -Tail 1 } else { "" }
-if ($lastHistoryLine -ne $historyLine) { Add-Content -LiteralPath $historyPath -Value $historyLine -Encoding UTF8 }
 
 Write-Host "Updated living project archive: $archive"
 Write-Host "Version: v$version"
