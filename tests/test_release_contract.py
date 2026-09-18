@@ -76,6 +76,8 @@ def test_release_workflow_does_not_hardcode_an_old_version():
     assert '$ArtifactSuffix = if ($Lite) { "" } else { "-Full" }' in release_script
     assert '"/DFullBuild=1"' in release_script
     assert '"/DCoreAppDir=$AppDir"' in release_script
+    assert '-not $env:GITHUB_ACTIONS' in release_script
+    assert 'Skipping workstation-only living archive refresh' in release_script
     assert '"docs\\RELEASE_DOWNLOAD_${ReleaseSeries}_ZH.md"' in release_script
     assert "selectable Full installer requires both Standard and Full payloads" in release_script
 

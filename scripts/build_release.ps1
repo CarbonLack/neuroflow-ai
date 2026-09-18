@@ -210,11 +210,18 @@ try {
     Get-ChildItem -LiteralPath $ResolvedReleaseDir -File | Select-Object Name, Length
 
     $ArchiveRefresh = Join-Path $PSScriptRoot "update_project_archive.ps1"
-    if (Test-Path -LiteralPath $ArchiveRefresh) {
+    $LocalArchiveParent = "D:\PhD\AI大赛"
+    if (
+        (Test-Path -LiteralPath $ArchiveRefresh) -and
+        (Test-Path -LiteralPath $LocalArchiveParent) -and
+        -not $env:GITHUB_ACTIONS
+    ) {
         & $ArchiveRefresh `
             -SourceRoot $Root `
             -ReleaseStatus "release artifacts built" `
             -TestSummary "Source tests, documentation checks, and packaged self-tests completed by build_release.ps1"
+    } else {
+        Write-Host "Skipping workstation-only living archive refresh in this environment."
     }
 } finally {
     Remove-Item Env:NEUROEPHYS_LITE_BUILD -ErrorAction SilentlyContinue
