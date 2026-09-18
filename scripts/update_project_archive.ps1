@@ -6,6 +6,20 @@
 )
 
 $ErrorActionPreference = "Stop"
+
+function Get-Sha256Hex {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $bytes = $sha256.ComputeHash($stream)
+        return ([System.BitConverter]::ToString($bytes)).Replace("-", "").ToLowerInvariant()
+    } finally {
+        $stream.Dispose()
+        $sha256.Dispose()
+    }
+}
+
 $source = (Resolve-Path -LiteralPath $SourceRoot).Path
 $archive = [System.IO.Path]::GetFullPath($ArchiveRoot)
 $productFile = Join-Path $source "neuroflow\product.py"
@@ -336,7 +350,7 @@ if (Test-Path -LiteralPath $localReleaseRoot) {
             FullPath = $_.FullName
             SizeBytes = $_.Length
             LastWriteTime = $_.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
-            SHA256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            SHA256 = Get-Sha256Hex -Path $_.FullName
         }
     })
 }
@@ -401,7 +415,7 @@ $inventoryRows = @(Get-ChildItem -LiteralPath $archive -File -Recurse -Force | W
         RelativePath = $_.FullName.Substring($archive.Length).TrimStart('\')
         SizeBytes = $_.Length
         LastWriteTime = $_.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
-        SHA256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        SHA256 = Get-Sha256Hex -Path $_.FullName
     }
 })
 $inventoryRows | Export-Csv -LiteralPath $inventoryPath -NoTypeInformation -Encoding UTF8
