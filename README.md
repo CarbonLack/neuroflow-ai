@@ -29,10 +29,12 @@ NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道
 可逐步检查、替换和恢复的工作流。
 
 单个项目对应一个 recording Session；新增的 **Study 层** 可把多个已完成项目组织成
-多 Session／多动物研究。它保留 ``trial → session → animal`` 层级，提供按整只动物或
-整个 Session 留出的 Logistic、SVM、LDA、随机森林、层级条件汇总和描述性潜在动力学，
+多 Session／多动物研究。它保留 ``trial → session → animal`` 层级，一次运行期刊级组合：
+整只动物或整个 Session 留出的 Logistic、SVM、LDA、随机森林，Session 配对效应，
+随时间解码与时间泛化，跨 Session 转移矩阵，表征/子空间稳定性及描述性潜在动力学，
 不会把不同 Session 中相同编号的 Unit 默认当成同一细胞。方法、适用边界与完整操作见
-[多 Session 分析路径](docs/MULTI_SESSION_ANALYSIS_ZH.md)。
+[多 Session 分析路径](docs/MULTI_SESSION_ANALYSIS_ZH.md)；论文主图/附图调研与功能映射见
+[多 Session 论文方法对照](docs/MULTI_SESSION_PAPER_METHODS_ZH.md)。
 
 ## 开始使用
 

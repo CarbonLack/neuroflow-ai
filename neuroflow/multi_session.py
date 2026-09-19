@@ -226,6 +226,126 @@ FEATURE_COLUMNS = [
     "response_std_hz",
 ]
 
+TIME_FEATURE_COLUMNS = FEATURE_COLUMNS.copy()
+
+
+def _included_population_data(
+    study: StudyState,
+    selected_conditions: list[str] | tuple[str, str],
+) -> tuple[np.ndarray, list[dict[str, Any]]]:
+    """Load trial × unit × time arrays without matching units across sessions."""
+    selected = [str(value) for value in selected_conditions]
+    time_axis: np.ndarray | None = None
+    loaded: list[dict[str, Any]] = []
+    for item in study.sessions:
+        if not item.included:
+            continue
+        state = load_project(Path(item.project))
+        analysis = state.analysis
+        if not analysis or not analysis.get("units"):
+            raise ValueError(
+                f"Session {item.session_id} needs event-aligned population activity"
+            )
+        centers = np.asarray(analysis.get("bin_centers", []), dtype=float)
+        conditions = np.asarray(analysis.get("conditions", [])).astype(str)
+        rates = np.stack(
+            [
+                np.asarray(unit["rates"], dtype=float)
+                for unit in analysis["units"].values()
+            ],
+            axis=1,
+        )
+        if rates.ndim != 3 or rates.shape[0] != len(conditions):
+            raise ValueError(f"Session {item.session_id} has inconsistent trial arrays")
+        keep = np.isin(conditions, selected)
+        if not np.any(keep):
+            raise ValueError(f"Session {item.session_id} lacks the selected conditions")
+        if time_axis is None:
+            time_axis = centers
+        elif len(centers) != len(time_axis) or not np.allclose(centers, time_axis):
+            raise ValueError(
+                "All sessions need matching event-analysis bins for time-resolved analysis"
+            )
+        baseline = tuple(analysis.get("baseline_window", (-0.5, 0.0)))
+        baseline_mask = (centers >= baseline[0]) & (centers < baseline[1])
+        if not np.any(baseline_mask):
+            raise ValueError(f"Session {item.session_id} has an empty baseline window")
+        loaded.append(
+            {
+                "animal_id": item.animal_id,
+                "session_id": item.session_id,
+                "conditions": conditions[keep],
+                "rates": rates[keep],
+                "baseline_mask": baseline_mask,
+                "unit_count": int(rates.shape[1]),
+            }
+        )
+    if time_axis is None or len(loaded) < 2:
+        raise ValueError("Time-resolved analysis requires at least two sessions")
+    return time_axis, loaded
+
+
+def _time_moment_features(rates: np.ndarray, baseline_mask: np.ndarray) -> np.ndarray:
+    """Return trial × time × feature population summaries.
+
+    Population distribution moments make sessions with different unit counts comparable
+    while avoiding the false assumption that unit identifiers persist across sessions.
+    """
+    baseline = rates[:, :, baseline_mask].mean(axis=2, keepdims=True)
+    delta = rates - baseline
+    return np.stack(
+        [
+            delta.mean(axis=1),
+            np.median(delta, axis=1),
+            delta.std(axis=1),
+            np.quantile(delta, 0.25, axis=1),
+            np.quantile(delta, 0.75, axis=1),
+            (delta > 0).mean(axis=1),
+            rates.mean(axis=1),
+            rates.std(axis=1),
+        ],
+        axis=2,
+    )
+
+
+def build_time_resolved_features(
+    study: StudyState,
+    selected_conditions: list[str] | tuple[str, str],
+    max_bins: int = 31,
+) -> dict[str, Any]:
+    """Build leak-safe fixed-dimensional temporal features for every trial."""
+    time_axis, loaded = _included_population_data(study, selected_conditions)
+    if len(time_axis) > max_bins:
+        indices = np.unique(
+            np.linspace(0, len(time_axis) - 1, max_bins).round().astype(int)
+        )
+    else:
+        indices = np.arange(len(time_axis))
+    feature_blocks = []
+    rows: list[dict[str, Any]] = []
+    for session in loaded:
+        features = _time_moment_features(
+            session["rates"], session["baseline_mask"]
+        )[:, indices, :]
+        feature_blocks.append(features)
+        for trial_index, condition in enumerate(session["conditions"]):
+            rows.append(
+                {
+                    "animal_id": session["animal_id"],
+                    "session_id": session["session_id"],
+                    "condition": str(condition),
+                    "trial_index": int(trial_index),
+                    "unit_count": session["unit_count"],
+                }
+            )
+    return {
+        "time_seconds": time_axis[indices],
+        "features": np.concatenate(feature_blocks, axis=0),
+        "trials": pd.DataFrame(rows),
+        "sessions": loaded,
+        "feature_columns": TIME_FEATURE_COLUMNS,
+    }
+
 
 def shared_conditions(study: StudyState) -> list[str]:
     """Return named conditions shared by every included, analyzed session."""
@@ -452,6 +572,216 @@ def _grouped_predictions(model, x, y, groups, splits):
     return predictions[covered], probabilities[covered], covered, fold_rows
 
 
+def _score_time_resolved_decoding(
+    temporal: dict[str, Any],
+    classes: list[str],
+    model_name: str,
+    group_column: str,
+    n_splits: int,
+) -> dict[str, Any]:
+    """Decode every time bin and test whether the code generalizes over time."""
+    x = np.asarray(temporal["features"], dtype=float)
+    frame = temporal["trials"]
+    y = (frame["condition"].to_numpy() == classes[1]).astype(int)
+    groups = frame[group_column].astype(str).to_numpy()
+    splits = _valid_group_splits(
+        x[:, 0, :], y, groups, min(n_splits, len(np.unique(groups)))
+    )
+    model = _classifier(model_name)
+    curves = []
+    per_group = []
+    for time_index in range(x.shape[1]):
+        predicted, _, covered, _ = _grouped_predictions(
+            model, x[:, time_index, :], y, groups, splits
+        )
+        observed = y[covered]
+        curves.append(float(balanced_accuracy_score(observed, predicted)))
+        scores = []
+        for group in np.unique(groups[covered]):
+            selected = groups[covered] == group
+            if len(np.unique(observed[selected])) == 2:
+                scores.append(
+                    float(
+                        balanced_accuracy_score(
+                            observed[selected], predicted[selected]
+                        )
+                    )
+                )
+        per_group.append(scores)
+
+    # Temporal generalization: train at one time and test at every other time.
+    # We average fold-level balanced accuracy so no held-out group leaks into fit.
+    generalization = np.zeros((x.shape[1], x.shape[1]), dtype=float)
+    for train_time in range(x.shape[1]):
+        fold_matrices = []
+        for train, test in splits:
+            fitted = clone(model).fit(x[train, train_time, :], y[train])
+            fold_matrices.append(
+                [
+                    float(
+                        balanced_accuracy_score(
+                            y[test], fitted.predict(x[test, test_time, :])
+                        )
+                    )
+                    for test_time in range(x.shape[1])
+                ]
+            )
+        generalization[train_time] = np.mean(fold_matrices, axis=0)
+
+    rng = np.random.default_rng(20260728)
+    low, high = [], []
+    for scores in per_group:
+        values = np.asarray(scores, dtype=float)
+        if len(values) < 2:
+            low.append(math.nan)
+            high.append(math.nan)
+            continue
+        bootstrap = np.asarray(
+            [rng.choice(values, size=len(values), replace=True).mean() for _ in range(500)]
+        )
+        low.append(float(np.quantile(bootstrap, 0.025)))
+        high.append(float(np.quantile(bootstrap, 0.975)))
+    return {
+        "time_seconds": temporal["time_seconds"],
+        "balanced_accuracy": curves,
+        "confidence_interval_95_low": low,
+        "confidence_interval_95_high": high,
+        "confidence_interval_method": "held-out-group bootstrap at each time bin",
+        "temporal_generalization": generalization,
+        "validation": "grouped; preprocessing fitted inside each training fold",
+        "interpretation": (
+            "Diagonal values show when condition information is decodable; off-diagonal "
+            "values show whether a decoder learned at one time generalizes to another."
+        ),
+    }
+
+
+def _cross_session_transfer(
+    frame: pd.DataFrame,
+    classes: list[str],
+    model_name: str,
+) -> dict[str, Any]:
+    """Train on one complete session and test on another complete session."""
+    sessions = sorted(frame["session_id"].astype(str).unique())
+    matrix = np.full((len(sessions), len(sessions)), np.nan, dtype=float)
+    model = _classifier(model_name)
+    for train_index, train_session in enumerate(sessions):
+        train = frame["session_id"].astype(str).to_numpy() == train_session
+        x_train = frame.loc[train, FEATURE_COLUMNS].to_numpy(dtype=float)
+        y_train = (frame.loc[train, "condition"].to_numpy() == classes[1]).astype(int)
+        if len(np.unique(y_train)) != 2:
+            continue
+        for test_index, test_session in enumerate(sessions):
+            test = frame["session_id"].astype(str).to_numpy() == test_session
+            x_test = frame.loc[test, FEATURE_COLUMNS].to_numpy(dtype=float)
+            y_test = (frame.loc[test, "condition"].to_numpy() == classes[1]).astype(int)
+            if len(np.unique(y_test)) != 2:
+                continue
+            if train_session == test_session:
+                # A diagonal training score would be optimistic; use deterministic
+                # stratified folds within this one session instead.
+                from sklearn.model_selection import StratifiedKFold, cross_val_predict
+
+                folds = min(5, int(np.min(np.bincount(y_train))))
+                if folds < 2:
+                    continue
+                splitter = StratifiedKFold(
+                    n_splits=folds, shuffle=True, random_state=20260725
+                )
+                predicted = cross_val_predict(model, x_train, y_train, cv=splitter)
+            else:
+                predicted = clone(model).fit(x_train, y_train).predict(x_test)
+            matrix[train_index, test_index] = balanced_accuracy_score(
+                y_test if train_session != test_session else y_train, predicted
+            )
+    return {
+        "sessions": sessions,
+        "balanced_accuracy_matrix": matrix,
+        "diagonal_policy": "within-session stratified cross-validation",
+        "off_diagonal_policy": "train on all trials from row session; test on column session",
+        "interpretation": (
+            "Off-diagonal transfer measures session-to-session portability of the "
+            "population-distribution code, not identity tracking of individual neurons."
+        ),
+    }
+
+
+def _representation_stability(
+    temporal: dict[str, Any], classes: list[str]
+) -> dict[str, Any]:
+    """Compare condition-contrast dynamics in a shared moment-feature space."""
+    session_ids: list[str] = []
+    contrasts: list[np.ndarray] = []
+    subspaces: list[np.ndarray] = []
+    for session in temporal["sessions"]:
+        features = _time_moment_features(
+            session["rates"], session["baseline_mask"]
+        )
+        # Match the temporal down-sampling used in the decoder.
+        target_times = np.asarray(temporal["time_seconds"], dtype=float)
+        full_count = features.shape[1]
+        if full_count != len(target_times):
+            indices = np.unique(
+                np.linspace(0, full_count - 1, len(target_times)).round().astype(int)
+            )
+            features = features[:, indices, :]
+        conditions = np.asarray(session["conditions"]).astype(str)
+        first = features[conditions == classes[0]].mean(axis=0)
+        second = features[conditions == classes[1]].mean(axis=0)
+        contrast = second - first
+        session_ids.append(str(session["session_id"]))
+        contrasts.append(contrast.reshape(-1))
+        centered = np.vstack([first, second])
+        centered -= centered.mean(axis=0, keepdims=True)
+        _, _, vh = np.linalg.svd(centered, full_matrices=False)
+        subspaces.append(vh[: min(3, vh.shape[0])].T)
+    n_sessions = len(session_ids)
+    rsa = np.eye(n_sessions, dtype=float)
+    subspace = np.eye(n_sessions, dtype=float)
+    for row in range(n_sessions):
+        for column in range(row + 1, n_sessions):
+            correlation = float(
+                np.corrcoef(contrasts[row], contrasts[column])[0, 1]
+            )
+            rsa[row, column] = rsa[column, row] = correlation
+            singular = np.linalg.svd(
+                subspaces[row].T @ subspaces[column], compute_uv=False
+            )
+            similarity = float(np.mean(np.clip(singular, 0, 1)))
+            subspace[row, column] = subspace[column, row] = similarity
+    return {
+        "sessions": session_ids,
+        "condition_contrast_correlation": rsa,
+        "subspace_similarity": subspace,
+        "subspace_dimensions": min(3, subspaces[0].shape[1]) if subspaces else 0,
+        "interpretation": (
+            "Correlation compares the full condition-contrast trajectory. Subspace "
+            "similarity compares low-dimensional moment-feature geometry; neither "
+            "claims that individual neurons were tracked across sessions."
+        ),
+    }
+
+
+def _session_qc_table(temporal: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = []
+    for session in temporal["sessions"]:
+        conditions = np.asarray(session["conditions"]).astype(str)
+        counts = {key: int(np.sum(conditions == key)) for key in sorted(set(conditions))}
+        rates = np.asarray(session["rates"], dtype=float)
+        rows.append(
+            {
+                "animal_id": str(session["animal_id"]),
+                "session_id": str(session["session_id"]),
+                "unit_count": int(session["unit_count"]),
+                "trial_count": int(len(conditions)),
+                "condition_counts": counts,
+                "mean_firing_rate_hz": float(np.mean(rates)),
+                "zero_rate_fraction": float(np.mean(rates == 0)),
+            }
+        )
+    return rows
+
+
 def _hierarchical_condition_effect(
     frame: pd.DataFrame, classes: list[str]
 ) -> dict[str, Any]:
@@ -470,6 +800,34 @@ def _hierarchical_condition_effect(
         "session_summary": session_summary.to_dict(orient="records"),
         "warning": "",
     }
+    pivot = session_summary.pivot_table(
+        index=["animal_id", "session_id"],
+        columns="condition",
+        values="mean_population_delta_hz",
+    )
+    if all(condition in pivot.columns for condition in classes):
+        effects = (pivot[classes[1]] - pivot[classes[0]]).dropna().to_numpy(float)
+        if len(effects):
+            rng = np.random.default_rng(20260727)
+            bootstrap = np.asarray(
+                [
+                    rng.choice(effects, size=len(effects), replace=True).mean()
+                    for _ in range(4000)
+                ]
+            )
+            result.update(
+                {
+                    "session_paired_effect_hz": float(np.mean(effects)),
+                    "session_paired_effect_ci95_hz": [
+                        float(np.quantile(bootstrap, 0.025)),
+                        float(np.quantile(bootstrap, 0.975)),
+                    ],
+                    "session_paired_effect_method": (
+                        "paired session contrast with session-level bootstrap"
+                    ),
+                    "session_effects_hz": effects,
+                }
+            )
     if work["animal_id"].nunique() < 3:
         result["warning"] = (
             "Fewer than three animals are present; random-effect variance is not "
@@ -708,8 +1066,19 @@ def run_multi_session_analysis(
     ].copy()
     prediction_rows["predicted_condition"] = [classes[index] for index in predictions]
     prediction_rows["probability_second_condition"] = probabilities
+    temporal = build_time_resolved_features(study, classes)
+    temporal_decoding = _score_time_resolved_decoding(
+        temporal,
+        classes,
+        model_name,
+        group_column,
+        n_splits,
+    )
+    transfer = _cross_session_transfer(frame, classes, model_name)
+    stability = _representation_stability(temporal, classes)
+    session_qc = _session_qc_table(temporal)
     result = {
-        "schema": "neuroephys.multi_session_analysis.v1",
+        "schema": "neuroephys.multi_session_analysis.v2",
         "study_id": study.study_id,
         "study_name": study.name,
         "model": model_name,
@@ -744,11 +1113,49 @@ def run_multi_session_analysis(
         "predictions": prediction_rows.to_dict(orient="records"),
         "hierarchical_condition_effect": _hierarchical_condition_effect(frame, classes),
         "latent_dynamics": run_latent_dynamics(study, selected_conditions=classes),
+        "session_qc": session_qc,
+        "time_resolved_decoding": temporal_decoding,
+        "cross_session_transfer": transfer,
+        "representation_stability": stability,
+        "analysis_story": [
+            {
+                "question": "Are all sessions suitable and comparably sampled?",
+                "answer_source": "session_qc",
+                "figure": "main_figure_1_study_overview",
+            },
+            {
+                "question": "Is the condition effect consistent across sessions?",
+                "answer_source": "hierarchical_condition_effect",
+                "figure": "main_figure_2_condition_effect",
+            },
+            {
+                "question": "Does condition information generalize to held-out sessions?",
+                "answer_source": "grouped decoding and permutation test",
+                "figure": "main_figure_3_grouped_decoding",
+            },
+            {
+                "question": "When does information emerge and is its code stable over time?",
+                "answer_source": "time_resolved_decoding and temporal_generalization",
+                "figure": "main_figure_4_temporal_code",
+            },
+            {
+                "question": "Does the learned code transfer between individual sessions?",
+                "answer_source": "cross_session_transfer",
+                "figure": "supplementary_figure_1_transfer_and_stability",
+            },
+            {
+                "question": "Are population dynamics geometrically similar without neuron matching?",
+                "answer_source": "representation_stability and latent_dynamics",
+                "figure": "supplementary_figure_1_transfer_and_stability",
+            },
+        ],
         "safeguards": [
             "Trials from one validation group never appear in both train and test.",
             "Label permutations occur within sessions, preserving the nested structure.",
             "Unit ids are not assumed to match across sessions.",
             "Animal-level inference is withheld when fewer than two animals are present.",
+            "Temporal decoding uses the same whole-group splits at every time bin.",
+            "The transfer matrix uses only population-distribution features shared across sessions.",
         ],
         "interpretation": {
             "supports": (
@@ -788,67 +1195,197 @@ def study_figure(study: StudyState):
     result = study.results
     if not result:
         raise ValueError("Run multi-session analysis first")
-    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.8), constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(11.2, 6.5), constrained_layout=True)
+    qc = pd.DataFrame(result.get("session_qc", []))
+    if not qc.empty:
+        positions = np.arange(len(qc))
+        axes[0, 0].bar(
+            positions - 0.18,
+            qc["unit_count"],
+            width=0.36,
+            color=PURPLE,
+            label="Units",
+        )
+        trial_axis = axes[0, 0].twinx()
+        trial_axis.bar(
+            positions + 0.18,
+            qc["trial_count"],
+            width=0.36,
+            color=GREEN,
+            label="Events",
+        )
+        axes[0, 0].set_xticks(positions, qc["session_id"], rotation=35, ha="right")
+        axes[0, 0].set_ylabel("Units")
+        trial_axis.set_ylabel("Aligned events")
+        trial_axis.spines[["top"]].set_visible(False)
+    axes[0, 0].set_title("a  Study coverage and QC", loc="left", fontweight="bold")
+
     groups = result["held_out_group_scores"]
     labels = [row["group"] for row in groups]
     scores = [row["balanced_accuracy"] for row in groups]
-    axes[0, 0].bar(np.arange(len(scores)), scores, color=PURPLE, edgecolor="white")
-    axes[0, 0].axhline(0.5, color=MUTED, linestyle="--", linewidth=1)
-    axes[0, 0].set_xticks(np.arange(len(labels)), labels, rotation=35, ha="right")
-    axes[0, 0].set_ylim(0, 1)
-    axes[0, 0].set_ylabel("Balanced accuracy")
-    axes[0, 0].set_title("Held-out group decoding", loc="left")
+    axes[0, 1].bar(np.arange(len(scores)), scores, color=PURPLE, edgecolor="white")
+    axes[0, 1].axhline(0.5, color=MUTED, linestyle="--", linewidth=1)
+    axes[0, 1].set_xticks(np.arange(len(labels)), labels, rotation=35, ha="right")
+    axes[0, 1].set_ylim(0, 1)
+    axes[0, 1].set_ylabel("Balanced accuracy")
+    axes[0, 1].set_title("b  Held-out session decoding", loc="left", fontweight="bold")
+
     matrix = np.asarray(result["confusion_matrix"], dtype=float)
     normalized = matrix / np.maximum(matrix.sum(axis=1, keepdims=True), 1)
-    axes[0, 1].imshow(normalized, cmap="Purples", vmin=0, vmax=1)
+    axes[0, 2].imshow(normalized, cmap="Purples", vmin=0, vmax=1)
     for row in range(2):
         for column in range(2):
-            axes[0, 1].text(
+            axes[0, 2].text(
                 column,
                 row,
                 f"{matrix[row, column]:.0f}\n{normalized[row, column]:.0%}",
                 ha="center",
                 va="center",
             )
-    axes[0, 1].set_xticks([0, 1], result["classes"])
-    axes[0, 1].set_yticks([0, 1], result["classes"])
-    axes[0, 1].set_xlabel("Predicted")
-    axes[0, 1].set_ylabel("Observed")
-    axes[0, 1].set_title("Grouped confusion matrix", loc="left")
+    axes[0, 2].set_xticks([0, 1], result["classes"], rotation=20, ha="right")
+    axes[0, 2].set_yticks([0, 1], result["classes"])
+    axes[0, 2].set_xlabel("Predicted")
+    axes[0, 2].set_ylabel("Observed")
+    axes[0, 2].set_title("c  Grouped confusion matrix", loc="left", fontweight="bold")
+
     summary = pd.DataFrame(result["hierarchical_condition_effect"]["session_summary"])
     for condition, color in zip(result["classes"], [PURPLE, GREEN]):
         selected = summary[summary["condition"] == condition]
-        axes[1, 0].scatter(
+        axes[1, 0].plot(
             selected["session_id"],
             selected["mean_population_delta_hz"],
             label=condition,
             color=color,
-            s=34,
+            marker="o",
+            linewidth=1.2,
         )
     axes[1, 0].tick_params(axis="x", rotation=35)
     axes[1, 0].set_ylabel("Population response − baseline (Hz)")
-    axes[1, 0].set_title("Session-level condition effects", loc="left")
+    axes[1, 0].set_title("d  Session-level condition effects", loc="left", fontweight="bold")
     axes[1, 0].legend(frameon=False)
+
+    temporal = result.get("time_resolved_decoding", {})
+    times = np.asarray(temporal.get("time_seconds", []), dtype=float)
+    curve = np.asarray(temporal.get("balanced_accuracy", []), dtype=float)
+    low = np.asarray(temporal.get("confidence_interval_95_low", []), dtype=float)
+    high = np.asarray(temporal.get("confidence_interval_95_high", []), dtype=float)
+    if len(times):
+        axes[1, 1].plot(times, curve, color=PURPLE, linewidth=2)
+        if len(low) == len(times):
+            axes[1, 1].fill_between(times, low, high, color=PURPLE, alpha=0.2)
+        axes[1, 1].axhline(0.5, color=MUTED, linestyle="--", linewidth=1)
+        axes[1, 1].axvline(0, color=INK, linewidth=0.8)
+    axes[1, 1].set_ylim(0, 1)
+    axes[1, 1].set_xlabel("Time from event (s)")
+    axes[1, 1].set_ylabel("Balanced accuracy")
+    axes[1, 1].set_title("e  Time-resolved decoding", loc="left", fontweight="bold")
+
     ldm = result["latent_dynamics"]
     trajectories = np.asarray(ldm["trajectories"], dtype=float)
     for trajectory, label in zip(trajectories, ldm["labels"]):
         color = PURPLE if label["condition"] == result["classes"][0] else GREEN
-        axes[1, 1].plot(
+        axes[1, 2].plot(
             trajectory[:, 0],
             trajectory[:, 1] if trajectory.shape[1] > 1 else np.zeros(len(trajectory)),
             color=color,
             alpha=0.55,
             linewidth=1.2,
         )
-    axes[1, 1].set_xlabel("Latent dimension 1")
-    axes[1, 1].set_ylabel("Latent dimension 2")
-    axes[1, 1].set_title(
-        f"Latent dynamics · transition R²={ldm['transition_r2']:.2f}", loc="left"
+    axes[1, 2].set_xlabel("Latent dimension 1")
+    axes[1, 2].set_ylabel("Latent dimension 2")
+    axes[1, 2].set_title(
+        f"f  Population dynamics · R²={ldm['transition_r2']:.2f}",
+        loc="left",
+        fontweight="bold",
     )
     for ax in axes.flat:
         ax.spines[["top", "right"]].set_visible(False)
         ax.grid(False)
         ax.tick_params(colors=INK)
+    return fig
+
+
+def study_supplementary_figure(study: StudyState):
+    """Controls and stability panels that should not crowd the main narrative."""
+    result = study.results
+    if not result:
+        raise ValueError("Run multi-session analysis first")
+    fig, axes = plt.subplots(2, 3, figsize=(11.2, 6.5), constrained_layout=True)
+    transfer = result["cross_session_transfer"]
+    matrix = np.asarray(transfer["balanced_accuracy_matrix"], dtype=float)
+    image = axes[0, 0].imshow(matrix, cmap="Purples", vmin=0, vmax=1)
+    axes[0, 0].set_xticks(range(len(transfer["sessions"])), transfer["sessions"], rotation=45, ha="right")
+    axes[0, 0].set_yticks(range(len(transfer["sessions"])), transfer["sessions"])
+    axes[0, 0].set_xlabel("Test session")
+    axes[0, 0].set_ylabel("Train session")
+    axes[0, 0].set_title("a  Cross-session transfer", loc="left", fontweight="bold")
+    fig.colorbar(image, ax=axes[0, 0], fraction=0.046, label="Balanced accuracy")
+
+    temporal = result["time_resolved_decoding"]
+    times = np.asarray(temporal["time_seconds"], dtype=float)
+    generalization = np.asarray(temporal["temporal_generalization"], dtype=float)
+    image = axes[0, 1].imshow(
+        generalization,
+        cmap="Purples",
+        vmin=0.5,
+        vmax=max(0.55, float(np.nanmax(generalization))),
+        origin="lower",
+        extent=[times[0], times[-1], times[0], times[-1]],
+        aspect="auto",
+    )
+    axes[0, 1].set_xlabel("Test time (s)")
+    axes[0, 1].set_ylabel("Train time (s)")
+    axes[0, 1].set_title("b  Temporal generalization", loc="left", fontweight="bold")
+    fig.colorbar(image, ax=axes[0, 1], fraction=0.046, label="Balanced accuracy")
+
+    stability = result["representation_stability"]
+    rsa = np.asarray(stability["condition_contrast_correlation"], dtype=float)
+    image = axes[0, 2].imshow(rsa, cmap="coolwarm", vmin=-1, vmax=1)
+    axes[0, 2].set_xticks(range(len(stability["sessions"])), stability["sessions"], rotation=45, ha="right")
+    axes[0, 2].set_yticks(range(len(stability["sessions"])), stability["sessions"])
+    axes[0, 2].set_title("c  Contrast trajectory similarity", loc="left", fontweight="bold")
+    fig.colorbar(image, ax=axes[0, 2], fraction=0.046, label="Correlation")
+
+    subspace = np.asarray(stability["subspace_similarity"], dtype=float)
+    image = axes[1, 0].imshow(subspace, cmap="Purples", vmin=0, vmax=1)
+    axes[1, 0].set_xticks(range(len(stability["sessions"])), stability["sessions"], rotation=45, ha="right")
+    axes[1, 0].set_yticks(range(len(stability["sessions"])), stability["sessions"])
+    axes[1, 0].set_title("d  Population subspace similarity", loc="left", fontweight="bold")
+    fig.colorbar(image, ax=axes[1, 0], fraction=0.046, label="Mean cosine")
+
+    null = np.asarray(result.get("null_scores", []), dtype=float)
+    if len(null):
+        axes[1, 1].hist(null, bins=24, color="#d8c6df", edgecolor="white")
+    axes[1, 1].axvline(result["balanced_accuracy"], color=PURPLE, linewidth=2, label="Observed")
+    axes[1, 1].axvline(0.5, color=MUTED, linestyle="--", linewidth=1, label="Chance")
+    axes[1, 1].set_xlabel("Balanced accuracy")
+    axes[1, 1].set_ylabel("Permutations")
+    axes[1, 1].set_title("e  Within-session label null", loc="left", fontweight="bold")
+    axes[1, 1].legend(frameon=False)
+
+    qc = pd.DataFrame(result.get("session_qc", []))
+    if not qc.empty:
+        axes[1, 2].scatter(
+            qc["unit_count"],
+            qc["mean_firing_rate_hz"],
+            s=55,
+            color=PURPLE,
+            edgecolor="white",
+        )
+        for _, row in qc.iterrows():
+            axes[1, 2].annotate(
+                row["session_id"],
+                (row["unit_count"], row["mean_firing_rate_hz"]),
+                xytext=(3, 3),
+                textcoords="offset points",
+                fontsize=7,
+            )
+    axes[1, 2].set_xlabel("Units")
+    axes[1, 2].set_ylabel("Mean firing rate (Hz)")
+    axes[1, 2].set_title("f  Sampling sensitivity check", loc="left", fontweight="bold")
+    for ax in axes.flat:
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(False)
     return fig
 
 
@@ -874,12 +1411,101 @@ def export_study_results(
     pd.DataFrame(study.results["predictions"]).to_csv(
         output / "grouped_decoding_predictions.csv", index=False
     )
+    pd.DataFrame(study.results.get("session_qc", [])).to_csv(
+        output / "session_qc.csv", index=False
+    )
+    temporal = study.results.get("time_resolved_decoding", {})
+    if temporal:
+        pd.DataFrame(
+            {
+                "time_seconds": temporal["time_seconds"],
+                "balanced_accuracy": temporal["balanced_accuracy"],
+                "ci95_low": temporal["confidence_interval_95_low"],
+                "ci95_high": temporal["confidence_interval_95_high"],
+            }
+        ).to_csv(output / "time_resolved_decoding.csv", index=False)
+        pd.DataFrame(
+            temporal["temporal_generalization"],
+            index=temporal["time_seconds"],
+            columns=temporal["time_seconds"],
+        ).to_csv(output / "temporal_generalization_matrix.csv")
+    transfer = study.results.get("cross_session_transfer", {})
+    if transfer:
+        pd.DataFrame(
+            transfer["balanced_accuracy_matrix"],
+            index=transfer["sessions"],
+            columns=transfer["sessions"],
+        ).to_csv(output / "cross_session_transfer_matrix.csv")
+    stability = study.results.get("representation_stability", {})
+    if stability:
+        pd.DataFrame(
+            stability["condition_contrast_correlation"],
+            index=stability["sessions"],
+            columns=stability["sessions"],
+        ).to_csv(output / "representation_similarity_matrix.csv")
+        pd.DataFrame(
+            stability["subspace_similarity"],
+            index=stability["sessions"],
+            columns=stability["sessions"],
+        ).to_csv(output / "subspace_similarity_matrix.csv")
     (output / "multi_session_results.json").write_text(
         json.dumps(_jsonable(study.results), ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     figure = study_figure(study)
+    figure.savefig(output / "main_figure_multi_session.svg", bbox_inches="tight")
+    figure.savefig(output / "main_figure_multi_session.png", dpi=600, bbox_inches="tight")
+    # Backward-compatible names retained for existing project links.
     figure.savefig(output / "multi_session_summary.svg", bbox_inches="tight")
     figure.savefig(output / "multi_session_summary.png", dpi=600, bbox_inches="tight")
     plt.close(figure)
+    supplementary = study_supplementary_figure(study)
+    supplementary.savefig(
+        output / "supplementary_figure_controls.svg", bbox_inches="tight"
+    )
+    supplementary.savefig(
+        output / "supplementary_figure_controls.png", dpi=600, bbox_inches="tight"
+    )
+    plt.close(supplementary)
+    effect = study.results["hierarchical_condition_effect"]
+    report = [
+        f"# {study.name}: multi-session analysis report",
+        "",
+        "## Scope",
+        "",
+        f"This analysis includes {study.results['session_count']} sessions and "
+        f"{study.results['trial_count']} event-aligned observations. It compares "
+        f"`{study.results['classes'][0]}` with `{study.results['classes'][1]}`.",
+        "Numeric unit identifiers are never treated as persistent neurons across sessions.",
+        "",
+        "## Main findings",
+        "",
+        f"- Held-out-{study.results['group_by']} balanced accuracy: "
+        f"{study.results['balanced_accuracy']:.3f} "
+        f"(95% held-out-group bootstrap CI "
+        f"{study.results['confidence_interval_95'][0]:.3f}–"
+        f"{study.results['confidence_interval_95'][1]:.3f}).",
+        f"- Within-session label-permutation p value: {study.results['permutation_p']:.4g}.",
+        f"- Session-paired population effect: "
+        f"{effect.get('session_paired_effect_hz', math.nan):.3f} Hz "
+        f"(95% CI {effect.get('session_paired_effect_ci95_hz', [math.nan, math.nan])[0]:.3f}–"
+        f"{effect.get('session_paired_effect_ci95_hz', [math.nan, math.nan])[1]:.3f}).",
+        "",
+        "## How to read the figures",
+        "",
+        "The main figure moves from inclusion/QC to session effects, held-out decoding, "
+        "time-resolved information, and population trajectories. The supplementary "
+        "figure tests cross-session transfer, temporal generalization, representational "
+        "similarity, subspace similarity, the shuffled-label null, and sampling balance.",
+        "",
+        "## Interpretation limits",
+        "",
+        "These results support reproducible condition-related population information "
+        "within this dataset. They do not establish causality, biological replication "
+        "across animals when animal identifiers are unavailable, or stable identity of "
+        "individual neurons across recording sessions.",
+    ]
+    if effect.get("warning"):
+        report.extend(["", "## Statistical warning", "", str(effect["warning"])])
+    (output / "INTERPRETATION.md").write_text("\n".join(report), encoding="utf-8")
     return output

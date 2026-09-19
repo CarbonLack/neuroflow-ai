@@ -194,21 +194,26 @@ class MultiSessionStudyDialog(QDialog):
         right_layout.addLayout(controls)
         method_note = QLabel(
             (
-                "The decoder asks whether condition information generalizes to a wholly "
-                "held-out animal or session. LDA is a classifier; the separate latent-"
-                "dynamics panel uses PCA plus a regularized linear transition model."
+                "Paper-grade profile runs as one reproducible suite: session QC, paired "
+                "condition effects, whole-group decoding, within-session permutations, "
+                "time-resolved and cross-temporal decoding, cross-session transfer, "
+                "representational stability, and descriptive latent dynamics. LDA is a "
+                "classifier; the latent panel uses PCA plus a regularized transition model."
             )
             if self.english
             else (
-                "解码回答：条件信息能否推广到整组留出的动物或 Session。LDA 是监督分类器；"
-                "另一个“潜在动力学”面板才使用 PCA 加正则化线性状态转移模型，两者不要混淆。"
+                "期刊级综合方案会一次运行：Session QC、配对条件效应、整组留出解码、"
+                "Session 内标签置换、随时间解码、时间泛化、跨 Session 转移、表征稳定性和"
+                "描述性潜在动力学。LDA 是分类器；潜在面板使用 PCA 加正则化状态转移模型。"
             )
         )
         method_note.setObjectName("Muted")
         method_note.setWordWrap(True)
         right_layout.addWidget(method_note)
         self.run_button = QPushButton(
-            "Run grouped analysis" if self.english else "运行分组分析"
+            "Run paper-grade multi-session suite"
+            if self.english
+            else "运行期刊级多 Session 综合分析"
         )
         self.run_button.setObjectName("Primary")
         self.run_button.setMinimumHeight(42)
@@ -544,7 +549,9 @@ class MultiSessionStudyDialog(QDialog):
         self.run_button.setEnabled(True)
         self.close_button.setEnabled(True)
         self.run_button.setText(
-            "Run grouped analysis" if self.english else "运行分组分析"
+            "Run paper-grade multi-session suite"
+            if self.english
+            else "运行期刊级多 Session 综合分析"
         )
         callback = getattr(self.parent(), "_register_study_result", None)
         if callable(callback):
@@ -556,7 +563,9 @@ class MultiSessionStudyDialog(QDialog):
         self.run_button.setEnabled(True)
         self.close_button.setEnabled(True)
         self.run_button.setText(
-            "Run grouped analysis" if self.english else "运行分组分析"
+            "Run paper-grade multi-session suite"
+            if self.english
+            else "运行期刊级多 Session 综合分析"
         )
         QMessageBox.warning(self, self.windowTitle(), message)
 
@@ -566,6 +575,13 @@ class MultiSessionStudyDialog(QDialog):
         result = self.study.results
         effect = result["hierarchical_condition_effect"]
         warning = effect.get("warning") or ""
+        temporal = result.get("time_resolved_decoding", {})
+        peak_text = ""
+        if temporal.get("balanced_accuracy"):
+            scores = list(map(float, temporal["balanced_accuracy"]))
+            peak_index = max(range(len(scores)), key=scores.__getitem__)
+            peak_time = float(temporal["time_seconds"][peak_index])
+            peak_text = f"{scores[peak_index]:.3f} at {peak_time:+.3f} s"
         if self.english:
             summary = (
                 f"<h3>{result['model']} · {result['validation']}</h3>"
@@ -578,6 +594,9 @@ class MultiSessionStudyDialog(QDialog):
                 f"{result['confidence_interval_95'][1]:.3f}); "
                 f"<b>permutation p:</b> {result['permutation_p']:.4f}</p>"
                 f"<p><b>Hierarchy:</b> {effect['method']}</p>"
+                f"<p><b>Peak time-resolved decoding:</b> {peak_text}</p>"
+                "<p>The result folder contains an English main figure, a controls "
+                "supplement, CSV matrices, full JSON, and a plain-language interpretation.</p>"
             )
             limit_label = "Limit"
         else:
@@ -592,6 +611,9 @@ class MultiSessionStudyDialog(QDialog):
                 f"{result['confidence_interval_95'][1]:.3f}）；"
                 f"<b>置换 p：</b>{result['permutation_p']:.4f}</p>"
                 f"<p><b>层级统计：</b>{effect['method']}</p>"
+                f"<p><b>随时间解码峰值：</b>{peak_text}</p>"
+                "<p>结果文件夹同时保存英文主图、控制/附图、CSV 矩阵、"
+                "完整 JSON 和通俗解读。</p>"
             )
             limit_label = "解释边界"
         self.summary.setHtml(

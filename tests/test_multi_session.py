@@ -71,12 +71,28 @@ def test_multi_session_grouped_decoding_and_ldm(tmp_path: Path):
     assert result["session_count"] == 4
     assert result["balanced_accuracy"] > 0.8
     assert result["latent_dynamics"]["schema"] == "neuroephys.latent_dynamics.v1"
+    assert result["schema"] == "neuroephys.multi_session_analysis.v2"
+    assert len(result["time_resolved_decoding"]["balanced_accuracy"]) == 10
+    assert np.asarray(
+        result["time_resolved_decoding"]["temporal_generalization"]
+    ).shape == (10, 10)
+    assert np.asarray(
+        result["cross_session_transfer"]["balanced_accuracy_matrix"]
+    ).shape == (4, 4)
+    assert np.asarray(
+        result["representation_stability"]["condition_contrast_correlation"]
+    ).shape == (4, 4)
     assert result["selected_conditions"] == ["control", "choice"]
     assert "Unit ids are not assumed" in " ".join(result["safeguards"])
     output = restored.root / "results" / "multi_session"
     assert (output / "trial_features.csv").is_file()
     assert (output / "multi_session_results.json").is_file()
     assert (output / "multi_session_summary.svg").is_file()
+    assert (output / "main_figure_multi_session.svg").is_file()
+    assert (output / "supplementary_figure_controls.svg").is_file()
+    assert (output / "temporal_generalization_matrix.csv").is_file()
+    assert (output / "cross_session_transfer_matrix.csv").is_file()
+    assert (output / "INTERPRETATION.md").is_file()
     saved = load_study(restored.manifest_path)
     assert saved.settings["conditions"] == ["control", "choice"]
 

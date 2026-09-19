@@ -34,7 +34,10 @@ NeuroEphys AI 默认执行以下保护：
 3. **层级统计**：动物足够时，用动物随机截距和 Session 方差分量处理嵌套相关性；否则只报告描述结果。
 4. **跨组解码**：优先按动物留出；只有一只动物时退回按 Session 留出，并明确不能外推到新动物。
 5. **置换与不确定性**：标签只在相应组内置换；性能区间按留出组 bootstrap，而不是按 trial 随机抽样。
-6. **群体动力学**：最后查看低维轨迹与近似线性转移，作为群体状态描述，不替代层级统计。
+6. **随时间与时间泛化解码**：使用同一整组划分查看信息何时出现，并用 train-time × test-time 矩阵判断读出规则是短暂还是稳定。
+7. **跨 Session 转移**：从一个完整 Session 训练、到另一个完整 Session 测试；对角线改用 Session 内交叉验证，避免显示乐观的训练分数。
+8. **表征与子空间稳定性**：在不匹配单细胞的前提下，比较条件差异轨迹相关和低维群体矩子空间。
+9. **群体动力学**：最后查看低维轨迹与近似线性转移，作为群体状态描述，不替代层级统计。
 
 ## 3. 当前模型分别回答什么
 
@@ -73,8 +76,8 @@ NeuroEphys AI 默认执行以下保护：
 3. 点击“添加 Session 项目…”，选择各项目的 `neuroflow_project.json`。
 4. 为每个项目填写真实动物编号和唯一 Session 编号；取消勾选即可排除但保留记录。
 5. 选择两个所有 Session 共有的条件、整组留出层级、模型和置换次数。
-6. 点击“运行分组分析”。计算在后台进行，窗口不会冻结。
-7. 查看留出组性能、混淆矩阵、Session 条件效应、低维轨迹和解释边界。
+6. 点击“运行期刊级多 Session 综合分析”。计算在后台进行，一次完成主分析和控制分析。
+7. 先查看主图的覆盖/QC、条件效应、留出组性能、混淆矩阵、随时间解码和低维轨迹；再用附图核对时间泛化、跨 Session 转移、表征稳定性、置换空分布和采样平衡。
 8. 结果位于 Study 的 `results/multi_session`：
    - `trial_features.csv`
    - `session_condition_summary.csv`
@@ -82,7 +85,14 @@ NeuroEphys AI 默认执行以下保护：
    - `held_out_group_scores.csv`
    - `grouped_decoding_predictions.csv`
    - `multi_session_results.json`
-   - `multi_session_summary.svg/png`
+   - `main_figure_multi_session.svg/png`
+   - `supplementary_figure_controls.svg/png`
+   - `time_resolved_decoding.csv`
+   - `temporal_generalization_matrix.csv`
+   - `cross_session_transfer_matrix.csv`
+   - `representation_similarity_matrix.csv`
+   - `subspace_similarity_matrix.csv`
+   - `INTERPRETATION.md`
 
 ## 6. AI 可以做什么
 

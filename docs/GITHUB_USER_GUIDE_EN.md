@@ -91,8 +91,8 @@ project. Then choose **File > Multi-session study…**:
 1. Create a Study and add each `neuroflow_project.json`.
 2. Verify biological animal IDs, unique session IDs, inclusion, and shared conditions.
 3. Choose two shared conditions, whole-animal/session holdout, a model, and permutations.
-4. Inspect held-out-group performance, confusion, session effects, and descriptive trajectories.
-5. Find English SVG/PNG, CSV, and JSON output under `results/multi_session` in the Study.
+4. Run session QC, paired effects, whole-group decoding, permutations, temporal decoding/generalization, cross-session transfer, and representational stability as one suite.
+5. Find English main and supplementary SVG/PNG figures, CSV matrices, full JSON, and `INTERPRETATION.md` under `results/multi_session`.
 
 Equal Unit IDs across sessions are not matched cells. With one animal, validation can
 hold out sessions but cannot establish cross-animal generalization. LDA is a classifier;

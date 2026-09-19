@@ -97,12 +97,13 @@ Unit 复核、行为同步与事件对齐，然后选择 **文件 → 多 Sessio
 1. 新建 Study 并加入各项目的 `neuroflow_project.json`；
 2. 核对真实动物编号、唯一 Session 编号、纳入状态和共有条件；
 3. 选择两个共有条件、按动物或 Session 整组留出、模型及置换次数；
-4. 查看逐留出组性能、混淆矩阵、Session 条件效应和描述性潜在轨迹；
-5. 在 Study 的 `results/multi_session` 取得英文 SVG/PNG、CSV 和 JSON。
+4. 一次运行 Session QC、配对效应、整组解码、置换、随时间/时间泛化解码、跨 Session 转移和表征稳定性；
+5. 在 Study 的 `results/multi_session` 取得英文主图与附图、CSV 矩阵、完整 JSON 和 `INTERPRETATION.md`。
 
 不同 Session 的同号 Unit 默认不是同一细胞；只有一只动物时只能做 Session 留出，不能
 宣称跨动物泛化。LDA 是分类器，潜在动力学是独立的 PCA + 正则化线性转移描述。详见
-[完整方法与操作](MULTI_SESSION_ANALYSIS_ZH.md)。
+[完整方法与操作](MULTI_SESSION_ANALYSIS_ZH.md)；
+[论文主图/附图调研与 App 对照](MULTI_SESSION_PAPER_METHODS_ZH.md)。
 
 ## 10. AI 助手与机构 harness
 
