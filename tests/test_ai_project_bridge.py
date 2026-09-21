@@ -99,10 +99,15 @@ def test_real_mcp_protocol_authentication_and_query(tmp_path):
                     await session.initialize()
                     tools = await session.list_tools()
                     assert "query_project_data" in [t.name for t in tools.tools]
+                    assert "search_app_guidance" in [t.name for t in tools.tools]
                     result = await session.call_tool("query_project_data", {
                         "section": "unit_metrics", "filters": {"unit_id": 65}})
                     assert not result.isError
                     data = json.loads(result.content[0].text)
                     assert data["result"]["data"][0]["snr"] == 8.5
+                    guidance = await session.call_tool("search_app_guidance", {
+                        "query": "sorting", "language": "en_US"})
+                    assert not guidance.isError
+                    assert json.loads(guidance.content[0].text)["result"]["guides"]
         asyncio.run(use_client())
     assert not bridge.thread.is_alive()

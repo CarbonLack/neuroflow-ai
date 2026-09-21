@@ -1,4 +1,5 @@
 import io
+import base64
 import json
 import queue
 import threading
@@ -16,6 +17,7 @@ class FakeProcess:
         self.closed = False
         self.stdout = self
         self.stdin = self
+        self.prompt_blocks = []
 
     def __iter__(self):
         while True:
@@ -29,6 +31,7 @@ class FakeProcess:
         if request["method"] == "initialize":
             self.frames.put({"id": 1, "result": {"serverInfo": {"name": self.identity}}})
         elif request["method"] == "session/prompt":
+            self.prompt_blocks = request["params"]["contentBlocks"]
             sid = request["params"]["sessionId"]
             def emit(method, **params):
                 self.frames.put({"method": method, "params": {"sessionId": sid, **params}})
@@ -65,3 +68,39 @@ def test_sdk_protocol_and_owned_process_cleanup(monkeypatch, identity, reason, c
     else:
         assert request_harness_sdk(provider="test", model="test", prompt="query") == "Actual answer"
     assert process.closed
+
+
+def test_sdk_chart_image_uses_official_inline_image_block(monkeypatch):
+    process = FakeProcess()
+    monkeypatch.setattr("neuroflow.harness_sdk.shutil.which", lambda _: "dsh")
+    monkeypatch.setattr("neuroflow.harness_sdk.subprocess.Popen", lambda *a, **k: process)
+    image = b"\x89PNG\r\n\x1a\n" + b"small-test-image"
+    assert request_harness_sdk(provider="test", model="test", prompt="interpret", image_png=image) == "Actual answer"
+    assert process.prompt_blocks[0] == {"type": "text", "text": "interpret"}
+    assert process.prompt_blocks[1] == {
+        "type": "image", "data": base64.b64encode(image).decode("ascii"), "mimeType": "image/png",
+    }
+    assert process.closed
+
+
+def test_sdk_rejects_non_png_before_launch():
+    with pytest.raises(ValueError, match="Only PNG"):
+        request_harness_sdk(provider="test", model="test", prompt="query", image_png=b"not-png")
+
+
+def test_sdk_reports_blocked_nvm_launcher_without_masking_error(monkeypatch):
+    class FailedLauncher:
+        def __init__(self):
+            self.stdin = self
+            self.stdout = iter([])
+            self.stderr = iter(["NVM blocked package-manager execution\n", "Event code: NVM4306\n"])
+
+        def write(self, _): pass
+        def flush(self): pass
+        def close(self): pass
+        def poll(self): return 1
+
+    monkeypatch.setattr("neuroflow.harness_sdk.shutil.which", lambda _: "dsh")
+    monkeypatch.setattr("neuroflow.harness_sdk.subprocess.Popen", lambda *a, **k: FailedLauncher())
+    with pytest.raises(RuntimeError, match="NVM4306"):
+        request_harness_sdk(provider="test", model="test", prompt="query")

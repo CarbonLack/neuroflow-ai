@@ -388,7 +388,9 @@ TUTORIAL_CATALOG: list[dict[str, Any]] = [
         "Open a project to arrange the three columns. Online AI requires a configured service in AI settings.",
         [
             _step("调整三栏宽度", "Resize the columns", "拖动栏间分隔线。按 Ctrl+B 缩略左侧流程，按 Ctrl+J 显示或关闭右侧 AI。三栏可以同时保留。", "Drag the separators. Press Ctrl+B to compact the workflow rail and Ctrl+J to show or hide the right AI panel. All three columns can remain open."),
-            _step("按需要使用 AI", "Use AI when needed", "在右侧选择“审查项目”“建议流程”或输入问题；“设置”可选择服务。核对 AI 引用的当前项目和步骤，再采纳建议。", "Choose Review project, Suggest workflow, or type a question on the right. Settings selects the service. Check the project and stage in the AI context before using a suggestion."),
+            _step("按主题聊天并找回历史", "Chat by topic and find history", "点“新对话”分开不同研究问题；首问自动命名。展开窗口可修改“对话分组”，并按分类、名称或问答内容查找。回车发送，Shift+回车换行。", "Use New chat to separate research questions; the first question names it. In the expanded window, change the Group and search by group, title or message. Enter sends; Shift+Enter adds a line."),
+            _step("让 AI 看当前图", "Let AI inspect the chart", "先在 AI 设置中选择 Harness SDK，再点右侧“解读图”；检查 PNG 预览并确认后发送。AI 可讨论可见趋势，准确数值仍需核对项目结果。", "Select the Harness SDK provider, choose Chart in the right panel, inspect the PNG preview and approve. AI can discuss visible trends; verify exact values in project results."),
+            _step("按需要使用 AI", "Use AI when needed", "可询问当前项目、软件操作或一般科研问题；具体操作会参考内置教程。审查 AI 引用的证据和当前步骤，协作模式的分析提案仍需确认。", "Ask about the project, app operation, or general research. App-specific steps use built-in guidance. Check cited evidence and the current stage; collaborative action proposals still require confirmation."),
             _step("控制引导和布局", "Control guidance and layout", "按 F1 查看本步引导；在“帮助”取消“自动显示分步骤引导”可停止自动弹出。用“视图 → 恢复三栏默认布局”恢复布局。", "Press F1 for the current step guide. Uncheck Help → Show step guides automatically to stop automatic popups. Use View → Reset three-column layout to restore panel sizes."),
         ],
         "图表缩小时可使用图形工具缩放，或 F11 全屏。AI 建议需要结合实验记录和实际输出核对。",

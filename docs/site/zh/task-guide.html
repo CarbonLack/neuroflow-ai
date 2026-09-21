@@ -11,7 +11,7 @@
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
 
-  
+
     <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/task-guide.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -24,17 +24,17 @@
     <link rel="index" title="索引" href="genindex.html" />
     <link rel="search" title="搜索" href="search.html" />
     <link rel="next" title="完整分析流程" href="workflow.html" />
-    <link rel="prev" title="认识工作区" href="workspace.html" /> 
+    <link rel="prev" title="认识工作区" href="workspace.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
 
-          
-          
+
+
           <a href="index.html" class="icon icon-home">
             NeuroEphys AI
               <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
@@ -160,7 +160,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-study-v1-3-2">Harness 项目对话、低负担阅读与 Study（v1.3.2）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-study">Harness 项目对话、图像解读与 Study（源码更新；待下版安装包）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id1">先看懂，再看细节</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id2">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#provider">模型 Provider</a></li>
@@ -324,7 +324,7 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <section id="id1">
 <h1>按操作查阅<a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
 <p>本页与 App 教程中心共用操作内容。按当前任务选择，具体参数以工作区显示为准。</p>
@@ -613,26 +613,26 @@
 </section>
 <section id="task-analysis">
 <span id="id9"></span><h2><a class="toc-backref" href="#id25" role="doc-backlink">选择神经分析与事件响应</a><a class="headerlink" href="#task-analysis" title="Link to this heading"></a></h2>
-<p>同一个页面提供多种分析，用标题旁的下拉框选择你这次要回答的问题。</p>
+<p>默认用完整分析包一次生成所有适用图表；下拉框也保留逐项分析和结果切换。</p>
 <p><strong>先准备好</strong></p>
 <p>Spike 分析需要 Units；事件响应需要事件时间；LFP 与 spike-field 分析需要可用电压。</p>
 <ol class="arabic">
-<li><p><strong>选择分析对象</strong></p>
-<p>查看单 Unit 事件响应选“事件 · Unit …”；比较 spike train 选统计或关系；群体、精细时序和 LFP 各有独立选项。</p>
+<li><p><strong>先生成完整结果</strong></p>
+<p>选择“完整神经活动分析包”，点击运行。程序一次完成事件响应、总体 spike 统计、精细时序筛查、群体热图/PCA，以及数据允许时的 LFP 与 spike-field，并自动导出图表。</p>
 </li>
-<li><p><strong>运行所选分析</strong></p>
-<p>点击“运行当前所选分析”。群体动态和精细时序会打开设置窗口；其他选项使用当前项目和方法的参数。</p>
+<li><p><strong>需要时再用专家入口</strong></p>
+<p>要改变 Unit 对、事件、窗口、bin、surrogate 或频段时，再选择对应子分析重跑；仅切换已经完成的图不需要重算。</p>
 </li>
 <li><p><strong>核对图和表</strong></p>
 <p>事件响应查看 Raster 和 PSTH，核对横轴事件零点与有效 trial 数。切换选项查看对应结果，用图形工具缩放。</p>
 </li>
 </ol>
 <p><strong>完成检查</strong></p>
-<p>页面下拉框同时承担分析选择和结果切换；更换选项后看底部“当前”说明，再决定是否运行。</p>
+<p>完整包的精细时序使用明确记录的筛查配置；正式全 Unit 对推断应在专家入口扩大范围并增加 surrogate。</p>
 <p><strong>保存位置</strong></p>
-<p>已完成分析保存在项目中；图表可通过“论文与复现”导出。</p>
-<p><strong>页面仍显示待运行</strong></p>
-<p>确认该类别已经运行且输入齐全。完成事件响应不会自动完成 LFP、群体或精细时序分析。</p>
+<p>结果保存在项目中；完整图包位于 results/neural_activity_complete。</p>
+<p><strong>某类结果被跳过</strong></p>
+<p>查看输入诊断。没有原始/LFP 电压时会保留 spike 与群体结果并明确跳过 LFP；没有事件或 Unit 时会直接说明缺失项。</p>
 </section>
 <section id="pca">
 <span id="task-population"></span><h2><a class="toc-backref" href="#id26" role="doc-backlink">比较群体响应与 PCA 轨迹</a><a class="headerlink" href="#pca" title="Link to this heading"></a></h2>
@@ -712,6 +712,9 @@
 <li><p><strong>选择任务和模型</strong></p>
 <p>进入“机器学习”，在标题旁选择“分类 · …”或“回归 · …”。分类预测类别，回归预测连续数值。</p>
 </li>
+<li><p><strong>先看输入诊断</strong></p>
+<p>确认标签来源、每个类别的 trial 数、有效 Unit 数和特征窗口。若少于两个有效类别，按提示回到事件/行为数据修正标签后重跑事件分析。</p>
+</li>
 <li><p><strong>运行当前模型</strong></p>
 <p>点击“运行当前所选分析”，核对确认窗口中的模型名称。</p>
 </li>
@@ -742,14 +745,17 @@
 <li><p><strong>选择问题和验证层级</strong></p>
 <p>选择两个条件、模型及整组留出层级。多只动物优先按动物留出；只有一只动物时使用 Session 留出。</p>
 </li>
+<li><p><strong>一次运行期刊级方案</strong></p>
+<p>点击“运行期刊级多 Session 综合分析”。软件会同时完成 Session QC、配对效应、整组解码、置换、随时间/时间泛化解码、跨 Session 转移和表征稳定性，无需逐项重复点击。</p>
+</li>
 <li><p><strong>解释而不越界</strong></p>
-<p>先看逐留出组分数和 Session 条件效应，再看混淆矩阵与潜在轨迹。LDA 是分类器；潜在动力学是单独的 PCA + 线性转移描述。</p>
+<p>主图按数据覆盖、条件效应、留出解码、时间过程和潜在轨迹阅读；附图核对跨 Session 转移、时间泛化、空模型和采样平衡。没有动物 ID 时不宣称跨动物泛化。</p>
 </li>
 </ol>
 <p><strong>完成检查</strong></p>
 <p>训练与测试必须没有同一动物或 Session；不同 Session 的同号 Unit 默认不匹配。高分只能说明指定验证设计下存在可预测信息。</p>
 <p><strong>保存位置</strong></p>
-<p>Study 的 results/multi_session 保存英文图、trial 特征、留出组指标、预测、Session 汇总和完整 JSON。</p>
+<p>Study 的 results/multi_session 保存英文主图与附图、随时间解码、时间泛化、跨 Session 转移、表征/子空间稳定性 CSV、完整 JSON 和通俗解读。</p>
 <p><strong>没有两个共有条件</strong></p>
 <p>返回各 Session，统一条件名称和事件分析窗；不要把不同事件强行改成同一标签。</p>
 <p><strong>只有一只动物</strong></p>
@@ -788,8 +794,14 @@
 <li><p><strong>调整三栏宽度</strong></p>
 <p>拖动栏间分隔线。按 Ctrl+B 缩略左侧流程，按 Ctrl+J 显示或关闭右侧 AI。三栏可以同时保留。</p>
 </li>
+<li><p><strong>按主题聊天并找回历史</strong></p>
+<p>点“新对话”分开不同研究问题；首问自动命名。展开窗口可修改“对话分组”，并按分类、名称或问答内容查找。回车发送，Shift+回车换行。</p>
+</li>
+<li><p><strong>让 AI 看当前图</strong></p>
+<p>先在 AI 设置中选择 Harness SDK，再点右侧“解读图”；检查 PNG 预览并确认后发送。AI 可讨论可见趋势，准确数值仍需核对项目结果。</p>
+</li>
 <li><p><strong>按需要使用 AI</strong></p>
-<p>在右侧选择“审查项目”“建议流程”或输入问题；“设置”可选择服务。核对 AI 引用的当前项目和步骤，再采纳建议。</p>
+<p>可询问当前项目、软件操作或一般科研问题；具体操作会参考内置教程。审查 AI 引用的证据和当前步骤，协作模式的分析提案仍需确认。</p>
 </li>
 <li><p><strong>控制引导和布局</strong></p>
 <p>按 F1 查看本步引导；在“帮助”取消“自动显示分步骤引导”可停止自动弹出。用“视图 → 恢复三栏默认布局”恢复布局。</p>
@@ -818,10 +830,10 @@
     <p>&#169; 版权所有 2026, NeuroEphys AI 团队。</p>
   </div>
 
-  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的 
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
     由 <a href="https://readthedocs.org">Read the Docs</a> 开发.
-   
+
 
 </footer>
         </div>
@@ -832,7 +844,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
 
 </body>
 </html>

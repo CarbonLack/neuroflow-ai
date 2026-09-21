@@ -11,7 +11,7 @@
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
 
-  
+
     <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/task-guide.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -23,17 +23,17 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Complete workflow" href="workflow.html" />
-    <link rel="prev" title="Using the workspace" href="workspace.html" /> 
+    <link rel="prev" title="Using the workspace" href="workspace.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
 
-          
-          
+
+
           <a href="index.html" class="icon icon-home">
             NeuroEphys AI
               <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
@@ -158,7 +158,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">Controlled AI assistant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#project-aware-harness-conversations-readable-answers-and-studies-v1-3-2">Project-aware Harness conversations, readable answers, and Studies (v1.3.2)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#project-chat-and-chart-vision-source-update">Project chat and chart vision (source update)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#read-the-answer-first-open-detail-when-needed">Read the answer first; open detail when needed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#providers">Providers</a></li>
@@ -321,7 +321,7 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <section id="task-guide">
 <h1>Task guide<a class="headerlink" href="#task-guide" title="Link to this heading"></a></h1>
 <p>These instructions also appear in the desktop Tutorial center.</p>
@@ -610,26 +610,26 @@
 </section>
 <section id="choose-a-neural-analysis">
 <span id="task-analysis"></span><h2><a class="toc-backref" href="#id12" role="doc-backlink">Choose a neural analysis</a><a class="headerlink" href="#choose-a-neural-analysis" title="Link to this heading"></a></h2>
-<p>One page offers several analyses. Use the dropdown beside the title to choose the question for this run.</p>
+<p>The complete package generates all applicable outputs once; the dropdown also retains expert reruns and result switching.</p>
 <p><strong>Have ready</strong></p>
 <p>Spike analysis needs units, event responses need event times, and LFP or spike-field analysis needs available voltage.</p>
 <ol class="arabic">
-<li><p><strong>Select the analysis</strong></p>
-<p>Choose Event · Unit … for a unit’s event response; choose spike-train statistics or relationships for spike analyses. Population, fine timing, and LFP have separate entries.</p>
+<li><p><strong>Generate the complete result set</strong></p>
+<p>Choose Complete neural-activity package and run it. The app computes event responses, population spike summaries, fine-timing screening, heatmaps/PCA, and applicable LFP and spike-field results, then exports the plots.</p>
 </li>
-<li><p><strong>Run the selected analysis</strong></p>
-<p>Click Run selected analysis. Population dynamics and fine timing open settings dialogs; other choices use current project and method parameters.</p>
+<li><p><strong>Use expert reruns when needed</strong></p>
+<p>Rerun a dedicated module only to change pairs, events, windows, bins, surrogates, or bands. Switching among completed views does not recompute them.</p>
 </li>
 <li><p><strong>Inspect plots and tables</strong></p>
 <p>For event responses, inspect the raster and PSTH, alignment zero, and valid trial count. Switch views for related results and zoom with the plot toolbar.</p>
 </li>
 </ol>
 <p><strong>Check the result</strong></p>
-<p>The dropdown selects analyses and result views. Check the bottom Current description after changing it before running.</p>
+<p>Fine timing in the complete package uses a recorded screening configuration. Use the expert entry for exhaustive pairs and more surrogates.</p>
 <p><strong>Saved output</strong></p>
-<p>Completed analyses are retained in the project; export plots through Publication and reproducibility.</p>
-<p><strong>A view still shows pending</strong></p>
-<p>Check that this analysis category has run and has the required input. Event responses do not automatically calculate LFP, population, or fine-timing results.</p>
+<p>Results are retained in the project; the complete figure package is under results/neural_activity_complete.</p>
+<p><strong>A result category was skipped</strong></p>
+<p>Read the input diagnostic. Without raw/LFP voltage, spike and population results remain while LFP is explicitly skipped; missing events or units are reported directly.</p>
 </section>
 <section id="compare-population-responses">
 <span id="task-population"></span><h2><a class="toc-backref" href="#id13" role="doc-backlink">Compare population responses</a><a class="headerlink" href="#compare-population-responses" title="Link to this heading"></a></h2>
@@ -709,6 +709,9 @@
 <li><p><strong>Choose the task and model</strong></p>
 <p>Open Machine learning and select Classification · … or Regression · … beside the title. Classification predicts categories; regression predicts continuous values.</p>
 </li>
+<li><p><strong>Inspect input diagnostics</strong></p>
+<p>Confirm label sources, trials per class, usable units, and the feature window. With fewer than two usable classes, correct event/behavior labels and rerun event analysis as instructed.</p>
+</li>
 <li><p><strong>Run the model</strong></p>
 <p>Click Run selected analysis and verify the model name in the confirmation dialog.</p>
 </li>
@@ -739,14 +742,17 @@
 <li><p><strong>Choose the question and validation level</strong></p>
 <p>Choose two conditions, a model, and the held-out level. Prefer animal-held-out validation across animals; use session-held-out validation for one animal.</p>
 </li>
+<li><p><strong>Run the paper-grade suite once</strong></p>
+<p>Click Run paper-grade multi-session suite. Session QC, paired effects, grouped decoding, permutations, time-resolved/temporal-generalization decoding, cross-session transfer, and representational stability run together.</p>
+</li>
 <li><p><strong>Interpret within limits</strong></p>
-<p>Inspect held-out-group scores and session effects before confusion and latent trajectories. LDA is a classifier; latent dynamics is a separate PCA plus linear-transition description.</p>
+<p>Read the main figure as coverage, effects, held-out decoding, temporal information, and latent trajectories; use the supplement for transfer, temporal generalization, null, and sampling controls. Do not claim cross-animal generalization without animal IDs.</p>
 </li>
 </ol>
 <p><strong>Check the result</strong></p>
 <p>Training and test sets must not share the held-out animal or session. Equal unit numbers across sessions remain unmatched. A high score only establishes predictive information under the stated design.</p>
 <p><strong>Saved output</strong></p>
-<p>The Study’s results/multi_session folder stores English figures, trial features, held-out metrics, predictions, session summaries, and full JSON.</p>
+<p>The Study results folder stores English main and supplementary figures, temporal decoding, temporal generalization, cross-session transfer, representation/subspace stability CSV files, full JSON, and a plain-language interpretation.</p>
 <p><strong>Fewer than two shared conditions</strong></p>
 <p>Return to each session and harmonize condition names and event windows. Do not relabel genuinely different events as one condition.</p>
 <p><strong>Only one animal</strong></p>
@@ -785,8 +791,14 @@
 <li><p><strong>Resize the columns</strong></p>
 <p>Drag the separators. Press Ctrl+B to compact the workflow rail and Ctrl+J to show or hide the right AI panel. All three columns can remain open.</p>
 </li>
+<li><p><strong>Chat by topic and find history</strong></p>
+<p>Use New chat to separate research questions; the first question names it. In the expanded window, change the Group and search by group, title or message. Enter sends; Shift+Enter adds a line.</p>
+</li>
+<li><p><strong>Let AI inspect the chart</strong></p>
+<p>Select the Harness SDK provider, choose Chart in the right panel, inspect the PNG preview and approve. AI can discuss visible trends; verify exact values in project results.</p>
+</li>
 <li><p><strong>Use AI when needed</strong></p>
-<p>Choose Review project, Suggest workflow, or type a question on the right. Settings selects the service. Check the project and stage in the AI context before using a suggestion.</p>
+<p>Ask about the project, app operation, or general research. App-specific steps use built-in guidance. Check cited evidence and the current stage; collaborative action proposals still require confirmation.</p>
 </li>
 <li><p><strong>Control guidance and layout</strong></p>
 <p>Press F1 for the current step guide. Uncheck Help → Show step guides automatically to stop automatic popups. Use View → Reset three-column layout to restore panel sizes.</p>
@@ -818,7 +830,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+
 
 </footer>
         </div>
@@ -829,7 +841,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
 
 </body>
 </html>

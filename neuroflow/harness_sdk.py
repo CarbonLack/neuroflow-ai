@@ -6,6 +6,7 @@ Protocol source: @deepseek-ai/dsh-sdk-protocol and dsh-sdk-jsonrpc-server.
 from __future__ import annotations
 
 import json
+import base64
 import queue
 import shutil
 import subprocess
@@ -21,7 +22,12 @@ from typing import Callable
 def request_harness_sdk(*, provider: str, model: str, prompt: str,
                         timeout: int = 120, cancel_event=None,
                         on_text: Callable[[str], None] | None = None,
-                        bridge=None) -> str:
+                        bridge=None, image_png: bytes | None = None) -> str:
+    if image_png is not None:
+        if not image_png.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise ValueError("Only PNG chart attachments are supported.")
+        if len(image_png) > 6_000_000:
+            raise ValueError("The chart image exceeds the 6 MB attachment limit.")
     executable = shutil.which("dsh")
     if not executable:
         raise RuntimeError("DeepSeek Harness is not installed or dsh is not on PATH.")
@@ -38,7 +44,7 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
     try:
         process = subprocess.Popen(
             [executable, "--profile", "sdk", "--patch", str(patch)],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, encoding="utf-8", errors="replace",
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
@@ -46,12 +52,27 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
         temporary.cleanup()
         raise
     frames: queue.Queue = queue.Queue()
+    launcher_output: list[str] = []
+    diagnostics_done = threading.Event()
+
+    def read_diagnostics():
+        stderr = getattr(process, "stderr", None)
+        if stderr is not None:
+            for line in stderr:
+                if len(launcher_output) < 12:
+                    launcher_output.append(line.strip()[:300])
+        diagnostics_done.set()
+
+    threading.Thread(target=read_diagnostics, daemon=True).start()
 
     def read_frames():
         for line in process.stdout:
             try:
                 frames.put(json.loads(line))
             except json.JSONDecodeError:
+                # Some launchers report an actionable local error before any JSON.
+                if len(launcher_output) < 12:
+                    launcher_output.append(line.strip()[:300])
                 continue
         frames.put(None)
 
@@ -73,7 +94,17 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
             except queue.Empty:
                 continue
             if frame is None:
-                raise RuntimeError("Harness SDK process closed before completing the answer.")
+                diagnostics_done.wait(timeout=0.5)
+                if any("NVM blocked package-manager execution" in row for row in launcher_output):
+                    raise RuntimeError(
+                        "The local NVM launcher blocked dsh (NVM4306). Run 'nvm reshim' "
+                        "or ask the computer administrator to repair the trusted launcher, "
+                        "then verify 'dsh --version'. No model request was sent."
+                    )
+                raise RuntimeError(
+                    "Harness SDK process closed before completing the answer. "
+                    "Check 'dsh --version' in a terminal to diagnose the local launcher."
+                )
             if frame.get("error"):
                 raise RuntimeError("Harness SDK rejected the request: " +
                     str(frame["error"].get("message", "unknown error")))
@@ -89,8 +120,11 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
                 if frame.get("result", {}).get("serverInfo", {}).get("name") != "deepseek-harness-sdk-runtime":
                     raise RuntimeError("Unexpected Harness SDK server identity.")
                 break
-        send("session/prompt", {"sessionId": session,
-            "contentBlocks": [{"type": "text", "text": prompt}]}, 2)
+        blocks = [{"type": "text", "text": prompt}]
+        if image_png is not None:
+            blocks.append({"type": "image", "data": base64.b64encode(image_png).decode("ascii"),
+                           "mimeType": "image/png"})
+        send("session/prompt", {"sessionId": session, "contentBlocks": blocks}, 2)
         answer = ""
         running = False
         finish_reason = None
@@ -128,7 +162,10 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
             except (OSError, subprocess.TimeoutExpired):
                 process.kill()
                 process.wait(timeout=5)
-        for pipe in (process.stdin, process.stdout):
-            if pipe:
-                pipe.close()
+        for pipe in (process.stdin, process.stdout, getattr(process, "stderr", None)):
+            if pipe and hasattr(pipe, "close"):
+                try:
+                    pipe.close()
+                except OSError:
+                    pass  # A failed Windows launcher may already have invalidated its pipe.
         temporary.cleanup()

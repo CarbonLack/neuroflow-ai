@@ -2,6 +2,8 @@
 
 AI 项目对话：本版可通过已配置的官方 DeepSeek Harness 查询当前数据、指定 Unit、事件、结果与项目历史对话；分析操作仍需确认。机构账号使用 Harness SDK，不复制其密钥到 App。Harness 须独立安装配置，详见 [AI 使用手册](AI_USER_GUIDE_ZH.md) 和 [实现及验收边界](docs/AI_HARNESS_IMPLEMENTATION_1.2.5_ZH.md)。
 
+源码新增：项目内可命名/搜索的多会话聊天、清晰区分提问与回答的界面、回车发送，以及预览确认后通过 Harness SDK 解读当前图像。AI 还可检索软件内置教程并回答不依赖项目的通用问题。此改动尚未重新打包为 v1.3.2 安装程序；安装版与源码版能力应分别核对。
+
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
 </p>

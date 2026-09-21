@@ -11,7 +11,7 @@
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
 
-  
+
     <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/parameter-reference.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -24,17 +24,17 @@
     <link rel="index" title="索引" href="genindex.html" />
     <link rel="search" title="搜索" href="search.html" />
     <link rel="next" title="真实数据验证" href="real-data-validation.html" />
-    <link rel="prev" title="决赛演示与离线保障" href="competition-demo.html" /> 
+    <link rel="prev" title="决赛演示与离线保障" href="competition-demo.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
 
-          
-          
+
+
           <a href="index.html" class="icon icon-home">
             NeuroEphys AI
               <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
@@ -160,7 +160,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-study-v1-3-2">Harness 项目对话、低负担阅读与 Study（v1.3.2）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#harness-study">Harness 项目对话、图像解读与 Study（源码更新；待下版安装包）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id1">先看懂，再看细节</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#id2">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#provider">模型 Provider</a></li>
@@ -324,7 +324,7 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <section id="id1">
 <h1>操作与方法参数参考<a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
 <p>下方操作步骤与 App 教程共用内容。方法参数用于理解底层工具，并非全部可在桌面界面调节；参考值也不等于当前 App 或所选 sorter 的实际默认值。请以所选分析的设置和运行记录为准。</p>
@@ -735,24 +735,24 @@
 </section>
 <section id="id6">
 <h2>选择神经分析与事件响应<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
-<p>同一个页面提供多种分析，用标题旁的下拉框选择你这次要回答的问题。</p>
+<p>默认用完整分析包一次生成所有适用图表；下拉框也保留逐项分析和结果切换。</p>
 <p><strong>先准备好</strong></p>
 <p>Spike 分析需要 Units；事件响应需要事件时间；LFP 与 spike-field 分析需要可用电压。</p>
 <ol class="arabic">
-<li><p><strong>选择分析对象</strong></p>
-<p>查看单 Unit 事件响应选“事件 · Unit …”；比较 spike train 选统计或关系；群体、精细时序和 LFP 各有独立选项。</p>
+<li><p><strong>先生成完整结果</strong></p>
+<p>选择“完整神经活动分析包”，点击运行。程序一次完成事件响应、总体 spike 统计、精细时序筛查、群体热图/PCA，以及数据允许时的 LFP 与 spike-field，并自动导出图表。</p>
 </li>
-<li><p><strong>运行所选分析</strong></p>
-<p>点击“运行当前所选分析”。群体动态和精细时序会打开设置窗口；其他选项使用当前项目和方法的参数。</p>
+<li><p><strong>需要时再用专家入口</strong></p>
+<p>要改变 Unit 对、事件、窗口、bin、surrogate 或频段时，再选择对应子分析重跑；仅切换已经完成的图不需要重算。</p>
 </li>
 <li><p><strong>核对图和表</strong></p>
 <p>事件响应查看 Raster 和 PSTH，核对横轴事件零点与有效 trial 数。切换选项查看对应结果，用图形工具缩放。</p>
 </li>
 </ol>
 <p><strong>完成检查</strong></p>
-<p>页面下拉框同时承担分析选择和结果切换；更换选项后看底部“当前”说明，再决定是否运行。</p>
+<p>完整包的精细时序使用明确记录的筛查配置；正式全 Unit 对推断应在专家入口扩大范围并增加 surrogate。</p>
 <p><strong>保存位置</strong></p>
-<p>已完成分析保存在项目中；图表可通过“论文与复现”导出。</p>
+<p>结果保存在项目中；完整图包位于 results/neural_activity_complete。</p>
 <section id="alignment-event">
 <h3>08 · Alignment event<a class="headerlink" href="#alignment-event" title="Link to this heading"></a></h3>
 <p><strong>含义:</strong> 所有 trial 的时间零点。</p>
@@ -860,6 +860,9 @@
 <ol class="arabic">
 <li><p><strong>选择任务和模型</strong></p>
 <p>进入“机器学习”，在标题旁选择“分类 · …”或“回归 · …”。分类预测类别，回归预测连续数值。</p>
+</li>
+<li><p><strong>先看输入诊断</strong></p>
+<p>确认标签来源、每个类别的 trial 数、有效 Unit 数和特征窗口。若少于两个有效类别，按提示回到事件/行为数据修正标签后重跑事件分析。</p>
 </li>
 <li><p><strong>运行当前模型</strong></p>
 <p>点击“运行当前所选分析”，核对确认窗口中的模型名称。</p>
@@ -981,10 +984,10 @@
     <p>&#169; 版权所有 2026, NeuroEphys AI 团队。</p>
   </div>
 
-  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的 
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
     由 <a href="https://readthedocs.org">Read the Docs</a> 开发.
-   
+
 
 </footer>
         </div>
@@ -995,7 +998,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
 
 </body>
 </html>

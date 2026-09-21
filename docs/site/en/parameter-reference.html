@@ -11,7 +11,7 @@
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
 
-  
+
     <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/parameter-reference.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -23,17 +23,17 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Real-data validation" href="real-data-validation.html" />
-    <link rel="prev" title="Final demonstration and offline fallback" href="competition-demo.html" /> 
+    <link rel="prev" title="Final demonstration and offline fallback" href="competition-demo.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
 
-          
-          
+
+
           <a href="index.html" class="icon icon-home">
             NeuroEphys AI
               <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
@@ -158,7 +158,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ai-assistant.html">Controlled AI assistant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#project-aware-harness-conversations-readable-answers-and-studies-v1-3-2">Project-aware Harness conversations, readable answers, and Studies (v1.3.2)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#project-chat-and-chart-vision-source-update">Project chat and chart vision (source update)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#read-the-answer-first-open-detail-when-needed">Read the answer first; open detail when needed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ai-assistant.html#providers">Providers</a></li>
@@ -321,7 +321,7 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <section id="controls-and-method-parameters">
 <h1>Controls and method parameters<a class="headerlink" href="#controls-and-method-parameters" title="Link to this heading"></a></h1>
 <p>The operating steps below share the App’s task catalogue. Method parameters explain the underlying tools; not every parameter is adjustable in the desktop interface. Reference values are not a guarantee of the current App or sorter default. Use the settings and saved run record for your selected analysis.</p>
@@ -732,24 +732,24 @@
 </section>
 <section id="choose-a-neural-analysis">
 <h2>Choose a neural analysis<a class="headerlink" href="#choose-a-neural-analysis" title="Link to this heading"></a></h2>
-<p>One page offers several analyses. Use the dropdown beside the title to choose the question for this run.</p>
+<p>The complete package generates all applicable outputs once; the dropdown also retains expert reruns and result switching.</p>
 <p><strong>Have ready</strong></p>
 <p>Spike analysis needs units, event responses need event times, and LFP or spike-field analysis needs available voltage.</p>
 <ol class="arabic">
-<li><p><strong>Select the analysis</strong></p>
-<p>Choose Event · Unit … for a unit’s event response; choose spike-train statistics or relationships for spike analyses. Population, fine timing, and LFP have separate entries.</p>
+<li><p><strong>Generate the complete result set</strong></p>
+<p>Choose Complete neural-activity package and run it. The app computes event responses, population spike summaries, fine-timing screening, heatmaps/PCA, and applicable LFP and spike-field results, then exports the plots.</p>
 </li>
-<li><p><strong>Run the selected analysis</strong></p>
-<p>Click Run selected analysis. Population dynamics and fine timing open settings dialogs; other choices use current project and method parameters.</p>
+<li><p><strong>Use expert reruns when needed</strong></p>
+<p>Rerun a dedicated module only to change pairs, events, windows, bins, surrogates, or bands. Switching among completed views does not recompute them.</p>
 </li>
 <li><p><strong>Inspect plots and tables</strong></p>
 <p>For event responses, inspect the raster and PSTH, alignment zero, and valid trial count. Switch views for related results and zoom with the plot toolbar.</p>
 </li>
 </ol>
 <p><strong>Check the result</strong></p>
-<p>The dropdown selects analyses and result views. Check the bottom Current description after changing it before running.</p>
+<p>Fine timing in the complete package uses a recorded screening configuration. Use the expert entry for exhaustive pairs and more surrogates.</p>
 <p><strong>Saved output</strong></p>
-<p>Completed analyses are retained in the project; export plots through Publication and reproducibility.</p>
+<p>Results are retained in the project; the complete figure package is under results/neural_activity_complete.</p>
 <section id="alignment-event">
 <h3>08 · Alignment event<a class="headerlink" href="#alignment-event" title="Link to this heading"></a></h3>
 <p><strong>Meaning:</strong> Time zero for every trial.</p>
@@ -857,6 +857,9 @@
 <ol class="arabic">
 <li><p><strong>Choose the task and model</strong></p>
 <p>Open Machine learning and select Classification · … or Regression · … beside the title. Classification predicts categories; regression predicts continuous values.</p>
+</li>
+<li><p><strong>Inspect input diagnostics</strong></p>
+<p>Confirm label sources, trials per class, usable units, and the feature window. With fewer than two usable classes, correct event/behavior labels and rerun event analysis as instructed.</p>
 </li>
 <li><p><strong>Run the model</strong></p>
 <p>Click Run selected analysis and verify the model name in the confirmation dialog.</p>
@@ -981,7 +984,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+
 
 </footer>
         </div>
@@ -992,7 +995,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
 
 </body>
 </html>

@@ -818,8 +818,9 @@ Hard boundaries:
     method limitations, and suggested validation. Do not turn association into
     causation. Preserve animal/session/unit hierarchy and report nonsignificant
     results directly.
-13. Cite only sources present in the versioned local knowledge context. If no source
-    is supplied, state that a source lookup is still required.
+13. You may answer general scientific and everyday questions from model knowledge.
+    Distinguish this from verified project evidence. Do not invent citations or claim
+    that a current external fact was checked without an actual source lookup.
 14. The current task type is {task!r}. Return the required JSON object with no
     markdown code fence.
 15. In a multi-session study, preserve trial -> session -> animal hierarchy. Never
@@ -829,7 +830,8 @@ Hard boundaries:
 
 Conversation behavior:
 Answer the user's actual question directly, including open-ended discussion of
-this project, methods, data contents and existing results. Do not force every
+this project, methods, data contents, existing results, general neuroscience,
+software operation, and other topics. Do not force every
 conversation into a workflow plan. Use current_ui_context, data_preview,
 recent_operations and all available result summaries as evidence. The supplied
 snapshot is fresh for this request. Missing fields are unknown, not zero.
@@ -1376,7 +1378,10 @@ def request_ai_advice(
     on_stream_text: Callable[[str], None] | None = None,
     cancel_event: threading.Event | None = None,
     project_queries=None,
+    image_png: bytes | None = None,
 ) -> AIResponse:
+    if image_png is not None and settings.provider != "harness_sdk":
+        raise ValueError("Chart vision currently requires the DeepSeek Harness SDK provider.")
     if not settings.configured:
         raise AIConfigurationError(
             "Configure an endpoint, model, and API key before using cloud AI."
@@ -1407,15 +1412,19 @@ def request_ai_advice(
             + ". Discuss the user's actual question, not a mandatory workflow checklist. "
             "Use NeuroEphys MCP tools to inspect actual current data or results whenever details are needed. "
             "Tools read an immutable snapshot captured for this request; cite returned Q evidence IDs and snapshot time. "
+            "For NeuroEphys AI operation instructions, search the versioned in-app tutorial with search_app_guidance before giving concrete steps. "
             "Use list_project_data to discover sections, nested paths and action schemas. Query pages rather than guessing. "
             "Earlier conversation is searchable within this project. Distinguish historical answers from current results. "
+            "Answer general research, app-operation and other questions as well; do not force unrelated questions into the project workflow. "
+            "Distinguish general model knowledge from verified project evidence and do not fabricate citations or current facts. "
             "Missing data is unknown, not zero. Ground truth is not ordinary sorting output. "
             "For multi-session studies preserve trial-to-session-to-animal hierarchy; equal Unit IDs are not matched cells, and session-held-out is not cross-animal validation. "
             "Supervised LDA and descriptive latent dynamics are different analyses. "
             "Only propose_analysis_action can propose app changes; it never executes them. "
             "Explain pending proposals as awaiting confirmation, never as completed. "
             "Do not propose actions when the user only asks for interpretation. "
-            "Never invent measurements or claim an image was visually inspected; chart context describes labels and ranges, not pixels. "
+            "Never invent measurements. Claim visual inspection only if a PNG image block is attached to this request; otherwise chart context describes labels and ranges, not pixels. "
+            "When a chart is attached, identify visible trends and uncertainty, distinguish visual estimates from actual numeric results, and say when labels are unreadable. "
             "Write plain conversational text, not JSON. Apply the following response contract to every new answer:\n"
             + sdk_response_style
             + "\nMention evidence reads and proposed actions only as a short status. Preserve uncertainty and important warnings. "
@@ -1424,7 +1433,8 @@ def request_ai_advice(
         with ProjectMCPBridge(queries) as bridge:
             text = request_harness_sdk(provider=settings.harness_provider, model=settings.model,
                 prompt=sdk_instructions + user_input, timeout=settings.timeout_seconds,
-                cancel_event=cancel_event, on_text=on_stream_text, bridge=bridge)
+                cancel_event=cancel_event, on_text=on_stream_text, bridge=bridge,
+                image_png=image_png)
         response = normalize_ai_response({"answer": text, "tool_calls": queries.proposals,
             "requires_user_confirmation": bool(queries.proposals)}, settings=settings,
             sent_field_categories=sent_fields)

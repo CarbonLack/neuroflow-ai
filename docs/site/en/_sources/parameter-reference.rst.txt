@@ -617,19 +617,19 @@ Behavior summaries are saved with the project; run Publication and reproducibili
 Choose a neural analysis
 ----------------------------------------------------------------------------------------------------
 
-One page offers several analyses. Use the dropdown beside the title to choose the question for this run.
+The complete package generates all applicable outputs once; the dropdown also retains expert reruns and result switching.
 
 **Have ready**
 
 Spike analysis needs units, event responses need event times, and LFP or spike-field analysis needs available voltage.
 
-1. **Select the analysis**
+1. **Generate the complete result set**
 
-   Choose Event · Unit … for a unit's event response; choose spike-train statistics or relationships for spike analyses. Population, fine timing, and LFP have separate entries.
+   Choose Complete neural-activity package and run it. The app computes event responses, population spike summaries, fine-timing screening, heatmaps/PCA, and applicable LFP and spike-field results, then exports the plots.
 
-2. **Run the selected analysis**
+2. **Use expert reruns when needed**
 
-   Click Run selected analysis. Population dynamics and fine timing open settings dialogs; other choices use current project and method parameters.
+   Rerun a dedicated module only to change pairs, events, windows, bins, surrogates, or bands. Switching among completed views does not recompute them.
 
 3. **Inspect plots and tables**
 
@@ -637,11 +637,11 @@ Spike analysis needs units, event responses need event times, and LFP or spike-f
 
 **Check the result**
 
-The dropdown selects analyses and result views. Check the bottom Current description after changing it before running.
+Fine timing in the complete package uses a recorded screening configuration. Use the expert entry for exhaustive pairs and more surrogates.
 
 **Saved output**
 
-Completed analyses are retained in the project; export plots through Publication and reproducibility.
+Results are retained in the project; the complete figure package is under results/neural\_activity\_complete.
 
 08 · Alignment event
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -806,11 +806,15 @@ Valid trials, neural features, and classification labels or a continuous behavio
 
    Open Machine learning and select Classification · … or Regression · … beside the title. Classification predicts categories; regression predicts continuous values.
 
-2. **Run the model**
+2. **Inspect input diagnostics**
+
+   Confirm label sources, trials per class, usable units, and the feature window. With fewer than two usable classes, correct event/behavior labels and rerun event analysis as instructed.
+
+3. **Run the model**
 
    Click Run selected analysis and verify the model name in the confirmation dialog.
 
-3. **Check validation results**
+4. **Check validation results**
 
    For classification, inspect confusion, cross-validation, and permutation baseline; for regression, inspect predictions versus observations and errors. Compare models on the same data scope.
 

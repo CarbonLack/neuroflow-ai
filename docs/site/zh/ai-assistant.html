@@ -11,7 +11,7 @@
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
 
-  
+
     <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -24,17 +24,17 @@
     <link rel="index" title="索引" href="genindex.html" />
     <link rel="search" title="搜索" href="search.html" />
     <link rel="next" title="决赛演示与离线保障" href="competition-demo.html" />
-    <link rel="prev" title="图表检查与论文导出" href="figures.html" /> 
+    <link rel="prev" title="图表检查与论文导出" href="figures.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
 
-          
-          
+
+
           <a href="index.html" class="icon icon-home">
             NeuroEphys AI
               <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
@@ -160,7 +160,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#harness-study-v1-3-2">Harness 项目对话、低负担阅读与 Study（v1.3.2）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#harness-study">Harness 项目对话、图像解读与 Study（源码更新；待下版安装包）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id1">先看懂，再看细节</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id2">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#provider">模型 Provider</a></li>
@@ -324,21 +324,39 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <section id="ai">
 <h1>受控 AI 助手<a class="headerlink" href="#ai" title="Link to this heading"></a></h1>
-<section id="harness-study-v1-3-2">
-<h2>Harness 项目对话、低负担阅读与 Study（v1.3.2）<a class="headerlink" href="#harness-study-v1-3-2" title="Link to this heading"></a></h2>
+<section id="harness-study">
+<h2>Harness 项目对话、图像解读与 Study（源码更新；待下版安装包）<a class="headerlink" href="#harness-study" title="Link to this heading"></a></h2>
 <p>已配置机构 DeepSeek Harness 时，在 AI 设置点击“读取本机 DeepSeek Harness 配置”，
 选择 Harness SDK。App 通过官方 dsh 运行时请求模型，不读取或复制机构密钥。
 Harness 须单独安装并完成账号配置，参考 <a class="reference external" href="https://deepseek.com/harness/en/">https://deepseek.com/harness/en/</a> 。</p>
 <p>首次发送预览中允许“按需查询项目数据、结果与历史对话”后，可直接询问指定 Unit
 指标、事件时间、结果表或当前图表信息。模型可通过 MCP 分页查询真实值，并给出
-查询证据；不是只读取固定摘要。图表信息不等于截图像素，原始电压不经此接口发送。</p>
+查询证据；不是只读取固定摘要。默认图表信息不等于截图像素，原始电压不经此查询接口发送。</p>
 <p>例如：“查询 unit_id=25 的 SNR 和 ISI 违规率，解释这些证据是否足够。”
-或：“回顾这个项目里我们之前关于同步误差的讨论。”对话存入项目
-<code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code>，重开项目仍可读取。新功能须注册工具及参数权限，
+或：“回顾这个项目里我们之前关于同步误差的讨论。”每个项目的对话独立保存，
+并可在展开窗口按“项目分析、图表解读、方法问答、通用问题、早期对话”分类；
+新会话默认归入项目分析，用当前图发起的新会话自动归入图表解读，分类可手动更改。
+首问自动命名，也可重命名；搜索覆盖分类、标题和问答正文。旧版记录保留在“早期对话”。
+此分类只作用于 NeuroEphys AI 项目内的对话，不会更改外部 Harness 网页的“未分组”。
+每次只把当前会话的近期内容带入模型。会话存入项目 <code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code>，
+重开项目仍可读取。新功能须注册工具及参数权限，
 AI 不会因此获得任意代码或文件访问权限。分析提案经用户确认后才运行。</p>
+<p>需要 AI <strong>真正看图</strong> 时，点击右侧“解读图”或展开窗口的“解读当前图”。App 在内存中
+渲染当前图为 PNG，先显示与发送内容一致的预览；只有确认后才经官方 Harness SDK 的
+图像消息块发送。模型应区分可见趋势和项目计算出的准确数值。对话档案只保存图名和
+发送记录，不保存 PNG 字节。若当前图含波形、文字或标签，预览时请自行检查。
+普通兼容 API Provider 暂不支持此入口，不会假装模型已经看到图。此能力也不授予
+Harness 任意文件读取权限。</p>
+<p>如果提示 <code class="docutils literal notranslate"><span class="pre">NVM4306</span></code>，本机 Node/NVM 安全启动器已拦截 <code class="docutils literal notranslate"><span class="pre">dsh</span></code>，请求并未到达模型。
+先在终端运行 <code class="docutils literal notranslate"><span class="pre">dsh</span> <span class="pre">--version</span></code> 核对，再按 NVM 提示由管理员执行 <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code>
+或修复可信启动器；不要通过复制机构密钥来绕过 Harness。</p>
+<p>输入框 <strong>回车发送</strong>，<strong>Shift+回车换行</strong>。未打开项目时也可问通用科研知识或其他问题；
+打开项目后，AI 必须区分一般知识、版本化软件教程和项目实测证据。关于软件操作的
+具体步骤可通过内置教程检索获得。模型没有检索外部实时资料时，不得把当前事实或
+未核对的文献说成已查证。</p>
 <p>保存多 Session Study 后，当前项目摘要会登记其随机 Study ID、动物/Session 数、所选
 条件、验证层级和已有指标。AI 可以解释这些结果，也可以在协作模式提出受控的
 <code class="docutils literal notranslate"><span class="pre">run_multi_session_analysis</span></code>；App 仍会核对本机 Study、参数和用户确认。Study 名称、
@@ -428,10 +446,10 @@ AI 即可读取，同时仍不能直接读取原始电压、任意本地文件�
     <p>&#169; 版权所有 2026, NeuroEphys AI 团队。</p>
   </div>
 
-  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的 
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用的
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
     由 <a href="https://readthedocs.org">Read the Docs</a> 开发.
-   
+
 
 </footer>
         </div>
@@ -442,7 +460,7 @@ AI 即可读取，同时仍不能直接读取原始电压、任意本地文件�
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
 
 </body>
 </html>

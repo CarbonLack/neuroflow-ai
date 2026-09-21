@@ -411,19 +411,19 @@ Check trial definitions and required fields. With discrete events only, start wi
 Choose a neural analysis
 ----------------------------------------------------------------------------------------------------
 
-One page offers several analyses. Use the dropdown beside the title to choose the question for this run.
+The complete package generates all applicable outputs once; the dropdown also retains expert reruns and result switching.
 
 **Have ready**
 
 Spike analysis needs units, event responses need event times, and LFP or spike-field analysis needs available voltage.
 
-1. **Select the analysis**
+1. **Generate the complete result set**
 
-   Choose Event · Unit … for a unit's event response; choose spike-train statistics or relationships for spike analyses. Population, fine timing, and LFP have separate entries.
+   Choose Complete neural-activity package and run it. The app computes event responses, population spike summaries, fine-timing screening, heatmaps/PCA, and applicable LFP and spike-field results, then exports the plots.
 
-2. **Run the selected analysis**
+2. **Use expert reruns when needed**
 
-   Click Run selected analysis. Population dynamics and fine timing open settings dialogs; other choices use current project and method parameters.
+   Rerun a dedicated module only to change pairs, events, windows, bins, surrogates, or bands. Switching among completed views does not recompute them.
 
 3. **Inspect plots and tables**
 
@@ -431,15 +431,15 @@ Spike analysis needs units, event responses need event times, and LFP or spike-f
 
 **Check the result**
 
-The dropdown selects analyses and result views. Check the bottom Current description after changing it before running.
+Fine timing in the complete package uses a recorded screening configuration. Use the expert entry for exhaustive pairs and more surrogates.
 
 **Saved output**
 
-Completed analyses are retained in the project; export plots through Publication and reproducibility.
+Results are retained in the project; the complete figure package is under results/neural\_activity\_complete.
 
-**A view still shows pending**
+**A result category was skipped**
 
-Check that this analysis category has run and has the required input. Event responses do not automatically calculate LFP, population, or fine-timing results.
+Read the input diagnostic. Without raw/LFP voltage, spike and population results remain while LFP is explicitly skipped; missing events or units are reported directly.
 
 .. _task-population:
 
@@ -561,11 +561,15 @@ Valid trials, neural features, and classification labels or a continuous behavio
 
    Open Machine learning and select Classification · … or Regression · … beside the title. Classification predicts categories; regression predicts continuous values.
 
-2. **Run the model**
+2. **Inspect input diagnostics**
+
+   Confirm label sources, trials per class, usable units, and the feature window. With fewer than two usable classes, correct event/behavior labels and rerun event analysis as instructed.
+
+3. **Run the model**
 
    Click Run selected analysis and verify the model name in the confirmation dialog.
 
-3. **Check validation results**
+4. **Check validation results**
 
    For classification, inspect confusion, cross-validation, and permutation baseline; for regression, inspect predictions versus observations and errors. Compare models on the same data scope.
 
@@ -606,9 +610,13 @@ Each session has curated units and matching event-aligned analysis. Biological a
 
    Choose two conditions, a model, and the held-out level. Prefer animal-held-out validation across animals; use session-held-out validation for one animal.
 
-4. **Interpret within limits**
+4. **Run the paper-grade suite once**
 
-   Inspect held-out-group scores and session effects before confusion and latent trajectories. LDA is a classifier; latent dynamics is a separate PCA plus linear-transition description.
+   Click Run paper-grade multi-session suite. Session QC, paired effects, grouped decoding, permutations, time-resolved/temporal-generalization decoding, cross-session transfer, and representational stability run together.
+
+5. **Interpret within limits**
+
+   Read the main figure as coverage, effects, held-out decoding, temporal information, and latent trajectories; use the supplement for transfer, temporal generalization, null, and sampling controls. Do not claim cross-animal generalization without animal IDs.
 
 **Check the result**
 
@@ -616,7 +624,7 @@ Training and test sets must not share the held-out animal or session. Equal unit
 
 **Saved output**
 
-The Study's results/multi\_session folder stores English figures, trial features, held-out metrics, predictions, session summaries, and full JSON.
+The Study results folder stores English main and supplementary figures, temporal decoding, temporal generalization, cross-session transfer, representation/subspace stability CSV files, full JSON, and a plain-language interpretation.
 
 **Fewer than two shared conditions**
 
@@ -678,11 +686,19 @@ Open a project to arrange the three columns. Online AI requires a configured ser
 
    Drag the separators. Press Ctrl+B to compact the workflow rail and Ctrl+J to show or hide the right AI panel. All three columns can remain open.
 
-2. **Use AI when needed**
+2. **Chat by topic and find history**
 
-   Choose Review project, Suggest workflow, or type a question on the right. Settings selects the service. Check the project and stage in the AI context before using a suggestion.
+   Use New chat to separate research questions; the first question names it. In the expanded window, change the Group and search by group, title or message. Enter sends; Shift+Enter adds a line.
 
-3. **Control guidance and layout**
+3. **Let AI inspect the chart**
+
+   Select the Harness SDK provider, choose Chart in the right panel, inspect the PNG preview and approve. AI can discuss visible trends; verify exact values in project results.
+
+4. **Use AI when needed**
+
+   Ask about the project, app operation, or general research. App-specific steps use built-in guidance. Check cited evidence and the current stage; collaborative action proposals still require confirmation.
+
+5. **Control guidance and layout**
 
    Press F1 for the current step guide. Uncheck Help → Show step guides automatically to stop automatic popups. Use View → Reset three-column layout to restore panel sizes.
 

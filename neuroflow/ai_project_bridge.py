@@ -20,6 +20,7 @@ import numpy as np
 from .ai import build_project_summary, redact_sensitive_text
 from .ai_tools import AIMode, TOOL_REGISTRY, validate_tool_call
 from .models import ProjectState
+from .tutorial_catalog import TUTORIAL_CATALOG
 
 
 def safe_value(value: Any, depth: int = 0) -> Any:
@@ -55,6 +56,7 @@ class ProjectQueries:
         self.snapshot_id = secrets.token_hex(8)
         self.captured_at = datetime.now(timezone.utc).isoformat()
         self.mode = mode
+        self.stage = stage
         self.summary = build_project_summary(state, stage, include_recent_log=True)
         self.state = None
         self.sections: dict[str, Any] = {}
@@ -93,7 +95,45 @@ class ProjectQueries:
                    for name, spec in TOOL_REGISTRY.items()}
         return self._result("list_project_data", {}, {"sections": sections,
             "actions": actions, "raw_voltage": "Not exposed through this interface",
-            "ground_truth": "Not included in ordinary analysis queries"})
+            "ground_truth": "Not included in ordinary analysis queries",
+            "app_guidance": "Use search_app_guidance for built-in operation steps and scientific checks"})
+
+    def guidance(self, query: str, language: str = "zh_CN", limit: int = 3) -> dict:
+        """Search the versioned in-app tutorial; no network or project data read."""
+        english = language == "en_US"
+        needle = query.casefold().strip()
+        terms = re.findall(r"[a-z0-9_-]+|[\u4e00-\u9fff]", needle)
+        ranked = []
+        for guide in TUTORIAL_CATALOG:
+            haystack = " ".join(str(guide.get(key, "")) for key in
+                ("id", "title", "title_en", "summary", "summary_en", "page_key", "category", "category_en")).casefold()
+            score = sum(1 for term in terms if term in haystack)
+            if needle and needle in haystack:
+                score += 10
+            if guide.get("page_key") == self.stage:
+                score += 0.25
+            if score > 0 or not needle:
+                ranked.append((score, guide))
+        ranked.sort(key=lambda item: item[0], reverse=True)
+        selected = [guide for _, guide in ranked[:max(1, min(limit, 5))]]
+        rows = []
+        for guide in selected:
+            rows.append({
+                "id": guide["id"],
+                "title": guide["title_en" if english else "title"],
+                "summary": guide["summary_en" if english else "summary"],
+                "prerequisites": guide["prerequisites_en" if english else "prerequisites"],
+                "steps": [
+                    {"title": step["title_en" if english else "title"],
+                     "instruction": step["body_en" if english else "body"]}
+                    for step in guide["steps"]
+                ],
+                "check": guide["check_en" if english else "check"],
+                "output": guide["output_en" if english else "output"],
+                "reference": guide.get("reference", ""),
+            })
+        return self._result("search_app_guidance", {"query": query, "language": language},
+                            {"guides": rows, "source": "versioned NeuroEphys AI tutorial catalog"})
 
     def query(self, section: str, path: list[str] | None = None, offset: int = 0,
               limit: int = 20, filters: dict[str, Any] | None = None) -> dict:
@@ -201,6 +241,13 @@ class ProjectMCPBridge:
         def search_project_conversation(query: str = "", limit: int = 10) -> dict:
             """Find earlier questions and answers saved in this project only."""
             return queries.history(query, limit)
+
+        @mcp.tool()
+        def search_app_guidance(query: str, language: str = "zh_CN", limit: int = 3) -> dict:
+            """Search the built-in app tutorial for real controls, prerequisites, checks and outputs.
+            Use this before giving step-by-step NeuroEphys AI instructions. No project data is read.
+            """
+            return queries.guidance(query, language, limit)
 
         @mcp.tool()
         def propose_analysis_action(name: str, arguments: dict[str, Any], reason: str = "") -> dict:

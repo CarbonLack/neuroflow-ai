@@ -11,7 +11,7 @@
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2e44d2e0" />
 
-  
+
     <link rel="shortcut icon" href="_static/neuroephys-ai-mark.svg"/>
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -23,17 +23,17 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Final demonstration and offline fallback" href="competition-demo.html" />
-    <link rel="prev" title="Figure inspection and publication export" href="figures.html" /> 
+    <link rel="prev" title="Figure inspection and publication export" href="figures.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
 
-          
-          
+
+
           <a href="index.html" class="icon icon-home">
             NeuroEphys AI
               <img src="_static/neuroephys-ai-mark.svg" class="logo" alt="Logo"/>
@@ -158,7 +158,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Controlled AI assistant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#project-aware-harness-conversations-readable-answers-and-studies-v1-3-2">Project-aware Harness conversations, readable answers, and Studies (v1.3.2)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#project-chat-and-chart-vision-source-update">Project chat and chart vision (source update)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#read-the-answer-first-open-detail-when-needed">Read the answer first; open detail when needed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#providers">Providers</a></li>
@@ -321,11 +321,11 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <section id="controlled-ai-assistant">
 <h1>Controlled AI assistant<a class="headerlink" href="#controlled-ai-assistant" title="Link to this heading"></a></h1>
-<section id="project-aware-harness-conversations-readable-answers-and-studies-v1-3-2">
-<h2>Project-aware Harness conversations, readable answers, and Studies (v1.3.2)<a class="headerlink" href="#project-aware-harness-conversations-readable-answers-and-studies-v1-3-2" title="Link to this heading"></a></h2>
+<section id="project-chat-and-chart-vision-source-update">
+<h2>Project chat and chart vision (source update)<a class="headerlink" href="#project-chat-and-chart-vision-source-update" title="Link to this heading"></a></h2>
 <p>For an institute-managed DeepSeek Harness account, use <strong>Read local DeepSeek
 Harness configuration</strong> in AI settings. The Harness SDK route calls the installed
 official dsh runtime; the app does not extract its model credentials or bypass it
@@ -335,13 +335,38 @@ with direct API requests. Install and configure Harness separately using
 The model can then query specific units, events, trials, spike times and result
 tables through a local MCP interface, with evidence values and snapshot identifiers.
 Try: “Query unit 25’s SNR and ISI violation rate and explain the limitations.”
-Chart metadata is not image-pixel access; raw voltage is not sent by this interface.</p>
-<p>Conversations are saved to the project’s <code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code> and can be
-searched after reopening it. Each request uses a fresh project snapshot. Switching
+By default, chart metadata is not image-pixel access; raw voltage is not sent by
+the project-query interface.</p>
+<p>Chats are project-specific and can be assigned to Project, Figures, Methods, General,
+or Earlier groups in the expanded chat window. A new chart-interpretation thread is
+grouped under Figures automatically; users can change its group. The first question
+automatically titles a thread, and titles can be renamed. Search matches groups,
+titles and message text. This grouping is inside NeuroEphys AI; it does not alter
+the separate Harness website conversation sidebar. Older flat history is
+preserved as <strong>Earlier conversation</strong>. The current thread’s recent turns, not all
+threads mixed together, accompany each request. Threads are saved to the project’s
+<code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code> and can be searched after reopening it. Each request uses a fresh project snapshot. Switching
 projects or provider settings requires renewed context approval. Analysis proposals
 still require user confirmation and pass the existing application validators.
 New analysis features require explicit tool registration; arbitrary shell, code
 execution and file-system access are not granted.</p>
+<p>To let the model actually inspect the current chart, choose <strong>Chart</strong> in the right
+panel or <strong>Interpret current chart</strong> in the expanded conversation. The app renders
+only that chart to PNG in memory and displays the exact image for approval before
+sending it as an official Harness SDK image block. Image bytes are not stored in
+the chat archive; only the chart label and send record are kept. A chart may show
+raw traces or labels, so check the preview. Visual impressions are not substitutes
+for numerical results. This feature currently requires the Harness SDK provider;
+other API profiles do not silently pretend to see an image.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">NVM4306</span></code> appears, the local Node/NVM trusted launcher blocked <code class="docutils literal notranslate"><span class="pre">dsh</span></code>
+before the request reached the model. Check <code class="docutils literal notranslate"><span class="pre">dsh</span> <span class="pre">--version</span></code> and have the
+machine administrator run <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code> or repair the trusted launcher. Do not
+work around it by copying institute credentials into the app.</p>
+<p><strong>Enter</strong> sends, and <strong>Shift+Enter</strong> inserts a new line. General research and other
+questions are welcome even without an open project. For app-specific procedures,
+the assistant can query the versioned built-in tutorial. It distinguishes general
+model knowledge from measured project evidence and must not present unverified
+current information or invented citations as checked facts.</p>
 <p>After a multi-session Study is saved, the active project summary registers its
 random Study ID, animal/session counts, selected conditions, validation level,
 and available metrics. AI can explain the evidence and, in Collaborative mode,
@@ -456,7 +481,7 @@ authorization.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+
 
 </footer>
         </div>
@@ -467,7 +492,7 @@ authorization.</p>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
 
 </body>
 </html>

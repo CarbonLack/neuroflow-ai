@@ -1,8 +1,8 @@
 Controlled AI assistant
 =======================
 
-Project-aware Harness conversations, readable answers, and Studies (v1.3.2)
-----------------------------------------------------------------------------
+Project chat and chart vision (source update)
+---------------------------------------------
 
 For an institute-managed DeepSeek Harness account, use **Read local DeepSeek
 Harness configuration** in AI settings. The Harness SDK route calls the installed
@@ -14,14 +14,42 @@ Allow on-demand project data, results and conversation queries in the send previ
 The model can then query specific units, events, trials, spike times and result
 tables through a local MCP interface, with evidence values and snapshot identifiers.
 Try: “Query unit 25's SNR and ISI violation rate and explain the limitations.”
-Chart metadata is not image-pixel access; raw voltage is not sent by this interface.
+By default, chart metadata is not image-pixel access; raw voltage is not sent by
+the project-query interface.
 
-Conversations are saved to the project's ``ai/conversation.json`` and can be
-searched after reopening it. Each request uses a fresh project snapshot. Switching
+Chats are project-specific and can be assigned to Project, Figures, Methods, General,
+or Earlier groups in the expanded chat window. A new chart-interpretation thread is
+grouped under Figures automatically; users can change its group. The first question
+automatically titles a thread, and titles can be renamed. Search matches groups,
+titles and message text. This grouping is inside NeuroEphys AI; it does not alter
+the separate Harness website conversation sidebar. Older flat history is
+preserved as **Earlier conversation**. The current thread's recent turns, not all
+threads mixed together, accompany each request. Threads are saved to the project's
+``ai/conversation.json`` and can be searched after reopening it. Each request uses a fresh project snapshot. Switching
 projects or provider settings requires renewed context approval. Analysis proposals
 still require user confirmation and pass the existing application validators.
 New analysis features require explicit tool registration; arbitrary shell, code
 execution and file-system access are not granted.
+
+To let the model actually inspect the current chart, choose **Chart** in the right
+panel or **Interpret current chart** in the expanded conversation. The app renders
+only that chart to PNG in memory and displays the exact image for approval before
+sending it as an official Harness SDK image block. Image bytes are not stored in
+the chat archive; only the chart label and send record are kept. A chart may show
+raw traces or labels, so check the preview. Visual impressions are not substitutes
+for numerical results. This feature currently requires the Harness SDK provider;
+other API profiles do not silently pretend to see an image.
+
+If ``NVM4306`` appears, the local Node/NVM trusted launcher blocked ``dsh``
+before the request reached the model. Check ``dsh --version`` and have the
+machine administrator run ``nvm reshim`` or repair the trusted launcher. Do not
+work around it by copying institute credentials into the app.
+
+**Enter** sends, and **Shift+Enter** inserts a new line. General research and other
+questions are welcome even without an open project. For app-specific procedures,
+the assistant can query the versioned built-in tutorial. It distinguishes general
+model knowledge from measured project evidence and must not present unverified
+current information or invented citations as checked facts.
 
 After a multi-session Study is saved, the active project summary registers its
 random Study ID, animal/session counts, selected conditions, validation level,

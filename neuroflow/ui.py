@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import io
 import re
 import sys
 import traceback
@@ -16,7 +17,7 @@ from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT,
 )
 from matplotlib.transforms import Bbox
-from PySide6.QtCore import QEvent, QSettings, Qt, QThread, QTimer, QUrl, Signal
+from PySide6.QtCore import QBuffer, QEvent, QIODevice, QSettings, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QAction, QColor, QDesktopServices, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -55,7 +56,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .ai import STAGE_LABELS, AIResponse
+from .ai import STAGE_LABELS, AIResponse, redact_sensitive_text
 from .ai_tools import AIMode
 from .ai_presentation import (
     build_readable_ai_view,
@@ -65,11 +66,13 @@ from .ai_presentation import (
 from .ai_ui import (
     AIAssistantDialog,
     AIResponseDetailDialog,
+    ChatComposer,
     load_ai_reading_mode,
     load_ai_settings,
     save_ai_preferences,
     save_ai_reading_mode,
 )
+from .ai_conversations import ensure_threads, group_label, record_in_thread, thread_records
 from .analysis import (
     compute_unit_metrics,
     event_aligned_analysis,
@@ -4870,6 +4873,18 @@ class NeuroFlowWindow(QMainWindow):
         self.ai_context_label.setObjectName("Muted")
         self.ai_context_label.setWordWrap(True)
         ai_layout.addWidget(self.ai_context_label)
+        ai_thread_row = QHBoxLayout()
+        self.sidebar_ai_thread_combo = QComboBox()
+        self.sidebar_ai_thread_combo.setMinimumWidth(100)
+        self.sidebar_ai_thread_combo.currentIndexChanged.connect(self._sidebar_ai_thread_changed)
+        ai_thread_row.addWidget(self.sidebar_ai_thread_combo, 1)
+        self.sidebar_ai_new_chat_button = QPushButton("新对话")
+        self.sidebar_ai_new_chat_button.clicked.connect(self._sidebar_ai_new_chat)
+        ai_thread_row.addWidget(self.sidebar_ai_new_chat_button)
+        self.sidebar_ai_find_chat_button = QPushButton("查找")
+        self.sidebar_ai_find_chat_button.clicked.connect(self._sidebar_ai_find_chat)
+        ai_thread_row.addWidget(self.sidebar_ai_find_chat_button)
+        ai_layout.addLayout(ai_thread_row)
         ai_quick_row = QHBoxLayout()
         self.sidebar_ai_review_button = QPushButton("审查项目")
         self.sidebar_ai_review_button.clicked.connect(
@@ -4889,8 +4904,9 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.ai_sidebar_conversation.setPlaceholderText("AI 对话会显示在这里。")
         ai_layout.addWidget(self.ai_sidebar_conversation, 1)
-        self.ai_sidebar_question = QPlainTextEdit()
+        self.ai_sidebar_question = ChatComposer()
         self.ai_sidebar_question.setMaximumHeight(92)
+        self.ai_sidebar_question.submitted.connect(self._sidebar_ai_send)
         self.ai_sidebar_question.setPlaceholderText(
             "询问当前数据、参数、结果或下一步。发送前可预览云端字段。"
         )
@@ -4898,6 +4914,8 @@ class NeuroFlowWindow(QMainWindow):
         ai_action_row = QHBoxLayout()
         self.sidebar_ai_settings_button = QPushButton("设置")
         self.sidebar_ai_settings_button.clicked.connect(self._sidebar_ai_settings)
+        self.sidebar_ai_attach_button = QPushButton("解读图")
+        self.sidebar_ai_attach_button.clicked.connect(self._sidebar_ai_attach_chart)
         self.open_ai_button = QPushButton("展开")
         self.open_ai_button.setProperty("neuroflow_help_key", "global.ai")
         self.open_ai_button.clicked.connect(self._open_ai_assistant)
@@ -4905,6 +4923,7 @@ class NeuroFlowWindow(QMainWindow):
         self.sidebar_ai_send_button.setObjectName("Primary")
         self.sidebar_ai_send_button.clicked.connect(self._sidebar_ai_send)
         ai_action_row.addWidget(self.sidebar_ai_settings_button)
+        ai_action_row.addWidget(self.sidebar_ai_attach_button)
         ai_action_row.addWidget(self.open_ai_button)
         ai_action_row.addWidget(self.sidebar_ai_send_button, 1)
         ai_layout.addLayout(ai_action_row)
@@ -5330,6 +5349,9 @@ class NeuroFlowWindow(QMainWindow):
         self.sidebar_ai_settings_button.setText(
             "Settings" if language == "en_US" else "设置"
         )
+        self.sidebar_ai_new_chat_button.setText("New" if language == "en_US" else "新对话")
+        self.sidebar_ai_find_chat_button.setText("Find" if language == "en_US" else "查找")
+        self.sidebar_ai_attach_button.setText("Chart" if language == "en_US" else "解读图")
         self.sidebar_ai_send_button.setText(
             "Send" if language == "en_US" else "发送"
         )
@@ -5341,11 +5363,11 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.ai_sidebar_question.setPlaceholderText(
             (
-                "Ask about the current data, parameters, result, or next step. "
-                "Cloud fields are previewed before sending."
+                "Ask about data, a chart, methods or anything else. "
+                "Enter sends; Shift+Enter adds a line."
             )
             if language == "en_US"
-            else "询问当前数据、参数、结果或下一步。发送前可预览云端字段。"
+            else "询问数据、图、科研方法或其他问题。回车发送，Shift+回车换行。"
         )
         self.ai_sidebar_conversation.setPlaceholderText(
             "AI conversation appears here."
@@ -7717,18 +7739,36 @@ class NeuroFlowWindow(QMainWindow):
         self.ai_sidebar_status.setText(service_text)
         if self.state is None:
             self.ai_context_label.setText(
-                "No project context"
+                "No project open · general questions are welcome"
                 if english
-                else "尚未打开项目"
+                else "尚未打开项目 · 也可以询问通用问题"
             )
+            if self.ai_dialog is not None:
+                ephemeral = self.ai_dialog.ephemeral_metadata
+                threads = ensure_threads(ephemeral)
+                self.sidebar_ai_thread_combo.blockSignals(True)
+                self.sidebar_ai_thread_combo.clear()
+                for row in reversed(threads):
+                    thread_id = str(row["id"])
+                    self.sidebar_ai_thread_combo.addItem(
+                        f"{group_label(str(row.get('group', 'project')), self.language)} / {row['title']} · "
+                        f"{len(thread_records(ephemeral, thread_id))}", thread_id
+                    )
+                self.sidebar_ai_thread_combo.setCurrentIndex(
+                    max(self.sidebar_ai_thread_combo.findData(self.ai_dialog.current_thread_id), 0)
+                )
+                self.sidebar_ai_thread_combo.blockSignals(False)
+                if ephemeral.get("ai_history"):
+                    self.ai_sidebar_conversation.setHtml(self.ai_dialog.conversation.toHtml())
+                    return
             self.ai_sidebar_conversation.setHtml(
                 (
-                    "<p><b>AI assistant</b></p><p>Create or open a project to let "
-                    "the assistant inspect a path-free structured summary.</p>"
+                    "<p><b>AI assistant</b></p><p>Ask a general question, or open a "
+                    "project for data-aware answers.</p>"
                     if english
                     else (
-                        "<p><b>AI 助手</b></p><p>创建或打开项目后，助手可读取"
-                        "不含本地路径的结构化摘要。</p>"
+                        "<p><b>AI 助手</b></p><p>可直接询问通用问题；打开项目后，"
+                        "还能结合当前数据与结果回答。</p>"
                     )
                 )
             )
@@ -7767,14 +7807,35 @@ class NeuroFlowWindow(QMainWindow):
                 )
             )
         )
-        history = self.state.metadata.get("ai_history", [])
-        if history:
+        threads = ensure_threads(self.state.metadata)
+        selected_thread = (
+            self.ai_dialog.current_thread_id
+            if self.ai_dialog is not None and self.ai_dialog.loaded_project_token == str(self.state.root)
+            else str(self.state.metadata.get("ai_active_thread_id", ""))
+        )
+        if selected_thread not in {str(row["id"]) for row in threads}:
+            selected_thread = str(threads[-1]["id"])
+        self.sidebar_ai_thread_combo.blockSignals(True)
+        self.sidebar_ai_thread_combo.clear()
+        for row in reversed(threads):
+            thread_id = str(row["id"])
+            self.sidebar_ai_thread_combo.addItem(
+                f"{group_label(str(row.get('group', 'project')), self.language)} / {row['title']} · "
+                f"{len(thread_records(self.state.metadata, thread_id))}", thread_id
+            )
+        self.sidebar_ai_thread_combo.setCurrentIndex(
+            max(self.sidebar_ai_thread_combo.findData(selected_thread), 0)
+        )
+        self.sidebar_ai_thread_combo.blockSignals(False)
+        history = list(self.state.metadata.get("ai_history", []))
+        visible_history = [
+            (index, record) for index, record in enumerate(history)
+            if record.get("thread_id") == selected_thread
+        ][-5:]
+        if visible_history:
             blocks = []
-            visible_history = list(history[-5:])
-            history_offset = len(history) - len(visible_history)
             reading_mode = load_ai_reading_mode()
-            for local_index, record in enumerate(visible_history):
-                record_index = history_offset + local_index
+            for record_index, record in visible_history:
                 question = escape(str(record.get("question", "")).strip())
                 answer_text = str(record.get("answer", "")).strip()
                 if question:
@@ -7785,6 +7846,8 @@ class NeuroFlowWindow(QMainWindow):
                             else '<div class="message user"><b>你</b><br>'
                         )
                         + question.replace("\n", "<br>")
+                        + ("<br>📎 " + escape(str(record["chart_attachment"].get("label", "chart")))
+                           if isinstance(record.get("chart_attachment"), dict) else "")
                         + "</div>"
                     )
                 if answer_text:
@@ -7817,9 +7880,11 @@ class NeuroFlowWindow(QMainWindow):
                 """
                 <style>
                   body { color:#f6f2fa; font-family:'Segoe UI'; }
-                  .message { margin:8px 2px; padding:9px 10px; border-radius:5px; }
-                  .user { background:#211d2d; border:1px solid #3b354a; }
-                  .assistant { background:#171521; border:1px solid #5c4968; }
+                  .message { margin:10px 2px 16px; padding:11px 12px; border-radius:7px; line-height:1.45; }
+                  .user { background:#34253e; border:1px solid #a56cba; margin-left:20px; }
+                  .assistant { background:#201d2b; border:1px solid #547b6b; margin-right:20px; }
+                  .user b { color:#e1b5ed; }
+                  .assistant b { color:#a9dfc5; }
                   .answer-lead { font-size:15px; font-weight:600; margin:7px 0; }
                   .answer-points { margin:7px 0 7px 17px; padding:0; }
                   .answer-points li { margin:4px 0; }
@@ -7859,8 +7924,10 @@ class NeuroFlowWindow(QMainWindow):
                 plan_handler=self._apply_ai_plan,
                 tool_handler=self._handle_ai_tool_call,
                 manual_handler=self._open_ai_documentation,
+                figure_capture_getter=self._capture_current_figure_for_ai,
                 parent=self,
             )
+            self.ai_dialog.thread_changed.connect(lambda _: self._refresh_ai_sidebar())
         self.ai_dialog.set_language(self.language)
         self.sidebar_ai_mode_combo.blockSignals(True)
         self.sidebar_ai_mode_combo.setCurrentIndex(
@@ -7880,6 +7947,58 @@ class NeuroFlowWindow(QMainWindow):
         token = str(self.state.root) if self.state else "<no-project>"
         self.ai_dialog.load_project_history(records, token)
         return self.ai_dialog
+
+    def _capture_current_figure_for_ai(self) -> tuple[bytes, str]:
+        """Capture only the current plot, in memory, for explicit user review."""
+        if self.state is None or not hasattr(self, "canvas"):
+            raise ValueError("请先打开有图表的项目。" if self.language != "en_US" else "Open a project with a chart first.")
+        figure = self.canvas.figure
+        if not figure.axes:
+            raise ValueError("当前没有可解读的图。" if self.language != "en_US" else "No chart is currently available.")
+        output = io.BytesIO()
+        figure.savefig(output, format="png", dpi=110, facecolor=figure.get_facecolor())
+        pixmap = QPixmap()
+        if not pixmap.loadFromData(output.getvalue(), "PNG"):
+            raise ValueError("图像预览生成失败。" if self.language != "en_US" else "Could not render the chart preview.")
+        if pixmap.width() > 1800 or pixmap.height() > 1400 or output.tell() > 6_000_000:
+            scaled = pixmap.scaled(1800, 1400, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            buffer = QBuffer()
+            buffer.open(QIODevice.WriteOnly)
+            if not scaled.save(buffer, "PNG"):
+                raise ValueError("图像缩放失败。" if self.language != "en_US" else "Could not resize the chart.")
+            image_png = bytes(buffer.data())
+        else:
+            image_png = output.getvalue()
+        if len(image_png) > 6_000_000:
+            raise ValueError("当前图像超过 6 MB，请先简化图表。" if self.language != "en_US" else "Chart exceeds 6 MB; simplify it first.")
+        label = self.option_combo.currentText().strip() if self.option_combo.isVisible() else step_text(self.current_step, self.language)[0]
+        return image_png, label
+
+    def _sidebar_ai_thread_changed(self) -> None:
+        thread_id = str(self.sidebar_ai_thread_combo.currentData() or "")
+        if not thread_id:
+            return
+        dialog = self._ensure_ai_dialog()
+        dialog.activate_thread(thread_id)
+
+    def _sidebar_ai_new_chat(self) -> None:
+        dialog = self._ensure_ai_dialog()
+        dialog._new_thread()
+        self._refresh_ai_sidebar()
+
+    def _sidebar_ai_find_chat(self) -> None:
+        dialog = self._ensure_ai_dialog()
+        dialog.show()
+        dialog.raise_()
+        dialog.thread_search.setFocus()
+
+    def _sidebar_ai_attach_chart(self) -> None:
+        dialog = self._ensure_ai_dialog()
+        if dialog.attach_current_chart():
+            self.ai_sidebar_status.setText(
+                "Chart attached; type a question and send." if self.language == "en_US"
+                else "当前图已附加；输入问题后发送。"
+            )
 
     def _sidebar_reading_mode_changed(self) -> None:
         mode = str(self.sidebar_reading_combo.currentData() or "compact")
@@ -7912,6 +8031,8 @@ class NeuroFlowWindow(QMainWindow):
 
     def _sidebar_ai_send(self) -> None:
         question = self.ai_sidebar_question.toPlainText().strip()
+        if not question and self.ai_dialog is not None and self.ai_dialog.pending_image_png is not None:
+            question = "Please interpret the attached chart." if self.language == "en_US" else "请解读附加的这张图。"
         if not question:
             return
         dialog = self._ensure_ai_dialog()
@@ -7960,12 +8081,22 @@ class NeuroFlowWindow(QMainWindow):
         response: AIResponse,
         question: str,
         task: str,
+        thread_id: str,
+        image_label: str,
     ) -> None:
         if not self.state:
             return
-        history = list(self.state.metadata.get("ai_history", []))
-        history.append(response.audit_record(question, task))
-        self.state.metadata["ai_history"] = history
+        record = response.audit_record(question, task)
+        if image_label:
+            record["chart_attachment"] = {
+                "label": redact_sensitive_text(image_label), "mime_type": "image/png", "image_bytes_saved": False,
+                "chart_pixels_sent_after_preview": True,
+                "may_contain_raw_traces_or_labels": True,
+            }
+            record["raw_voltage_array_sent"] = False
+            record["raw_voltage_sent"] = None  # Chart pixels may show voltage traces.
+            record["local_paths_sent"] = None  # Text embedded in the chart was user-reviewed, not parsed.
+        record_in_thread(self.state.metadata, record, thread_id)
         try:
             save_ai_conversation(self.state)
         except OSError as exc:

@@ -9,6 +9,7 @@ from html import escape
 from typing import Any
 
 from PySide6.QtCore import QSettings, QThread, Qt, QUrl, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QBoxLayout,
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -44,6 +46,17 @@ from .ai import (
 )
 from .ai_credentials import get_api_key, store_api_key
 from .ai_harness import discover_deepseek_harness_profiles
+from .ai_conversations import (
+    THREAD_GROUPS,
+    create_thread,
+    ensure_threads,
+    group_label,
+    matching_threads,
+    record_in_thread,
+    rename_thread,
+    set_thread_group,
+    thread_records,
+)
 from .ai_tools import AIMode, validate_tool_call
 from .ai_project_bridge import ProjectQueries
 from .ai_presentation import (
@@ -53,6 +66,52 @@ from .ai_presentation import (
 )
 from .models import ProjectState
 from .product import PRODUCT_NAME
+
+
+class ChatComposer(QPlainTextEdit):
+    """Enter sends; Shift+Enter inserts a line break."""
+
+    submitted = Signal()
+
+    def keyPressEvent(self, event) -> None:  # noqa: N802 - Qt API
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter) and not (event.modifiers() & Qt.ShiftModifier):
+            if not event.isAutoRepeat():
+                self.submitted.emit()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
+def confirm_chart_attachment(image_png: bytes, language: str, parent: QWidget) -> bool:
+    """Preview the exact raster that will leave the computer before attaching it."""
+    dialog = QDialog(parent)
+    dialog.setWindowTitle("Attach current chart" if language == "en_US" else "附加当前图")
+    dialog.resize(760, 650)
+    dialog.setMinimumSize(420, 340)
+    layout = QVBoxLayout(dialog)
+    note = QLabel(
+        "This PNG image will be sent to the configured Harness model. It may contain labels or visible raw traces. No other file is sent."
+        if language == "en_US" else
+        "下方这张 PNG 将发送给当前配置的 Harness 模型；图上可能包含文字或原始波形。不会发送其他文件。"
+    )
+    note.setWordWrap(True)
+    layout.addWidget(note)
+    preview = QLabel()
+    preview.setAlignment(Qt.AlignCenter)
+    pixmap = QPixmap()
+    if not pixmap.loadFromData(image_png, "PNG"):
+        return False
+    preview.setPixmap(pixmap.scaled(700, 480, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setWidget(preview)
+    layout.addWidget(scroll, 1)
+    buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+    buttons.button(QDialogButtonBox.Ok).setText("Attach" if language == "en_US" else "确认附加")
+    buttons.accepted.connect(dialog.accept)
+    buttons.rejected.connect(dialog.reject)
+    layout.addWidget(buttons)
+    return dialog.exec() == QDialog.Accepted
 
 
 def _stored_json_list(value: Any) -> list[str]:
@@ -205,6 +264,7 @@ class AIWorker(QThread):
         project_summary: dict[str, Any],
         history: list[dict[str, str]],
         project_queries=None,
+        image_png: bytes | None = None,
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
@@ -215,6 +275,7 @@ class AIWorker(QThread):
         self.project_summary = project_summary
         self.history = history
         self.project_queries = project_queries
+        self.image_png = image_png
         self.cancel_event = threading.Event()
 
     def run(self) -> None:
@@ -229,6 +290,7 @@ class AIWorker(QThread):
                 on_stream_text=self.streamed.emit,
                 cancel_event=self.cancel_event,
                 project_queries=self.project_queries,
+                image_png=self.image_png,
             )
             self.completed.emit(response)
         except Exception as exc:  # noqa: BLE001 - remote boundary
@@ -872,16 +934,19 @@ class ContextPreviewDialog(QDialog):
 
 
 class AIAssistantDialog(QDialog):
+    thread_changed = Signal(str)
+
     def __init__(
         self,
         *,
         state_getter: Callable[[], ProjectState | None],
         stage_getter: Callable[[], str],
         language_getter: Callable[[], str],
-        response_handler: Callable[[AIResponse, str, str], None],
+        response_handler: Callable[[AIResponse, str, str, str, str], None],
         plan_handler: Callable[[list[dict[str, Any]], str], None],
         tool_handler: Callable[[dict[str, Any]], None] | None = None,
         manual_handler: Callable[[], None],
+        figure_capture_getter: Callable[[], tuple[bytes, str]] | None = None,
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
@@ -892,6 +957,7 @@ class AIAssistantDialog(QDialog):
         self.plan_handler = plan_handler
         self.tool_handler = tool_handler
         self.manual_handler = manual_handler
+        self.figure_capture_getter = figure_capture_getter
         self.settings = load_ai_settings()
         self.history: list[dict[str, str]] = []
         self.current_plan: list[dict[str, Any]] = []
@@ -905,6 +971,10 @@ class AIAssistantDialog(QDialog):
         self.reading_mode = load_ai_reading_mode()
         self.response_details: dict[str, dict[str, Any]] = {}
         self.response_detail_counter = 0
+        self.ephemeral_metadata: dict[str, Any] = {"ai_history": [], "ai_threads": []}
+        self.current_thread_id = ""
+        self.pending_image_png: bytes | None = None
+        self.pending_image_label = ""
 
         self.resize(1280, 790)
         self.setMinimumSize(520, 420)
@@ -924,20 +994,109 @@ class AIAssistantDialog(QDialog):
         self.current_tool_calls = []
         self.current_plan = []
         self.loaded_project_token = project_token
+        self.pending_image_png = None
+        self.pending_image_label = ""
+        self._update_attachment_label()
+        metadata = self._thread_metadata()
+        if self.state_getter() is None:
+            metadata["ai_history"] = list(records)
+        threads = ensure_threads(metadata)
+        if self.state_getter() is None and len(threads) == 1 and not metadata["ai_history"]:
+            set_thread_group(metadata, str(threads[0]["id"]), "general")
+        preferred = str(metadata.get("ai_active_thread_id", ""))
+        self.current_thread_id = preferred if preferred in {str(row["id"]) for row in threads} else str(threads[-1]["id"])
+        self._refresh_thread_list()
+        self.activate_thread(self.current_thread_id)
+
+    def _thread_metadata(self) -> dict[str, Any]:
+        state = self.state_getter()
+        return state.metadata if state is not None else self.ephemeral_metadata
+
+    def _persist_threads(self) -> None:
+        state = self.state_getter()
+        if state is not None:
+            from .project import save_ai_conversation
+            save_ai_conversation(state)
+
+    def _refresh_thread_list(self) -> None:
+        metadata = self._thread_metadata()
+        current = self.current_thread_id
+        query = self.thread_search.text().strip()
+        rows = matching_threads(metadata, query)
+        self.thread_combo.blockSignals(True)
+        self.thread_combo.clear()
+        for row in rows:
+            thread_id = str(row["id"])
+            count = len(thread_records(metadata, thread_id))
+            group = group_label(str(row.get("group", "project")), self.language_getter())
+            self.thread_combo.addItem(f"{group} / {row['title']}  ·  {count}", thread_id)
+        index = self.thread_combo.findData(current)
+        if index >= 0:
+            self.thread_combo.setCurrentIndex(index)
+        self.thread_combo.blockSignals(False)
+
+    def activate_thread(self, thread_id: str) -> None:
+        if self.worker and self.worker.isRunning():
+            return
+        metadata = self._thread_metadata()
+        if thread_id not in {str(row["id"]) for row in ensure_threads(metadata)}:
+            return
+        self.current_thread_id = thread_id
+        metadata["ai_active_thread_id"] = thread_id
+        row = next(row for row in ensure_threads(metadata) if row["id"] == thread_id)
+        self.thread_group_combo.blockSignals(True)
+        self.thread_group_combo.setCurrentIndex(
+            max(self.thread_group_combo.findData(row.get("group", "project")), 0)
+        )
+        self.thread_group_combo.blockSignals(False)
         self.history = []
         self.response_details = {}
         self.response_detail_counter = 0
         self.conversation.clear()
-        for record in records[-20:]:
+        for record in thread_records(metadata, thread_id)[-40:]:
             question = str(record.get("question", "")).strip()
             answer = str(record.get("answer", "")).strip()
             if question:
                 self.history.append({"role": "user", "content": question})
-                self._append_message("user", question)
+                self._append_message("user", question, record=record)
             if answer:
                 self.history.append({"role": "assistant", "content": answer})
                 self._append_message("assistant", answer, record=record)
         self.history = self.history[-40:]
+        self._refresh_thread_list()
+        self.thread_changed.emit(thread_id)
+
+    def _new_thread(self) -> None:
+        metadata = self._thread_metadata()
+        group = "general" if self.state_getter() is None else "project"
+        thread_id = create_thread(metadata, group=group)
+        self._persist_threads()
+        self.thread_search.clear()
+        self._refresh_thread_list()
+        self.activate_thread(thread_id)
+
+    def _rename_thread(self) -> None:
+        metadata = self._thread_metadata()
+        row = next((row for row in ensure_threads(metadata)
+                    if row["id"] == self.current_thread_id), None)
+        if row is None:
+            return
+        title, accepted = QInputDialog.getText(
+            self, "Rename conversation" if self.language_getter() == "en_US" else "重命名对话",
+            "Title" if self.language_getter() == "en_US" else "对话名称",
+            text=str(row.get("title", "")),
+        )
+        if accepted and rename_thread(metadata, self.current_thread_id, title):
+            self._persist_threads()
+            self._refresh_thread_list()
+            self.thread_changed.emit(self.current_thread_id)
+
+    def _change_thread_group(self) -> None:
+        group = str(self.thread_group_combo.currentData() or "")
+        if set_thread_group(self._thread_metadata(), self.current_thread_id, group):
+            self._persist_threads()
+            self._refresh_thread_list()
+            self.thread_changed.emit(self.current_thread_id)
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -985,6 +1144,33 @@ class AIAssistantDialog(QDialog):
         self.status_label.setWordWrap(True)
         status_layout.addWidget(self.status_label, 1)
         root.addWidget(self.status_frame)
+
+        thread_row = QHBoxLayout()
+        self.thread_search = QLineEdit()
+        self.thread_search.setClearButtonEnabled(True)
+        self.thread_search.textChanged.connect(self._refresh_thread_list)
+        self.thread_search.setMinimumWidth(110)
+        thread_row.addWidget(self.thread_search, 2)
+        self.thread_combo = QComboBox()
+        self.thread_combo.setMinimumWidth(150)
+        self.thread_combo.currentIndexChanged.connect(
+            lambda: self.activate_thread(str(self.thread_combo.currentData() or ""))
+        )
+        thread_row.addWidget(self.thread_combo, 3)
+        self.new_thread_button = QPushButton()
+        self.new_thread_button.clicked.connect(self._new_thread)
+        thread_row.addWidget(self.new_thread_button)
+        self.rename_thread_button = QPushButton()
+        self.rename_thread_button.clicked.connect(self._rename_thread)
+        thread_row.addWidget(self.rename_thread_button)
+        root.addLayout(thread_row)
+        group_row = QHBoxLayout()
+        self.thread_group_label = QLabel()
+        group_row.addWidget(self.thread_group_label)
+        self.thread_group_combo = QComboBox()
+        self.thread_group_combo.currentIndexChanged.connect(self._change_thread_group)
+        group_row.addWidget(self.thread_group_combo, 1)
+        root.addLayout(group_row)
 
         body = QHBoxLayout()
         self.body_layout = body
@@ -1042,9 +1228,22 @@ class AIAssistantDialog(QDialog):
         self.conversation.anchorClicked.connect(self._open_response_detail)
         chat_layout.addWidget(self.conversation, 1)
 
-        self.question_edit = QPlainTextEdit()
+        self.question_edit = ChatComposer()
         self.question_edit.setMaximumHeight(105)
+        self.question_edit.submitted.connect(lambda: self._submit("ask"))
         chat_layout.addWidget(self.question_edit)
+        attachment_row = QHBoxLayout()
+        self.attach_chart_button = QPushButton()
+        self.attach_chart_button.clicked.connect(self.attach_current_chart)
+        attachment_row.addWidget(self.attach_chart_button)
+        self.attachment_label = QLabel()
+        self.attachment_label.setObjectName("Muted")
+        self.attachment_label.setWordWrap(True)
+        attachment_row.addWidget(self.attachment_label, 1)
+        self.remove_attachment_button = QPushButton()
+        self.remove_attachment_button.clicked.connect(self._remove_attachment)
+        attachment_row.addWidget(self.remove_attachment_button)
+        chat_layout.addLayout(attachment_row)
         send_row = QHBoxLayout()
         self.privacy_label = QLabel()
         self.privacy_label.setObjectName("Muted")
@@ -1153,6 +1352,21 @@ class AIAssistantDialog(QDialog):
         self.settings_button.setText(
             "AI settings" if english else "AI 设置"
         )
+        self.thread_search.setPlaceholderText(
+            "Search titles and messages" if english else "搜索对话名称与内容"
+        )
+        self.new_thread_button.setText("New chat" if english else "新对话")
+        self.rename_thread_button.setText("Rename" if english else "重命名")
+        self.thread_group_label.setText("Group" if english else "对话分组")
+        current_group = self.thread_group_combo.currentData()
+        self.thread_group_combo.blockSignals(True)
+        self.thread_group_combo.clear()
+        for group in THREAD_GROUPS:
+            self.thread_group_combo.addItem(group_label(group, self.language_getter()), group)
+        self.thread_group_combo.setCurrentIndex(max(self.thread_group_combo.findData(current_group), 0))
+        self.thread_group_combo.blockSignals(False)
+        if self.current_thread_id:
+            self._refresh_thread_list()
         self.quick_title.setText(
             "Start from a defined task" if english else "从明确任务开始"
         )
@@ -1173,22 +1387,25 @@ class AIAssistantDialog(QDialog):
         )
         self.question_edit.setPlaceholderText(
             (
-                "Describe your scientific question or ask about a parameter. "
-                "The model receives the previewed summary, not raw voltage."
+                "Ask about your data, a chart, methods, app use or another topic. "
+                "Enter to send · Shift+Enter for a new line."
             )
             if english
             else (
-                "描述你的科学问题，或询问某个参数。模型只会收到预览中的摘要，"
-                "不会收到原始电压。"
+                "可询问数据、图、科研方法、软件操作或其他问题。"
+                "回车发送，Shift+回车换行。"
             )
         )
+        self.attach_chart_button.setText("Interpret current chart" if english else "解读当前图")
+        self.remove_attachment_button.setText("Remove" if english else "移除")
+        self._update_attachment_label()
         self.privacy_label.setText(
             (
-                "Raw signal and local paths are never sent. AI cannot run an analysis "
-                "without your confirmation."
+                "No raw numeric signal or local path is sent. A chart image is sent only "
+                "after preview and approval; analysis still needs confirmation."
             )
             if english
-            else "不发送原始信号和本地路径；AI 未经确认不能运行分析。"
+            else "不发送原始数值或本地路径；图像仅在预览确认后发送，分析仍需确认。"
         )
         self.send_button.setText("Ask AI" if english else "询问 AI")
         self.cancel_button.setText("Cancel" if english else "取消请求")
@@ -1225,6 +1442,41 @@ class AIAssistantDialog(QDialog):
         )
         self._refresh_status()
         self._render_plan()
+
+    def _update_attachment_label(self) -> None:
+        attached = self.pending_image_png is not None
+        english = self.language_getter() == "en_US"
+        self.attachment_label.setText(
+            (f"Attached: {self.pending_image_label}" if english else f"已附：{self.pending_image_label}")
+            if attached else ("No chart attached" if english else "未附加图像")
+        )
+        self.remove_attachment_button.setVisible(attached)
+
+    def _remove_attachment(self) -> None:
+        self.pending_image_png = None
+        self.pending_image_label = ""
+        self._update_attachment_label()
+
+    def attach_current_chart(self) -> bool:
+        english = self.language_getter() == "en_US"
+        if self.settings.provider != "harness_sdk":
+            QMessageBox.information(self, "AI",
+                "Chart vision currently requires the DeepSeek Harness SDK provider."
+                if english else "当前图像解读仅支持 DeepSeek Harness SDK，请先在 AI 设置中选择它。")
+            return False
+        if self.figure_capture_getter is None:
+            return False
+        try:
+            image_png, label = self.figure_capture_getter()
+        except (OSError, ValueError, RuntimeError) as exc:
+            QMessageBox.warning(self, "AI", str(exc))
+            return False
+        if not confirm_chart_attachment(image_png, self.language_getter(), self):
+            return False
+        self.pending_image_png = image_png
+        self.pending_image_label = label
+        self._update_attachment_label()
+        return True
 
     def _refresh_status(self) -> None:
         english = self.language_getter() == "en_US"
@@ -1384,6 +1636,8 @@ class AIAssistantDialog(QDialog):
             )
             return
         question = self.question_edit.toPlainText().strip()
+        if not question and self.pending_image_png is not None:
+            question = "Please interpret the attached chart." if self.language_getter() == "en_US" else "请解读附加的这张图。"
         if not question:
             return
         if not self.settings.configured:
@@ -1399,7 +1653,11 @@ class AIAssistantDialog(QDialog):
             save_ai_preferences(self.settings)
             self.context_authorized = True
         language = self.language_getter()
-        self._append_message("user", question)
+        thread_id = self.current_thread_id
+        image_png = self.pending_image_png
+        image_label = self.pending_image_label if image_png is not None else ""
+        shown_question = question + (f"\n📎 {image_label}" if image_label else "")
+        self._append_message("user", shown_question)
         self.history.append({"role": "user", "content": question})
         self._set_running(True)
         self.request_project = self.state_getter()
@@ -1413,10 +1671,11 @@ class AIAssistantDialog(QDialog):
             project_summary=self._summary(),
             history=self.history[:-1],
             project_queries=queries,
+            image_png=image_png,
             parent=self,
         )
         self.worker.completed.connect(
-            lambda response: self._on_completed(response, question, task)
+            lambda response: self._on_completed(response, question, task, thread_id, image_label)
         )
         self.worker.failed.connect(self._on_failed)
         self.worker.streamed.connect(self._on_streamed)
@@ -1445,6 +1704,11 @@ class AIAssistantDialog(QDialog):
             self.error_button,
             self.settings_button,
             self.mode_combo,
+            self.thread_combo,
+            self.thread_group_combo,
+            self.new_thread_button,
+            self.rename_thread_button,
+            self.attach_chart_button,
         ):
             button.setEnabled(not running)
         self.cancel_button.setVisible(running)
@@ -1464,14 +1728,8 @@ class AIAssistantDialog(QDialog):
     def _reading_mode_changed(self) -> None:
         self.reading_mode = str(self.reading_combo.currentData() or "compact")
         save_ai_reading_mode(self.reading_mode)
-        records: list[dict[str, Any]] = []
-        state = self.state_getter()
-        if state is not None:
-            records = list(state.metadata.get("ai_history", []))[-20:]
-        if records:
-            token = self.loaded_project_token
-            self.loaded_project_token = ""
-            self.load_project_history(records, token)
+        if self.current_thread_id:
+            self.activate_thread(self.current_thread_id)
 
     def _open_response_detail(self, url: QUrl) -> None:
         if url.scheme() != "neuroephys" or url.host() != "ai-detail":
@@ -1489,12 +1747,10 @@ class AIAssistantDialog(QDialog):
         record: dict[str, Any] | None = None,
     ) -> None:
         english = self.language_getter() == "en_US"
-        label = (
-            ("You" if english else "你")
-            if role == "user"
-            else ("AI advisory response" if english else "AI 辅助建议")
-        )
-        color = "#1f7a63" if role == "assistant" else "#33433d"
+        label = ("You" if english else "你") if role == "user" else "NeuroEphys AI"
+        color = "#d89be8" if role == "user" else "#a9dfc5"
+        background = "#34253e" if role == "user" else "#201d2b"
+        border = "#a56cba" if role == "user" else "#547b6b"
         if role == "assistant" and self.reading_mode == "compact":
             detail_record = dict(record or {})
             detail_record.setdefault("answer", text)
@@ -1520,17 +1776,26 @@ class AIAssistantDialog(QDialog):
             body = full_response_html(record, self.language_getter())
         else:
             body = escape(text).replace("\n", "<br>")
+            if role == "user" and record and isinstance(record.get("chart_attachment"), dict):
+                body += "<br>📎 " + escape(str(record["chart_attachment"].get("label", "chart")))
+        alignment = "right" if role == "user" else "left"
         self.conversation.append(
-            f'<div style="margin:8px 0 14px 0;">'
+            f'<table width="94%" align="{alignment}" cellspacing="0" cellpadding="9" '
+            f'style="margin:8px 0 16px 0; border:1px solid {border};">'
+            f'<tr><td bgcolor="{background}" style="color:#f5f1fa;">'
             f'<b style="color:{color};">{escape(label)}</b><br>'
-            f'<div style="line-height:1.45;">{body}</div></div>'
+            f'<div style="line-height:1.5;">{body}</div></td></tr></table>'
         )
+        scrollbar = self.conversation.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
 
     def _on_completed(
         self,
         response: AIResponse,
         question: str,
         task: str,
+        thread_id: str,
+        image_label: str,
     ) -> None:
         self._set_running(False)
         if self.request_project is not self.state_getter():
@@ -1538,6 +1803,28 @@ class AIAssistantDialog(QDialog):
         self.history.append({"role": "assistant", "content": response.answer})
         self.history = self.history[-40:]
         response_record = response.audit_record(question, task)
+        response_record["thread_id"] = thread_id
+        if image_label and self.state_getter() is not None:
+            metadata = self._thread_metadata()
+            row = next((row for row in ensure_threads(metadata) if row["id"] == thread_id), None)
+            if row and row.get("group") == "project" and not thread_records(metadata, thread_id):
+                set_thread_group(metadata, thread_id, "figures")
+            if row and row.get("automatic_title") and question in {
+                "请解读附加的这张图。", "Please interpret the attached chart.",
+            }:
+                prefix = "Chart · " if self.language_getter() == "en_US" else "图表 · "
+                rename_thread(metadata, thread_id, prefix + redact_sensitive_text(image_label))
+        if image_label:
+            response_record["chart_attachment"] = {
+                "label": redact_sensitive_text(image_label), "mime_type": "image/png", "image_bytes_saved": False,
+                "chart_pixels_sent_after_preview": True,
+                "may_contain_raw_traces_or_labels": True,
+            }
+            response_record["raw_voltage_array_sent"] = False
+            response_record["raw_voltage_sent"] = None  # Visible chart pixels can contain traces.
+            response_record["local_paths_sent"] = None  # The approved image may contain text labels.
+        if self.state_getter() is None:
+            record_in_thread(self.ephemeral_metadata, response_record, thread_id)
         self._append_message(
             "assistant",
             response.answer,
@@ -1549,7 +1836,19 @@ class AIAssistantDialog(QDialog):
         self._render_plan()
         self._render_tool_calls()
         self.plan_frame.setVisible(bool(self.current_plan or self.current_tool_calls))
-        self.response_handler(response, question, task)
+        self.response_handler(response, question, task, thread_id, image_label)
+        self.question_edit.clear()
+        self._remove_attachment()
+        row = next((row for row in ensure_threads(self._thread_metadata())
+                    if row["id"] == thread_id), None)
+        if row is not None:
+            self.thread_group_combo.blockSignals(True)
+            self.thread_group_combo.setCurrentIndex(
+                max(self.thread_group_combo.findData(row.get("group", "project")), 0)
+            )
+            self.thread_group_combo.blockSignals(False)
+        self._refresh_thread_list()
+        self.thread_changed.emit(thread_id)
         if response.query_evidence:
             self.status_label.setText(
                 f"已查询 {len(response.query_evidence)} 项项目证据；详情保存在项目对话记录。"

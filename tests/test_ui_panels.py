@@ -605,6 +605,25 @@ def test_ai_assistant_is_discoverable_and_plan_never_auto_runs(
     assert window.ai_dialog is not None
     assert window.ai_dialog.isVisible()
     assert "recording.bin" not in json.dumps(window.ai_dialog._summary())
+    assert window.sidebar_ai_thread_combo.count() == 1
+    legacy_thread = window.ai_dialog.current_thread_id
+    window.ai_dialog._new_thread()
+    assert window.ai_dialog.current_thread_id != legacy_thread
+    group_index = window.ai_dialog.thread_group_combo.findData("methods")
+    window.ai_dialog.thread_group_combo.setCurrentIndex(group_index)
+    assert window.ai_dialog._thread_metadata()["ai_threads"][-1]["group"] == "methods"
+    assert any("方法问答 /" in window.sidebar_ai_thread_combo.itemText(index)
+               for index in range(window.sidebar_ai_thread_combo.count()))
+    assert window.ai_dialog.conversation.toPlainText().strip() == ""
+    assert window.sidebar_ai_thread_combo.count() == 2
+    window.ai_dialog.activate_thread(legacy_thread)
+    assert "现在可以做什么" in window.ai_dialog.conversation.toPlainText()
+    window.ai_dialog.settings.provider = "harness_sdk"
+    monkeypatch.setattr("neuroflow.ai_ui.confirm_chart_attachment", lambda *_: True)
+    assert window.ai_dialog.attach_current_chart()
+    assert window.ai_dialog.pending_image_png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert window.ai_dialog.pending_image_label
+    window.ai_dialog._remove_attachment()
 
     monkeypatch.setattr(
         QMessageBox,

@@ -50,7 +50,11 @@ def save_ai_conversation(state: ProjectState) -> None:
     path = state.root / "ai" / "conversation.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(state.metadata.get("ai_history", []),
+    temporary.write_text(json.dumps({
+        "schema": "neuroephys.ai_conversation.v2",
+        "threads": state.metadata.get("ai_threads", []),
+        "history": state.metadata.get("ai_history", []),
+    },
                                    ensure_ascii=False, indent=2), encoding="utf-8")
     temporary.replace(path)
 
@@ -60,7 +64,14 @@ def restore_ai_conversation(state: ProjectState) -> None:
     if path.is_file():
         try:
             records = json.loads(path.read_text(encoding="utf-8"))
-            if isinstance(records, list) and all(isinstance(r, dict) for r in records):
+            if isinstance(records, dict) and records.get("schema") == "neuroephys.ai_conversation.v2":
+                history = records.get("history", [])
+                threads = records.get("threads", [])
+                if (isinstance(history, list) and isinstance(threads, list)
+                        and all(isinstance(r, dict) for r in history + threads)):
+                    state.metadata["ai_history"] = history
+                    state.metadata["ai_threads"] = threads
+            elif isinstance(records, list) and all(isinstance(r, dict) for r in records):
                 state.metadata["ai_history"] = records
         except (OSError, ValueError):
             state.log("AI conversation archive could not be read; manifest history retained.")
