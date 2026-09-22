@@ -9,7 +9,7 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QSettings, QThread, Qt, QUrl, Signal
+from PySide6.QtCore import QSettings, QThread, QTimer, Qt, QUrl, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -50,6 +50,7 @@ from .ai_harness import discover_deepseek_harness_profiles
 from .ai_conversations import (
     THREAD_GROUPS,
     create_thread,
+    ensure_stage_thread,
     ensure_threads,
     group_label,
     load_general_conversations,
@@ -60,6 +61,7 @@ from .ai_conversations import (
     set_thread_group,
     thread_records,
 )
+from .chat_bubbles import BubbleChatView
 from .ai_tools import AIMode, validate_tool_call
 from .ai_project_bridge import ProjectQueries
 from .ai_presentation import (
@@ -85,7 +87,8 @@ class ChatComposer(QPlainTextEdit):
         super().keyPressEvent(event)
 
 
-def confirm_chart_attachment(image_png: bytes, language: str, parent: QWidget) -> bool:
+def confirm_chart_attachment(image_png: bytes, language: str, parent: QWidget,
+                             provider_label: str = "configured AI service") -> bool:
     """Preview the exact raster that will leave the computer before attaching it."""
     dialog = QDialog(parent)
     dialog.setWindowTitle("Attach current chart" if language == "en_US" else "附加当前图")
@@ -93,9 +96,9 @@ def confirm_chart_attachment(image_png: bytes, language: str, parent: QWidget) -
     dialog.setMinimumSize(420, 340)
     layout = QVBoxLayout(dialog)
     note = QLabel(
-        "This PNG image will be sent to the configured Harness model. It may contain labels or visible raw traces. No other file is sent."
+        f"This PNG image will be sent to {provider_label}. It may contain labels or visible raw traces. No other file is sent."
         if language == "en_US" else
-        "下方这张 PNG 将发送给当前配置的 Harness 模型；图上可能包含文字或原始波形。不会发送其他文件。"
+        f"下方这张 PNG 将发送给 {provider_label}；图上可能包含文字或原始波形。不会发送其他文件。"
     )
     note.setWordWrap(True)
     layout.addWidget(note)
@@ -982,6 +985,8 @@ class AIAssistantDialog(QDialog):
             else {"ai_history": [], "ai_threads": []}
         )
         self.current_thread_id = ""
+        self.current_stage = ""
+        self.stage_drafts: dict[str, str] = {}
         self.pending_image_png: bytes | None = None
         self.pending_image_label = ""
 
@@ -1010,10 +1015,30 @@ class AIAssistantDialog(QDialog):
         threads = ensure_threads(metadata)
         if self.state_getter() is None and len(threads) == 1 and not metadata["ai_history"]:
             set_thread_group(metadata, str(threads[0]["id"]), "general")
+        if self.state_getter() is not None:
+            self.current_stage = ""
+            self.set_stage(self.stage_getter())
+            return
         preferred = str(metadata.get("ai_active_thread_id", ""))
         self.current_thread_id = preferred if preferred in {str(row["id"]) for row in threads} else str(threads[-1]["id"])
         self._refresh_thread_list()
         self.activate_thread(self.current_thread_id)
+
+    def set_stage(self, stage: str) -> None:
+        """Keep one independently persisted conversation space per project stage."""
+        if self.state_getter() is None or stage == self.current_stage:
+            return
+        if self.worker and self.worker.isRunning():
+            return
+        if self.current_stage:
+            self.stage_drafts[self.current_stage] = self.question_edit.toPlainText()
+        self.current_stage = stage
+        self.question_edit.setPlainText(self.stage_drafts.get(stage, ""))
+        metadata = self._thread_metadata()
+        title = STAGE_LABELS[self.language_getter()].get(stage, stage)
+        thread_id = ensure_stage_thread(metadata, stage, title)
+        self._refresh_thread_list()
+        self.activate_thread(thread_id)
 
     def _thread_metadata(self) -> dict[str, Any]:
         state = self.state_getter()
@@ -1031,7 +1056,9 @@ class AIAssistantDialog(QDialog):
         metadata = self._thread_metadata()
         current = self.current_thread_id
         query = self.thread_search.text().strip()
-        rows = matching_threads(metadata, query)
+        stage = None if (self.state_getter() is None or self.all_steps_checkbox.isChecked()
+                            or query) else self.current_stage
+        rows = matching_threads(metadata, query, stage=stage)
         self.thread_combo.blockSignals(True)
         self.thread_combo.clear()
         for row in rows:
@@ -1052,6 +1079,10 @@ class AIAssistantDialog(QDialog):
             return
         self.current_thread_id = thread_id
         metadata["ai_active_thread_id"] = thread_id
+        stage = str(next((row.get("stage", "") for row in ensure_threads(metadata)
+                          if row.get("id") == thread_id), ""))
+        if stage:
+            metadata.setdefault("ai_active_thread_by_stage", {})[stage] = thread_id
         self._persist_threads()
         row = next(row for row in ensure_threads(metadata) if row["id"] == thread_id)
         self.thread_group_combo.blockSignals(True)
@@ -1079,7 +1110,8 @@ class AIAssistantDialog(QDialog):
     def _new_thread(self) -> None:
         metadata = self._thread_metadata()
         group = "general" if self.state_getter() is None else "project"
-        thread_id = create_thread(metadata, group=group)
+        thread_id = create_thread(metadata, group=group,
+                                  stage=self.current_stage if self.state_getter() else "")
         self._persist_threads()
         self.thread_search.clear()
         self._refresh_thread_list()
@@ -1174,6 +1206,9 @@ class AIAssistantDialog(QDialog):
         self.rename_thread_button.clicked.connect(self._rename_thread)
         thread_row.addWidget(self.rename_thread_button)
         root.addLayout(thread_row)
+        self.all_steps_checkbox = QCheckBox()
+        self.all_steps_checkbox.toggled.connect(self._refresh_thread_list)
+        root.addWidget(self.all_steps_checkbox)
         group_row = QHBoxLayout()
         self.thread_group_label = QLabel()
         group_row.addWidget(self.thread_group_label)
@@ -1233,8 +1268,7 @@ class AIAssistantDialog(QDialog):
             quick_row.addWidget(button)
         chat_layout.addLayout(quick_row)
 
-        self.conversation = QTextBrowser()
-        self.conversation.setOpenExternalLinks(False)
+        self.conversation = BubbleChatView()
         self.conversation.anchorClicked.connect(self._open_response_detail)
         chat_layout.addWidget(self.conversation, 1)
 
@@ -1368,6 +1402,7 @@ class AIAssistantDialog(QDialog):
         self.new_thread_button.setText("New chat" if english else "新对话")
         self.rename_thread_button.setText("Rename" if english else "重命名")
         self.thread_group_label.setText("Group" if english else "对话分组")
+        self.all_steps_checkbox.setText("Search all steps and older chats" if english else "跨步骤查找及查看旧对话")
         current_group = self.thread_group_combo.currentData()
         self.thread_group_combo.blockSignals(True)
         self.thread_group_combo.clear()
@@ -1469,10 +1504,10 @@ class AIAssistantDialog(QDialog):
 
     def attach_current_chart(self) -> bool:
         english = self.language_getter() == "en_US"
-        if self.settings.provider != "harness_sdk":
+        if self.settings.provider not in {"harness_sdk", "openai_compatible", "openai_responses"}:
             QMessageBox.information(self, "AI",
-                "Chart vision currently requires the DeepSeek Harness SDK provider."
-                if english else "当前图像解读仅支持 DeepSeek Harness SDK，请先在 AI 设置中选择它。")
+                "This connection has no chart upload path. Choose Harness SDK, OpenAI-compatible Chat, or OpenAI Responses with a vision-capable model."
+                if english else "当前连接未适配图像上传。请选择支持读图的 Harness SDK、OpenAI-compatible Chat 或 OpenAI Responses 模型。")
             return False
         if self.figure_capture_getter is None:
             return False
@@ -1481,7 +1516,8 @@ class AIAssistantDialog(QDialog):
         except (OSError, ValueError, RuntimeError) as exc:
             QMessageBox.warning(self, "AI", str(exc))
             return False
-        if not confirm_chart_attachment(image_png, self.language_getter(), self):
+        if not confirm_chart_attachment(image_png, self.language_getter(), self,
+                                        self.settings.provider_label):
             return False
         self.pending_image_png = image_png
         self.pending_image_label = label
@@ -1633,6 +1669,18 @@ class AIAssistantDialog(QDialog):
     def _submit(self, task: str) -> None:
         if self.worker and self.worker.isRunning():
             return
+        if self.state_getter() is not None:
+            selected = next((row for row in ensure_threads(self._thread_metadata())
+                             if row.get("id") == self.current_thread_id), None)
+            if selected is not None and selected.get("stage") != self.stage_getter():
+                QMessageBox.information(
+                    self,
+                    "Select this workflow step" if self.language_getter() == "en_US" else "请先切换分析步骤",
+                    ("This is a conversation from another step. Select that workflow step before continuing it."
+                     if self.language_getter() == "en_US" else
+                     "这是其他步骤的历史对话。请先切换到对应的分析步骤，再继续提问。"),
+                )
+                return
         if self.settings.ai_mode == AIMode.MANUAL:
             QMessageBox.information(
                 self,
@@ -1758,9 +1806,6 @@ class AIAssistantDialog(QDialog):
     ) -> None:
         english = self.language_getter() == "en_US"
         label = ("You" if english else "你") if role == "user" else "NeuroEphys AI"
-        color = "#d89be8" if role == "user" else "#a9dfc5"
-        background = "#34253e" if role == "user" else "#201d2b"
-        border = "#a56cba" if role == "user" else "#547b6b"
         if role == "assistant" and self.reading_mode == "compact":
             detail_record = dict(record or {})
             detail_record.setdefault("answer", text)
@@ -1788,14 +1833,7 @@ class AIAssistantDialog(QDialog):
             body = escape(text).replace("\n", "<br>")
             if role == "user" and record and isinstance(record.get("chart_attachment"), dict):
                 body += "<br>📎 " + escape(str(record["chart_attachment"].get("label", "chart")))
-        alignment = "right" if role == "user" else "left"
-        self.conversation.append(
-            f'<table width="94%" align="{alignment}" cellspacing="0" cellpadding="9" '
-            f'style="margin:8px 0 16px 0; border:1px solid {border};">'
-            f'<tr><td bgcolor="{background}" style="color:#f5f1fa;">'
-            f'<b style="color:{color};">{escape(label)}</b><br>'
-            f'<div style="line-height:1.5;">{body}</div></td></tr></table>'
-        )
+        self.conversation.append_message(role, label, body)
         scrollbar = self.conversation.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
@@ -1865,12 +1903,16 @@ class AIAssistantDialog(QDialog):
                 f"已查询 {len(response.query_evidence)} 项项目证据；详情保存在项目对话记录。"
                 if self.language_getter() != "en_US" else
                 f"Read {len(response.query_evidence)} project evidence items; recorded with the conversation.")
+        if self.state_getter() is not None and self.stage_getter() != self.current_stage:
+            QTimer.singleShot(0, lambda: self.set_stage(self.stage_getter()))
 
     def _on_failed(self, details: str) -> None:
         self._set_running(False)
         if self.request_project is not self.state_getter():
             return
         self._append_message("assistant", "请求未完成 / Request incomplete: " + details)
+        if self.state_getter() is not None and self.stage_getter() != self.current_stage:
+            QTimer.singleShot(0, lambda: self.set_stage(self.stage_getter()))
         parent = self.parent()
         if parent is not None and hasattr(parent, "ai_sidebar_status"):
             parent.ai_sidebar_status.setText(details)

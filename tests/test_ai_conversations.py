@@ -6,11 +6,12 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from neuroflow.ai_conversations import (
-    LEGACY_THREAD_ID, create_thread, ensure_threads, group_label, matching_threads,
+    LEGACY_THREAD_ID, create_thread, ensure_stage_thread, ensure_threads, group_label, matching_threads,
     load_general_conversations, record_in_thread, rename_thread,
     save_general_conversations, set_thread_group, thread_records,
 )
 from neuroflow.ai_ui import ChatComposer
+from neuroflow.chat_bubbles import BubbleChatView
 from neuroflow.ai_project_bridge import ProjectQueries
 from neuroflow.models import ProjectState
 from neuroflow.project import restore_ai_conversation, save_ai_conversation
@@ -90,3 +91,32 @@ def test_projectless_general_chat_survives_app_restart(tmp_path):
     assert restored["ai_active_thread_id"] == thread_id
     assert thread_records(restored, thread_id)[0]["answer"] == "An inter-spike interval."
     assert matching_threads(restored, "ISI")[0]["title"] == "What is an ISI"
+
+
+def test_stage_chats_are_separate_and_project_portable(tmp_path):
+    state = ProjectState(root=tmp_path)
+    import_id = ensure_stage_thread(state.metadata, "import", "01 Data")
+    record_in_thread(state.metadata, {"question": "Which format?", "answer": "Binary"}, import_id)
+    qc_id = ensure_stage_thread(state.metadata, "qc", "02 Raw QC")
+    record_in_thread(state.metadata, {"question": "Noise?", "answer": "Check RMS"}, qc_id)
+    assert [row["id"] for row in matching_threads(state.metadata, stage="import")] == [import_id]
+    assert [row["id"] for row in matching_threads(state.metadata, stage="qc")] == [qc_id]
+    assert ensure_stage_thread(state.metadata, "import", "01 Data") == import_id
+    save_ai_conversation(state)
+    reopened = ProjectState(root=tmp_path)
+    restore_ai_conversation(reopened)
+    assert ensure_stage_thread(reopened.metadata, "qc", "02 Raw QC") == qc_id
+    assert thread_records(reopened.metadata, import_id)[0]["stage"] == "import"
+
+
+def test_chat_view_uses_real_two_sided_bubbles():
+    app = QApplication.instance() or QApplication([])
+    chat = BubbleChatView()
+    chat.append_message("user", "You", "Question")
+    chat.append_message("assistant", "AI", "Answer")
+    assert [item[2].objectName() for item in chat._messages] == [
+        "ChatUserBubble", "ChatAssistantBubble",
+    ]
+    assert "Question" in chat.toPlainText() and "Answer" in chat.toPlainText()
+    chat.close()
+    app.processEvents()

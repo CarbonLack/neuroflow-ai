@@ -626,15 +626,19 @@ def test_ai_assistant_is_discoverable_and_plan_never_auto_runs(
     )
     window._refresh_ai_sidebar()
     compact_text = window.ai_sidebar_conversation.toPlainText()
-    assert "查看完整说明与依据" in compact_text
-    assert compact_text.count("这是一段默认不应挤满聊天区的说明") < 8
+    assert "本步骤尚无对话" in compact_text  # unscoped legacy chat is not mixed into this step
     window._open_ai_assistant()
     app.processEvents()
     assert window.ai_dialog is not None
     assert window.ai_dialog.isVisible()
     assert "recording.bin" not in json.dumps(window.ai_dialog._summary())
     assert window.sidebar_ai_thread_combo.count() == 1
-    legacy_thread = window.ai_dialog.current_thread_id
+    legacy_thread = next(row["id"] for row in state.metadata["ai_threads"]
+                         if row.get("group") == "earlier")
+    window.ai_dialog.all_steps_checkbox.setChecked(True)
+    window.ai_dialog.activate_thread(legacy_thread)
+    assert "查看完整说明与依据" in window.ai_dialog.conversation.toPlainText()
+    assert window.ai_dialog.conversation.toPlainText().count("这是一段默认不应挤满聊天区的说明") < 8
     window.ai_dialog._new_thread()
     assert window.ai_dialog.current_thread_id != legacy_thread
     group_index = window.ai_dialog.thread_group_combo.findData("methods")

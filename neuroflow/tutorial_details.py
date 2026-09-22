@@ -915,15 +915,18 @@ TUTORIAL_DETAILS: dict[str, dict[str, Any]] = {
     },
     "behavior": {
         "narrative": (
-            "行为分析先回答实验是否按设计执行：各条件有多少 trial、选择是否平衡、"
-            "反应时是否合理、缺失和排除发生在哪里。只有行为结构可靠，神经响应和"
-            "机器学习标签才有可解释含义。"
+            "本页先展示行为谱，不要求每项实验都具备复杂行为模型。第一张按动物分行，"
+            "第二张按所选动物的行为类型分行；颜色表示事件类型，细线表示瞬时事件，"
+            "成对开启/关闭事件显示为持续区间。可调整起点与时间尺度。若项目只含一只动物，"
+            "第一张也只显示一行；不会把其他项目假装合并。原有条件与反应时分析保留为可选视图。"
         ),
         "narrative_en": (
-            "Behavior analysis first asks whether the experiment ran as designed: "
-            "trial counts per condition, choice balance, reaction times, missing values, "
-            "and exclusions. Neural responses and machine-learning labels become "
-            "interpretable only after behavior structure is reliable."
+            "This page starts with behavior spectra, without requiring a complex behavior model. "
+            "The first view has one row per animal; the second has one row per behavior "
+            "for the selected animal. Colors encode event families; ticks are instantaneous "
+            "events and paired on/off events are spans. Adjust start and time scale. "
+            "A one-animal project shows only one animal; other projects are not silently merged. "
+            "Older condition and reaction-time summaries remain optional."
         ),
         "before": "同步页已生成统一秒时间和 trial 表，并明确 trial 开始、事件和结束。",
         "before_en": "The synchronization page has produced a common timeline and trial table with start, event, and end definitions.",

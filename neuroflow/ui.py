@@ -72,7 +72,9 @@ from .ai_ui import (
     save_ai_preferences,
     save_ai_reading_mode,
 )
-from .ai_conversations import ensure_threads, group_label, record_in_thread, thread_records
+from .ai_conversations import (ensure_stage_thread, ensure_threads, group_label,
+                               record_in_thread, thread_records)
+from .chat_bubbles import BubbleChatView, plain_html
 from .analysis import (
     compute_unit_metrics,
     event_aligned_analysis,
@@ -120,7 +122,9 @@ from .ephys_toolkit import (
 )
 from .figure_studio import FigureStudioDialog
 from .figures import (
+    behavior_animal_ids,
     behavior_figure,
+    behavior_spectrum_figure,
     connectivity_figure,
     decoding_figure,
     event_analysis_figure,
@@ -3573,10 +3577,28 @@ class PipelineWorker(QThread):
                 ),
             )
         elif key == "behavior":
+            from .figures import behavior_spectrum_figure
+            behavior_root = self.state.root / "results" / "behavior"
+            behavior_root.mkdir(parents=True, exist_ok=True)
+            exported = []
+            for view, name in (("animals", "behavior_spectrum_animals"),
+                               ("behaviors", "behavior_spectrum_by_behavior")):
+                figure = behavior_spectrum_figure(self.state, layout=view)
+                for suffix in ("png", "svg"):
+                    destination = behavior_root / f"{name}.{suffix}"
+                    figure.savefig(destination, dpi=240 if suffix == "png" else None,
+                                   bbox_inches="tight")
+                    exported.append(str(destination.relative_to(self.state.root)))
             self.state.metadata["behavior_analysis"] = {
                 "status": "completed",
                 "event_count": len(self.state.events),
                 "trial_count": len(self.state.trials),
+                "figures": exported,
+                "interpretation": (
+                    "Each tick is a recorded behavior event; paired on/off events are spans. "
+                    "Rows are animals in the first figure and event families for one animal "
+                    "in the second. This is descriptive timing, not evidence of a neural effect."
+                ),
                 "trial_definition": self.state.metadata.get(
                     "trial_definition",
                     {
@@ -3818,6 +3840,7 @@ class NeuroFlowWindow(QMainWindow):
         self.guide_seen_steps = {
             value for value in seen_value.split(",") if value in STEP_TUTORIAL
         }
+        self._welcome_guide_checked_this_run = False
         self.ai_dialog: AIAssistantDialog | None = None
         self.tutorial_dialog: TutorialDialog | None = None
         self.step_buttons: dict[str, QPushButton] = {}
@@ -3840,6 +3863,42 @@ class NeuroFlowWindow(QMainWindow):
         self._register_help_controls()
         QApplication.instance().installEventFilter(self)
         self._apply_language()
+
+    def showEvent(self, event) -> None:  # noqa: N802 - Qt API
+        super().showEvent(event)
+        if not self._welcome_guide_checked_this_run:
+            self._welcome_guide_checked_this_run = True
+            QTimer.singleShot(0, self._offer_first_launch_guide)
+
+    def _offer_first_launch_guide(self) -> None:
+        if (QApplication.platformName().lower() == "offscreen"
+                or self.settings.value("guidance/first_launch_completed", False, type=bool)):
+            return
+        english = self.language == "en_US"
+        prompt = QMessageBox(self)
+        prompt.setWindowTitle("Learn NeuroEphys AI" if english else "开始使用 NeuroEphys AI")
+        prompt.setText(
+            "Would you like a step-by-step tour? Each of the 11 analysis steps has its own guide."
+            if english else "要从第 1 步开始学习吗？11 个分析步骤各有一份可随时重开的引导。"
+        )
+        prompt.setInformativeText(
+            "Later: Help → Current step guide (F1), or Help → Reset beginner guides."
+            if english else "以后可从“帮助 → 当前步骤新手引导”（F1）打开；也可在“帮助 → 重置新手引导”重新开启自动提示。"
+        )
+        start = prompt.addButton("Start guided tour" if english else "开始分步学习", QMessageBox.AcceptRole)
+        prompt.addButton("Later" if english else "稍后再说", QMessageBox.RejectRole)
+        opt_out = QCheckBox("Do not remind me again" if english else "不再提醒我", prompt)
+        prompt.setCheckBox(opt_out)
+        prompt.exec()
+        if opt_out.isChecked():
+            self.auto_stage_guides = False
+            self.settings.setValue("guidance/auto_stage_guides", False)
+            self.menu_auto_guides_action.setChecked(False)
+            self.settings.setValue("guidance/first_launch_completed", True)
+        elif prompt.clickedButton() is start:
+            self.settings.setValue("guidance/first_launch_completed", True)
+        if prompt.clickedButton() is start:
+            self._show_stage_guide()
 
     def _build_menu_bar(self) -> None:
         menu_bar = self.menuBar()
@@ -4670,6 +4729,35 @@ class NeuroFlowWindow(QMainWindow):
         self.sync_workbench.setVisible(False)
         layout.addWidget(self.sync_workbench)
 
+        self.behavior_controls = QFrame()
+        self.behavior_controls.setObjectName("SortingWorkbench")
+        behavior_row = QHBoxLayout(self.behavior_controls)
+        behavior_row.setContentsMargins(12, 8, 12, 8)
+        self.behavior_start_label = QLabel("起点 (s)")
+        behavior_row.addWidget(self.behavior_start_label)
+        self.behavior_start = QDoubleSpinBox()
+        self.behavior_start.setRange(0, 1_000_000)
+        self.behavior_start.setDecimals(1)
+        self.behavior_start.setSingleStep(10)
+        self.behavior_start.valueChanged.connect(self._refresh_figure)
+        behavior_row.addWidget(self.behavior_start)
+        self.behavior_window_label = QLabel("时间尺度")
+        behavior_row.addWidget(self.behavior_window_label)
+        self.behavior_window = QComboBox()
+        for label, seconds in (("全程", 0), ("10 s", 10), ("30 s", 30),
+                               ("1 min", 60), ("5 min", 300), ("20 min", 1200)):
+            self.behavior_window.addItem(label, seconds)
+        self.behavior_window.currentIndexChanged.connect(self._refresh_figure)
+        behavior_row.addWidget(self.behavior_window)
+        self.behavior_animal_label = QLabel("动物")
+        behavior_row.addWidget(self.behavior_animal_label)
+        self.behavior_animal = QComboBox()
+        self.behavior_animal.currentIndexChanged.connect(self._refresh_figure)
+        behavior_row.addWidget(self.behavior_animal)
+        behavior_row.addStretch()
+        self.behavior_controls.setVisible(False)
+        layout.addWidget(self.behavior_controls)
+
         self.plot_tools_toggle = QPushButton("图表工具  ▸")
         self.plot_tools_toggle.setObjectName("Quiet")
         self.plot_tools_toggle.setCheckable(True)
@@ -4873,6 +4961,10 @@ class NeuroFlowWindow(QMainWindow):
         self.ai_context_label.setObjectName("Muted")
         self.ai_context_label.setWordWrap(True)
         ai_layout.addWidget(self.ai_context_label)
+        self.sidebar_ai_manual_button = QPushButton("AI 使用教程 ↗")
+        self.sidebar_ai_manual_button.setFlat(True)
+        self.sidebar_ai_manual_button.clicked.connect(self._open_ai_documentation)
+        ai_layout.addWidget(self.sidebar_ai_manual_button)
         ai_thread_row = QHBoxLayout()
         self.sidebar_ai_thread_combo = QComboBox()
         self.sidebar_ai_thread_combo.setMinimumWidth(100)
@@ -4897,8 +4989,7 @@ class NeuroFlowWindow(QMainWindow):
         ai_quick_row.addWidget(self.sidebar_ai_review_button)
         ai_quick_row.addWidget(self.sidebar_ai_plan_button)
         ai_layout.addLayout(ai_quick_row)
-        self.ai_sidebar_conversation = QTextBrowser()
-        self.ai_sidebar_conversation.setOpenExternalLinks(False)
+        self.ai_sidebar_conversation = BubbleChatView()
         self.ai_sidebar_conversation.anchorClicked.connect(
             self._open_sidebar_response_detail
         )
@@ -5335,6 +5426,10 @@ class NeuroFlowWindow(QMainWindow):
         self.metric_channels.label_widget.setText(tr("channels", language))
         self.metric_duration.label_widget.setText(tr("duration", language))
         self.metric_units.label_widget.setText(tr("units", language))
+        self.behavior_start_label.setText("Start (s)" if language == "en_US" else "起点 (s)")
+        self.behavior_window_label.setText("Time scale" if language == "en_US" else "时间尺度")
+        self.behavior_animal_label.setText("Animal" if language == "en_US" else "动物")
+        self.behavior_window.setItemText(0, "Full" if language == "en_US" else "全程")
         self.assistant_title.setText(
             "Assistant"
             if language == "en_US"
@@ -5348,6 +5443,9 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.sidebar_ai_settings_button.setText(
             "Settings" if language == "en_US" else "设置"
+        )
+        self.sidebar_ai_manual_button.setText(
+            "AI guide ↗" if language == "en_US" else "AI 使用教程 ↗"
         )
         self.sidebar_ai_new_chat_button.setText("New" if language == "en_US" else "新对话")
         self.sidebar_ai_find_chat_button.setText("Find" if language == "en_US" else "查找")
@@ -6425,6 +6523,7 @@ class NeuroFlowWindow(QMainWindow):
         self.auto_stage_guides = True
         self.settings.setValue("guidance/seen_steps", "")
         self.settings.setValue("guidance/auto_stage_guides", True)
+        self.settings.setValue("guidance/first_launch_completed", False)
         self.menu_auto_guides_action.setChecked(True)
         QMessageBox.information(
             self,
@@ -6465,7 +6564,9 @@ class NeuroFlowWindow(QMainWindow):
         self.status_label.setVisible(footer_room)
         self.run_context_label.setVisible(footer_room)
         self.stage_position_label.setVisible(width >= 610)
-        self.stage_guide_button.setVisible(width >= 560)
+        # Keep a visible way back to the tutorial even when the AI panel is open
+        # and the middle column has become narrow.
+        self.stage_guide_button.setVisible(True)
         self.page_subtitle.setVisible(width >= 680)
         self.stage_progress.setVisible(width >= 610)
 
@@ -6583,6 +6684,16 @@ class NeuroFlowWindow(QMainWindow):
             )
             for label, value in views:
                 self.option_combo.addItem(label, value)
+        elif key == "behavior":
+            self.option_combo.addItem(
+                "行为谱 · 每只动物一行" if self.language == "zh_CN" else
+                "Behavior spectrum · animals", "spectrum:animals")
+            self.option_combo.addItem(
+                "行为谱 · 单只动物各类行为" if self.language == "zh_CN" else
+                "Behavior spectrum · behaviors", "spectrum:behaviors")
+            self.option_combo.addItem(
+                "其他行为统计与任务曲线" if self.language == "zh_CN" else
+                "Other behavior summaries", "summary")
         elif key == "analysis" and self.state:
             self.option_combo.addItem(
                 (
@@ -6666,6 +6777,19 @@ class NeuroFlowWindow(QMainWindow):
                 self.state.sorting_comparison if self.state else {},
             )
         self.trace_controls.setVisible(key in {"import", "qc"})
+        self.behavior_controls.setVisible(key == "behavior")
+        if key == "behavior" and self.state:
+            current_animal = self.behavior_animal.currentText()
+            self.behavior_animal.blockSignals(True)
+            self.behavior_animal.clear()
+            self.behavior_animal.addItems(behavior_animal_ids(self.state))
+            if current_animal:
+                self.behavior_animal.setCurrentIndex(max(0, self.behavior_animal.findText(current_animal)))
+            self.behavior_animal.blockSignals(False)
+            self.behavior_start.setMaximum(max(0.0, float(self.state.duration_seconds or 0)))
+        show_animal = key == "behavior" and str(self.option_combo.currentData()) == "spectrum:behaviors"
+        self.behavior_animal.setVisible(show_animal)
+        self.behavior_animal_label.setVisible(show_animal)
         self.option_combo.setVisible(key != "sorting" and self.option_combo.count() > 0)
         self.run_step_button.setText(
             (
@@ -6680,6 +6804,8 @@ class NeuroFlowWindow(QMainWindow):
         self._update_run_context()
         self._update_page_option_help()
         self._refresh_unit_curation_summary()
+        if self.ai_dialog is not None:
+            self.ai_dialog.set_stage(key)
         self._refresh_ai_sidebar()
         self._refresh_figure()
         self._refresh_table()
@@ -6761,6 +6887,10 @@ class NeuroFlowWindow(QMainWindow):
         )
 
     def _on_option_changed(self) -> None:
+        if self.current_step == "behavior":
+            show_animal = str(self.option_combo.currentData()) == "spectrum:behaviors"
+            self.behavior_animal.setVisible(show_animal)
+            self.behavior_animal_label.setVisible(show_animal)
         self._update_run_context()
         self._update_page_option_help()
         self._refresh_ai_sidebar()
@@ -7024,7 +7154,16 @@ class NeuroFlowWindow(QMainWindow):
         elif key == "sync":
             figure = synchronization_figure(self.state)
         elif key == "behavior":
-            figure = behavior_figure(self.state)
+            if option.startswith("spectrum:"):
+                figure = behavior_spectrum_figure(
+                    self.state,
+                    layout=option.partition(":")[2],
+                    animal_id=self.behavior_animal.currentText(),
+                    start_seconds=self.behavior_start.value(),
+                    window_seconds=float(self.behavior_window.currentData() or 0),
+                )
+            else:
+                figure = behavior_figure(self.state)
         elif key == "analysis" and (
             (option == "complete" and self.state.analysis)
             or (option.startswith("event:") and self.state.analysis)
@@ -7761,7 +7900,16 @@ class NeuroFlowWindow(QMainWindow):
                 )
                 self.sidebar_ai_thread_combo.blockSignals(False)
                 if ephemeral.get("ai_history"):
-                    self.ai_sidebar_conversation.setHtml(self.ai_dialog.conversation.toHtml())
+                    self.ai_sidebar_conversation.clear()
+                    for record in thread_records(ephemeral, self.ai_dialog.current_thread_id)[-5:]:
+                        question = str(record.get("question", "")).strip()
+                        answer = str(record.get("answer", "")).strip()
+                        if question:
+                            self.ai_sidebar_conversation.append_message(
+                                "user", "You" if english else "你", plain_html(question))
+                        if answer:
+                            self.ai_sidebar_conversation.append_message(
+                                "assistant", "NeuroEphys AI", plain_html(answer))
                     return
             self.ai_sidebar_conversation.setHtml(
                 (
@@ -7809,14 +7957,12 @@ class NeuroFlowWindow(QMainWindow):
                 )
             )
         )
-        threads = ensure_threads(self.state.metadata)
-        selected_thread = (
-            self.ai_dialog.current_thread_id
-            if self.ai_dialog is not None and self.ai_dialog.loaded_project_token == str(self.state.root)
-            else str(self.state.metadata.get("ai_active_thread_id", ""))
+        selected_thread = ensure_stage_thread(
+            self.state.metadata, self.current_step,
+            step_text(self.current_step, self.language)[0],
         )
-        if selected_thread not in {str(row["id"]) for row in threads}:
-            selected_thread = str(threads[-1]["id"])
+        threads = [row for row in ensure_threads(self.state.metadata)
+                   if row.get("stage") == self.current_step]
         self.sidebar_ai_thread_combo.blockSignals(True)
         self.sidebar_ai_thread_combo.clear()
         for row in reversed(threads):
@@ -7835,22 +7981,17 @@ class NeuroFlowWindow(QMainWindow):
             if record.get("thread_id") == selected_thread
         ][-5:]
         if visible_history:
-            blocks = []
+            self.ai_sidebar_conversation.clear()
             reading_mode = load_ai_reading_mode()
             for record_index, record in visible_history:
-                question = escape(str(record.get("question", "")).strip())
+                question = str(record.get("question", "")).strip()
                 answer_text = str(record.get("answer", "")).strip()
                 if question:
-                    blocks.append(
-                        (
-                            '<div class="message user"><b>You</b><br>'
-                            if english
-                            else '<div class="message user"><b>你</b><br>'
-                        )
-                        + question.replace("\n", "<br>")
-                        + ("<br>📎 " + escape(str(record["chart_attachment"].get("label", "chart")))
-                           if isinstance(record.get("chart_attachment"), dict) else "")
-                        + "</div>"
+                    image_label = (str(record["chart_attachment"].get("label", "chart"))
+                                   if isinstance(record.get("chart_attachment"), dict) else "")
+                    self.ai_sidebar_conversation.append_message(
+                        "user", "You" if english else "你",
+                        plain_html(question) + ("<br>📎 " + escape(image_label) if image_label else ""),
                     )
                 if answer_text:
                     if reading_mode == "compact":
@@ -7873,45 +8014,17 @@ class NeuroFlowWindow(QMainWindow):
                         )
                     else:
                         answer_html = full_response_html(record, self.language)
-                    blocks.append(
-                        '<div class="message assistant"><b>NeuroEphys AI</b><br>'
-                        + answer_html
-                        + "</div>"
+                    self.ai_sidebar_conversation.append_message(
+                        "assistant", "NeuroEphys AI", answer_html,
                     )
-            self.ai_sidebar_conversation.setHtml(
-                """
-                <style>
-                  body { color:#f6f2fa; font-family:'Segoe UI'; }
-                  .message { margin:10px 2px 16px; padding:11px 12px; border-radius:7px; line-height:1.45; }
-                  .user { background:#34253e; border:1px solid #a56cba; margin-left:20px; }
-                  .assistant { background:#201d2b; border:1px solid #547b6b; margin-right:20px; }
-                  .user b { color:#e1b5ed; }
-                  .assistant b { color:#a9dfc5; }
-                  .answer-lead { font-size:15px; font-weight:600; margin:7px 0; }
-                  .answer-points { margin:7px 0 7px 17px; padding:0; }
-                  .answer-points li { margin:4px 0; }
-                  .activity { color:#9edbc1; margin-top:8px; }
-                  .next { color:#e3b3ee; margin-top:8px; }
-                  .warning { color:#efc887; margin-top:8px; }
-                  .detail-link { margin-top:10px; }
-                  .detail-link a { color:#d58be8; text-decoration:none; }
-                </style>
-                """
-                + "".join(blocks)
-            )
             scroll = self.ai_sidebar_conversation.verticalScrollBar()
             scroll.setValue(scroll.maximum())
         else:
             self.ai_sidebar_conversation.setHtml(
                 (
-                    "<p><b>No conversation yet.</b></p><p>Ask about the current "
-                    "recording, a parameter, an error, or the next evidence-producing "
-                    "step.</p>"
+                    "No conversation for this step yet. Ask about its data, chart, methods, or next action."
                     if english
-                    else (
-                        "<p><b>尚无对话。</b></p><p>可以询问当前记录、参数、"
-                        "报错，或下一项能够产生证据的分析步骤。</p>"
-                    )
+                    else "本步骤尚无对话。可询问本步的数据、图、方法或下一步。"
                 )
             )
 
@@ -8039,6 +8152,8 @@ class NeuroFlowWindow(QMainWindow):
         if not question:
             return
         dialog = self._ensure_ai_dialog()
+        if dialog.worker is not None and dialog.worker.isRunning():
+            return
         dialog.question_edit.setPlainText(question)
         self.ai_sidebar_status.setText(
             "Waiting for the configured provider..."
@@ -8046,7 +8161,22 @@ class NeuroFlowWindow(QMainWindow):
             else "正在等待已配置的模型服务……"
         )
         dialog._submit("ask")
-        self.ai_sidebar_question.clear()
+        if dialog.worker is not None and dialog.worker.isRunning():
+            self.ai_sidebar_conversation.append_message(
+                "user", "You" if self.language == "en_US" else "你", plain_html(question))
+            self.ai_sidebar_conversation.append_message(
+                "assistant", "NeuroEphys AI",
+                "Reading the current step…" if self.language == "en_US" else "正在读取本步骤……")
+            dialog.worker.failed.connect(self._sidebar_ai_failed)
+            self.ai_sidebar_question.clear()
+
+    def _sidebar_ai_failed(self, details: str) -> None:
+        self._refresh_ai_sidebar()
+        self.ai_sidebar_conversation.append_message(
+            "assistant", "NeuroEphys AI",
+            plain_html(("Request failed: " if self.language == "en_US" else "请求未完成：")
+                       + details[:500]),
+        )
 
     def _sidebar_ai_quick(self, task: str) -> None:
         dialog = self._ensure_ai_dialog()

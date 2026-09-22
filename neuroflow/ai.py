@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import base64
 import ipaddress
 import re
 import ssl
@@ -1380,8 +1381,14 @@ def request_ai_advice(
     project_queries=None,
     image_png: bytes | None = None,
 ) -> AIResponse:
-    if image_png is not None and settings.provider != "harness_sdk":
-        raise ValueError("Chart vision currently requires the DeepSeek Harness SDK provider.")
+    if image_png is not None:
+        if settings.provider not in {"harness_sdk", "openai_compatible", "openai_responses"}:
+            raise AIConfigurationError(
+                "Chart input is available for Harness SDK, OpenAI-compatible Chat, "
+                "and OpenAI Responses connections. Select a vision-capable model."
+            )
+        if not image_png.startswith(b"\x89PNG\r\n\x1a\n") or len(image_png) > 6_000_000:
+            raise ValueError("Chart attachment must be a valid PNG smaller than 6 MB.")
     if not settings.configured:
         raise AIConfigurationError(
             "Configure an endpoint, model, and API key before using cloud AI."
@@ -1396,7 +1403,18 @@ def request_ai_advice(
         task,
         settings.ai_mode,
     )
+    instructions += (
+        "\nA chart PNG is attached to this request. Describe only what is visibly "
+        "supported, distinguish visual impressions from exact project metrics, "
+        "and acknowledge unreadable labels or uncertain trends."
+        if image_png is not None else
+        "\nNo chart pixels are attached. Do not claim to have visually inspected a figure."
+    )
     user_input = build_user_input(question, cloud_context, history)
+    image_data_url = (
+        "data:image/png;base64," + base64.b64encode(image_png).decode("ascii")
+        if image_png is not None and settings.provider != "harness_sdk" else None
+    )
 
     if settings.provider == "harness_sdk":
         from .harness_sdk import request_harness_sdk
@@ -1446,7 +1464,11 @@ def request_ai_advice(
         payload: dict[str, Any] = {
             "model": settings.model,
             "instructions": instructions,
-            "input": [{"role": "user", "content": user_input}],
+            "input": [{"role": "user", "content": (
+                [{"type": "input_text", "text": user_input},
+                 {"type": "input_image", "image_url": image_data_url}]
+                if image_data_url else user_input
+            )}],
             "store": False,
             "reasoning": {"effort": settings.reasoning_effort},
             "text": {
@@ -1487,11 +1509,20 @@ def request_ai_advice(
             "model": settings.model,
             "messages": [
                 {"role": "system", "content": instructions},
-                {"role": "user", "content": user_input},
+                {"role": "user", "content": (
+                    [{"type": "text", "text": user_input},
+                     {"type": "image_url", "image_url": {"url": image_data_url}}]
+                    if image_data_url else user_input
+                )},
             ],
             "response_format": {"type": "json_object"},
             "temperature": 0.2,
         }
+        if image_data_url and settings.provider == "openai_compatible":
+            # Compatible gateways vary in structured-output support for vision.
+            # The response parser accepts prose as well as JSON; do not reject an
+            # otherwise valid image request just to force response_format.
+            payload.pop("response_format")
         if settings.provider == "deepseek":
             thinking_enabled = settings.reasoning_effort != "none"
             payload["thinking"] = {

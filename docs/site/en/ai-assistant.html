@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=28d163b9"></script>
+      <script src="_static/documentation_options.js?v=e358f374"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -91,7 +91,7 @@
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#compare-sorting-results">Compare sorting results</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#review-and-label-units">Review and label units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#align-behavior-to-the-recording">Align behavior to the recording</a></li>
-<li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-behavior-and-trials">Inspect behavior and trials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-behavior-spectra-and-available-trials">Inspect behavior spectra and available trials</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#choose-a-neural-analysis">Choose a neural analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#compare-population-responses">Compare population responses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-fine-spike-timing">Inspect fine spike timing</a></li>
@@ -225,7 +225,7 @@
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#shared-clock-assumption">06 · Shared-clock assumption</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#inspect-behavior-and-trials">Inspect behavior and trials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#inspect-behavior-spectra-and-available-trials">Inspect behavior spectra and available trials</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#condition-column">07 · Condition column</a></li>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#reaction-time-start-end">07 · Reaction-time start/end</a></li>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#minimum-trials">07 · Minimum trials</a></li>
@@ -337,11 +337,15 @@ tables through a local MCP interface, with evidence values and snapshot identifi
 Try: “Query unit 25’s SNR and ISI violation rate and explain the limitations.”
 By default, chart metadata is not image-pixel access; raw voltage is not sent by
 the project-query interface.</p>
-<p>Chats are project-specific and can be assigned to Project, Figures, Methods, General,
+<p>Chats are project-specific and separated by the 11 workflow steps. Switching steps
+shows that step’s own conversation; each step can have several named threads.
+Chats can be assigned to Project, Figures, Methods, General,
 or Earlier groups in the expanded chat window. A new chart-interpretation thread is
 grouped under Figures automatically; users can change its group. The first question
 automatically titles a thread, and titles can be renamed. Search matches groups,
-titles and message text. This grouping is inside NeuroEphys AI; it does not alter
+titles and message text after selecting <strong>Search all steps and older chats</strong>.
+Legacy chats remain available as Earlier conversation rather than being assigned
+an invented step. This grouping is inside NeuroEphys AI; it does not alter
 the separate Harness website conversation sidebar. Older flat history is
 preserved as <strong>Earlier conversation</strong>. The current thread’s recent turns, not all
 threads mixed together, accompany each request. Threads are saved to the project’s
@@ -353,11 +357,12 @@ execution and file-system access are not granted.</p>
 <p>To let the model actually inspect the current chart, choose <strong>Chart</strong> in the right
 panel or <strong>Interpret current chart</strong> in the expanded conversation. The app renders
 only that chart to PNG in memory and displays the exact image for approval before
-sending it as an official Harness SDK image block. Image bytes are not stored in
+sending it through Harness SDK, OpenAI-compatible Chat, or OpenAI Responses.
+The configured model and service must accept image inputs; a rejection is shown
+as a failure, not a fabricated visual answer. Image bytes are not stored in
 the chat archive; only the chart label and send record are kept. A chart may show
 raw traces or labels, so check the preview. Visual impressions are not substitutes
-for numerical results. This feature currently requires the Harness SDK provider;
-other API profiles do not silently pretend to see an image.</p>
+for numerical results. Other API profiles do not silently pretend to see an image.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">NVM4306</span></code> appears, the local Node/NVM trusted launcher blocked <code class="docutils literal notranslate"><span class="pre">dsh</span></code>
 before the request reached the model. Check <code class="docutils literal notranslate"><span class="pre">dsh</span> <span class="pre">--version</span></code> and have the
 machine administrator run <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code> or repair the trusted launcher. Do not

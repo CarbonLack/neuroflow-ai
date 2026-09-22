@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import base64
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -154,6 +155,31 @@ def test_managed_harness_compact_tool_proposal_is_normalized():
         }
     ]
     assert "registered local action" in response.answer
+
+
+def test_openai_compatible_chart_is_sent_as_confirmed_image_not_text(monkeypatch):
+    captured = {}
+
+    def fake_post(_url, payload, *_args, **_kwargs):
+        captured.update(payload)
+        return {"choices": [{"message": {"content": "I can see a trace."}}]}
+
+    monkeypatch.setattr("neuroflow.ai._post_json", fake_post)
+    image = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZtS8AAAAASUVORK5CYII="
+    )
+    settings = AISettings(provider="openai_compatible", base_url="https://example.invalid/v1",
+                          model="vision-test", api_key="not-a-real-key", stream=False,
+                          mode=AIMode.ASSISTANT.value)
+    response = request_ai_advice(settings, question="Explain the visible trace", task="ask",
+                                 language="en_US", project_summary={"project_open": False},
+                                 image_png=image)
+    parts = captured["messages"][1]["content"]
+    assert parts[0]["type"] == "text"
+    assert parts[1]["type"] == "image_url"
+    assert parts[1]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert "response_format" not in captured
+    assert "I can see a trace" in response.answer
 
 
 def test_openai_responses_request_uses_schema_and_store_false():

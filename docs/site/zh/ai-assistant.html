@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=79f47a88"></script>
+      <script src="_static/documentation_options.js?v=05a6cece"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -92,7 +92,7 @@
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#sorting">横向比较两个 sorting 结果</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#unit">逐个复核 Unit 并保存判断</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-sync">把行为事件对齐到电生理时间</a></li>
-<li class="toctree-l2"><a class="reference internal" href="task-guide.html#trial">检查行为与有效 trial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task-guide.html#trial">查看行为谱与可用 trial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-analysis">选择神经分析与事件响应</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#pca">比较群体响应与 PCA 轨迹</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#task-connectivity">检查毫秒级时序关系</a></li>
@@ -228,7 +228,7 @@
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#shared-clock-assumption">06 · Shared-clock assumption</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#trial">检查行为与有效 trial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#trial">查看行为谱与可用 trial</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#condition-column">07 · Condition column</a></li>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#reaction-time-start-end">07 · Reaction-time start/end</a></li>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#minimum-trials">07 · Minimum trials</a></li>
@@ -337,18 +337,22 @@ Harness 须单独安装并完成账号配置，参考 <a class="reference extern
 查询证据；不是只读取固定摘要。默认图表信息不等于截图像素，原始电压不经此查询接口发送。</p>
 <p>例如：“查询 unit_id=25 的 SNR 和 ISI 违规率，解释这些证据是否足够。”
 或：“回顾这个项目里我们之前关于同步误差的讨论。”每个项目的对话独立保存，
-并可在展开窗口按“项目分析、图表解读、方法问答、通用问题、早期对话”分类；
+并按左侧 11 个分析步骤分别显示；切换步骤时右侧自动进入本步骤对话。
+每个步骤可再开多个话题。展开窗口可按“项目分析、图表解读、方法问答、通用问题、早期对话”分类；
 新会话默认归入项目分析，用当前图发起的新会话自动归入图表解读，分类可手动更改。
-首问自动命名，也可重命名；搜索覆盖分类、标题和问答正文。旧版记录保留在“早期对话”。
+首问自动命名，也可重命名；勾选“跨步骤查找及查看旧对话”后可搜索全部分类、标题和问答正文。
+旧版记录保留在“早期对话”，不强行归入某个步骤。
 此分类只作用于 NeuroEphys AI 项目内的对话，不会更改外部 Harness 网页的“未分组”。
 每次只把当前会话的近期内容带入模型。会话存入项目 <code class="docutils literal notranslate"><span class="pre">ai/conversation.json</span></code>，
 重开项目仍可读取。新功能须注册工具及参数权限，
 AI 不会因此获得任意代码或文件访问权限。分析提案经用户确认后才运行。</p>
 <p>需要 AI <strong>真正看图</strong> 时，点击右侧“解读图”或展开窗口的“解读当前图”。App 在内存中
-渲染当前图为 PNG，先显示与发送内容一致的预览；只有确认后才经官方 Harness SDK 的
-图像消息块发送。模型应区分可见趋势和项目计算出的准确数值。对话档案只保存图名和
+渲染当前图为 PNG，先显示与发送内容一致的预览；只有确认后才通过当前配置的
+Harness SDK、OpenAI-compatible Chat 或 OpenAI Responses 图像消息发送。
+所选模型与服务仍须支持图像输入；若服务拒绝，App 显示失败而不假装读图成功。
+模型应区分可见趋势和项目计算出的准确数值。对话档案只保存图名和
 发送记录，不保存 PNG 字节。若当前图含波形、文字或标签，预览时请自行检查。
-普通兼容 API Provider 暂不支持此入口，不会假装模型已经看到图。此能力也不授予
+其他未适配 Provider 不会假装模型已经看到图。此能力也不授予
 Harness 任意文件读取权限。</p>
 <p>如果提示 <code class="docutils literal notranslate"><span class="pre">NVM4306</span></code>，本机 Node/NVM 安全启动器已拦截 <code class="docutils literal notranslate"><span class="pre">dsh</span></code>，请求并未到达模型。
 先在终端运行 <code class="docutils literal notranslate"><span class="pre">dsh</span> <span class="pre">--version</span></code> 核对，再按 NVM 提示由管理员执行 <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code>

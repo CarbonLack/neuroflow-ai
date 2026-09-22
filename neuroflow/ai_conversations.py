@@ -101,13 +101,15 @@ def ensure_threads(metadata: dict[str, Any]) -> list[dict[str, Any]]:
     return threads
 
 
-def create_thread(metadata: dict[str, Any], title: str = "", group: str = "project") -> str:
+def create_thread(metadata: dict[str, Any], title: str = "", group: str = "project",
+                  stage: str = "") -> str:
     if group not in THREAD_GROUPS:
         raise ValueError("Unknown AI conversation group")
     threads = metadata.setdefault("ai_threads", [])
     thread_id = "chat-" + uuid.uuid4().hex
     threads.append({"id": thread_id, "title": title.strip()[:80] or "New conversation",
                     "created_at": _now(), "group": group,
+                    "stage": stage,
                     "automatic_title": not bool(title.strip())})
     return thread_id
 
@@ -140,6 +142,8 @@ def record_in_thread(metadata: dict[str, Any], record: dict[str, Any], thread_id
     if thread is None:
         raise ValueError("Unknown AI conversation thread")
     record["thread_id"] = thread_id
+    if thread.get("stage"):
+        record["stage"] = thread["stage"]
     metadata.setdefault("ai_history", []).append(record)
     if thread.get("automatic_title"):
         thread["title"] = title_from_question(str(record.get("question", "")))
@@ -151,10 +155,13 @@ def thread_records(metadata: dict[str, Any], thread_id: str) -> list[dict[str, A
             if isinstance(row, dict) and row.get("thread_id", LEGACY_THREAD_ID) == thread_id]
 
 
-def matching_threads(metadata: dict[str, Any], query: str = "") -> list[dict[str, Any]]:
+def matching_threads(metadata: dict[str, Any], query: str = "",
+                     stage: str | None = None) -> list[dict[str, Any]]:
     words = re.findall(r"\w+", query.casefold())
     matches = []
     for thread in ensure_threads(metadata):
+        if stage is not None and thread.get("stage") != stage:
+            continue
         rows = thread_records(metadata, str(thread["id"]))
         haystack = " ".join([str(thread.get("title", "")),
                              group_label(str(thread.get("group", "project"))),
@@ -166,3 +173,27 @@ def matching_threads(metadata: dict[str, Any], query: str = "") -> list[dict[str
             matches.append(thread)
     newest_first = list(reversed(matches))
     return sorted(newest_first, key=lambda row: THREAD_GROUPS.index(str(row.get("group", "project"))))
+
+
+def ensure_stage_thread(metadata: dict[str, Any], stage: str, title: str) -> str:
+    """Return the selected conversation for a workflow stage, creating its first one."""
+    threads = ensure_threads(metadata)
+    candidates = [row for row in threads if row.get("stage") == stage]
+    active = metadata.setdefault("ai_active_thread_by_stage", {})
+    if not isinstance(active, dict):
+        active = {}
+        metadata["ai_active_thread_by_stage"] = active
+    preferred = str(active.get(stage, ""))
+    if any(row["id"] == preferred for row in candidates):
+        return preferred
+    if candidates:
+        chosen = str(candidates[-1]["id"])
+    elif (len(threads) == 1 and not metadata.get("ai_history")
+          and not threads[0].get("stage") and threads[0].get("automatic_title")):
+        threads[0]["stage"] = stage
+        threads[0]["title"] = title
+        chosen = str(threads[0]["id"])
+    else:
+        chosen = create_thread(metadata, title=title, stage=stage)
+    active[stage] = chosen
+    return chosen

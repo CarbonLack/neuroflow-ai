@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/parameter-reference.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=28d163b9"></script>
+      <script src="_static/documentation_options.js?v=e358f374"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -91,7 +91,7 @@
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#compare-sorting-results">Compare sorting results</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#review-and-label-units">Review and label units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#align-behavior-to-the-recording">Align behavior to the recording</a></li>
-<li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-behavior-and-trials">Inspect behavior and trials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-behavior-spectra-and-available-trials">Inspect behavior spectra and available trials</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#choose-a-neural-analysis">Choose a neural analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#compare-population-responses">Compare population responses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="task-guide.html#inspect-fine-spike-timing">Inspect fine spike timing</a></li>
@@ -225,7 +225,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#shared-clock-assumption">06 · Shared-clock assumption</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#inspect-behavior-and-trials">Inspect behavior and trials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#inspect-behavior-spectra-and-available-trials">Inspect behavior spectra and available trials</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#condition-column">07 · Condition column</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#reaction-time-start-end">07 · Reaction-time start/end</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#minimum-trials">07 · Minimum trials</a></li>
@@ -681,14 +681,14 @@
 <p><strong>Effect:</strong> Cannot detect offset or drift; the limitation must appear in the report.</p>
 </section>
 </section>
-<section id="inspect-behavior-and-trials">
-<h2>Inspect behavior and trials<a class="headerlink" href="#inspect-behavior-and-trials" title="Link to this heading"></a></h2>
+<section id="inspect-behavior-spectra-and-available-trials">
+<h2>Inspect behavior spectra and available trials<a class="headerlink" href="#inspect-behavior-spectra-and-available-trials" title="Link to this heading"></a></h2>
 <p>Check behavioral completeness before choosing conditions for neural comparisons.</p>
 <p><strong>Have ready</strong></p>
 <p>Imported behavior events. Reaction time, choice, and psychometrics require their corresponding trial fields.</p>
 <ol class="arabic">
-<li><p><strong>Generate the summary</strong></p>
-<p>Open Behavior analysis and run this stage. Inspect event count, trial count, and the behavior plots.</p>
+<li><p><strong>Inspect both behavior spectra</strong></p>
+<p>The first chart has one row per animal; the second has one row per behavior for the selected animal. Adjust start and time scale. Without multiple animal IDs, only this project’s animal is shown; other projects are not silently merged. Run this stage to save both charts under results/behavior.</p>
 </li>
 <li><p><strong>Check conditions and sample sizes</strong></p>
 <p>Review trial counts by condition and available reaction times and choices. Check the source behavior file when samples or fields are missing.</p>

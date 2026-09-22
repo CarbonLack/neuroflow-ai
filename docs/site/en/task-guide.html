@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/task-guide.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=28d163b9"></script>
+      <script src="_static/documentation_options.js?v=e358f374"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -91,7 +91,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#compare-sorting-results">Compare sorting results</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#review-and-label-units">Review and label units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#align-behavior-to-the-recording">Align behavior to the recording</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#inspect-behavior-and-trials">Inspect behavior and trials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inspect-behavior-spectra-and-available-trials">Inspect behavior spectra and available trials</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#choose-a-neural-analysis">Choose a neural analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#compare-population-responses">Compare population responses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#inspect-fine-spike-timing">Inspect fine spike timing</a></li>
@@ -225,7 +225,7 @@
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#shared-clock-assumption">06 · Shared-clock assumption</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#inspect-behavior-and-trials">Inspect behavior and trials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#inspect-behavior-spectra-and-available-trials">Inspect behavior spectra and available trials</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#condition-column">07 · Condition column</a></li>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#reaction-time-start-end">07 · Reaction-time start/end</a></li>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#minimum-trials">07 · Minimum trials</a></li>
@@ -338,7 +338,7 @@
 <li><p><a class="reference internal" href="#compare-sorting-results" id="id8">Compare sorting results</a></p></li>
 <li><p><a class="reference internal" href="#review-and-label-units" id="id9">Review and label units</a></p></li>
 <li><p><a class="reference internal" href="#align-behavior-to-the-recording" id="id10">Align behavior to the recording</a></p></li>
-<li><p><a class="reference internal" href="#inspect-behavior-and-trials" id="id11">Inspect behavior and trials</a></p></li>
+<li><p><a class="reference internal" href="#inspect-behavior-spectra-and-available-trials" id="id11">Inspect behavior spectra and available trials</a></p></li>
 <li><p><a class="reference internal" href="#choose-a-neural-analysis" id="id12">Choose a neural analysis</a></p></li>
 <li><p><a class="reference internal" href="#compare-population-responses" id="id13">Compare population responses</a></p></li>
 <li><p><a class="reference internal" href="#inspect-fine-spike-timing" id="id14">Inspect fine spike timing</a></p></li>
@@ -585,14 +585,14 @@
 <p><strong>Events without trials</strong></p>
 <p>An event list may lack trial boundaries. Check whether the behavior file defines trials; event timing alone does not supply every behavioral measure.</p>
 </section>
-<section id="inspect-behavior-and-trials">
-<span id="task-behavior"></span><h2><a class="toc-backref" href="#id11" role="doc-backlink">Inspect behavior and trials</a><a class="headerlink" href="#inspect-behavior-and-trials" title="Link to this heading"></a></h2>
+<section id="inspect-behavior-spectra-and-available-trials">
+<span id="task-behavior"></span><h2><a class="toc-backref" href="#id11" role="doc-backlink">Inspect behavior spectra and available trials</a><a class="headerlink" href="#inspect-behavior-spectra-and-available-trials" title="Link to this heading"></a></h2>
 <p>Check behavioral completeness before choosing conditions for neural comparisons.</p>
 <p><strong>Have ready</strong></p>
 <p>Imported behavior events. Reaction time, choice, and psychometrics require their corresponding trial fields.</p>
 <ol class="arabic">
-<li><p><strong>Generate the summary</strong></p>
-<p>Open Behavior analysis and run this stage. Inspect event count, trial count, and the behavior plots.</p>
+<li><p><strong>Inspect both behavior spectra</strong></p>
+<p>The first chart has one row per animal; the second has one row per behavior for the selected animal. Adjust start and time scale. Without multiple animal IDs, only this project’s animal is shown; other projects are not silently merged. Run this stage to save both charts under results/behavior.</p>
 </li>
 <li><p><strong>Check conditions and sample sizes</strong></p>
 <p>Review trial counts by condition and available reaction times and choices. Check the source behavior file when samples or fields are missing.</p>
@@ -791,11 +791,11 @@
 <li><p><strong>Resize the columns</strong></p>
 <p>Drag the separators. Press Ctrl+B to compact the workflow rail and Ctrl+J to show or hide the right AI panel. All three columns can remain open.</p>
 </li>
-<li><p><strong>Chat by topic and find history</strong></p>
-<p>Use New chat to separate research questions; the first question names it. In the expanded window, change the Group and search by group, title or message. Enter sends; Shift+Enter adds a line.</p>
+<li><p><strong>Chat by step and find history</strong></p>
+<p>Switching a workflow step shows its own conversation. New chat starts another topic within that step and the first question names it. In the expanded window, search all steps and older chats; questions and answers are saved with the project. Enter sends; Shift+Enter adds a line.</p>
 </li>
 <li><p><strong>Let AI inspect the chart</strong></p>
-<p>Select the Harness SDK provider, choose Chart in the right panel, inspect the PNG preview and approve. AI can discuss visible trends; verify exact values in project results.</p>
+<p>Use a vision-capable Harness SDK, OpenAI-compatible Chat or OpenAI Responses model. Choose Chart, inspect and approve the PNG preview; only the current request sends pixels, while the project stores the chart label and dialogue. Unsupported models report an error rather than pretending to inspect. Verify exact values in project results.</p>
 </li>
 <li><p><strong>Use AI when needed</strong></p>
 <p>Ask about the project, app operation, or general research. App-specific steps use built-in guidance. Check cited evidence and the current stage; collaborative action proposals still require confirmation.</p>

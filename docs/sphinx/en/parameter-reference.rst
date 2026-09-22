@@ -541,7 +541,7 @@ Import settings, alignment records, events, and defined trials are stored in the
 
 **Effect:** Cannot detect offset or drift; the limitation must appear in the report.
 
-Inspect behavior and trials
+Inspect behavior spectra and available trials
 ----------------------------------------------------------------------------------------------------
 
 Check behavioral completeness before choosing conditions for neural comparisons.
@@ -550,9 +550,9 @@ Check behavioral completeness before choosing conditions for neural comparisons.
 
 Imported behavior events. Reaction time, choice, and psychometrics require their corresponding trial fields.
 
-1. **Generate the summary**
+1. **Inspect both behavior spectra**
 
-   Open Behavior analysis and run this stage. Inspect event count, trial count, and the behavior plots.
+   The first chart has one row per animal; the second has one row per behavior for the selected animal. Adjust start and time scale. Without multiple animal IDs, only this project's animal is shown; other projects are not silently merged. Run this stage to save both charts under results/behavior.
 
 2. **Check conditions and sample sizes**
 

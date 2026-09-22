@@ -1246,6 +1246,7 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
 
     from .figures import (
         behavior_figure,
+        behavior_spectrum_figure,
         connectivity_figure,
         decoding_figure,
         event_analysis_figure,
@@ -1264,6 +1265,11 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         figure_builders.append(("unit_qc", lambda: unit_metrics_figure(state)))
     if state.events or state.trials:
         figure_builders.append(("behavior", lambda: behavior_figure(state)))
+        if state.events:
+            figure_builders.extend([
+                ("behavior_spectrum_animals", lambda: behavior_spectrum_figure(state, layout="animals")),
+                ("behavior_spectrum_by_behavior", lambda: behavior_spectrum_figure(state, layout="behaviors")),
+            ])
     if state.analysis:
         figure_builders.append(
             ("raster_psth_population", lambda: event_analysis_figure(state))

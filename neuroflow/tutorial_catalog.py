@@ -237,13 +237,13 @@ TUTORIAL_CATALOG: list[dict[str, Any]] = [
         [_step("有事件但没有 trial", "Events without trials", "事件列表不一定包含明确 trial 边界。先检查行为文件是否提供 trial 定义；可用事件时间不代表行为表现指标都可计算。", "An event list may lack trial boundaries. Check whether the behavior file defines trials; event timing alone does not supply every behavioral measure.")],
     ),
     _guide(
-        "behavior", "检查行为与有效 trial", "Inspect behavior and trials", ANALYSE, "behavior",
+        "behavior", "查看行为谱与可用 trial", "Inspect behavior spectra and available trials", ANALYSE, "behavior",
         "先确认行为数据是否完整，再判断哪些条件适合做神经比较。",
         "Check behavioral completeness before choosing conditions for neural comparisons.",
         "已导入行为事件；反应时、选择和心理测量分析需要对应 trial 字段。",
         "Imported behavior events. Reaction time, choice, and psychometrics require their corresponding trial fields.",
         [
-            _step("生成行为摘要", "Generate the summary", "打开“行为分析”，运行本步骤。查看当前事件数、trial 数和行为图。", "Open Behavior analysis and run this stage. Inspect event count, trial count, and the behavior plots."),
+            _step("查看两种行为谱", "Inspect both behavior spectra", "第一张图每只动物一行；第二张图将所选动物的行为类型分行。时间尺度和起点可调整。没有多动物标识时只显示当前项目的一只动物，不会凭空合并其他项目。运行本步骤可把两张图保存到 results/behavior。", "The first chart has one row per animal; the second has one row per behavior for the selected animal. Adjust start and time scale. Without multiple animal IDs, only this project's animal is shown; other projects are not silently merged. Run this stage to save both charts under results/behavior."),
             _step("核对条件和样本数", "Check conditions and sample sizes", "查看各条件的 trial 数、可用反应时和选择。样本太少或字段缺失时，先检查原始行为文件。", "Review trial counts by condition and available reaction times and choices. Check the source behavior file when samples or fields are missing."),
             _step("再选择神经分析", "Choose the neural analysis", "确认需要对齐的事件和要比较的条件后，进入“神经活动”。", "After identifying the alignment event and conditions, continue to Neural activity."),
         ],
@@ -388,8 +388,8 @@ TUTORIAL_CATALOG: list[dict[str, Any]] = [
         "Open a project to arrange the three columns. Online AI requires a configured service in AI settings.",
         [
             _step("调整三栏宽度", "Resize the columns", "拖动栏间分隔线。按 Ctrl+B 缩略左侧流程，按 Ctrl+J 显示或关闭右侧 AI。三栏可以同时保留。", "Drag the separators. Press Ctrl+B to compact the workflow rail and Ctrl+J to show or hide the right AI panel. All three columns can remain open."),
-            _step("按主题聊天并找回历史", "Chat by topic and find history", "点“新对话”分开不同研究问题；首问自动命名。展开窗口可修改“对话分组”，并按分类、名称或问答内容查找。回车发送，Shift+回车换行。", "Use New chat to separate research questions; the first question names it. In the expanded window, change the Group and search by group, title or message. Enter sends; Shift+Enter adds a line."),
-            _step("让 AI 看当前图", "Let AI inspect the chart", "先在 AI 设置中选择 Harness SDK，再点右侧“解读图”；检查 PNG 预览并确认后发送。AI 可讨论可见趋势，准确数值仍需核对项目结果。", "Select the Harness SDK provider, choose Chart in the right panel, inspect the PNG preview and approve. AI can discuss visible trends; verify exact values in project results."),
+            _step("按步骤聊天并找回历史", "Chat by step and find history", "左侧切换步骤时，右侧自动显示本步骤的独立对话。点“新对话”可在本步骤再开一个话题；首问自动命名。展开窗口勾选“跨步骤查找及查看旧对话”可以找回其他步骤和旧记录。问答随项目保存。回车发送，Shift+回车换行。", "Switching a workflow step shows its own conversation. New chat starts another topic within that step and the first question names it. In the expanded window, search all steps and older chats; questions and answers are saved with the project. Enter sends; Shift+Enter adds a line."),
+            _step("让 AI 看当前图", "Let AI inspect the chart", "使用支持读图的 Harness SDK、OpenAI-compatible Chat 或 OpenAI Responses 模型。点右侧“解读图”，检查 PNG 预览并确认；图片只在这次提问中发送，项目仅保存图名与问答。模型不支持图片时会明确报错，不会假装已看图。准确数值仍需核对项目结果。", "Use a vision-capable Harness SDK, OpenAI-compatible Chat or OpenAI Responses model. Choose Chart, inspect and approve the PNG preview; only the current request sends pixels, while the project stores the chart label and dialogue. Unsupported models report an error rather than pretending to inspect. Verify exact values in project results."),
             _step("按需要使用 AI", "Use AI when needed", "可询问当前项目、软件操作或一般科研问题；具体操作会参考内置教程。审查 AI 引用的证据和当前步骤，协作模式的分析提案仍需确认。", "Ask about the project, app operation, or general research. App-specific steps use built-in guidance. Check cited evidence and the current stage; collaborative action proposals still require confirmation."),
             _step("控制引导和布局", "Control guidance and layout", "按 F1 查看本步引导；在“帮助”取消“自动显示分步骤引导”可停止自动弹出。用“视图 → 恢复三栏默认布局”恢复布局。", "Press F1 for the current step guide. Uncheck Help → Show step guides automatically to stop automatic popups. Use View → Reset three-column layout to restore panel sizes."),
         ],

@@ -8,10 +8,10 @@ Download from [GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/relea
 
 | Edition | Recommended for | How to start | Important note |
 |---|---|---|---|
-| **Full offline installer** `NeuroEphysAI-Setup-1.3.3-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | Includes all v1.3.3 features plus the complete offline GPU/CUDA/Kilosort component |
-| **Standard installer (recommended)** `NeuroEphysAI-Setup-1.3.3.exe` | General Windows, teaching, CPU workflows | Run the installer | Includes the latest AI conversation and chart-vision entry points; optional sorter components can be added later |
-| **Standard portable ZIP** `NeuroEphysAI-1.3.3-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
-| **Python wheel** `neuroephys_ai-1.3.3-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
+| **Full offline installer** `NeuroEphysAI-Setup-1.3.4-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | Includes all v1.3.4 features plus the complete offline GPU/CUDA/Kilosort component |
+| **Standard installer (recommended)** `NeuroEphysAI-Setup-1.3.4.exe` | General Windows, teaching, CPU workflows | Run the installer | Includes the latest AI conversation and chart-vision entry points; optional sorter components can be added later |
+| **Standard portable ZIP** `NeuroEphysAI-1.3.4-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
+| **Python wheel** `neuroephys_ai-1.3.4-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
 
 The Full portable ZIP is larger than GitHub's 2 GiB per-file limit, so GitHub primarily distributes the Full installer.
 
@@ -34,6 +34,7 @@ The default workspace is `Documents\NeuroEphysAI`. Source recordings remain read
 5. Press `Ctrl+S`, close the app, then restore the project by opening its `neuroflow_project.json`.
 
 Use `Ctrl+Shift+H` for the searchable tutorial center and `Ctrl+K` for command search.
+On first launch, choose whether to begin the step-by-step tour; **Do not remind me again** disables automatic prompts. Reopen any step with **Step guide**, `F1`, or **Help → Current step guide**. **Help → Reset beginner guides** restores automatic prompts.
 
 ## 4. Import your own data
 
@@ -61,13 +62,14 @@ The application fits `ephys_time = offset + slope × behavior_time` from ordered
 | 04 Spike sorting | Run a selected sorter | Native output and unified spike times |
 | 05 Unit quality | Waveform, ISI, SNR, drift, manual labels | Screening and curation records |
 | 06 Event synchronization | Map behavior time to ephys time | Aligned events and synchronization QC |
-| 07 Behavior | Trials, choices, accuracy, reaction time | Behavior figures and tables |
+| 07 Behavior | Two spectra: animal rows and one animal's behavior rows; other summaries optional | Time-scaled behavior PNG/SVG and tables |
 | 08 Neural activity | Raster, PSTH, population dynamics | Neural-response figures |
 | 09 Statistics | Effect sizes, permutation, bootstrap, multiplicity | Tables and methods |
 | 10 Machine learning | Classification, regression, decoding, clustering | Cross-validation and permutation baselines |
 | 11 Publication and reproduction | English main/supplementary figures, legends, Methods | Publication report and provenance |
 
 Stages are modular. A project with existing sorting may begin at Unit quality instead of rerunning raw processing.
+Behavior-spectrum ticks are instantaneous recorded events; colored spans require explicit on/off pairs. Set a start and time scale. A one-animal project does not silently aggregate other animals. Running stage 07 saves both figures under `results/behavior`.
 
 ## 7. Compare three sorters
 
@@ -107,9 +109,9 @@ The assistant uses a versioned, constrained project-summary contract rather than
 
 Answers default to **Concise** view: conclusion first, no more than three key points, project-evidence status, the next step, and important warnings. The model translates internal fields into scientific meaning and adds **Why**, **What to do now**, and **Important limitation** only when relevant; clarity is no longer sacrificed to a fixed word cap. The full scientific explanation, limitations, evidence identifiers, and proposed actions remain available through **View full answer and evidence**. Switch **Answer view** to **Full** when reviewing every detail.
 
-Project conversations are saved as named threads. **New chat** starts a separate topic, the first question supplies an automatic title, and the expanded window supports renaming, assigning a Project/Figures/Methods/General group, and searching groups, titles and message text. New chart-interpretation threads are assigned to Figures. Older flat history remains in **Earlier conversation**. These in-app groups do not change the external Harness website sidebar. Switch threads in the right panel. **Enter** sends; **Shift+Enter** adds a line. General questions work without a project, while app-specific instructions can be grounded in the built-in tutorial and project claims in measured results.
+Project conversations are separated by the 11 workflow steps. Switching steps automatically opens that step's conversation; **New chat** starts another named topic within it. The expanded window can search all steps and older chats, rename threads and assign Project/Figures/Methods/General groups. Older flat history remains in **Earlier conversation**. Chats are saved with the project in `ai/conversation.json`. The right panel has an **AI guide** link. **Enter** sends; **Shift+Enter** adds a line. General questions work without a project, while app-specific instructions can be grounded in the built-in tutorial and project claims in measured results.
 
-To show the model the current chart pixels, choose **Chart** and approve the PNG preview. Only that image is sent via the Harness SDK image protocol, and image bytes are not saved in conversation history. A chart can contain raw traces or labels; inspect it before approval. Other API profiles currently do not support chart vision. Visual impressions are not a replacement for exact project numbers.
+To show the model the current chart pixels, choose **Chart** and approve the PNG preview. Only that image is sent via Harness SDK, OpenAI-compatible Chat or OpenAI Responses. The configured model and service must support image input; an API rejection is reported, not treated as successful visual inspection. Image bytes are not saved in conversation history. A chart can contain raw traces or labels; inspect it before approval. Visual impressions are not a replacement for exact project numbers.
 
 The app supplies a versioned, constrained project context: current stage, completed evidence, outputs, limitations, and registered tools. Raw voltage, large arrays, local paths, and identity data are excluded by default. Collaboration-mode actions remain allowlisted and require local validation and user confirmation. Deterministic analysis continues when AI is unavailable.
 
@@ -136,7 +138,7 @@ Back up the entire project directory together with the source data. A copied fig
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.3.3-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.4-py3-none-any.whl
 neuroephys info --json
 ```
 

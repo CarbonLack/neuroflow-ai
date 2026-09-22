@@ -602,6 +602,121 @@ def behavior_figure(state: ProjectState) -> Figure:
     return fig
 
 
+def behavior_animal_ids(state: ProjectState) -> list[str]:
+    """Animal labels present in event rows (or the current one-animal project)."""
+    fallback = str(state.metadata.get("animal_id") or state.metadata.get("subject_id")
+                   or state.name or "Session")
+    return sorted({str(event.get("animal_id") or event.get("subject_id")
+                        or event.get("animal") or event.get("subject") or fallback)
+                   for event in state.events if event.get("analysis_role") != "synchronization"}) or [fallback]
+
+
+@publication_figure
+def behavior_spectrum_figure(
+    state: ProjectState, *, layout: str = "animals", animal_id: str | None = None,
+    start_seconds: float = 0.0, window_seconds: float = 0.0,
+) -> Figure:
+    """An event-time ethogram: one row per animal or one row per behavior.
+
+    Paired on/off or start/end events become spans; instantaneous events remain
+    thin ticks. No binning or inferred behavioral state is added.
+    """
+    if layout not in {"animals", "behaviors"}:
+        raise ValueError("layout must be 'animals' or 'behaviors'")
+    animals = behavior_animal_ids(state)
+    chosen = animal_id if animal_id in animals else animals[0]
+    fallback = str(state.metadata.get("animal_id") or state.metadata.get("subject_id")
+                   or state.name or "Session")
+    events = []
+    for event in state.events:
+        if event.get("analysis_role") == "synchronization":
+            continue
+        try:
+            when = float(event["time_seconds"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not np.isfinite(when):
+            continue
+        animal = str(event.get("animal_id") or event.get("subject_id")
+                     or event.get("animal") or event.get("subject") or fallback)
+        family = str(event.get("event_family") or event.get("event_type")
+                     or event.get("label") or event.get("event_code") or "event")
+        if family in {"unknown", "unmapped", ""}:
+            family = str(event.get("label") or event.get("event_type") or "event")
+        events.append((when, animal, family, str(event.get("event_phase", "event")), event))
+    events.sort(key=lambda row: row[0])
+    if layout == "behaviors":
+        events = [row for row in events if row[1] == chosen]
+    families = sorted({row[2] for row in events})
+    rows = animals if layout == "animals" else families
+    fig, axes = _base_figure(1, 1, max(3.7, min(11.0, 2.6 + len(rows) * 0.44)))
+    axis = axes[0, 0]
+    palette = ("#b8a0c6", "#a8d1b0", "#9abbd0", "#d6b48d", "#caa5a9",
+               "#b3a7d8", "#9ecbc7", "#d2c096")
+    colors = {name: palette[index % len(palette)] for index, name in enumerate(families)}
+    left = max(0.0, float(start_seconds))
+    duration = max(float(state.duration_seconds or 0), max((row[0] for row in events), default=0))
+    right = min(duration, left + float(window_seconds)) if window_seconds > 0 else duration
+    if right <= left:
+        right = left + max(1.0, float(window_seconds) if window_seconds > 0 else 1.0)
+    ticks: dict[tuple[str, str], list[float]] = {}
+    spans: list[tuple[str, str, float, float]] = []
+    opened: dict[tuple[str, str], float] = {}
+    for when, animal, family, phase, event in events:
+        key = (animal, family)
+        if phase in {"on", "start"}:
+            opened[key] = when
+        elif phase in {"off", "end"} and key in opened:
+            spans.append((animal, family, opened.pop(key), when))
+        else:
+            explicit_end = event.get("end_time_seconds")
+            try:
+                end = float(explicit_end) if explicit_end is not None else when + float(event.get("duration_seconds", 0))
+            except (TypeError, ValueError):
+                end = when
+            if end > when:
+                spans.append((animal, family, when, end))
+            else:
+                ticks.setdefault(key, []).append(when)
+    for (animal, family), when in opened.items():
+        ticks.setdefault((animal, family), []).append(when)
+    row_index = {name: index for index, name in enumerate(rows)}
+    for animal, family, start, end in spans:
+        row = animal if layout == "animals" else family
+        if row not in row_index or end < left or start > right:
+            continue
+        axis.broken_barh([(max(start, left), min(end, right) - max(start, left))],
+                         (row_index[row] - 0.35, 0.7), facecolors=colors[family], edgecolors="none")
+    for (animal, family), times in ticks.items():
+        row = animal if layout == "animals" else family
+        if row not in row_index:
+            continue
+        visible = [time for time in times if left <= time <= right]
+        if visible:
+            axis.vlines(visible, row_index[row] - 0.34, row_index[row] + 0.34,
+                        color=colors[family], linewidth=1.5, alpha=0.94)
+    axis.set_xlim(left, right)
+    axis.set_ylim(-0.65, max(0.65, len(rows) - 0.35))
+    axis.set_yticks(range(len(rows)), rows)
+    axis.invert_yaxis()
+    axis.grid(axis="y", visible=False)
+    axis.set_xlabel(_text(state, "记录时间 (s)", "Recording time (s)"), color=MUTED)
+    axis.set_title(
+        _text(state, "行为谱 · 每只动物一行" if layout == "animals" else f"行为谱 · {chosen} 的各类行为",
+              "Behavior spectrum · one animal per row" if layout == "animals" else f"Behavior spectrum · {chosen} by behavior"),
+        loc="left", color=INK, fontsize=12,
+    )
+    if layout == "animals" and families:
+        from matplotlib.patches import Patch
+        axis.legend(handles=[Patch(facecolor=colors[name], label=name) for name in families],
+                    loc="upper center", bbox_to_anchor=(0.5, -0.19), ncol=min(4, len(families)),
+                    frameon=False, fontsize=8)
+    if not events:
+        axis.text(0.5, 0.5, _text(state, "暂无可显示的行为事件", "No behavior events available"),
+                  transform=axis.transAxes, ha="center", va="center", color=MUTED)
+    return fig
+
+
 @publication_figure
 def qc_figure(state: ProjectState) -> Figure:
     fig, axes = _base_figure(1, 2, 4.7)

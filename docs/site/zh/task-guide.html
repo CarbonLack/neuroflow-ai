@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/task-guide.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=79f47a88"></script>
+      <script src="_static/documentation_options.js?v=05a6cece"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -92,7 +92,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#sorting">横向比较两个 sorting 结果</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#unit">逐个复核 Unit 并保存判断</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#task-sync">把行为事件对齐到电生理时间</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#trial">检查行为与有效 trial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trial">查看行为谱与可用 trial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#task-analysis">选择神经分析与事件响应</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pca">比较群体响应与 PCA 轨迹</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#task-connectivity">检查毫秒级时序关系</a></li>
@@ -228,7 +228,7 @@
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#shared-clock-assumption">06 · Shared-clock assumption</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#trial">检查行为与有效 trial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameter-reference.html#trial">查看行为谱与可用 trial</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#condition-column">07 · Condition column</a></li>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#reaction-time-start-end">07 · Reaction-time start/end</a></li>
 <li class="toctree-l3"><a class="reference internal" href="parameter-reference.html#minimum-trials">07 · Minimum trials</a></li>
@@ -341,7 +341,7 @@
 <li><p><a class="reference internal" href="#sorting" id="id21">横向比较两个 sorting 结果</a></p></li>
 <li><p><a class="reference internal" href="#unit" id="id22">逐个复核 Unit 并保存判断</a></p></li>
 <li><p><a class="reference internal" href="#task-sync" id="id23">把行为事件对齐到电生理时间</a></p></li>
-<li><p><a class="reference internal" href="#trial" id="id24">检查行为与有效 trial</a></p></li>
+<li><p><a class="reference internal" href="#trial" id="id24">查看行为谱与可用 trial</a></p></li>
 <li><p><a class="reference internal" href="#task-analysis" id="id25">选择神经分析与事件响应</a></p></li>
 <li><p><a class="reference internal" href="#pca" id="id26">比较群体响应与 PCA 轨迹</a></p></li>
 <li><p><a class="reference internal" href="#task-connectivity" id="id27">检查毫秒级时序关系</a></p></li>
@@ -589,13 +589,13 @@
 <p>事件列表不一定包含明确 trial 边界。先检查行为文件是否提供 trial 定义；可用事件时间不代表行为表现指标都可计算。</p>
 </section>
 <section id="trial">
-<span id="task-behavior"></span><h2><a class="toc-backref" href="#id24" role="doc-backlink">检查行为与有效 trial</a><a class="headerlink" href="#trial" title="Link to this heading"></a></h2>
+<span id="task-behavior"></span><h2><a class="toc-backref" href="#id24" role="doc-backlink">查看行为谱与可用 trial</a><a class="headerlink" href="#trial" title="Link to this heading"></a></h2>
 <p>先确认行为数据是否完整，再判断哪些条件适合做神经比较。</p>
 <p><strong>先准备好</strong></p>
 <p>已导入行为事件；反应时、选择和心理测量分析需要对应 trial 字段。</p>
 <ol class="arabic">
-<li><p><strong>生成行为摘要</strong></p>
-<p>打开“行为分析”，运行本步骤。查看当前事件数、trial 数和行为图。</p>
+<li><p><strong>查看两种行为谱</strong></p>
+<p>第一张图每只动物一行；第二张图将所选动物的行为类型分行。时间尺度和起点可调整。没有多动物标识时只显示当前项目的一只动物，不会凭空合并其他项目。运行本步骤可把两张图保存到 results/behavior。</p>
 </li>
 <li><p><strong>核对条件和样本数</strong></p>
 <p>查看各条件的 trial 数、可用反应时和选择。样本太少或字段缺失时，先检查原始行为文件。</p>
@@ -794,11 +794,11 @@
 <li><p><strong>调整三栏宽度</strong></p>
 <p>拖动栏间分隔线。按 Ctrl+B 缩略左侧流程，按 Ctrl+J 显示或关闭右侧 AI。三栏可以同时保留。</p>
 </li>
-<li><p><strong>按主题聊天并找回历史</strong></p>
-<p>点“新对话”分开不同研究问题；首问自动命名。展开窗口可修改“对话分组”，并按分类、名称或问答内容查找。回车发送，Shift+回车换行。</p>
+<li><p><strong>按步骤聊天并找回历史</strong></p>
+<p>左侧切换步骤时，右侧自动显示本步骤的独立对话。点“新对话”可在本步骤再开一个话题；首问自动命名。展开窗口勾选“跨步骤查找及查看旧对话”可以找回其他步骤和旧记录。问答随项目保存。回车发送，Shift+回车换行。</p>
 </li>
 <li><p><strong>让 AI 看当前图</strong></p>
-<p>先在 AI 设置中选择 Harness SDK，再点右侧“解读图”；检查 PNG 预览并确认后发送。AI 可讨论可见趋势，准确数值仍需核对项目结果。</p>
+<p>使用支持读图的 Harness SDK、OpenAI-compatible Chat 或 OpenAI Responses 模型。点右侧“解读图”，检查 PNG 预览并确认；图片只在这次提问中发送，项目仅保存图名与问答。模型不支持图片时会明确报错，不会假装已看图。准确数值仍需核对项目结果。</p>
 </li>
 <li><p><strong>按需要使用 AI</strong></p>
 <p>可询问当前项目、软件操作或一般科研问题；具体操作会参考内置教程。审查 AI 引用的证据和当前步骤，协作模式的分析提案仍需确认。</p>

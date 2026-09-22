@@ -54,6 +54,8 @@ def save_ai_conversation(state: ProjectState) -> None:
         "schema": "neuroephys.ai_conversation.v2",
         "threads": state.metadata.get("ai_threads", []),
         "history": state.metadata.get("ai_history", []),
+        "active_thread_id": state.metadata.get("ai_active_thread_id", ""),
+        "active_thread_by_stage": state.metadata.get("ai_active_thread_by_stage", {}),
     },
                                    ensure_ascii=False, indent=2), encoding="utf-8")
     temporary.replace(path)
@@ -71,6 +73,10 @@ def restore_ai_conversation(state: ProjectState) -> None:
                         and all(isinstance(r, dict) for r in history + threads)):
                     state.metadata["ai_history"] = history
                     state.metadata["ai_threads"] = threads
+                    state.metadata["ai_active_thread_id"] = str(records.get("active_thread_id", ""))
+                    active_by_stage = records.get("active_thread_by_stage", {})
+                    if isinstance(active_by_stage, dict):
+                        state.metadata["ai_active_thread_by_stage"] = active_by_stage
             elif isinstance(records, list) and all(isinstance(r, dict) for r in records):
                 state.metadata["ai_history"] = records
         except (OSError, ValueError):

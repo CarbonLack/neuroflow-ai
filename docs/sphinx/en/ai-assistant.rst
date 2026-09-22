@@ -17,11 +17,15 @@ Try: â€œQuery unit 25's SNR and ISI violation rate and explain the limitations.â
 By default, chart metadata is not image-pixel access; raw voltage is not sent by
 the project-query interface.
 
-Chats are project-specific and can be assigned to Project, Figures, Methods, General,
+Chats are project-specific and separated by the 11 workflow steps. Switching steps
+shows that step's own conversation; each step can have several named threads.
+Chats can be assigned to Project, Figures, Methods, General,
 or Earlier groups in the expanded chat window. A new chart-interpretation thread is
 grouped under Figures automatically; users can change its group. The first question
 automatically titles a thread, and titles can be renamed. Search matches groups,
-titles and message text. This grouping is inside NeuroEphys AI; it does not alter
+titles and message text after selecting **Search all steps and older chats**.
+Legacy chats remain available as Earlier conversation rather than being assigned
+an invented step. This grouping is inside NeuroEphys AI; it does not alter
 the separate Harness website conversation sidebar. Older flat history is
 preserved as **Earlier conversation**. The current thread's recent turns, not all
 threads mixed together, accompany each request. Threads are saved to the project's
@@ -34,11 +38,12 @@ execution and file-system access are not granted.
 To let the model actually inspect the current chart, choose **Chart** in the right
 panel or **Interpret current chart** in the expanded conversation. The app renders
 only that chart to PNG in memory and displays the exact image for approval before
-sending it as an official Harness SDK image block. Image bytes are not stored in
+sending it through Harness SDK, OpenAI-compatible Chat, or OpenAI Responses.
+The configured model and service must accept image inputs; a rejection is shown
+as a failure, not a fabricated visual answer. Image bytes are not stored in
 the chat archive; only the chart label and send record are kept. A chart may show
 raw traces or labels, so check the preview. Visual impressions are not substitutes
-for numerical results. This feature currently requires the Harness SDK provider;
-other API profiles do not silently pretend to see an image.
+for numerical results. Other API profiles do not silently pretend to see an image.
 
 If ``NVM4306`` appears, the local Node/NVM trusted launcher blocked ``dsh``
 before the request reached the model. Check ``dsh --version`` and have the

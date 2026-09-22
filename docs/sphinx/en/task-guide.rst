@@ -373,7 +373,7 @@ An event list may lack trial boundaries. Check whether the behavior file defines
 
 .. _task-behavior:
 
-Inspect behavior and trials
+Inspect behavior spectra and available trials
 ----------------------------------------------------------------------------------------------------
 
 Check behavioral completeness before choosing conditions for neural comparisons.
@@ -382,9 +382,9 @@ Check behavioral completeness before choosing conditions for neural comparisons.
 
 Imported behavior events. Reaction time, choice, and psychometrics require their corresponding trial fields.
 
-1. **Generate the summary**
+1. **Inspect both behavior spectra**
 
-   Open Behavior analysis and run this stage. Inspect event count, trial count, and the behavior plots.
+   The first chart has one row per animal; the second has one row per behavior for the selected animal. Adjust start and time scale. Without multiple animal IDs, only this project's animal is shown; other projects are not silently merged. Run this stage to save both charts under results/behavior.
 
 2. **Check conditions and sample sizes**
 
@@ -686,13 +686,13 @@ Open a project to arrange the three columns. Online AI requires a configured ser
 
    Drag the separators. Press Ctrl+B to compact the workflow rail and Ctrl+J to show or hide the right AI panel. All three columns can remain open.
 
-2. **Chat by topic and find history**
+2. **Chat by step and find history**
 
-   Use New chat to separate research questions; the first question names it. In the expanded window, change the Group and search by group, title or message. Enter sends; Shift+Enter adds a line.
+   Switching a workflow step shows its own conversation. New chat starts another topic within that step and the first question names it. In the expanded window, search all steps and older chats; questions and answers are saved with the project. Enter sends; Shift+Enter adds a line.
 
 3. **Let AI inspect the chart**
 
-   Select the Harness SDK provider, choose Chart in the right panel, inspect the PNG preview and approve. AI can discuss visible trends; verify exact values in project results.
+   Use a vision-capable Harness SDK, OpenAI-compatible Chat or OpenAI Responses model. Choose Chart, inspect and approve the PNG preview; only the current request sends pixels, while the project stores the chart label and dialogue. Unsupported models report an error rather than pretending to inspect. Verify exact values in project results.
 
 4. **Use AI when needed**
 

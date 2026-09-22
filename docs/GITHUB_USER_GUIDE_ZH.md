@@ -8,10 +8,10 @@
 
 | 版本 | 适合谁 | 怎么用 | 注意 |
 |---|---|---|---|
-| **Full 离线安装版** `NeuroEphysAI-Setup-1.3.3-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 包含 v1.3.3 全部功能与完整离线 GPU/CUDA/Kilosort 组件 |
-| **标准安装版（推荐）** `NeuroEphysAI-Setup-1.3.3.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 包含最新 AI 对话与图像解读入口；后续可在 Sorter 管理器补齐组件 |
-| **标准便携版** `NeuroEphysAI-1.3.3-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
-| **Python 包** `neuroephys_ai-1.3.3-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
+| **Full 离线安装版** `NeuroEphysAI-Setup-1.3.4-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 包含 v1.3.4 全部功能与完整离线 GPU/CUDA/Kilosort 组件 |
+| **标准安装版（推荐）** `NeuroEphysAI-Setup-1.3.4.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 包含最新 AI 对话与图像解读入口；后续可在 Sorter 管理器补齐组件 |
+| **标准便携版** `NeuroEphysAI-1.3.4-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
+| **Python 包** `neuroephys_ai-1.3.4-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
 
 完整 Full 便携 ZIP 大于 GitHub 2 GiB 单文件限制，因此 GitHub 主要提供 Full 安装包。本地构建可另行生成 Full 便携版。
 
@@ -34,6 +34,7 @@
 5. 按 `Ctrl+S` 保存；关闭后在首页选择 **打开/导入项目**，选择 `neuroflow_project.json` 恢复。
 
 按 `Ctrl+Shift+H` 打开可搜索的教程中心，按 `Ctrl+K` 搜索功能。
+首次启动会询问是否从第 1 步开始分步学习；可选“不再提醒我”。之后仍可点工作区的“本步引导”、按 `F1`，或从 **帮助 → 当前步骤新手引导** 重开。**帮助 → 重置新手引导** 可恢复逐步自动提示。
 
 ## 4. 导入自己的数据
 
@@ -68,13 +69,14 @@ TTL CSV 提供同一同步脉冲在电生理时钟中的时间。平台按顺序
 | 04 Spike sorting | 使用选定 sorter 生成候选簇 | 环境、几何、时窗、通道 | sorter 原生结果和统一 spike times |
 | 05 Unit 质控 | 波形、ISI、SNR、漂移和人工标签 | 候选不等于细胞 | 筛选决定与复核记录 |
 | 06 事件同步 | 把行为钟映射到电生理钟 | 脉冲数、顺序、残差 | 对齐事件和同步 QC |
-| 07 行为分析 | trial、选择、正确率、反应时 | 事件定义 | 行为图与表 |
+| 07 行为分析 | 两种行为谱：动物分行、单动物行为分行；其他统计可选 | 事件时间与动物标识 | 可调时间尺度的行为图与表 |
 | 08 神经活动 | Raster、PSTH、群体动态等 | 对齐点、时窗、bin | 神经响应图 |
 | 09 统计检验 | 效应量、置换、bootstrap、多重校正 | 实验单位与假设 | 统计表和方法说明 |
 | 10 机器学习 | 分类、回归、解码和聚类 | 防止 trial/时间泄漏 | 交叉验证、置换基线和特征结果 |
 | 11 论文与复现 | 英文主图/附图、图注草稿、Methods 和清单 | 所有分析已审阅 | publication 报告和 provenance |
 
 每个节点都可单独运行；不需要一条线走到底。有已完成 sorting 的用户可以直接从 05 开始。
+行为谱中的细线表示瞬时记录事件，色块表示有明确开启/关闭配对的持续区间。可设起点与时间尺度。单动物项目不会自动汇总其他动物；运行第 07 步会保存两张 PNG/SVG 到 `results/behavior`。
 
 ## 7. 三 sorter 对比
 
@@ -141,7 +143,7 @@ App 自动生成受控的结构化项目上下文：当前步骤、已有结果�
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.3.3-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.4-py3-none-any.whl
 neuroephys info --json
 ```
 
