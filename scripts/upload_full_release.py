@@ -54,6 +54,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", required=True)
     parser.add_argument("--file", type=Path, required=True)
+    parser.add_argument("--release-id", type=int, help="Existing draft release ID")
     args = parser.parse_args()
     expected_name = f"NeuroEphysAI-Setup-{args.version}-Full.exe"
     path = args.file.resolve()
@@ -67,11 +68,16 @@ def main() -> None:
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "NeuroEphysAI-Release-Uploader",
     }
-    release_response = requests.get(
-        f"{API}/releases/tags/v{args.version}", headers=headers, timeout=30
+    release_endpoint = (
+        f"{API}/releases/{args.release_id}"
+        if args.release_id
+        else f"{API}/releases/tags/v{args.version}"
     )
+    release_response = requests.get(release_endpoint, headers=headers, timeout=30)
     release_response.raise_for_status()
     release = release_response.json()
+    if release.get("tag_name") != f"v{args.version}":
+        raise RuntimeError("Release ID does not match the requested version")
     for asset in release.get("assets", []):
         if asset.get("name") != expected_name:
             continue
