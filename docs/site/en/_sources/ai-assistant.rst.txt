@@ -54,6 +54,8 @@ work around it by copying institute credentials into the app.
 
 The expanded dialog prioritizes conversation space: chat search and quick
 prompts are expandable, and bubbles reflow to the actual available width.
+In the side panel, **More** expands mode, reading style, tutorial, and quick
+prompts only when needed, leaving more height for the conversation.
 
 **Enter** sends, and **Shift+Enter** inserts a new line. General research and other
 questions are welcome even without an open project. For app-specific procedures,

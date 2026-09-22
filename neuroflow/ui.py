@@ -4948,6 +4948,10 @@ class NeuroFlowWindow(QMainWindow):
         ai_layout = QVBoxLayout(ai_tab)
         ai_layout.setContentsMargins(4, 8, 4, 4)
         ai_layout.setSpacing(8)
+        self.sidebar_ai_options = QWidget()
+        options_layout = QVBoxLayout(self.sidebar_ai_options)
+        options_layout.setContentsMargins(0, 0, 0, 0)
+        options_layout.setSpacing(6)
         mode_row = QHBoxLayout()
         self.assistant_mode = QLabel("AI 模式")
         self.assistant_mode.setObjectName("Muted")
@@ -4967,7 +4971,7 @@ class NeuroFlowWindow(QMainWindow):
             self._sidebar_ai_mode_changed
         )
         mode_row.addWidget(self.sidebar_ai_mode_combo, 1)
-        ai_layout.addLayout(mode_row)
+        options_layout.addLayout(mode_row)
         reading_row = QHBoxLayout()
         self.sidebar_reading_label = QLabel("回复显示")
         self.sidebar_reading_label.setObjectName("Muted")
@@ -4982,15 +4986,25 @@ class NeuroFlowWindow(QMainWindow):
             self._sidebar_reading_mode_changed
         )
         reading_row.addWidget(self.sidebar_reading_combo, 1)
-        ai_layout.addLayout(reading_row)
+        options_layout.addLayout(reading_row)
+        context_row = QHBoxLayout()
         self.ai_context_label = QLabel("尚未打开项目")
         self.ai_context_label.setObjectName("Muted")
         self.ai_context_label.setWordWrap(True)
-        ai_layout.addWidget(self.ai_context_label)
+        context_row.addWidget(self.ai_context_label, 1)
+        self.sidebar_ai_options_toggle = QPushButton("选项 ▾")
+        self.sidebar_ai_options_toggle.setFixedWidth(64)
+        self.sidebar_ai_options_toggle.clicked.connect(
+            lambda: self.sidebar_ai_options.setVisible(
+                self.sidebar_ai_options.isHidden()
+            )
+        )
+        context_row.addWidget(self.sidebar_ai_options_toggle)
+        ai_layout.addLayout(context_row)
         self.sidebar_ai_manual_button = QPushButton("AI 使用教程 ↗")
         self.sidebar_ai_manual_button.setFlat(True)
         self.sidebar_ai_manual_button.clicked.connect(self._open_ai_documentation)
-        ai_layout.addWidget(self.sidebar_ai_manual_button)
+        options_layout.addWidget(self.sidebar_ai_manual_button)
         ai_thread_row = QHBoxLayout()
         self.sidebar_ai_thread_combo = QComboBox()
         self.sidebar_ai_thread_combo.setMinimumWidth(100)
@@ -5014,7 +5028,9 @@ class NeuroFlowWindow(QMainWindow):
         )
         ai_quick_row.addWidget(self.sidebar_ai_review_button)
         ai_quick_row.addWidget(self.sidebar_ai_plan_button)
-        ai_layout.addLayout(ai_quick_row)
+        options_layout.addLayout(ai_quick_row)
+        ai_layout.addWidget(self.sidebar_ai_options)
+        self.sidebar_ai_options.setVisible(False)
         self.ai_sidebar_conversation = BubbleChatView()
         self.ai_sidebar_conversation.anchorClicked.connect(
             self._open_sidebar_response_detail
@@ -5479,6 +5495,9 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_publication_panel()
         self.sidebar_ai_manual_button.setText(
             "AI guide ↗" if language == "en_US" else "AI 使用教程 ↗"
+        )
+        self.sidebar_ai_options_toggle.setText(
+            "More ▾" if language == "en_US" else "选项 ▾"
         )
         self.sidebar_ai_new_chat_button.setText("New" if language == "en_US" else "新对话")
         self.sidebar_ai_find_chat_button.setText("Find" if language == "en_US" else "查找")

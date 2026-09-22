@@ -43,6 +43,11 @@ def test_workspace_controls_share_menu_row_and_chat_prioritizes_messages(tmp_pat
     assert window.menuBar().cornerWidget(Qt.TopLeftCorner) is window._menu_left_controls
     assert window.menuBar().cornerWidget(Qt.TopRightCorner) is window._menu_right_controls
     assert window.workspace_page.layout().count() == 1
+    assert window.sidebar_ai_options.isHidden()
+    window.sidebar_ai_options_toggle.click()
+    assert not window.sidebar_ai_options.isHidden()
+    window.sidebar_ai_options_toggle.click()
+    assert window.sidebar_ai_options.isHidden()
     window._open_ai_assistant()
     app.processEvents()
     dialog = window.ai_dialog
