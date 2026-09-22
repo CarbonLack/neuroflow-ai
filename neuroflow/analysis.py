@@ -435,17 +435,45 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
                 np.median(np.abs(raw[: min(raw.shape[0], 150_000), peak_channel]))
             )
             snr = peak_to_peak / max(noise * 1.4826, 1e-6)
-            first_channel = max(peak_channel - 2, 0)
-            last_channel = min(peak_channel + 3, state.channel_count)
-            local_waveform = mean_waveform[:, first_channel:last_channel]
+            # Numeric channel adjacency is not electrode geometry. Show a
+            # multi-contact waveform only when the project documents a group.
+            probe = state.metadata.get("probe", {})
+            groups = probe.get("contact_groups", []) if isinstance(probe, dict) else []
+            waveform_channels = [peak_channel]
+            selection_method = "peak_contact_only_geometry_unknown"
+            for group in groups:
+                if isinstance(group, (list, tuple)) and peak_channel in group:
+                    valid = [int(ch) for ch in group if isinstance(ch, (int, np.integer))
+                             and 0 <= int(ch) < state.channel_count]
+                    if valid:
+                        waveform_channels = valid[:8]
+                        selection_method = "documented_contact_group"
+                    break
+            positions = np.asarray(state.metadata.get("contact_positions_um", []), dtype=float)
+            if (selection_method == "peak_contact_only_geometry_unknown"
+                    and positions.shape == (state.channel_count, 2)
+                    and np.isfinite(positions).all()
+                    and not (isinstance(probe, dict) and
+                             probe.get("geometry_mode") == "independent_contacts")):
+                distances = np.linalg.norm(positions - positions[peak_channel], axis=1)
+                same_shank = np.ones(state.channel_count, dtype=bool)
+                shanks = state.metadata.get("contact_shank_ids")
+                if isinstance(shanks, (list, tuple)) and len(shanks) == state.channel_count:
+                    same_shank = np.asarray(shanks) == shanks[peak_channel]
+                nearby = np.flatnonzero((distances <= 50.0) & same_shank)
+                if len(nearby) > 1:
+                    order = np.argsort(distances[nearby], kind="stable")
+                    waveform_channels = nearby[order][:4].astype(int).tolist()
+                    selection_method = "recorded_contact_positions_within_50um"
+            local_waveform = mean_waveform[:, waveform_channels]
             selected_amplitudes = -np.min(snippets[:, :, peak_channel], axis=1)
             selected_times = selected / state.sampling_rate
         else:
             peak_channel = -1
             peak_to_peak = 0.0
             snr = float("nan") if raw is None else 0.0
-            first_channel = 0
-            last_channel = 0
+            waveform_channels = []
+            selection_method = "raw_waveforms_unavailable"
             local_waveform = np.empty((0, 0))
             selected_amplitudes = np.empty(0)
             selected_times = np.empty(0)
@@ -487,7 +515,9 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
                 * 1_000.0
             ).tolist(),
             "waveform": local_waveform.tolist(),
-            "waveform_channels": list(range(first_channel, last_channel)),
+            "waveform_channels": waveform_channels,
+            "waveform_channel_selection": selection_method,
+            "waveform_alignment": "sorter_spike_timestamp_no_peak_realignment",
             "amplitude_time_s": selected_times.tolist(),
             "amplitude_adc": selected_amplitudes.tolist(),
             "waveform_spike_count_total": int(sample_indices.size),
@@ -1050,6 +1080,16 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         if state.spike_train_analysis
         else ""
     )
+    pairwise_scope = state.spike_train_analysis.get("pairwise_scope", {})
+    if pairwise_scope:
+        spike_train_sentence += (
+            "Pairwise correlation, STTC and CCH diagnostics used "
+            f"{pairwise_scope.get('selected_unit_count')} of "
+            f"{pairwise_scope.get('total_unit_count')} candidate units within "
+            f"{pairwise_scope.get('stop_seconds')} s; per-unit descriptors "
+            "were computed from the full recording. This bounded subset "
+            "must not be described as an all-unit, full-session matrix. "
+        )
     connectivity = state.spike_train_analysis.get("connectivity", {})
     connectivity_sentence = ""
     if connectivity:

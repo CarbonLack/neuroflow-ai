@@ -8,10 +8,10 @@ Download from [GitHub Releases](https://github.com/CarbonLack/neuroflow-ai/relea
 
 | Edition | Recommended for | How to start | Important note |
 |---|---|---|---|
-| **Full offline installer** `NeuroEphysAI-Setup-1.3.4-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | Includes all v1.3.4 features plus the complete offline GPU/CUDA/Kilosort component |
-| **Standard installer (recommended)** `NeuroEphysAI-Setup-1.3.4.exe` | General Windows, teaching, CPU workflows | Run the installer | Includes the latest AI conversation and chart-vision entry points; optional sorter components can be added later |
-| **Standard portable ZIP** `NeuroEphysAI-1.3.4-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
-| **Python wheel** `neuroephys_ai-1.3.4-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
+| **Full offline installer** `NeuroEphysAI-Setup-1.3.5-Full.exe` | Competition demos, research workstations, Kilosort/GPU use | Run the installer and choose components | Includes all v1.3.5 features plus the complete offline GPU/CUDA/Kilosort component |
+| **Standard installer (recommended)** `NeuroEphysAI-Setup-1.3.5.exe` | General Windows, teaching, CPU workflows | Run the installer | Includes the latest AI conversation and chart-vision entry points; optional sorter components can be added later |
+| **Standard portable ZIP** `NeuroEphysAI-1.3.5-Windows-x64-portable.zip` | Computers without install permission | Extract everything, then run `NeuroEphysAI\NeuroEphysAI.exe` | Do not copy only the EXE |
+| **Python wheel** `neuroephys_ai-1.3.5-py3-none-any.whl` | Scripts, batch processing, and API users | Install with `python -m pip` | Python 3.12 is recommended |
 
 The Full portable ZIP is larger than GitHub's 2 GiB per-file limit, so GitHub primarily distributes the Full installer.
 
@@ -138,7 +138,7 @@ Back up the entire project directory together with the source data. A copied fig
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.3.4-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.5-py3-none-any.whl
 neuroephys info --json
 ```
 

@@ -369,6 +369,13 @@ def test_linear_memory_sttc_matches_elephant_reference():
         stop_seconds=1.0,
     )
     assert np.isclose(actual, expected)
+    from neuroflow.ephys_toolkit import _tiled_time_fraction
+    cached = _linear_sttc(
+        first, second, dt_seconds=0.02, start_seconds=0.0, stop_seconds=1.0,
+        tiled_first=_tiled_time_fraction(first, 0.02, 0.0, 1.0),
+        tiled_second=_tiled_time_fraction(second, 0.02, 0.0, 1.0),
+    )
+    assert np.isclose(cached, actual)
 
 
 def test_existing_kilosort_output_can_be_registered_without_rerun(tmp_path: Path):

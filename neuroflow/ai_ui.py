@@ -40,6 +40,7 @@ from .ai import (
     AIResponse,
     AISettings,
     PROVIDER_PROFILES,
+    supports_image_input,
     build_project_summary,
     check_provider_health,
     redact_sensitive_text,
@@ -1142,8 +1143,8 @@ class AIAssistantDialog(QDialog):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 14)
-        root.setSpacing(10)
+        root.setContentsMargins(10, 8, 10, 8)
+        root.setSpacing(5)
 
         header = QHBoxLayout()
         title_box = QVBoxLayout()
@@ -1170,23 +1171,28 @@ class AIAssistantDialog(QDialog):
         self.manual_button.clicked.connect(self.manual_handler)
         self.settings_button = QPushButton()
         self.settings_button.clicked.connect(self._open_settings)
+        header.addWidget(self.context_button)
+        header.addWidget(self.manual_button)
+        header.addWidget(self.settings_button)
+        self.find_toggle = QPushButton("查找对话 ▾")
+        self.find_toggle.setCheckable(True)
+        header.addWidget(self.find_toggle)
         root.addLayout(header)
-        actions = QHBoxLayout()
-        actions.addWidget(self.context_button)
-        actions.addWidget(self.manual_button)
-        actions.addWidget(self.settings_button)
-        actions.addStretch()
-        root.addLayout(actions)
 
         self.status_frame = QFrame()
         self.status_frame.setObjectName("InsetPanel")
         status_layout = QHBoxLayout(self.status_frame)
-        status_layout.setContentsMargins(12, 8, 12, 8)
+        status_layout.setContentsMargins(8, 2, 8, 2)
         self.status_label = QLabel()
-        self.status_label.setWordWrap(True)
+        self.status_label.setWordWrap(False)
         status_layout.addWidget(self.status_label, 1)
         root.addWidget(self.status_frame)
 
+        self.find_panel = QWidget()
+        find_layout = QVBoxLayout(self.find_panel)
+        find_layout.setContentsMargins(0, 0, 0, 0)
+        find_layout.setSpacing(4)
+        self.find_toggle.toggled.connect(self.find_panel.setVisible)
         thread_row = QHBoxLayout()
         self.thread_search = QLineEdit()
         self.thread_search.setClearButtonEnabled(True)
@@ -1205,17 +1211,19 @@ class AIAssistantDialog(QDialog):
         self.rename_thread_button = QPushButton()
         self.rename_thread_button.clicked.connect(self._rename_thread)
         thread_row.addWidget(self.rename_thread_button)
-        root.addLayout(thread_row)
+        find_layout.addLayout(thread_row)
         self.all_steps_checkbox = QCheckBox()
         self.all_steps_checkbox.toggled.connect(self._refresh_thread_list)
-        root.addWidget(self.all_steps_checkbox)
+        find_layout.addWidget(self.all_steps_checkbox)
         group_row = QHBoxLayout()
         self.thread_group_label = QLabel()
         group_row.addWidget(self.thread_group_label)
         self.thread_group_combo = QComboBox()
         self.thread_group_combo.currentIndexChanged.connect(self._change_thread_group)
         group_row.addWidget(self.thread_group_combo, 1)
-        root.addLayout(group_row)
+        find_layout.addLayout(group_row)
+        root.addWidget(self.find_panel)
+        self.find_panel.setVisible(False)
 
         body = QHBoxLayout()
         self.body_layout = body
@@ -1241,8 +1249,13 @@ class AIAssistantDialog(QDialog):
         )
         self.reading_combo.currentIndexChanged.connect(self._reading_mode_changed)
         quick_header.addWidget(self.reading_combo)
+        self.quick_toggle = QPushButton("快捷提问 ▾")
+        self.quick_toggle.setCheckable(True)
+        quick_header.addWidget(self.quick_toggle)
         chat_layout.addLayout(quick_header)
-        quick_row = QHBoxLayout()
+        self.quick_panel = QWidget()
+        quick_row = QHBoxLayout(self.quick_panel)
+        quick_row.setContentsMargins(0, 0, 0, 0)
         self.explain_button = QPushButton()
         self.review_button = QPushButton()
         self.plan_button = QPushButton()
@@ -1266,14 +1279,16 @@ class AIAssistantDialog(QDialog):
             self.error_button,
         ):
             quick_row.addWidget(button)
-        chat_layout.addLayout(quick_row)
+        chat_layout.addWidget(self.quick_panel)
+        self.quick_toggle.toggled.connect(self.quick_panel.setVisible)
+        self.quick_panel.setVisible(False)
 
         self.conversation = BubbleChatView()
         self.conversation.anchorClicked.connect(self._open_response_detail)
         chat_layout.addWidget(self.conversation, 1)
 
         self.question_edit = ChatComposer()
-        self.question_edit.setMaximumHeight(105)
+        self.question_edit.setMaximumHeight(75)
         self.question_edit.submitted.connect(lambda: self._submit("ask"))
         chat_layout.addWidget(self.question_edit)
         attachment_row = QHBoxLayout()
@@ -1358,7 +1373,7 @@ class AIAssistantDialog(QDialog):
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
         buttons.rejected.connect(self.hide)
-        root.addWidget(buttons)
+        buttons.setVisible(False)
         self.close_buttons = buttons
 
     def resizeEvent(self, event) -> None:  # noqa: N802 - Qt API
@@ -1396,6 +1411,8 @@ class AIAssistantDialog(QDialog):
         self.settings_button.setText(
             "AI settings" if english else "AI 设置"
         )
+        self.find_toggle.setText("Find chats ▾" if english else "查找对话 ▾")
+        self.quick_toggle.setText("Quick prompts ▾" if english else "快捷提问 ▾")
         self.thread_search.setPlaceholderText(
             "Search titles and messages" if english else "搜索对话名称与内容"
         )
@@ -1504,10 +1521,10 @@ class AIAssistantDialog(QDialog):
 
     def attach_current_chart(self) -> bool:
         english = self.language_getter() == "en_US"
-        if self.settings.provider not in {"harness_sdk", "openai_compatible", "openai_responses"}:
+        if not supports_image_input(self.settings.provider):
             QMessageBox.information(self, "AI",
-                "This connection has no chart upload path. Choose Harness SDK, OpenAI-compatible Chat, or OpenAI Responses with a vision-capable model."
-                if english else "当前连接未适配图像上传。请选择支持读图的 Harness SDK、OpenAI-compatible Chat 或 OpenAI Responses 模型。")
+                "This connection has no chart upload path. Choose Harness SDK, institute/private OpenAI-compatible Chat, or OpenAI Responses with a vision-capable model."
+                if english else "当前连接未适配图像上传。请选择支持读图的 Harness SDK、机构／私有 OpenAI-compatible Chat 或 OpenAI Responses 模型。")
             return False
         if self.figure_capture_getter is None:
             return False

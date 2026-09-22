@@ -38,7 +38,7 @@ execution and file-system access are not granted.
 To let the model actually inspect the current chart, choose **Chart** in the right
 panel or **Interpret current chart** in the expanded conversation. The app renders
 only that chart to PNG in memory and displays the exact image for approval before
-sending it through Harness SDK, OpenAI-compatible Chat, or OpenAI Responses.
+sending it through Harness SDK, institute/private OpenAI-compatible Chat, or OpenAI Responses.
 The configured model and service must accept image inputs; a rejection is shown
 as a failure, not a fabricated visual answer. Image bytes are not stored in
 the chat archive; only the chart label and send record are kept. A chart may show
@@ -47,8 +47,13 @@ for numerical results. Other API profiles do not silently pretend to see an imag
 
 If ``NVM4306`` appears, the local Node/NVM trusted launcher blocked ``dsh``
 before the request reached the model. Check ``dsh --version`` and have the
-machine administrator run ``nvm reshim`` or repair the trusted launcher. Do not
+machine administrator run ``nvm reshim`` or repair the trusted launcher. If
+NVM4306 persists after reshim, the administrator should inspect NVM directory
+ACLs and script signing. Do not
 work around it by copying institute credentials into the app.
+
+The expanded dialog prioritizes conversation space: chat search and quick
+prompts are expandable, and bubbles reflow to the actual available width.
 
 **Enter** sends, and **Shift+Enter** inserts a new line. General research and other
 questions are welcome even without an open project. For app-specific procedures,

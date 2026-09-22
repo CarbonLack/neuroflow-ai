@@ -283,24 +283,18 @@ def _linear_sttc(
     dt_seconds: float,
     start_seconds: float,
     stop_seconds: float,
+    tiled_first: float | None = None,
+    tiled_second: float | None = None,
 ) -> float:
     """Compute the Cutts-Eglen STTC without an all-spike-pairs matrix."""
     if not len(first) or not len(second):
         return float("nan")
     pa = _spike_proportion_near(first, second, dt_seconds)
     pb = _spike_proportion_near(second, first, dt_seconds)
-    ta = _tiled_time_fraction(
-        first,
-        dt_seconds,
-        start_seconds,
-        stop_seconds,
-    )
-    tb = _tiled_time_fraction(
-        second,
-        dt_seconds,
-        start_seconds,
-        stop_seconds,
-    )
+    ta = (tiled_first if tiled_first is not None else
+          _tiled_time_fraction(first, dt_seconds, start_seconds, stop_seconds))
+    tb = (tiled_second if tiled_second is not None else
+          _tiled_time_fraction(second, dt_seconds, start_seconds, stop_seconds))
 
     def term(proportion: float, tiled: float) -> float:
         denominator = 1.0 - proportion * tiled
@@ -353,25 +347,42 @@ def run_spike_train_suite(
         }
         rows.append(row)
 
-    binned = BinnedSpikeTrain(trains, bin_size=bin_ms * pq.ms)
+    # Full-length per-unit descriptors above are retained. Pairwise matrices
+    # are explicitly bounded: dense binning and all-pairs timing comparisons
+    # otherwise grow sharply on long recordings with many candidate clusters.
+    pairwise_duration = min(float(state.duration_seconds), 600.0)
+    selected_indices = np.linspace(0, len(unit_ids) - 1,
+                                   min(len(unit_ids), 24), dtype=int)
+    pairwise_ids = [unit_ids[index] for index in selected_indices]
+    pairwise_arrays = [np.asarray(state.sorted_spikes[unit_id], dtype=float)
+                       for unit_id in pairwise_ids]
+    pairwise_arrays = [spikes[spikes <= pairwise_duration]
+                       for spikes in pairwise_arrays]
+    pairwise_trains = [neo.SpikeTrain(spikes * pq.s, t_start=0 * pq.s,
+                                    t_stop=pairwise_duration * pq.s)
+                       for spikes in pairwise_arrays]
+    binned = BinnedSpikeTrain(pairwise_trains, bin_size=bin_ms * pq.ms)
     correlation = np.asarray(correlation_coefficient(binned), dtype=float)
-    sttc = np.eye(len(trains), dtype=float)
-    for i in range(len(trains)):
-        for j in range(i + 1, len(trains)):
+    sttc = np.eye(len(pairwise_trains), dtype=float)
+    tiled_fractions = [_tiled_time_fraction(spikes, 0.005, 0.0, pairwise_duration)
+                       for spikes in pairwise_arrays]
+    for i in range(len(pairwise_trains)):
+        for j in range(i + 1, len(pairwise_trains)):
             value = _linear_sttc(
-                np.asarray(state.sorted_spikes[unit_ids[i]], dtype=float),
-                np.asarray(state.sorted_spikes[unit_ids[j]], dtype=float),
+                pairwise_arrays[i], pairwise_arrays[j],
                 dt_seconds=0.005,
                 start_seconds=0.0,
-                stop_seconds=state.duration_seconds,
+                stop_seconds=pairwise_duration,
+                tiled_first=tiled_fractions[i],
+                tiled_second=tiled_fractions[j],
             )
             sttc[i, j] = sttc[j, i] = float(value)
 
     distance_stop = min(
         max(float(distance_window_seconds), 0.1),
-        state.duration_seconds,
+        pairwise_duration,
     )
-    subset_ids = unit_ids[: min(8, len(unit_ids))]
+    subset_ids = pairwise_ids[: min(8, len(pairwise_ids))]
     subset = [
         neo.SpikeTrain(
             np.asarray(state.sorted_spikes[unit_id], dtype=float)[
@@ -390,25 +401,34 @@ def run_spike_train_suite(
         van_rossum_distance(subset, time_constant=100 * pq.ms), dtype=float
     )
     cch = {"lags_ms": np.array([]), "counts": np.array([]), "pair": []}
-    if len(trains) >= 2:
-        first = BinnedSpikeTrain([trains[0]], bin_size=5 * pq.ms)
-        second = BinnedSpikeTrain([trains[1]], bin_size=5 * pq.ms)
+    if len(pairwise_trains) >= 2:
+        first = BinnedSpikeTrain([pairwise_trains[0]], bin_size=5 * pq.ms)
+        second = BinnedSpikeTrain([pairwise_trains[1]], bin_size=5 * pq.ms)
         histogram, lag_bins = cross_correlation_histogram(
             first, second, window=[-20, 20], border_correction=True
         )
         cch = {
             "lags_ms": np.asarray(lag_bins, dtype=float) * 5.0,
             "counts": np.asarray(histogram.magnitude, dtype=float).ravel(),
-            "pair": [int(unit_ids[0]), int(unit_ids[1])],
+            "pair": [int(pairwise_ids[0]), int(pairwise_ids[1])],
         }
     result = {
         "provider": provider_status(),
-        "unit_ids": unit_ids,
+        "unit_ids": pairwise_ids,
+        "all_unit_ids": unit_ids,
+        "pairwise_scope": {
+            "unit_selection": "evenly_spaced_candidate_unit_ids",
+            "selected_unit_count": len(pairwise_ids),
+            "total_unit_count": len(unit_ids),
+            "start_seconds": 0.0,
+            "stop_seconds": pairwise_duration,
+            "warning": "Pairwise matrices are a bounded diagnostic subset, not a full-session all-unit claim.",
+        },
         "rows": rows,
         "bin_ms": float(bin_ms),
         "correlation": correlation,
         "sttc": sttc,
-        "distance_unit_ids": unit_ids[: len(subset)],
+        "distance_unit_ids": subset_ids,
         "distance_window_seconds": float(distance_stop),
         "distance_window_note": (
             "Victor-Purpura and van Rossum distances use a bounded window to "
@@ -791,19 +811,53 @@ def run_neural_toolkit(state: ProjectState) -> dict:
     )
     connectivity = state.spike_train_analysis.get("connectivity")
     if not connectivity:
-        # The one-click package uses a reproducible screening configuration.
-        # Experts can still run an exhaustive all-pairs analysis from the
-        # dedicated Fine timing controls.
+        # One-click connectivity is a clearly labelled screening sample across
+        # the whole recording, not an unbounded 2-hour x every-pair surrogate
+        # computation. The dedicated Fine timing controls retain the full run.
+        interval_count = min(10, max(1, int(state.duration_seconds // 60)))
+        interval_starts = np.linspace(
+            0.0, max(float(state.duration_seconds) - 60.0, 0.0), interval_count
+        )
+        screening_intervals = [
+            (float(start), float(min(start + 60.0, state.duration_seconds)))
+            for start in interval_starts
+        ]
         connectivity = run_connectivity_suite(
             state,
-            max_pairs=30,
-            jitter_iterations=20,
+            max_pairs=16,
+            jitter_iterations=10,
             pair_selection="random",
+            trial_intervals=screening_intervals,
+            interval_label="evenly_spaced_screening_windows",
         )
-    population_dynamics = (
-        state.spike_train_analysis.get("population_dynamics")
-        or run_population_dynamics_suite(state)
-    )
+        connectivity["one_click_scope"] = {
+            "type": "screening_not_exhaustive",
+            "sampled_duration_seconds": sum(stop - start for start, stop in screening_intervals),
+            "recording_duration_seconds": float(state.duration_seconds),
+            "sampled_intervals_seconds": screening_intervals,
+            "maximum_pairs": 16,
+            "jitter_iterations": 10,
+        }
+    # The event analysis is the user's active scientific selection. Reusing all
+    # imported MED-PC events here can allocate several GB of trial x ms x unit
+    # arrays and silently changes the population question being asked.
+    selected_events = np.asarray(event_aligned.get("event_times", []), dtype=float)
+    selected_labels = np.asarray(event_aligned.get("conditions", [])).astype(str)
+    population_dynamics = state.spike_train_analysis.get("population_dynamics")
+    if not population_dynamics:
+        population_settings = {"bin_size_seconds": 0.02}
+        if selected_events.size:
+            population_settings["event_times_seconds"] = selected_events
+            if selected_labels.size == selected_events.size:
+                population_settings["event_labels"] = selected_labels
+        population_dynamics = run_population_dynamics_suite(
+            state, **population_settings
+        )
+        population_dynamics["one_click_scope"] = {
+            "event_source": "current_event_analysis" if selected_events.size else "all_imported_events",
+            "event_count": int(selected_events.size if selected_events.size else len(state.events)),
+            "bin_size_seconds": 0.02,
+        }
     result = {
         "event_aligned": event_aligned,
         "spike_train": spike_train,

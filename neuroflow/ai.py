@@ -236,6 +236,14 @@ PROVIDER_PROFILES: dict[str, dict[str, Any]] = {
 }
 
 
+def supports_image_input(provider: str) -> bool:
+    """Whether this transport can carry a PNG; model capability is checked remotely."""
+    return provider in {
+        "harness_sdk", "openai_responses", "openai_compatible",
+        "private_compatible", "institute_harness",
+    }
+
+
 @dataclass(slots=True)
 class AISettings:
     provider: str = "deepseek"
@@ -1382,10 +1390,11 @@ def request_ai_advice(
     image_png: bytes | None = None,
 ) -> AIResponse:
     if image_png is not None:
-        if settings.provider not in {"harness_sdk", "openai_compatible", "openai_responses"}:
+        if not supports_image_input(settings.provider):
             raise AIConfigurationError(
-                "Chart input is available for Harness SDK, OpenAI-compatible Chat, "
-                "and OpenAI Responses connections. Select a vision-capable model."
+                "Chart input is available for Harness SDK, institute/private "
+                "OpenAI-compatible Chat, and OpenAI Responses connections. "
+                "Select a vision-capable model."
             )
         if not image_png.startswith(b"\x89PNG\r\n\x1a\n") or len(image_png) > 6_000_000:
             raise ValueError("Chart attachment must be a valid PNG smaller than 6 MB.")
@@ -1518,7 +1527,7 @@ def request_ai_advice(
             "response_format": {"type": "json_object"},
             "temperature": 0.2,
         }
-        if image_data_url and settings.provider == "openai_compatible":
+        if image_data_url and settings.provider in {"openai_compatible", "private_compatible", "institute_harness"}:
             # Compatible gateways vary in structured-output support for vision.
             # The response parser accepts prose as well as JSON; do not reject an
             # otherwise valid image request just to force response_format.

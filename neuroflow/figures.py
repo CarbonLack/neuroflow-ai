@@ -1939,12 +1939,18 @@ def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
             fig, axes = _base_figure(2, 2, 6.4)
             waveform = np.asarray(diagnostic["waveform"], dtype=float)
             waveform_time = np.asarray(diagnostic["waveform_time_ms"], dtype=float)
+            source_contacts = state.metadata.get("recording_adapter", {}).get("channel_ids", [])
             for index, channel in enumerate(diagnostic["waveform_channels"]):
+                source_label = (
+                    f" / source CH{source_contacts[channel]}"
+                    if 0 <= int(channel) < len(source_contacts)
+                    else ""
+                )
                 axes[0, 0].plot(
                     waveform_time,
                     waveform[:, index],
                     linewidth=1.2,
-                    label=f"Ch {channel}",
+                    label=f"Contact {channel}{source_label}",
                 )
             axes[0, 0].legend(frameon=False, fontsize=7, ncols=2)
             axes[0, 0].set_title(
@@ -1957,7 +1963,17 @@ def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
                 fontsize=11,
                 color=INK,
             )
-            axes[0, 0].set_xlabel("Time (ms)", color=MUTED)
+            axes[0, 0].axvline(0, color=MUTED, linewidth=0.6, linestyle="--")
+            axes[0, 0].set_xlabel(
+                _text(state, "相对 sorter 时间戳 (ms)", "From sorter timestamp (ms)"),
+                color=MUTED,
+            )
+            if diagnostic.get("waveform_channel_selection") == "peak_contact_only_geometry_unknown":
+                axes[0, 0].text(
+                    0.02, 0.02,
+                    _text(state, "通道几何未知，仅显示峰值通道", "Unknown geometry: peak contact only"),
+                    transform=axes[0, 0].transAxes, fontsize=7, color=MUTED,
+                )
             axes[0, 0].set_ylabel("ADC", color=MUTED)
             axes[0, 1].bar(
                 diagnostic["acg_lags_ms"],
@@ -2083,6 +2099,87 @@ def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
     )
     axes[0, 1].set_xlabel("Unit", color=MUTED)
     axes[0, 1].set_ylabel("ISI violation (%)", color=MUTED)
+    return fig
+
+
+@publication_figure
+def unit_cluster_figure(state: ProjectState, unit_id: int) -> Figure:
+    """On-demand waveform feature projection for manual cluster inspection.
+
+    Only clusters on the same measured contact are compared; numbered contact
+    neighbors are not treated as physical neighbors. This is diagnostic, not GT.
+    """
+    fig, axes = _base_figure(1, 2, 4.8)
+    diagnostic = state.unit_diagnostics.get(unit_id, {})
+    channels = diagnostic.get("waveform_channels", [])
+    if not state.ready or not channels:
+        for axis in axes.flat:
+            axis.text(0.5, 0.5, _text(state, "无可用原始波形", "Raw waveforms unavailable"),
+                      ha="center", va="center", transform=axis.transAxes)
+        return fig
+    selected_metric = next((row for row in state.unit_metrics
+                            if int(row.get("unit_id", -1)) == unit_id), {})
+    contact = int(selected_metric.get("peak_channel", channels[0]))
+    source_contacts = state.metadata.get("recording_adapter", {}).get("channel_ids", [])
+    contact_description = (
+        f"Contact {contact} / source CH{source_contacts[contact]}"
+        if 0 <= contact < len(source_contacts)
+        else f"Contact {contact}"
+    )
+    candidates = [unit_id] + [
+        int(metric["unit_id"]) for metric in state.unit_metrics
+        if int(metric["unit_id"]) != unit_id and int(metric.get("peak_channel", -1)) == contact
+    ][:4]
+    raw = load_recording(state)
+    feature_rows = []
+    labels = []
+    times = []
+    amplitudes = []
+    for candidate in candidates:
+        spikes = np.asarray(state.sorted_spikes.get(candidate, []), dtype=float)
+        positions = (spikes * state.sampling_rate).astype(np.int64)
+        positions = positions[(positions >= 25) & (positions < raw.shape[0] - 25)]
+        if not len(positions):
+            continue
+        positions = positions[np.linspace(0, len(positions) - 1, min(150, len(positions)), dtype=int)]
+        rows = np.stack([np.asarray(raw[index - 20:index + 21, contact], dtype=np.float32)
+                         for index in positions])
+        feature_rows.append(rows)
+        labels.extend([candidate] * len(rows))
+        times.extend((positions / state.sampling_rate).tolist())
+        amplitudes.extend((-rows.min(axis=1)).tolist())
+    if not feature_rows:
+        return fig
+    features = np.vstack(feature_rows)
+    centered = features - features.mean(axis=0, keepdims=True)
+    if len(features) >= 3:
+        _, _, components = np.linalg.svd(centered, full_matrices=False)
+        projection = centered @ components[:2].T
+    else:
+        projection = np.column_stack((centered[:, 20], centered[:, 21]))
+    labels = np.asarray(labels)
+    times = np.asarray(times)
+    amplitudes = np.asarray(amplitudes)
+    for candidate, color in zip(candidates, (GREEN, CORAL, BLUE, GOLD, MUTED)):
+        mask = labels == candidate
+        if not np.any(mask):
+            continue
+        axes[0, 0].scatter(projection[mask, 0], projection[mask, 1], s=12,
+                           alpha=0.55, color=color, label=f"Unit {candidate}")
+        axes[0, 1].scatter(times[mask], amplitudes[mask], s=10,
+                           alpha=0.5, color=color, label=f"Unit {candidate}")
+    axes[0, 0].set_title(_text(state, "同一接点波形 PCA", "Same-contact waveform PCA"), loc="left")
+    axes[0, 0].set_xlabel("PC 1")
+    axes[0, 0].set_ylabel("PC 2")
+    axes[0, 1].set_title(_text(state, "振幅随时间变化", "Amplitude over time"), loc="left")
+    axes[0, 1].set_xlabel(_text(state, "记录时间 (s)", "Recording time (s)"))
+    axes[0, 1].set_ylabel("Peak amplitude (ADC)")
+    axes[0, 0].legend(frameon=False, fontsize=7)
+    fig.suptitle(_text(
+        state,
+        f"{contact_description} · 仅比较同接点候选；分离外观不等于真实单细胞",
+        f"{contact_description} · same-contact candidates only; visual separation is not ground truth",
+    ), fontsize=9)
     return fig
 
 
@@ -2562,10 +2659,12 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
         color=INK,
     )
     summary.set_xlabel(_text(state, "单元", "Unit"), color=MUTED)
+    tick_step = max(1, int(np.ceil(len(unit_ids) / 12)))
+    visible_ticks = np.arange(0, len(unit_ids), tick_step)
     summary.set_xticks(
-        np.arange(len(unit_ids)),
-        [str(value) for value in unit_ids],
-        rotation=0 if len(unit_ids) <= 12 else 60,
+        visible_ticks,
+        [str(unit_ids[index]) for index in visible_ticks],
+        rotation=0,
     )
     summary.set_ylabel(
         _text(state, "放电率变化（Hz）", "Firing-rate change (Hz)"), color=MUTED

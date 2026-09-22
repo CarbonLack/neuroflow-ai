@@ -69,3 +69,13 @@ recorded.
 Keep single units, multi-unit activity, and uncertain candidates as separate
 labels. Downstream analyses can select the desired class without deleting the
 original sorter output.
+
+The waveform plot's 0 ms is the sorter-supplied spike timestamp, not
+necessarily action-potential onset. Without verified probe geometry, only
+the peak contact is displayed; numeric channel adjacency is not assumed to
+be physical adjacency. A documented contact group may be displayed together.
+
+The manual curation workbench also offers a same-contact waveform-PCA view
+and amplitude-over-time plot. It compares only candidates on the same
+contact. Visual cluster separation is a diagnostic, not biological ground
+truth or an automatic single-unit decision.

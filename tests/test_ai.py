@@ -182,6 +182,25 @@ def test_openai_compatible_chart_is_sent_as_confirmed_image_not_text(monkeypatch
     assert "I can see a trace" in response.answer
 
 
+def test_institute_harness_chat_carries_chart_pixels(monkeypatch):
+    captured = {}
+    def fake_post(_url, payload, *_args, **_kwargs):
+        captured.update(payload)
+        return {"choices": [{"message": {"content": "Visible waveform."}}]}
+    monkeypatch.setattr("neuroflow.ai._post_json", fake_post)
+    image = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZtS8AAAAASUVORK5CYII="
+    )
+    settings = AISettings(provider="institute_harness", base_url="https://example.invalid/v1",
+                          model="vision-test", api_key="test-key", stream=False,
+                          mode=AIMode.ASSISTANT.value)
+    response = request_ai_advice(settings, question="Explain", task="ask", language="en_US",
+                                 project_summary={"project_open": False}, image_png=image)
+    assert captured["messages"][1]["content"][1]["type"] == "image_url"
+    assert "response_format" not in captured
+    assert "Visible waveform" in response.answer
+
+
 def test_openai_responses_request_uses_schema_and_store_false():
     captured: dict = {}
 

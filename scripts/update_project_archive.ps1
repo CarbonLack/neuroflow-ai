@@ -22,6 +22,14 @@ function Get-Sha256Hex {
 
 $source = (Resolve-Path -LiteralPath $SourceRoot).Path
 $archive = [System.IO.Path]::GetFullPath($ArchiveRoot)
+if (
+    (Test-Path -LiteralPath (Join-Path $archive "00_START_HERE")) -and
+    (Test-Path -LiteralPath (Join-Path $archive "02_Source_Code\Repository")) -and
+    $source.StartsWith($archive + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+) {
+    Write-Host "Consolidated NeuroEphys AI workspace detected. Source and releases already live inside this folder; no legacy duplicate archive is created."
+    return
+}
 $productFile = Join-Path $source "neuroflow\product.py"
 $productText = Get-Content -LiteralPath $productFile -Raw
 $versionMatch = [regex]::Match($productText, 'PRODUCT_VERSION\s*=\s*"([^"]+)"')

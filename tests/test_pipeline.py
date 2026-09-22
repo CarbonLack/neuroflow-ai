@@ -20,7 +20,7 @@ from neuroflow.data_import import (
     import_nwb_units,
 )
 from neuroflow.decoding import decoding_input_diagnostics, run_decoding_suite
-from neuroflow.figures import behavior_figure, event_analysis_figure
+from neuroflow.figures import behavior_figure, event_analysis_figure, unit_cluster_figure
 from neuroflow.ephys_toolkit import run_neural_toolkit
 from neuroflow.models import ProjectState
 from neuroflow.project import load_project, save_project
@@ -167,6 +167,33 @@ def test_unit_qc_keeps_full_metrics_but_caps_plot_payload(tmp_path: Path):
     assert diagnostic["isi_total_count"] == 50_000
     assert diagnostic["isi_plot_sampled"] is True
     assert len(diagnostic["isi_ms"]) == 20_000
+
+
+def test_unit_qc_does_not_invent_neighboring_electrodes(tmp_path: Path):
+    state = generate_demo_recording(tmp_path / "geometry", duration_seconds=1.0,
+                                    channel_count=8, sampling_rate=10_000.0)
+    state.metadata.pop("contact_positions_um", None)
+    state.sorted_spikes = {1: np.array([0.2, 0.4, 0.6])}
+    compute_unit_metrics(state)
+    diagnostic = state.unit_diagnostics[1]
+    assert len(diagnostic["waveform_channels"]) == 1
+    assert diagnostic["waveform_channel_selection"] == "peak_contact_only_geometry_unknown"
+    assert diagnostic["waveform_alignment"] == "sorter_spike_timestamp_no_peak_realignment"
+    peak = diagnostic["waveform_channels"][0]
+    state.metadata["probe"] = {"contact_groups": [[peak, (peak + 1) % 8]]}
+    compute_unit_metrics(state)
+    assert state.unit_diagnostics[1]["waveform_channels"] == [peak, (peak + 1) % 8]
+    state.metadata["probe"] = {}
+    state.metadata["contact_positions_um"] = [
+        [float(index * 200), 0.0] for index in range(8)
+    ]
+    state.metadata["contact_positions_um"][(peak + 1) % 8] = [float(peak * 200 + 20), 0.0]
+    compute_unit_metrics(state)
+    assert state.unit_diagnostics[1]["waveform_channel_selection"] == "recorded_contact_positions_within_50um"
+    state.metadata["language"] = "en_US"
+    figure = unit_cluster_figure(state, 1)
+    assert "PCA" in figure.axes[0].get_title(loc="left")
+    assert "not ground truth" in figure._suptitle.get_text()
 
 
 def test_linear_acg_matches_original_bin_definition():
@@ -503,6 +530,9 @@ def test_complete_neural_toolkit_retains_every_attached_result(tmp_path: Path):
     assert result["spike_train"]["rows"]
     assert result["connectivity"]
     assert result["population_dynamics"]
+    assert result["population_dynamics"]["one_click_scope"]["bin_size_seconds"] == 0.02
+    assert result["population_dynamics"]["one_click_scope"]["event_source"] == "current_event_analysis"
+    assert result["connectivity"]["one_click_scope"]["type"] == "screening_not_exhaustive"
     assert state.spike_train_analysis["connectivity"] is result["connectivity"]
     assert (
         state.spike_train_analysis["population_dynamics"]

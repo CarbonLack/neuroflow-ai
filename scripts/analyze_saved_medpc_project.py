@@ -1,6 +1,7 @@
 """Analyze each confirmed MED-PC event separately; keep all candidate QC visible."""
 import argparse
 import json
+import shutil
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -59,6 +60,14 @@ def main():
         state.statistics = {}
         save_project(state)
     original = state.events
+    original_analysis = deepcopy(state.analysis)
+    original_statistics = deepcopy(state.statistics)
+    original_spike_train_analysis = deepcopy(state.spike_train_analysis)
+    original_decoding = deepcopy(state.decoding)
+    original_regression = deepcopy(state.regression)
+    original_lfp_analysis = deepcopy(state.lfp_analysis)
+    original_spike_field_analysis = deepcopy(state.spike_field_analysis)
+    original_case_studies = deepcopy(state.case_studies)
     summaries = []
     try:
         for code in (1, 3, 5, 7, 17, 19, 21, 22):
@@ -67,10 +76,26 @@ def main():
                 summaries.append({'event_code': code, 'status': 'insufficient events', 'count': len(selected)})
                 continue
             state.events = selected
+            # These subreports answer one event-family question. The saved
+            # light-side population/decoder or whole-session connectivity
+            # must not be relabeled as the current event's result.
+            state.spike_train_analysis = {}
+            state.decoding = {}
+            state.regression = {}
+            state.lfp_analysis = {}
+            state.spike_field_analysis = {}
+            state.case_studies = {}
             event_aligned_analysis(state)
             run_statistical_suite(state)
             name = CONFIRMED_EVENT_DICTIONARY[code]['label']
             output = state.root / 'exports' / f'event_{code:02d}_{name}'
+            if output.exists():
+                # Replace only this script's exact generated event directory;
+                # stale figures from a previous (wrongly inherited) analysis
+                # must not survive alongside the corrected report.
+                if output.resolve().parent != (state.root / 'exports').resolve() or not output.name.startswith(f'event_{code:02d}_'):
+                    raise RuntimeError(f'Unsafe event export target: {output}')
+                shutil.rmtree(output)
             export_reproducible_bundle(state, output)
             summaries.append({'event_code': code, 'event_name': name, 'selected_count': state.analysis['selected_event_count'],
                 'units': len(state.sorted_spikes), 'significant_units_bh_fdr': state.statistics['significant_count'],
@@ -78,6 +103,14 @@ def main():
             print(json.dumps(summaries[-1], ensure_ascii=False), flush=True)
     finally:
         state.events = original
+        state.analysis = original_analysis
+        state.statistics = original_statistics
+        state.spike_train_analysis = original_spike_train_analysis
+        state.decoding = original_decoding
+        state.regression = original_regression
+        state.lfp_analysis = original_lfp_analysis
+        state.spike_field_analysis = original_spike_field_analysis
+        state.case_studies = original_case_studies
         save_project(state)
         (state.root / 'exports/event_analysis_summary.json').write_text(json.dumps(summaries, ensure_ascii=False, indent=2), encoding='utf-8')
 

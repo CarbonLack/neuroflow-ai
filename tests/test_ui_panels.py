@@ -37,6 +37,26 @@ from neuroflow.ui import (
 from neuroflow.unit_curation_ui import UnitCurationDialog
 
 
+def test_workspace_controls_share_menu_row_and_chat_prioritizes_messages(tmp_path: Path, monkeypatch):
+    app = QApplication.instance() or QApplication([])
+    window = NeuroFlowWindow(tmp_path)
+    assert window.menuBar().cornerWidget(Qt.TopLeftCorner) is window._menu_left_controls
+    assert window.menuBar().cornerWidget(Qt.TopRightCorner) is window._menu_right_controls
+    assert window.workspace_page.layout().count() == 1
+    window._open_ai_assistant()
+    app.processEvents()
+    dialog = window.ai_dialog
+    assert dialog is not None
+    assert not dialog.find_panel.isVisible()
+    assert not dialog.quick_panel.isVisible()
+    dialog.settings.provider = "institute_harness"
+    dialog.figure_capture_getter = lambda: (b"\x89PNG\r\n\x1a\nchart", "current chart")
+    monkeypatch.setattr("neuroflow.ai_ui.confirm_chart_attachment", lambda *_: True)
+    assert dialog.attach_current_chart()
+    dialog.close()
+    window.close()
+
+
 def test_sorting_workload_explains_cache_and_independent_contacts(tmp_path: Path):
     app = QApplication.instance() or QApplication([])
     recording = tmp_path / "recording.bin"

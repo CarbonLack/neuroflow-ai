@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=05a6cece"></script>
+      <script src="_static/documentation_options.js?v=1760f2d4"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -348,7 +348,7 @@ Harness 须单独安装并完成账号配置，参考 <a class="reference extern
 AI 不会因此获得任意代码或文件访问权限。分析提案经用户确认后才运行。</p>
 <p>需要 AI <strong>真正看图</strong> 时，点击右侧“解读图”或展开窗口的“解读当前图”。App 在内存中
 渲染当前图为 PNG，先显示与发送内容一致的预览；只有确认后才通过当前配置的
-Harness SDK、OpenAI-compatible Chat 或 OpenAI Responses 图像消息发送。
+Harness SDK、机构／私有 OpenAI-compatible Chat 或 OpenAI Responses 图像消息发送。
 所选模型与服务仍须支持图像输入；若服务拒绝，App 显示失败而不假装读图成功。
 模型应区分可见趋势和项目计算出的准确数值。对话档案只保存图名和
 发送记录，不保存 PNG 字节。若当前图含波形、文字或标签，预览时请自行检查。
@@ -356,7 +356,10 @@ Harness SDK、OpenAI-compatible Chat 或 OpenAI Responses 图像消息发送。
 Harness 任意文件读取权限。</p>
 <p>如果提示 <code class="docutils literal notranslate"><span class="pre">NVM4306</span></code>，本机 Node/NVM 安全启动器已拦截 <code class="docutils literal notranslate"><span class="pre">dsh</span></code>，请求并未到达模型。
 先在终端运行 <code class="docutils literal notranslate"><span class="pre">dsh</span> <span class="pre">--version</span></code> 核对，再按 NVM 提示由管理员执行 <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code>
-或修复可信启动器；不要通过复制机构密钥来绕过 Harness。</p>
+或修复可信启动器；如果 <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code> 后依然是 NVM4306，应检查 NVM 目录
+ACL 与签名，由电脑管理员处理，不要绕过安全检查或复制机构密钥。</p>
+<p>展开的对话窗口默认优先展示聊天内容，“查找对话”和“快捷提问”按需展开；
+因此在小屏幕上不会让检索栏占掉大半个窗口。右侧小窗的气泡也会随宽度重新排版。</p>
 <p>输入框 <strong>回车发送</strong>，<strong>Shift+回车换行</strong>。未打开项目时也可问通用科研知识或其他问题；
 这类无项目对话保存在用户工作区的 <code class="docutils literal notranslate"><span class="pre">ai/general_conversation.json</span></code>，不混入实验项目。
 打开项目后，AI 必须区分一般知识、版本化软件教程和项目实测证据。关于软件操作的

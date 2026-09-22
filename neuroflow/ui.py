@@ -3908,6 +3908,8 @@ class NeuroFlowWindow(QMainWindow):
         self.view_menu = menu_bar.addMenu("视图")
         self.analysis_menu = menu_bar.addMenu("分析")
         self.help_menu = menu_bar.addMenu("帮助")
+        menu_bar.setCornerWidget(self._menu_left_controls, Qt.TopLeftCorner)
+        menu_bar.setCornerWidget(self._menu_right_controls, Qt.TopRightCorner)
 
         def action(
             parent,
@@ -4433,7 +4435,7 @@ class NeuroFlowWindow(QMainWindow):
         root = QVBoxLayout(page)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(self._header())
+        self._header()
         self.workspace_splitter = QSplitter(Qt.Horizontal)
         self.workspace_splitter.setChildrenCollapsible(True)
         self.workspace_splitter.setHandleWidth(5)
@@ -4469,9 +4471,11 @@ class NeuroFlowWindow(QMainWindow):
     def _header(self) -> QWidget:
         header = QWidget()
         header.setObjectName("Header")
-        header.setFixedHeight(66)
+        header.setFixedHeight(38)
         layout = QHBoxLayout(header)
-        layout.setContentsMargins(14, 7, 14, 7)
+        layout.setContentsMargins(4, 0, 4, 0)
+        layout.setSpacing(4)
+        self._menu_left_controls = header
         self.home_button = QPushButton("首页")
         self.home_button.clicked.connect(
             lambda: self.pages.setCurrentWidget(self.home_page)
@@ -4483,6 +4487,8 @@ class NeuroFlowWindow(QMainWindow):
         )
         layout.addWidget(self.workflow_toggle_button)
         title_box = QVBoxLayout()
+        title_box.setSpacing(0)
+        title_box.setContentsMargins(0, 0, 0, 0)
         brand = QLabel(PRODUCT_NAME)
         brand.setObjectName("Brand")
         self.project_label = QLabel("尚未打开项目")
@@ -4492,7 +4498,11 @@ class NeuroFlowWindow(QMainWindow):
         title_box.addWidget(brand)
         title_box.addWidget(self.project_label)
         layout.addLayout(title_box)
-        layout.addStretch()
+        right_header = QWidget()
+        right_layout = QHBoxLayout(right_header)
+        right_layout.setContentsMargins(4, 0, 8, 0)
+        right_layout.setSpacing(4)
+        self._menu_right_controls = right_header
         self.workspace_language_combo = QComboBox()
         self.workspace_language_combo.setProperty(
             "neuroflow_help_key", "global.language"
@@ -4504,7 +4514,7 @@ class NeuroFlowWindow(QMainWindow):
         )
         self.workspace_language_combo.setToolTip("界面语言 / Interface language")
         self.workspace_language_combo.setMaximumWidth(120)
-        layout.addWidget(self.workspace_language_combo)
+        right_layout.addWidget(self.workspace_language_combo)
         self.sorter_manager_button = QPushButton("Sorter 管理")
         self.sorter_manager_button.clicked.connect(
             lambda: SorterManagerDialog(self.language, self).exec()
@@ -4529,10 +4539,10 @@ class NeuroFlowWindow(QMainWindow):
         self.run_button.setProperty("neuroflow_help_key", "global.run_all")
         self.run_button.clicked.connect(self._run_full_pipeline)
         self.run_button.setEnabled(False)
-        layout.addWidget(self.save_button)
-        layout.addWidget(self.tutorial_button)
-        layout.addWidget(self.ai_button)
-        layout.addWidget(self.run_button)
+        right_layout.addWidget(self.save_button)
+        right_layout.addWidget(self.tutorial_button)
+        right_layout.addWidget(self.ai_button)
+        right_layout.addWidget(self.run_button)
         return header
 
     def _sidebar(self) -> QWidget:
@@ -4699,6 +4709,21 @@ class NeuroFlowWindow(QMainWindow):
         unit_curation_layout.addWidget(self.unit_curation_button)
         self.unit_curation_panel.setVisible(False)
         layout.addWidget(self.unit_curation_panel)
+        self.publication_panel = QFrame()
+        self.publication_panel.setObjectName("SortingWorkbench")
+        publication_layout = QHBoxLayout(self.publication_panel)
+        publication_layout.setContentsMargins(12, 8, 12, 8)
+        self.publication_status = QLabel()
+        self.publication_status.setWordWrap(True)
+        publication_layout.addWidget(self.publication_status, 1)
+        self.publication_open_button = QPushButton("打开英文图文报告")
+        self.publication_open_button.clicked.connect(self._open_publication_report)
+        publication_layout.addWidget(self.publication_open_button)
+        self.publication_folder_button = QPushButton("打开完整导出文件夹")
+        self.publication_folder_button.clicked.connect(self._open_publication_folder)
+        publication_layout.addWidget(self.publication_folder_button)
+        self.publication_panel.setVisible(False)
+        layout.addWidget(self.publication_panel)
         self.sync_workbench = QFrame()
         self.sync_workbench.setObjectName("SortingWorkbench")
         sync_layout = QVBoxLayout(self.sync_workbench)
@@ -5445,6 +5470,13 @@ class NeuroFlowWindow(QMainWindow):
         self.sidebar_ai_settings_button.setText(
             "Settings" if language == "en_US" else "设置"
         )
+        self.publication_open_button.setText(
+            "Open English figure report" if language == "en_US" else "打开英文图文报告"
+        )
+        self.publication_folder_button.setText(
+            "Open complete export" if language == "en_US" else "打开完整导出文件夹"
+        )
+        self._refresh_publication_panel()
         self.sidebar_ai_manual_button.setText(
             "AI guide ↗" if language == "en_US" else "AI 使用教程 ↗"
         )
@@ -5938,6 +5970,32 @@ class NeuroFlowWindow(QMainWindow):
             return
         self.state.root.mkdir(parents=True, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.state.root)))
+
+    def _open_publication_report(self) -> None:
+        if self.state:
+            report = self.state.root / "exports" / "publication" / "index.html"
+            if report.is_file():
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(report)))
+
+    def _open_publication_folder(self) -> None:
+        if self.state:
+            folder = self.state.root / "exports"
+            if folder.is_dir():
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
+
+    def _refresh_publication_panel(self) -> None:
+        if not hasattr(self, "publication_status"):
+            return
+        report = (self.state.root / "exports" / "publication" / "index.html") if self.state else None
+        available = bool(report and report.is_file())
+        self.publication_open_button.setEnabled(available)
+        self.publication_folder_button.setEnabled(available)
+        self.publication_status.setText(
+            ((f"English main/supplementary report: {report}" if self.language == "en_US"
+              else f"英文主图／附图与图注：{report}") if available else
+             ("No publication bundle yet. Run this step after the analyses you need."
+              if self.language == "en_US" else "尚未生成论文图文包。请先完成需要的分析，再运行本步骤。"))
+        )
 
     def _update_project_data_panel(self) -> None:
         if not hasattr(self, "project_data_summary"):
@@ -6758,6 +6816,8 @@ class NeuroFlowWindow(QMainWindow):
                 self.option_combo.setCurrentIndex(previous_index)
         self.sorting_workbench.setVisible(key == "sorting")
         self.unit_curation_panel.setVisible(key == "unit_qc")
+        self.publication_panel.setVisible(key == "export")
+        self._refresh_publication_panel()
         self.sync_workbench.setVisible(key == "sync")
         self.project_data_panel.setVisible(key == "import")
         self._update_project_data_panel()
@@ -6811,6 +6871,7 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_figure()
         self._refresh_table()
         self._refresh_warnings()
+        self._refresh_publication_panel()
         self._update_stage_navigation()
         QTimer.singleShot(0, lambda stage_key=key: self._maybe_show_stage_guide(stage_key))
 
@@ -7698,6 +7759,7 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_figure()
         self._refresh_table()
         self._refresh_warnings()
+        self._refresh_publication_panel()
         elapsed = 0.0
         if self.active_run_started is not None:
             elapsed = (

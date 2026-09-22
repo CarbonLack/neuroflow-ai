@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e358f374"></script>
+      <script src="_static/documentation_options.js?v=4720776d"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -357,7 +357,7 @@ execution and file-system access are not granted.</p>
 <p>To let the model actually inspect the current chart, choose <strong>Chart</strong> in the right
 panel or <strong>Interpret current chart</strong> in the expanded conversation. The app renders
 only that chart to PNG in memory and displays the exact image for approval before
-sending it through Harness SDK, OpenAI-compatible Chat, or OpenAI Responses.
+sending it through Harness SDK, institute/private OpenAI-compatible Chat, or OpenAI Responses.
 The configured model and service must accept image inputs; a rejection is shown
 as a failure, not a fabricated visual answer. Image bytes are not stored in
 the chat archive; only the chart label and send record are kept. A chart may show
@@ -365,8 +365,12 @@ raw traces or labels, so check the preview. Visual impressions are not substitut
 for numerical results. Other API profiles do not silently pretend to see an image.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">NVM4306</span></code> appears, the local Node/NVM trusted launcher blocked <code class="docutils literal notranslate"><span class="pre">dsh</span></code>
 before the request reached the model. Check <code class="docutils literal notranslate"><span class="pre">dsh</span> <span class="pre">--version</span></code> and have the
-machine administrator run <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code> or repair the trusted launcher. Do not
+machine administrator run <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code> or repair the trusted launcher. If
+NVM4306 persists after reshim, the administrator should inspect NVM directory
+ACLs and script signing. Do not
 work around it by copying institute credentials into the app.</p>
+<p>The expanded dialog prioritizes conversation space: chat search and quick
+prompts are expandable, and bubbles reflow to the actual available width.</p>
 <p><strong>Enter</strong> sends, and <strong>Shift+Enter</strong> inserts a new line. General research and other
 questions are welcome even without an open project. For app-specific procedures,
 the assistant can query the versioned built-in tutorial. It distinguishes general

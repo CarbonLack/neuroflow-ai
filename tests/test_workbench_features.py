@@ -339,6 +339,8 @@ def test_elephant_toolkit_produces_real_results(tmp_path: Path):
     assert len(lfp_result["channel_ids"]) == 2
     assert np.asarray(lfp_result["psd"]).shape[0] == 2
     assert len(coupling_result["rows"]) == len(state.ground_truth)
+
+
     assert coupling_result["surrogate_count"] == 20
     assert len(respiration_result["rows"]) == 3
     assert "not the original paper dataset" in respiration_result["limitations"][0]
@@ -353,6 +355,20 @@ def test_elephant_toolkit_produces_real_results(tmp_path: Path):
     assert (exported / "tables" / "spike_train_statistics.csv").is_file()
     assert (exported / "tables" / "lfp_band_power.csv").is_file()
     assert (exported / "figures" / "spike_field_coupling.svg").is_file()
+
+
+def test_spike_train_pairwise_scope_is_explicitly_bounded(tmp_path: Path):
+    state = ProjectState(root=tmp_path / "bounded", duration_seconds=650.0,
+                         sampling_rate=30_000.0, channel_count=32)
+    state.sorted_spikes = {
+        unit: np.array([1.0, 2.0, 3.0, 100.0, 400.0, 500.0]) + unit * 0.0001
+        for unit in range(30)
+    }
+    result = run_spike_train_suite(state)
+    assert len(result["rows"]) == 30
+    assert result["correlation"].shape == (24, 24)
+    assert result["pairwise_scope"]["stop_seconds"] == 600.0
+    assert result["pairwise_scope"]["total_unit_count"] == 30
 
 
 def test_export_removes_stale_trial_table_when_trials_are_not_defined(

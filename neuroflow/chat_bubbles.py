@@ -80,10 +80,14 @@ class BubbleChatView(QScrollArea):
         QTimer.singleShot(0, self._scroll_to_bottom)
 
     def _resize_bodies(self) -> None:
-        available = max(200, self.viewport().width() - 34)
+        available = max(160, self.viewport().width() - 20)
         for _, _, bubble, body in self._messages:
-            bubble.setMaximumWidth(max(190, int(available * 0.87)))
-            width = max(155, min(int(available * 0.87), bubble.width() or available) - 28)
+            # A newly added bubble may still report its tiny pre-layout width.
+            # Measuring against that value caused chat text to wrap at ~155 px
+            # even when the dialog had hundreds of pixels available.
+            bubble_width = max(150, int(available * 0.96))
+            bubble.setMaximumWidth(bubble_width)
+            width = max(125, bubble_width - 28)
             body.document().setTextWidth(width)
             body.setFixedHeight(max(32, int(body.document().size().height()) + 12))
 

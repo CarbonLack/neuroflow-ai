@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .figures import unit_metrics_figure
+from .figures import unit_cluster_figure, unit_metrics_figure
 from .models import ProjectState
 from .unit_curation import (
     CURATION_CHECKS,
@@ -124,6 +124,11 @@ class UnitCurationDialog(QDialog):
 
         center = QFrame()
         center_layout = QVBoxLayout(center)
+        self.diagnostic_view = QComboBox()
+        self.diagnostic_view.addItem("波形 / 不应期 / 稳定性" if not self.english else "Waveform / ACG / stability", "qc")
+        self.diagnostic_view.addItem("同接点 cluster 特征空间" if not self.english else "Same-contact cluster features", "cluster")
+        self.diagnostic_view.currentIndexChanged.connect(self._refresh_unit_figure)
+        center_layout.addWidget(self.diagnostic_view)
         self.canvas = FigureCanvasQTAgg(
             unit_metrics_figure(self.state, "overview")
         )
@@ -232,11 +237,7 @@ class UnitCurationDialog(QDialog):
         unit_id = self._selected_unit()
         if unit_id is None:
             return
-        self.canvas.figure = unit_metrics_figure(
-            self.state,
-            f"unit:{unit_id}",
-        )
-        self.canvas.draw_idle()
+        self._refresh_unit_figure()
         record = unit_curation_record(self.state, unit_id, self.sorter_key)
         self.label_combo.setCurrentIndex(
             max(self.label_combo.findData(record.get("label", "uncertain")), 0)
@@ -270,6 +271,16 @@ class UnitCurationDialog(QDialog):
                 f"{metric.get('duplicate_partner_unit', '—')}"
             )
         )
+
+    def _refresh_unit_figure(self) -> None:
+        unit_id = self._selected_unit()
+        if unit_id is None:
+            return
+        if self.diagnostic_view.currentData() == "cluster":
+            self.canvas.figure = unit_cluster_figure(self.state, unit_id)
+        else:
+            self.canvas.figure = unit_metrics_figure(self.state, f"unit:{unit_id}")
+        self.canvas.draw_idle()
 
     def _save(self) -> None:
         unit_id = self._selected_unit()

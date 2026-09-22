@@ -1,8 +1,8 @@
-# NeuroEphys AI v1.3.4
+# NeuroEphys AI v1.3.5
 
 AI 项目对话：本版可通过已配置的官方 DeepSeek Harness 查询当前数据、指定 Unit、事件、结果与项目历史对话；分析操作仍需确认。机构账号使用 Harness SDK，不复制其密钥到 App。Harness 须独立安装配置，详见 [AI 使用手册](AI_USER_GUIDE_ZH.md) 和 [实现及验收边界](docs/AI_HARNESS_IMPLEMENTATION_1.2.5_ZH.md)。
 
-v1.3.4 新增：首次打开时可选的分步引导（可勾选“不再提醒”，之后从帮助菜单重新打开）；AI 对话按项目和 11 个步骤分别保存，以左右聊天气泡区分提问与回答；支持通过已配置的 Harness SDK 或兼容接口发送图像。行为分析新增两种可调时间范围的行为谱：按动物逐行，以及选定动物按行为逐行。图像请求是否成功仍取决于已配置模型的图像能力与服务状态；不把协议测试误写成真实模型调用成功。
+v1.3.5 修正机构兼容接口图像上传许可、扩大聊天阅读区并将顶部工具收为单行；人工 Unit 复核仅在有经核实的几何时联显多接点，增加同接点波形特征图，明确 sorter 时间戳零点；第 11 步直接打开英文图文报告。真实 Subject 102 项目验证了完整导入、同步、排序、分析与导出，同时显式限定一键群体分析和连接性筛查的范围。真实 Harness 是否能读图仍取决于本机可信启动器和机构模型服务，协议测试不等于服务验收。
 
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
@@ -42,7 +42,7 @@ NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道
 
 ## 开始使用
 
-v1.3.4 同时提供标准安装版、标准便携版和可选组件的 GPU/CUDA/Kilosort Full
+v1.3.5 同时提供标准安装版、标准便携版和可选组件的 GPU/CUDA/Kilosort Full
 离线安装版；科研复现与比赛演示推荐 Full，普通 CPU 工作站可选标准版。v1.2.1 增加按实际图名选择的子图格式编辑、
 分页并排参数、项目统一样式与期刊参考预设。
 字体、轴线、网格及配色的默认参数与依据见 [科研作图标准](docs/FIGURE_STYLE_STANDARD_ZH.md)。
@@ -189,7 +189,7 @@ chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度
 
 ## 启动
 
-普通用户安装 ``NeuroEphysAI-Setup-1.3.4.exe`` 后，双击桌面上的 **NeuroEphys AI**
+普通用户安装 ``NeuroEphysAI-Setup-1.3.5.exe`` 后，双击桌面上的 **NeuroEphys AI**
 快捷方式即可启动。便携版需完整解压 ZIP，然后双击
 ``NeuroEphysAI\NeuroEphysAI.exe``；不要只复制单独的 EXE。两种版本都不要求用户安装
 Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
@@ -197,7 +197,7 @@ Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
 Python 用户可以安装构建出的 wheel：
 
 ```powershell
-python -m pip install neuroephys_ai-1.3.4-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.5-py3-none-any.whl
 neuroephys info
 ```
 

@@ -133,12 +133,27 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
             + '<p class="note">Author interpretation: ____________________</p></section>'
         )
     links = ''.join(f'<li><a href="../{html.escape(item["path"], quote=True)}">{html.escape(item["path"])}</a> ({item["role"]})</li>' for item in inventory)
+    event_reports = sorted(output.glob('event_*/publication/index.html'))
+    companion_links = ''.join(
+        f'<li><a href="../{html.escape(path.relative_to(output).as_posix(), quote=True)}">'
+        f'{html.escape(path.parent.parent.name.replace("_", " "))}</a></li>'
+        for path in event_reports
+    )
+    family_review = output / 'event_family_review' / 'index.html'
+    if family_review.is_file():
+        companion_links += '<li><a href="../event_family_review/index.html">Cross-event family correction</a></li>'
+    companion_section = (
+        '<section><h2>Companion event analyses</h2><p>Each linked report was recomputed for its own '
+        'event family; the primary light-side decoder and population dynamics are not relabeled '
+        'as results for other events.</p><ul>' + companion_links + '</ul></section>'
+        if companion_links else ''
+    )
     document = ('<!doctype html><html lang="en"><meta charset="utf-8"><title>Analysis figure report</title>'
         '<style>body{font:15px Arial,sans-serif;color:#222;max-width:1050px;margin:40px auto;padding:0 24px;background:white}h1,h2{font-weight:600}section{margin:36px 0;break-inside:avoid}.panel{margin:24px 0}.panel img{width:100%;height:auto}p{line-height:1.6}.note{color:#666}a{color:#654c80}@media print{body{margin:0}section{break-before:page}}</style>'
         f'<h1>{html.escape(state.name)}</h1><p>English analysis figures and supplementary evidence. Draft organization; scientific review and target-journal checks remain required.</p>'
         '<p>Main figures follow behavioral context, neural response and statistical uncertainty. All remaining artifacts are indexed below, including alternative formats and prior files. No significance-based filtering is applied.</p>'
         + '<p><a href="sized_figures/README.md">Physical-size artwork and checks</a> · <a href="sized_figures/layout_checks.json">Layout diagnostics</a></p>'
-        + ''.join(chunks) + '<h2>Complete artifact inventory</h2><ul>' + links + '</ul></html>')
+        + ''.join(chunks) + companion_section + '<h2>Complete artifact inventory</h2><ul>' + links + '</ul></html>')
     (folder / 'index.html').write_text(document, encoding='utf-8')
     (folder / 'figure_legends.md').write_text('\n'.join(legends), encoding='utf-8')
     (folder / '结果阅读说明.md').write_text('\n'.join(guide), encoding='utf-8')

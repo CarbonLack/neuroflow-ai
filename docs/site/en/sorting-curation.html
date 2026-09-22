@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/sorting-curation.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e358f374"></script>
+      <script src="_static/documentation_options.js?v=4720776d"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -389,6 +389,14 @@ duplicate or split units.</p></li>
 <p>Keep single units, multi-unit activity, and uncertain candidates as separate
 labels. Downstream analyses can select the desired class without deleting the
 original sorter output.</p>
+<p>The waveform plot’s 0 ms is the sorter-supplied spike timestamp, not
+necessarily action-potential onset. Without verified probe geometry, only
+the peak contact is displayed; numeric channel adjacency is not assumed to
+be physical adjacency. A documented contact group may be displayed together.</p>
+<p>The manual curation workbench also offers a same-contact waveform-PCA view
+and amplitude-over-time plot. It compares only candidates on the same
+contact. Visual cluster separation is a diagnostic, not biological ground
+truth or an automatic single-unit decision.</p>
 </section>
 </section>
 
