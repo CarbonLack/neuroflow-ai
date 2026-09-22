@@ -3871,7 +3871,8 @@ class NeuroFlowWindow(QMainWindow):
             QTimer.singleShot(0, self._offer_first_launch_guide)
 
     def _offer_first_launch_guide(self) -> None:
-        if (QApplication.platformName().lower() == "offscreen"
+        if (any(argument.startswith("--self-test-") for argument in sys.argv)
+                or QApplication.platformName().lower() == "offscreen"
                 or self.settings.value("guidance/first_launch_completed", False, type=bool)):
             return
         english = self.language == "en_US"
