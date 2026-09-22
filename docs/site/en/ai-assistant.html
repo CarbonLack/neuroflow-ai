@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8ca9e7a0"></script>
+      <script src="_static/documentation_options.js?v=28d163b9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -158,7 +158,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Controlled AI assistant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#project-chat-and-chart-vision-source-update">Project chat and chart vision (source update)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#project-chat-and-chart-vision-v1-3-3">Project chat and chart vision (v1.3.3)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#read-the-answer-first-open-detail-when-needed">Read the answer first; open detail when needed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#operating-modes">Operating modes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#providers">Providers</a></li>
@@ -324,8 +324,8 @@
 
   <section id="controlled-ai-assistant">
 <h1>Controlled AI assistant<a class="headerlink" href="#controlled-ai-assistant" title="Link to this heading"></a></h1>
-<section id="project-chat-and-chart-vision-source-update">
-<h2>Project chat and chart vision (source update)<a class="headerlink" href="#project-chat-and-chart-vision-source-update" title="Link to this heading"></a></h2>
+<section id="project-chat-and-chart-vision-v1-3-3">
+<h2>Project chat and chart vision (v1.3.3)<a class="headerlink" href="#project-chat-and-chart-vision-v1-3-3" title="Link to this heading"></a></h2>
 <p>For an institute-managed DeepSeek Harness account, use <strong>Read local DeepSeek
 Harness configuration</strong> in AI settings. The Harness SDK route calls the installed
 official dsh runtime; the app does not extract its model credentials or bypass it
@@ -367,6 +367,9 @@ questions are welcome even without an open project. For app-specific procedures,
 the assistant can query the versioned built-in tutorial. It distinguishes general
 model knowledge from measured project evidence and must not present unverified
 current information or invented citations as checked facts.</p>
+<p>Chats started without a project are kept separately at
+<code class="docutils literal notranslate"><span class="pre">&lt;user</span> <span class="pre">workspace&gt;/ai/general_conversation.json</span></code> and are not inserted into any
+experiment project’s chat archive.</p>
 <p>After a multi-session Study is saved, the active project summary registers its
 random Study ID, animal/session counts, selected conditions, validation level,
 and available metrics. AI can explain the evidence and, in Collaborative mode,

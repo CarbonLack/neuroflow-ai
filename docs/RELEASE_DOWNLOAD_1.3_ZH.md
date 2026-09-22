@@ -1,17 +1,18 @@
-# NeuroEphys AI v1.3.2 — 下载与安装
+# NeuroEphys AI v1.3.3 — 下载与安装
 
-v1.3.2 在多 Session／多动物 Study 工作区、整组交叉验证、层级汇总、潜在动力学基础上，
-新增自适应 AI 回答规则：先把内部字段翻译成科研含义，再说明结论、依据和可执行下一步；
-并继续提供 Python/CLI 接口和受控 AI Study 调用，同时保留 v1.2 的单 Session 正式工作流。
+v1.3.3 在多 Session／多动物 Study 工作区、整组交叉验证、层级汇总、潜在动力学基础上，
+提供可命名、分组、搜索的项目对话，清晰的“用户／AI”消息区分、回车发送与确认后提交当前图像；
+同时保留自适应 AI 回答、Python/CLI 接口、受控 Study 调用和单 Session 正式工作流。
+真实看图依赖本机已配置且可启动的 Harness 图像模型，App 安装包本身不包含机构模型账号。
 
 ## 选择哪个版本
 
 | 版本 | 文件 | 适用场景 |
 |---|---|---|
-| Windows GPU Full 自选安装版（完整功能推荐） | `NeuroEphysAI-Setup-1.3.2-Full.exe` | 包含本版全部功能与完整离线 GPU/CUDA/Kilosort 组件；安装时仍可取消 GPU 组件。比赛演示、离线使用和需要 Kilosort 时优先选它。 |
-| Windows 标准安装版（轻量日常版） | `NeuroEphysAI-Setup-1.3.2.exe` | 包含最新 AI 可读性更新、App、Study、统计、机器学习、作图和 CPU 分析；不携带数 GB GPU 运行库。 |
-| Windows 标准便携版 | `NeuroEphysAI-1.3.2-Windows-x64-portable.zip` | 不安装；必须完整解压后运行，不能只复制单独 EXE。 |
-| Python 包 | `neuroephys_ai-1.3.2-py3-none-any.whl` | Python 3.12 用户用于脚本、CLI 和可重复批处理。 |
+| Windows GPU Full 自选安装版（完整功能推荐） | `NeuroEphysAI-Setup-1.3.3-Full.exe` | 包含本版全部功能与完整离线 GPU/CUDA/Kilosort 组件；安装时仍可取消 GPU 组件。比赛演示、离线使用和需要 Kilosort 时优先选它。 |
+| Windows 标准安装版（轻量日常版） | `NeuroEphysAI-Setup-1.3.3.exe` | 包含最新 AI 对话与图像解读入口、App、Study、统计、机器学习、作图和 CPU 分析；不携带数 GB GPU 运行库。 |
+| Windows 标准便携版 | `NeuroEphysAI-1.3.3-Windows-x64-portable.zip` | 不安装；必须完整解压后运行，不能只复制单独 EXE。 |
+| Python 包 | `neuroephys_ai-1.3.3-py3-none-any.whl` | Python 3.12 用户用于脚本、CLI 和可重复批处理。 |
 
 不知道选哪个时：有 NVIDIA GPU、需要 Kilosort 或比赛现场离线演示，选 Full；普通 CPU
 电脑选标准安装版；没有安装权限选便携版；需要代码调用再加装 wheel。

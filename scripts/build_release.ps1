@@ -3,6 +3,10 @@ param(
     [switch]$SkipDocs,
     [switch]$SkipInstaller,
     [switch]$Lite,
+    [switch]$SkipArchiveRefresh,
+    [switch]$SkipInstall,
+    [string]$PythonPath,
+    [string]$InnoCompilerPath,
     [string]$ReleaseRoot,
     [string]$DistRoot,
     [string]$WorkRoot
@@ -11,7 +15,12 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $VenvPython = Join-Path $Root ".venv\Scripts\python.exe"
-if (Test-Path -LiteralPath $VenvPython) {
+if ($PythonPath) {
+    $Python = [System.IO.Path]::GetFullPath($PythonPath)
+    if (-not (Test-Path -LiteralPath $Python)) {
+        throw "The selected Python environment is missing: $Python"
+    }
+} elseif (Test-Path -LiteralPath $VenvPython) {
     $Python = $VenvPython
 } else {
     $PythonCommand = Get-Command python -ErrorAction SilentlyContinue
@@ -54,9 +63,11 @@ try {
     }
     New-Item -ItemType Directory -Path $ResolvedReleaseDir | Out-Null
 
-    & $Python -m pip install -e ".[desktop,dev]" "pyinstaller>=6.10,<7"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Project and release tooling installation failed with exit code $LASTEXITCODE."
+    if (-not $SkipInstall) {
+        & $Python -m pip install -e ".[desktop,dev]" "pyinstaller>=6.10,<7"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Project and release tooling installation failed with exit code $LASTEXITCODE."
+        }
     }
 
     if (-not $SkipTests) {
@@ -157,7 +168,11 @@ try {
             "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
             "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
         )
-        $InnoCompiler = $InnoCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        $InnoCompiler = if ($InnoCompilerPath) {
+            [System.IO.Path]::GetFullPath($InnoCompilerPath)
+        } else {
+            $InnoCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        }
         if (-not $InnoCompiler) {
             throw "Inno Setup 6 is required to build the installer. Use -SkipInstaller only for diagnostics."
         }
@@ -214,7 +229,8 @@ try {
     if (
         (Test-Path -LiteralPath $ArchiveRefresh) -and
         (Test-Path -LiteralPath $LocalArchiveParent) -and
-        -not $env:GITHUB_ACTIONS
+        -not $env:GITHUB_ACTIONS -and
+        -not $SkipArchiveRefresh
     ) {
         & $ArchiveRefresh `
             -SourceRoot $Root `

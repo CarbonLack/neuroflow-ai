@@ -8,10 +8,10 @@
 
 | 版本 | 适合谁 | 怎么用 | 注意 |
 |---|---|---|---|
-| **Full 离线安装版** `NeuroEphysAI-Setup-1.3.2-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 包含 v1.3.2 全部功能与完整离线 GPU/CUDA/Kilosort 组件 |
-| **标准安装版（推荐）** `NeuroEphysAI-Setup-1.3.2.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 包含最新 AI 可读性修正；后续可在 Sorter 管理器补齐组件 |
-| **标准便携版** `NeuroEphysAI-1.3.2-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
-| **Python 包** `neuroephys_ai-1.3.2-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
+| **Full 离线安装版** `NeuroEphysAI-Setup-1.3.3-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 包含 v1.3.3 全部功能与完整离线 GPU/CUDA/Kilosort 组件 |
+| **标准安装版（推荐）** `NeuroEphysAI-Setup-1.3.3.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 包含最新 AI 对话与图像解读入口；后续可在 Sorter 管理器补齐组件 |
+| **标准便携版** `NeuroEphysAI-1.3.3-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
+| **Python 包** `neuroephys_ai-1.3.3-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
 
 完整 Full 便携 ZIP 大于 GitHub 2 GiB 单文件限制，因此 GitHub 主要提供 Full 安装包。本地构建可另行生成 Full 便携版。
 
@@ -141,7 +141,7 @@ App 自动生成受控的结构化项目上下文：当前步骤、已有结果�
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.3.2-py3-none-any.whl
+python -m pip install neuroephys_ai-1.3.3-py3-none-any.whl
 neuroephys info --json
 ```
 

@@ -7,7 +7,8 @@ from PySide6.QtWidgets import QApplication
 
 from neuroflow.ai_conversations import (
     LEGACY_THREAD_ID, create_thread, ensure_threads, group_label, matching_threads,
-    record_in_thread, rename_thread, set_thread_group, thread_records,
+    load_general_conversations, record_in_thread, rename_thread,
+    save_general_conversations, set_thread_group, thread_records,
 )
 from neuroflow.ai_ui import ChatComposer
 from neuroflow.ai_project_bridge import ProjectQueries
@@ -76,3 +77,16 @@ def test_thread_archive_roundtrip_and_old_archive_upgrade(tmp_path):
     restore_ai_conversation(old)
     assert ensure_threads(old.metadata)[0]["id"] == LEGACY_THREAD_ID
     assert old.metadata["ai_history"][0]["answer"] == "Still here"
+
+
+def test_projectless_general_chat_survives_app_restart(tmp_path):
+    path = tmp_path / "ai" / "general_conversation.json"
+    metadata = load_general_conversations(path)
+    thread_id = create_thread(metadata, group="general")
+    record_in_thread(metadata, {"question": "What is an ISI?", "answer": "An inter-spike interval."}, thread_id)
+    metadata["ai_active_thread_id"] = thread_id
+    save_general_conversations(path, metadata)
+    restored = load_general_conversations(path)
+    assert restored["ai_active_thread_id"] == thread_id
+    assert thread_records(restored, thread_id)[0]["answer"] == "An inter-spike interval."
+    assert matching_threads(restored, "ISI")[0]["title"] == "What is an ISI"

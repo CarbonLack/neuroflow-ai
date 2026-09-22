@@ -6091,6 +6091,7 @@ class NeuroFlowWindow(QMainWindow):
             state.channel_count,
         )
         self.sorting_workbench.set_catalog(sorter_catalog())
+        self.sorting_workbench.set_workload(state)
         self.sorting_workbench.set_results(
             set(state.sorting_results),
             state.active_sorter_key,
@@ -6658,6 +6659,7 @@ class NeuroFlowWindow(QMainWindow):
             metric.setVisible(key != "sorting")
         if key == "sorting":
             self.sorting_workbench.set_catalog(sorter_catalog())
+            self.sorting_workbench.set_workload(self.state)
             self.sorting_workbench.set_results(
                 set(self.state.sorting_results) if self.state else set(),
                 self.state.active_sorter_key if self.state else None,
@@ -7925,6 +7927,7 @@ class NeuroFlowWindow(QMainWindow):
                 tool_handler=self._handle_ai_tool_call,
                 manual_handler=self._open_ai_documentation,
                 figure_capture_getter=self._capture_current_figure_for_ai,
+                general_conversation_path=self.workspace / "ai" / "general_conversation.json",
                 parent=self,
             )
             self.ai_dialog.thread_changed.connect(lambda _: self._refresh_ai_sidebar())

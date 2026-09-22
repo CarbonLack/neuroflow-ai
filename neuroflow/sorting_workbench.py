@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import numpy as np
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -181,6 +183,11 @@ class SortingWorkbench(QFrame):
         self.selection_detail.setWordWrap(True)
         self.selection_detail.setObjectName("Muted")
         root.addWidget(self.selection_detail)
+        self.workload_detail = QLabel()
+        self.workload_detail.setWordWrap(True)
+        self.workload_detail.setObjectName("Muted")
+        root.addWidget(self.workload_detail)
+        self.workload_state = None
 
         settings_row = QHBoxLayout()
         settings_row.setSpacing(12)
@@ -397,6 +404,7 @@ class SortingWorkbench(QFrame):
         )
         self._populate_comparison_pair()
         self._refresh_diagnostic_views(self.selected_sorter())
+        self._refresh_workload()
         for widget in (
             self.table,
             self.preset,
@@ -506,6 +514,51 @@ class SortingWorkbench(QFrame):
             dict(item) for item in catalog if not item.get("imported_result")
         ]
         self._populate(selected)
+
+    def set_workload(self, state) -> None:
+        """Explain the actual amount of data and work without inventing an ETA."""
+        self.workload_state = state
+        self._refresh_workload()
+
+    def _refresh_workload(self) -> None:
+        state = self.workload_state
+        if state is None or not state.ready:
+            self.workload_detail.setText("")
+            return
+        try:
+            bytes_per_sample = np.dtype(state.dtype).itemsize
+        except (TypeError, ValueError):
+            bytes_per_sample = 2
+        expected_bytes = int(
+            state.duration_seconds * state.sampling_rate * state.channel_count
+            * bytes_per_sample
+        )
+        minutes = state.duration_seconds / 60
+        input_gb = expected_bytes / 1_000_000_000
+        adapter = state.metadata.get("recording_adapter", {}).get("type")
+        cache = state.root / "cache" / "sorting_input_selected_channels.bin"
+        cache_note = (
+            self._label("已复用交织缓存", "interleaved cache ready")
+            if cache.is_file() and cache.stat().st_size == expected_bytes
+            else self._label("首次需生成交织缓存", "first run must create an interleaved cache")
+        ) if adapter == "spikeinterface" else self._label(
+            "原始二进制可直接读取", "native binary can be read directly"
+        )
+        independent = (
+            state.metadata.get("contact_positions_um") is None
+            and state.metadata.get("probe", {}).get("geometry_mode") == "independent_contacts"
+        )
+        grouped = self.selected_sorter() == "mountainsort5" and independent
+        group_note = (
+            self._label(
+                f"；{state.channel_count} 个独立触点需分别排序后汇总",
+                f"; {state.channel_count} independent contacts are sorted separately then merged",
+            ) if grouped else ""
+        )
+        self.workload_detail.setText(self._label(
+            f"工作量：{minutes:.1f} 分钟 × {state.channel_count} 通道，约 {input_gb:.1f} GB 输入；{cache_note}{group_note}。这是工作量提示，不是预计完成时间。",
+            f"Workload: {minutes:.1f} min × {state.channel_count} channels, about {input_gb:.1f} GB input; {cache_note}{group_note}. This describes work, not an ETA.",
+        ))
 
     def set_results(
         self,
@@ -626,6 +679,7 @@ class SortingWorkbench(QFrame):
                 "\nA normalized result is saved. Select this row to inspect it; reruns are audited.",
             )
         self.selection_detail.setText(detail)
+        self._refresh_workload()
         is_kilosort = item["key"] == "kilosort4"
         is_mountainsort = item["key"] == "mountainsort5"
         for widget in (

@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/ai-assistant.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=6b324692"></script>
+      <script src="_static/documentation_options.js?v=79f47a88"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -160,7 +160,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">受控 AI 助手</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#harness-study">Harness 项目对话、图像解读与 Study（源码更新；待下版安装包）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#harness-study-v1-3-3">Harness 项目对话、图像解读与 Study（v1.3.3）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id1">先看懂，再看细节</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id2">三种模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#provider">模型 Provider</a></li>
@@ -327,8 +327,8 @@
 
   <section id="ai">
 <h1>受控 AI 助手<a class="headerlink" href="#ai" title="Link to this heading"></a></h1>
-<section id="harness-study">
-<h2>Harness 项目对话、图像解读与 Study（源码更新；待下版安装包）<a class="headerlink" href="#harness-study" title="Link to this heading"></a></h2>
+<section id="harness-study-v1-3-3">
+<h2>Harness 项目对话、图像解读与 Study（v1.3.3）<a class="headerlink" href="#harness-study-v1-3-3" title="Link to this heading"></a></h2>
 <p>已配置机构 DeepSeek Harness 时，在 AI 设置点击“读取本机 DeepSeek Harness 配置”，
 选择 Harness SDK。App 通过官方 dsh 运行时请求模型，不读取或复制机构密钥。
 Harness 须单独安装并完成账号配置，参考 <a class="reference external" href="https://deepseek.com/harness/en/">https://deepseek.com/harness/en/</a> 。</p>
@@ -354,6 +354,7 @@ Harness 任意文件读取权限。</p>
 先在终端运行 <code class="docutils literal notranslate"><span class="pre">dsh</span> <span class="pre">--version</span></code> 核对，再按 NVM 提示由管理员执行 <code class="docutils literal notranslate"><span class="pre">nvm</span> <span class="pre">reshim</span></code>
 或修复可信启动器；不要通过复制机构密钥来绕过 Harness。</p>
 <p>输入框 <strong>回车发送</strong>，<strong>Shift+回车换行</strong>。未打开项目时也可问通用科研知识或其他问题；
+这类无项目对话保存在用户工作区的 <code class="docutils literal notranslate"><span class="pre">ai/general_conversation.json</span></code>，不混入实验项目。
 打开项目后，AI 必须区分一般知识、版本化软件教程和项目实测证据。关于软件操作的
 具体步骤可通过内置教程检索获得。模型没有检索外部实时资料时，不得把当前事实或
 未核对的文献说成已查证。</p>

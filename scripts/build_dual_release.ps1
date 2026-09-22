@@ -1,6 +1,11 @@
 param(
     [switch]$SkipTests,
     [switch]$SkipDocs,
+    [switch]$SkipArchiveRefresh,
+    [switch]$SkipInstall,
+    [switch]$ReuseStandard,
+    [string]$PythonPath,
+    [string]$InnoCompilerPath,
     [string]$ReleaseRoot,
     [string]$BuildRoot,
     [string]$DistRoot
@@ -10,7 +15,7 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $BuildScript = Join-Path $PSScriptRoot "build_release.ps1"
 $OverlayScript = Join-Path $PSScriptRoot "make_gpu_overlay.ps1"
-$Python = Join-Path $Root ".venv\Scripts\python.exe"
+$Python = if ($PythonPath) { [System.IO.Path]::GetFullPath($PythonPath) } else { Join-Path $Root ".venv\Scripts\python.exe" }
 if (-not (Test-Path -LiteralPath $Python)) {
     throw "The managed Python environment is missing: $Python"
 }
@@ -28,13 +33,24 @@ if (Test-Path -LiteralPath $Staging) {
 }
 New-Item -ItemType Directory -Path $Staging | Out-Null
 
+$Completed = $false
 try {
-    $CoreParams = @{ Lite = $true; ReleaseRoot = $ReleaseRoot; DistRoot = $DistRoot; WorkRoot = (Join-Path $BuildRoot "pyinstaller-standard") }
-    if ($SkipTests) { $CoreParams.SkipTests = $true }
-    if ($SkipDocs) { $CoreParams.SkipDocs = $true }
-    & $BuildScript @CoreParams
-    if ($LASTEXITCODE -ne 0) {
-        throw "Standard release build failed with exit code $LASTEXITCODE."
+    if (-not $ReuseStandard) {
+        $CoreParams = @{ Lite = $true; ReleaseRoot = $ReleaseRoot; DistRoot = $DistRoot; WorkRoot = (Join-Path $BuildRoot "pyinstaller-standard"); PythonPath = $Python; SkipArchiveRefresh = $SkipArchiveRefresh; SkipInstall = $SkipInstall; InnoCompilerPath = $InnoCompilerPath }
+        if ($SkipTests) { $CoreParams.SkipTests = $true }
+        if ($SkipDocs) { $CoreParams.SkipDocs = $true }
+        & $BuildScript @CoreParams
+        if ($LASTEXITCODE -ne 0) {
+            throw "Standard release build failed with exit code $LASTEXITCODE."
+        }
+    } else {
+        $ExistingExe = Join-Path $DistRoot "NeuroEphysAI\NeuroEphysAI.exe"
+        if (-not (Test-Path -LiteralPath $ExistingExe)) {
+            throw "Verified Standard application is missing: $ExistingExe"
+        }
+        if ((Get-Item -LiteralPath $ExistingExe).VersionInfo.ProductVersion -ne $Version) {
+            throw "Existing Standard application version does not match $Version"
+        }
     }
     foreach ($Name in @(
         "NeuroEphysAI-Setup-$Version.exe",
@@ -54,7 +70,7 @@ try {
     }
     Move-Item -LiteralPath $BuiltApp -Destination $StandardApp
 
-    $FullParams = @{ SkipTests = $true; SkipDocs = $true; SkipInstaller = $true; ReleaseRoot = $ReleaseRoot; DistRoot = $DistRoot; WorkRoot = (Join-Path $BuildRoot "pyinstaller-full") }
+    $FullParams = @{ SkipTests = $true; SkipDocs = $true; SkipInstaller = $true; ReleaseRoot = $ReleaseRoot; DistRoot = $DistRoot; WorkRoot = (Join-Path $BuildRoot "pyinstaller-full"); PythonPath = $Python; SkipArchiveRefresh = $SkipArchiveRefresh; SkipInstall = $SkipInstall }
     & $BuildScript @FullParams
     if ($LASTEXITCODE -ne 0) {
         throw "Full offline release build failed with exit code $LASTEXITCODE."
@@ -75,7 +91,11 @@ try {
         "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
         "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
     )
-    $InnoCompiler = $InnoCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    $InnoCompiler = if ($InnoCompilerPath) {
+        [System.IO.Path]::GetFullPath($InnoCompilerPath)
+    } else {
+        $InnoCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    }
     if (-not $InnoCompiler) {
         throw "Inno Setup 6 is required to build the selectable Full installer."
     }
@@ -105,8 +125,11 @@ try {
     $HashLines | Set-Content -LiteralPath $HashPath -Encoding utf8
     Write-Host "Standard and Full offline artifacts are ready at $ReleaseDir" -ForegroundColor Green
     Get-ChildItem -LiteralPath $ReleaseDir -File | Select-Object Name, Length
+    $Completed = $true
 } finally {
-    if (Test-Path -LiteralPath $Staging) {
+    if ($Completed -and (Test-Path -LiteralPath $Staging)) {
         Remove-Item -LiteralPath $Staging -Recurse -Force
+    } elseif (-not $Completed) {
+        Write-Warning "Release did not complete; Standard artifacts remain in $Staging for recovery."
     }
 }

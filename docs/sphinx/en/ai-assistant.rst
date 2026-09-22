@@ -1,7 +1,7 @@
 Controlled AI assistant
 =======================
 
-Project chat and chart vision (source update)
+Project chat and chart vision (v1.3.3)
 ---------------------------------------------
 
 For an institute-managed DeepSeek Harness account, use **Read local DeepSeek
@@ -50,6 +50,10 @@ questions are welcome even without an open project. For app-specific procedures,
 the assistant can query the versioned built-in tutorial. It distinguishes general
 model knowledge from measured project evidence and must not present unverified
 current information or invented citations as checked facts.
+
+Chats started without a project are kept separately at
+``<user workspace>/ai/general_conversation.json`` and are not inserted into any
+experiment project's chat archive.
 
 After a multi-session Study is saved, the active project summary registers its
 random Study ID, animal/session counts, selected conditions, validation level,

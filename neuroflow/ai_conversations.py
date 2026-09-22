@@ -6,12 +6,46 @@ records and gives them a single legacy thread; no answer is discarded or rewritt
 from __future__ import annotations
 
 import re
+import json
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 LEGACY_THREAD_ID = "legacy-conversation"
 THREAD_GROUPS = ("project", "figures", "methods", "general", "earlier")
+
+
+def load_general_conversations(path: Path) -> dict[str, Any]:
+    """Read projectless chats from the user's writable workspace, if present."""
+    empty: dict[str, Any] = {"ai_history": [], "ai_threads": []}
+    try:
+        archive = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return empty
+    if not isinstance(archive, dict) or archive.get("schema") != "neuroephys.general_conversation.v1":
+        return empty
+    history = archive.get("history")
+    threads = archive.get("threads")
+    if not isinstance(history, list) or not isinstance(threads, list):
+        return empty
+    if not all(isinstance(row, dict) for row in history + threads):
+        return empty
+    return {"ai_history": history, "ai_threads": threads,
+            "ai_active_thread_id": str(archive.get("active_thread_id", ""))}
+
+
+def save_general_conversations(path: Path, metadata: dict[str, Any]) -> None:
+    """Atomically persist general chats without storing transient chart pixels."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps({
+        "schema": "neuroephys.general_conversation.v1",
+        "threads": metadata.get("ai_threads", []),
+        "history": metadata.get("ai_history", []),
+        "active_thread_id": metadata.get("ai_active_thread_id", ""),
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(path)
 
 
 def group_label(group: str, language: str = "zh_CN") -> str:

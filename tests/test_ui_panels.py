@@ -37,6 +37,34 @@ from neuroflow.ui import (
 from neuroflow.unit_curation_ui import UnitCurationDialog
 
 
+def test_sorting_workload_explains_cache_and_independent_contacts(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    recording = tmp_path / "recording.bin"
+    recording.write_bytes(b"")
+    state = ProjectState(
+        root=tmp_path, recording_path=recording, sampling_rate=1_000,
+        channel_count=2, duration_seconds=1.0,
+        metadata={"recording_adapter": {"type": "spikeinterface"},
+                  "probe": {"geometry_mode": "independent_contacts"}},
+    )
+    panel = SortingWorkbench("zh_CN")
+    panel.set_catalog([{"key": "mountainsort5", "name": "MountainSort5",
+                        "installed": True, "hardware": "CPU", "best_for": "tetrode",
+                        "backend": "SpikeInterface", "version": "0.5.9"}])
+    panel.set_workload(state)
+    assert "首次需生成交织缓存" in panel.workload_detail.text()
+    assert "2 个独立触点" in panel.workload_detail.text()
+    cache = tmp_path / "cache" / "sorting_input_selected_channels.bin"
+    cache.parent.mkdir()
+    cache.write_bytes(bytes(4_000))
+    panel.set_workload(state)
+    assert "已复用交织缓存" in panel.workload_detail.text()
+    panel.set_language("en_US")
+    assert "interleaved cache ready" in panel.workload_detail.text()
+    panel.close()
+    app.processEvents()
+
+
 def test_multi_session_dialog_reflows_on_narrow_windows(tmp_path: Path):
     app = QApplication.instance() or QApplication([])
     dialog = MultiSessionStudyDialog(tmp_path, "zh_CN")

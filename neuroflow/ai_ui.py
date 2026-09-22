@@ -6,6 +6,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import replace
 from html import escape
+from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QSettings, QThread, Qt, QUrl, Signal
@@ -51,9 +52,11 @@ from .ai_conversations import (
     create_thread,
     ensure_threads,
     group_label,
+    load_general_conversations,
     matching_threads,
     record_in_thread,
     rename_thread,
+    save_general_conversations,
     set_thread_group,
     thread_records,
 )
@@ -947,6 +950,7 @@ class AIAssistantDialog(QDialog):
         tool_handler: Callable[[dict[str, Any]], None] | None = None,
         manual_handler: Callable[[], None],
         figure_capture_getter: Callable[[], tuple[bytes, str]] | None = None,
+        general_conversation_path: Path | None = None,
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
@@ -958,6 +962,7 @@ class AIAssistantDialog(QDialog):
         self.tool_handler = tool_handler
         self.manual_handler = manual_handler
         self.figure_capture_getter = figure_capture_getter
+        self.general_conversation_path = general_conversation_path
         self.settings = load_ai_settings()
         self.history: list[dict[str, str]] = []
         self.current_plan: list[dict[str, Any]] = []
@@ -971,7 +976,11 @@ class AIAssistantDialog(QDialog):
         self.reading_mode = load_ai_reading_mode()
         self.response_details: dict[str, dict[str, Any]] = {}
         self.response_detail_counter = 0
-        self.ephemeral_metadata: dict[str, Any] = {"ai_history": [], "ai_threads": []}
+        self.ephemeral_metadata: dict[str, Any] = (
+            load_general_conversations(general_conversation_path)
+            if general_conversation_path is not None
+            else {"ai_history": [], "ai_threads": []}
+        )
         self.current_thread_id = ""
         self.pending_image_png: bytes | None = None
         self.pending_image_label = ""
@@ -998,8 +1007,6 @@ class AIAssistantDialog(QDialog):
         self.pending_image_label = ""
         self._update_attachment_label()
         metadata = self._thread_metadata()
-        if self.state_getter() is None:
-            metadata["ai_history"] = list(records)
         threads = ensure_threads(metadata)
         if self.state_getter() is None and len(threads) == 1 and not metadata["ai_history"]:
             set_thread_group(metadata, str(threads[0]["id"]), "general")
@@ -1017,6 +1024,8 @@ class AIAssistantDialog(QDialog):
         if state is not None:
             from .project import save_ai_conversation
             save_ai_conversation(state)
+        elif self.general_conversation_path is not None:
+            save_general_conversations(self.general_conversation_path, self.ephemeral_metadata)
 
     def _refresh_thread_list(self) -> None:
         metadata = self._thread_metadata()
@@ -1043,6 +1052,7 @@ class AIAssistantDialog(QDialog):
             return
         self.current_thread_id = thread_id
         metadata["ai_active_thread_id"] = thread_id
+        self._persist_threads()
         row = next(row for row in ensure_threads(metadata) if row["id"] == thread_id)
         self.thread_group_combo.blockSignals(True)
         self.thread_group_combo.setCurrentIndex(
@@ -1825,6 +1835,7 @@ class AIAssistantDialog(QDialog):
             response_record["local_paths_sent"] = None  # The approved image may contain text labels.
         if self.state_getter() is None:
             record_in_thread(self.ephemeral_metadata, response_record, thread_id)
+            self._persist_threads()
         self._append_message(
             "assistant",
             response.answer,
