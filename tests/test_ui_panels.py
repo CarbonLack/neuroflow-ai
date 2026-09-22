@@ -776,3 +776,49 @@ def test_manual_unit_curation_dialog_saves_review_evidence(tmp_path: Path):
     assert "ground truth" in record["decision_scope"]
     dialog.close()
     app.processEvents()
+
+
+def test_unit_qc_table_handles_optional_duplicate_metrics_after_review(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    window = NeuroFlowWindow(tmp_path / "workspace")
+    state = ProjectState(root=tmp_path / "project", duration_seconds=10.0)
+    state.active_sorter_key = "kilosort4"
+    state.sorted_spikes = {3: np.array([0.1]), 4: np.array([0.2])}
+    state.unit_metrics = [
+        {
+            "unit_id": 3,
+            "firing_rate_hz": 0.1,
+            "max_cross_unit_overlap_fraction": 0.25,
+            "duplicate_partner_unit": 4,
+        },
+        {"unit_id": 4, "firing_rate_hz": 0.1},
+    ]
+    window.state = state
+    window.current_step = "unit_qc"
+
+    # Reproduces the refresh performed when the manual review dialog closes.
+    window._unit_curation_saved()
+    headers = [
+        window.detail_table.horizontalHeaderItem(col).text()
+        for col in range(window.detail_table.columnCount())
+    ]
+    overlap_col = headers.index("max_cross_unit_overlap_fraction")
+    assert window.detail_table.item(0, overlap_col).text() == "0.25"
+    assert window.detail_table.item(1, overlap_col).text() == "—"
+    assert window.project_dirty is True
+
+    # A field found only in a later row must not disappear either.
+    state.unit_metrics[0].pop("max_cross_unit_overlap_fraction")
+    state.unit_metrics[1]["max_cross_unit_overlap_fraction"] = 0.125
+    window._refresh_table()
+    headers = [
+        window.detail_table.horizontalHeaderItem(col).text()
+        for col in range(window.detail_table.columnCount())
+    ]
+    overlap_col = headers.index("max_cross_unit_overlap_fraction")
+    assert window.detail_table.item(0, overlap_col).text() == "—"
+    assert window.detail_table.item(1, overlap_col).text() == "0.125"
+
+    window._set_project_clean()
+    window.close()
+    app.processEvents()

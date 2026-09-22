@@ -7339,17 +7339,22 @@ class NeuroFlowWindow(QMainWindow):
         self.detail_table.setVisible(bool(rows))
         if not rows:
             return
-        columns = list(rows[0])
+        # QC and analysis rows may contain optional metrics for only some units.
+        # Preserve every reported field without assuming the first row is a schema.
+        columns = list(dict.fromkeys(key for row in rows for key in row))
         self.detail_table.setRowCount(len(rows))
         self.detail_table.setColumnCount(len(columns))
         self.detail_table.setHorizontalHeaderLabels(columns)
         for row_index, row in enumerate(rows):
             for column, key in enumerate(columns):
-                value = row[key]
-                if isinstance(value, float):
-                    text = f"{value:.4g}"
+                if key not in row:
+                    text = "—"
                 else:
-                    text = str(value)
+                    value = row[key]
+                    if isinstance(value, float):
+                        text = f"{value:.4g}"
+                    else:
+                        text = str(value)
                 self.detail_table.setItem(row_index, column, QTableWidgetItem(text))
         self.detail_table.resizeColumnsToContents()
 
