@@ -40,8 +40,15 @@ from neuroflow.unit_curation_ui import UnitCurationDialog
 def test_workspace_controls_share_menu_row_and_chat_prioritizes_messages(tmp_path: Path, monkeypatch):
     app = QApplication.instance() or QApplication([])
     window = NeuroFlowWindow(tmp_path)
-    assert window.menuBar().cornerWidget(Qt.TopLeftCorner) is window._menu_left_controls
+    assert window.menuBar().cornerWidget(Qt.TopLeftCorner) is None
     assert window.menuBar().cornerWidget(Qt.TopRightCorner) is window._menu_right_controls
+    assert not hasattr(window, "project_label")
+    assert not hasattr(window, "home_language_combo")
+    assert window.home_tutorial_button.parent() is window._menu_right_controls
+    assert not hasattr(window, "home_button")
+    assert not hasattr(window, "workflow_toggle_button")
+    assert window.menu_home_action.parent() is window
+    assert window.menu_home_action in window.file_menu.actions()
     assert window.workspace_page.layout().count() == 1
     assert window.sidebar_ai_options.isHidden()
     window.sidebar_ai_options_toggle.click()

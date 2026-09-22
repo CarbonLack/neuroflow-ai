@@ -26,6 +26,89 @@ CAPTIONS = {
     'spike_field_coupling': ('Spike-field coupling', 'Phase association and surrogate comparisons under the configured frequency and time selections; not evidence of causation.', '指定频段与时段内的相位关联及替代检验，不是因果证据。'),
 }
 
+PANEL_CAPTIONS = {
+    'behavior': [
+        'Observed event counts by label; counts are not independent-trial counts.',
+        'Event timestamps across the inspected session; one row per event label, not one row per animal.'],
+    'raw_qc': [
+        'Per-channel RMS noise in the inspected raw interval; line and shading reflect the configured screen.',
+        'Primary signal-quality indicators for the inspected interval. This does not certify the full recording.'],
+    'unit_qc': [
+        'Candidate-unit firing rate versus signal-to-noise ratio; labels are automated screening flags.',
+        'Refractory-period violation estimates for candidates. Human curation remains required.'],
+    'raster_psth_population': [
+        'Example-unit event-aligned raster; each row is an event, and time zero is event onset.',
+        'Condition-averaged peristimulus firing rate; bands show available-event uncertainty.',
+        'Population event-response heatmap. Color encodes the plotted normalization, not an anatomical map.',
+        'Per-unit post-event minus baseline firing-rate changes; units share one recording session.'],
+    'population_ordered_heatmap': [
+        'Population activity ordered by response timing; the order is descriptive and chosen from these data.',
+        'Population mean and uncertainty around event onset; temporal association is not causality.'],
+    'population_single_trial': [
+        'Example single-trial population trajectory; one trial is not a population-level effect.',
+        'Across-trial response summary under the configured selection and normalization.'],
+    'population_conditions': [
+        'Condition-by-time population response map; conditions are those available in this project.',
+        'Condition-averaged response traces with uncertainty across available observations.'],
+    'population_pca': [
+        'Low-dimensional population trajectory from PCA; axes are mathematical components, not brain regions.',
+        'Explained-variance or trajectory summary for the same population and trial selection.'],
+    'statistics': [
+        'Per-unit response effect sizes and bootstrap 95% intervals. Units do not substitute for animal replication.',
+        'Raw permutation evidence versus FDR-adjusted evidence; all tested units remain shown.'],
+    'decoding': [
+        'Cross-validated confusion matrix; inspect class balance and trial grouping before interpretation.',
+        'Observed decoder score against label-permutation null; p refers to this configured decoding test.',
+        'ROC curve and AUC for the selected contrast; performance is conditional on the held-out design.',
+        'Time-resolved decoding around event onset; avoid interpreting peak bins without multiple-time control.',
+        'PCA trajectories of decoding features; separation may reflect task and recording confounds.',
+        'Feature importance for the fitted model; it is not a causal contribution of a unit.'],
+    'behavior_spectrum_animals': [
+        'Behavioral event spectrum with one row per animal; colors identify behavior labels.'],
+    'behavior_spectrum_by_behavior': [
+        'One animal shown with separate rows for behavior categories; time scale is recorded in the axis.'],
+    'spike_train_statistics': [
+        'Firing-rate distribution across candidate units.',
+        'Inter-spike interval regularity across candidates.',
+        'Event-window spike-count variability.',
+        'Additional spike-train diagnostic from the configured analysis window.'],
+    'spike_train_relationships': [
+        'Pairwise spike-train relationship summary; correlation is not connectivity.',
+        'Timing-related relationship summary for selected units.',
+        'Distribution of pairwise relationship values for the bounded analysis subset.',
+        'Additional pairwise diagnostic; selection and time window are in provenance.'],
+    'connectivity_ccg_examples': [
+        'Example cross-correlogram; peaks can arise without monosynaptic connectivity.',
+        'Second example cross-correlogram under the same screening rule.',
+        'Third example cross-correlogram under the same screening rule.',
+        'Fourth example cross-correlogram under the same screening rule.'],
+    'connectivity_network': [
+        'Thresholded functional relationship network, not a verified anatomical circuit.',
+        'Spatial distribution of the selected functional relationships.'],
+    'connectivity_distance': [
+        'Functional relationship strength versus estimated probe-space distance.',
+        'Distance-binned relationship summary.',
+        'Additional spatial-control diagnostic for the same candidate set.'],
+    'lfp_psd': [
+        'Power spectral density for the selected low-frequency signal and interval.',
+        'Band-power summary; acquisition filtering bounds which frequencies are interpretable.'],
+    'lfp_coherence': [
+        'Frequency-specific coherence of selected signals; common reference can contribute.',
+        'Coherence summary under the configured channel and window selection.'],
+    'lfp_spectrogram': [
+        'Time-frequency power over the analyzed interval.',
+        'Spectral summary over the same interval; it may not cover the whole session.'],
+    'spike_field_coupling': [
+        'Spike-field phase relationship under the selected frequency and event window.',
+        'Surrogate or frequency-specific coupling comparison; association is not causality.'],
+    'respiration_state_analysis': [
+        'Respiration-state measurement in a separate method-validation branch.',
+        'State-conditioned neural summary; do not merge this task with the primary decision analysis.'],
+    'respiration_phase_amplitude_coupling': [
+        'Respiration-phase relationship from the method-validation branch.',
+        'Phase-amplitude coupling or control summary for the selected interval.'],
+}
+
 
 def write_publication_report(state, output: Path, figure_names: list[str]) -> Path:
     folder = output / 'publication'
@@ -113,6 +196,7 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
                 'title': title,
                 'caption_draft': caption,
                 'source_svg': f'figures/{name}.svg',
+                'plotted_data': f'figure_data/{name}.json',
             })
             panel_html.append(
                 f'<div class="panel"><h3>({letter}) {html.escape(title)}</h3>'
@@ -165,4 +249,126 @@ def write_publication_report(state, output: Path, figure_names: list[str]) -> Pa
         'figures': storyboard,
         'complete_artifact_inventory': 'artifact_inventory.json',
     }, ensure_ascii=False, indent=2), encoding='utf-8')
+    return _write_composite_report(state, output, available, inventory, companion_section, guide)
+
+
+def _write_composite_report(state, output: Path, available: list[str],
+                            inventory: list[dict], companion_section: str,
+                            guide: list[str]) -> Path:
+    """Replace the former image list with real, complete multi-panel artwork."""
+    from .publication_compositor import compose_publication_figures
+
+    folder = output / 'publication'
+    figures = compose_publication_figures(output, available)
+    edit_file = folder / 'author_edits.json'
+    author_edits = (json.loads(edit_file.read_text(encoding='utf-8'))
+                    if edit_file.is_file() else {})
+    legends = ['# Figure legends — author review required', '',
+        'All source analyses are assigned by evidential role. Non-significant results '
+        'remain present. These captions describe measurements, not biological conclusions.', '']
+    sections = []
+    for figure in figures:
+        label = figure['figure']
+        role = figure['story_role']
+        legends += [f'## {label}. {role}', '']
+        captions = []
+        for panel in figure['panels']:
+            name = panel['figure_name']
+            title, caption, explanation = CAPTIONS.get(name, (
+                name.replace('_', ' ').title(),
+                'Review measurement, statistical scope and source data before interpretation.',
+                '请根据方法、数据来源和统计边界审核该面板。'))
+            panel['title'] = (panel['title'] if panel['source_axis'] else title)
+            descriptions = PANEL_CAPTIONS.get(name, [])
+            axis_index = int(panel.get('source_axis', 0)) - 1
+            panel['caption_draft'] = (descriptions[axis_index]
+                                      if 0 <= axis_index < len(descriptions)
+                                      else caption)
+            panel['caption_draft'] = author_edits.get(label, {}).get(
+                'captions', {}).get(panel['source_panel_svg'], panel['caption_draft'])
+            panel['source_svg'] = f'figures/{name}.svg'
+            legends += [f"**({panel['panel']}) {panel['title']}.** {panel['caption_draft']}",
+                        f"Source: {panel['source_panel_svg']}; plotted data: "
+                        f"{panel['plotted_data']}; source axis: {panel['source_axis']}.", '']
+            captions.append(f"<p><b>({panel['panel']}) {html.escape(panel['title'])}.</b> "
+                            f"{html.escape(panel['caption_draft'])}</p>")
+            guide += [f"## {label}{panel['panel']}：{name}", '', explanation, '',
+                      f"完整图：../{figure['composite_svg']}",
+                      f"作图数据：../{panel['plotted_data']}", '']
+        legends += ['Author interpretation and target-journal edit: ____________________', '']
+        relative_svg = figure['composite_svg'].removeprefix('publication/')
+        sections.append('<section>'
+            f"<h2>{html.escape(label)}. {html.escape(role)}</h2>"
+            f"<img src=\"{html.escape(relative_svg, quote=True)}\" "
+            f"alt=\"{html.escape(label)} composite figure\">"
+            + ''.join(captions) +
+            '<p class="note">Interpretation requires author review; see Methods and provenance.</p>'
+            '</section>')
+    inventory.extend({
+        'path': figure[key], 'bytes': (output / figure[key]).stat().st_size,
+        'sha256': hashlib.sha256((output / figure[key]).read_bytes()).hexdigest(),
+        'role': figure['role'], 'current_figure': True}
+        for figure in figures for key in ('composite_svg', 'composite_png', 'composite_pdf'))
+    links = ''.join(f'<li><a href="../{html.escape(item["path"], quote=True)}">'
+                    f'{html.escape(item["path"])}</a></li>' for item in inventory)
+    document = ('<!doctype html><html lang="en"><meta charset="utf-8">'
+        '<title>Publication figures</title><style>body{font:14px Arial,sans-serif;'
+        'color:#20222a;max-width:1050px;margin:36px auto;padding:0 22px;background:white}'
+        'section{margin:36px 0;break-inside:avoid}section img{display:block;width:100%;'
+        'max-width:760px;height:auto;margin:20px auto}p{line-height:1.5}.note{color:#666}'
+        'a{color:#624987}@media print{section{break-before:page}}</style>'
+        f'<h1>{html.escape(state.name)}</h1>'
+        '<p>English, multi-panel main and Extended Data figures. Scientific and '
+        'journal-specific review is still required. Every exported analysis is included, '
+        'regardless of statistical significance.</p>'
+        + ''.join(sections) + companion_section +
+        '<h2>Complete artifact inventory</h2><ul>' + links + '</ul></html>')
+    (folder / 'index.html').write_text(document, encoding='utf-8')
+    (folder / 'figure_legends.md').write_text('\n'.join(legends), encoding='utf-8')
+    (folder / '结果阅读说明.md').write_text('\n'.join(guide), encoding='utf-8')
+    (folder / 'artifact_inventory.json').write_text(
+        json.dumps(inventory, ensure_ascii=False, indent=2), encoding='utf-8')
+    (folder / 'layout_checks.json').write_text(json.dumps({
+        'profile': 'Conservative Nature double-column starting geometry',
+        'scope': 'Geometry and vector generation only; not journal acceptance.',
+        'max_width_mm': 183, 'max_height_mm': 170,
+        'figures': [{
+            'figure': item['figure'],
+            'width_mm': round(item['layout']['width_pt'] * 25.4 / 72, 2),
+            'height_mm': round(item['layout']['height_pt'] * 25.4 / 72, 2),
+            'within_starting_geometry': (
+                item['layout']['width_pt'] * 25.4 / 72 <= 183 and
+                item['layout']['height_pt'] * 25.4 / 72 <= 170),
+            'vector_svg': item['composite_svg'],
+            'vector_pdf': item['composite_pdf'],
+        } for item in figures],
+        'manual_checks': ['legibility at final size', 'embedded heatmap/raster DPI',
+                          'color and grayscale accessibility',
+                          'correct labels and uncertainty', 'target journal format',
+                          'scientific interpretation and authorship'],
+    }, ensure_ascii=False, indent=2), encoding='utf-8')
+    (folder / 'storyboard.json').write_text(json.dumps({
+        'schema': 'neuroephys.publication-storyboard.v2',
+        'policy': 'Content-based grouping; all exported plots retained regardless of significance.',
+        'narrative_order': ['measurement and quality', 'event and behavior',
+                            'unit and population response', 'uncertainty and prediction',
+                            'complete extended data'],
+        'figures': figures,
+        'complete_artifact_inventory': 'artifact_inventory.json',
+    }, ensure_ascii=False, indent=2), encoding='utf-8')
+    (folder / 'README.txt').write_text(
+        'PUBLICATION FIGURES / 论文组合图\n\n'
+        'figures/ contains one actual multi-panel SVG, PDF and PNG per main or '
+        'Extended Data Figure. PNG is for preview; SVG and PDF preserve vector paths.\n'
+        'storyboard.json maps every panel to its source axis and plotted-data index.\n'
+        'figure_legends.md contains editable English caption drafts.\n'
+        'layout_checks.json records print-size geometry and remaining author checks.\n'
+        'author_edits.json preserves panel order and captions changed in the App.\n'
+        '../panels/ contains the original per-axis vector panels.\n'
+        '../figure_data/ contains the plotted numeric arrays and traceability indexes.\n'
+        '../provenance.json records source and workflow context.\n\n'
+        'The layout includes all exported analyses, including non-significant results. '
+        'It is an author-review draft, not a biological conclusion or a guarantee '
+        'of acceptance by Nature, Cell, Science, or another journal.\n',
+        encoding='utf-8')
     return folder / 'index.html'

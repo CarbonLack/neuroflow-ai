@@ -1407,19 +1407,35 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         figure_builders.append(("regression", lambda: regression_figure(state)))
     figures_dir = output_dir / "figures"
     figures_dir.mkdir(exist_ok=True)
+    from .figure_data import save_figure_data
+    from .publication_compositor import save_atomic_panels
     for name, builder in figure_builders:
         figure = builder()
-        panel_index = 0
-        for axis in figure.axes:
-            if axis.get_label() == "<colorbar>" or not axis.axison:
-                continue
-            axis.annotate(chr(97 + panel_index), xy=(0, 1), xycoords="axes fraction",
-                          xytext=(-20, 18), textcoords="offset points",
-                          fontsize=9, fontweight="bold", annotation_clip=False)
-            panel_index += 1
         figure.savefig(figures_dir / f"{name}.png", dpi=getattr(figure, "_neuroflow_publication_style", {}).get("dpi", 600), bbox_inches="tight")
         figure.savefig(figures_dir / f"{name}.svg", bbox_inches="tight")
+        save_figure_data(figure, name, output_dir, state)
+        save_atomic_panels(figure, name, output_dir)
         figure.clear()
+    recording = state.recording_path.resolve() if state.recording_path else None
+    project_root = state.root.resolve()
+    catalog = {
+        "schema": "neuroephys.export-data-catalog.v1",
+        "raw_recording": str(recording) if recording else None,
+        "raw_recording_inside_project": bool(recording and recording.is_relative_to(project_root)),
+        "raw_recording_exists": bool(recording and recording.is_file()),
+        "project_manifest": str(state.root / "neuroflow_project.json"),
+        "processed_tables": [path.relative_to(output_dir).as_posix()
+                             for path in sorted(tables_dir.glob("*.csv"))],
+        "processed_arrays": [path.relative_to(output_dir).as_posix()
+                             for path in sorted((output_dir / "arrays").glob("*.npz"))],
+        "figures": [{"name": name, "png": f"figures/{name}.png",
+                     "plotted_data_index": f"figure_data/{name}.json",
+                     "plotted_numeric_arrays": f"figure_data/{name}.npz"}
+                    for name, _ in figure_builders],
+        "note": "The project stores analysis results; the raw recording is not duplicated by export. Keep the original file or copy the complete project with its raw/ directory. Figure arrays preserve numeric Matplotlib artists; consult the project manifest and Methods for upstream transforms.",
+    }
+    (output_dir / "data_catalog.json").write_text(
+        json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
     from .publication_report import write_publication_report
     write_publication_report(state, output_dir, [name for name, _ in figure_builders])
     return output_dir

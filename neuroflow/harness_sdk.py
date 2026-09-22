@@ -77,7 +77,11 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
         frames.put(None)
 
     threading.Thread(target=read_frames, daemon=True).start()
-    deadline = time.monotonic() + max(30, timeout)
+    started = time.monotonic()
+    idle_seconds = max(60, int(timeout))
+    overall_deadline = started + max(900, idle_seconds * 4)
+    last_frame_at = started
+    phase = "initialization"
     session = "neuroephys-" + uuid.uuid4().hex
 
     def send(method, params, request_id):
@@ -86,9 +90,19 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
         process.stdin.flush()
 
     def receive():
-        while time.monotonic() < deadline:
+        nonlocal last_frame_at
+        while True:
             if cancel_event and cancel_event.is_set():
                 raise RuntimeError("AI request cancelled.")
+            now = time.monotonic()
+            if now >= overall_deadline or now - last_frame_at >= idle_seconds:
+                elapsed = round(now - started)
+                raise RuntimeError(
+                    f"Harness {phase} timed out after {elapsed} s; no protocol activity "
+                    f"for {round(now - last_frame_at)} s (idle limit {idle_seconds} s). "
+                    "The request may have reached the model; retry only after checking "
+                    "the conversation and network to avoid duplicate work."
+                )
             try:
                 frame = frames.get(timeout=0.2)
             except queue.Empty:
@@ -108,8 +122,8 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
             if frame.get("error"):
                 raise RuntimeError("Harness SDK rejected the request: " +
                     str(frame["error"].get("message", "unknown error")))
+            last_frame_at = time.monotonic()
             return frame
-        raise RuntimeError("Harness SDK request timed out.")
 
     try:
         send("initialize", {"cwd": temporary.name, "provider": provider,
@@ -121,6 +135,7 @@ def request_harness_sdk(*, provider: str, model: str, prompt: str,
                     raise RuntimeError("Unexpected Harness SDK server identity.")
                 break
         blocks = [{"type": "text", "text": prompt}]
+        phase = "answer"
         if image_png is not None:
             blocks.append({"type": "image", "data": base64.b64encode(image_png).decode("ascii"),
                            "mimeType": "image/png"})

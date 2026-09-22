@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import threading
 import uuid
+from datetime import datetime, timezone
 from collections.abc import Callable
 from dataclasses import replace
 from html import escape
@@ -28,6 +29,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QScrollArea,
+    QSpinBox,
     QTableWidget,
     QTableWidgetItem,
     QTextBrowser,
@@ -97,9 +99,9 @@ def confirm_chart_attachment(image_png: bytes, language: str, parent: QWidget,
     dialog.setMinimumSize(420, 340)
     layout = QVBoxLayout(dialog)
     note = QLabel(
-        f"This PNG image will be sent to {provider_label}. It may contain labels or visible raw traces. No other file is sent."
+        f"This PNG image will be sent to {provider_label}. It may contain labels or visible raw traces. For exported figures, the figure-data manifest is sent and the assistant can query bounded plotted values; no raw recording file is sent."
         if language == "en_US" else
-        f"下方这张 PNG 将发送给 {provider_label}；图上可能包含文字或原始波形。不会发送其他文件。"
+        f"下方这张 PNG 将发送给 {provider_label}；图上可能包含文字或原始波形。若为导出的论文图，还会发送作图数据清单，AI 可按需查询有限量的作图数值；不会发送原始记录文件。"
     )
     note.setWordWrap(True)
     layout.addWidget(note)
@@ -136,13 +138,15 @@ def load_ai_settings() -> AISettings:
     if not installation_id:
         installation_id = f"nf_{uuid.uuid4().hex}"
         store.setValue("installation_id", installation_id)
+    provider = str(store.value("provider", "deepseek"))
+    configured_timeout = int(store.value("timeout_seconds", 90))
     settings = AISettings(
-        provider=str(store.value("provider", "deepseek")),
+        provider=provider,
         base_url=str(store.value("base_url", "https://api.deepseek.com")),
         model=str(store.value("model", "deepseek-v4-flash")),
         mode=str(store.value("mode", AIMode.ASSISTANT.value)),
         reasoning_effort=str(store.value("reasoning_effort", "medium")),
-        timeout_seconds=int(store.value("timeout_seconds", 90)),
+        timeout_seconds=max(300, configured_timeout) if provider == "harness_sdk" else configured_timeout,
         retry_count=int(store.value("retry_count", 2)),
         stream=str(store.value("stream", "true")).lower() == "true",
         include_recent_log=(
@@ -519,6 +523,16 @@ class AISettingsDialog(QDialog):
             "Transient retries" if language == "en_US" else "临时错误重试",
             self.retry_combo,
         )
+        self.timeout_spin = QSpinBox()
+        self.timeout_spin.setRange(60, 900)
+        self.timeout_spin.setSuffix(" s")
+        self.timeout_spin.setValue(max(60, min(900, settings.timeout_seconds)))
+        self.timeout_spin.setToolTip(
+            "Harness: seconds without protocol activity (with an overall safety cap). Other providers: request timeout."
+            if language == "en_US" else
+            "Harness：连续无协议活动的等待上限（另有总时限）；其他服务：整次请求超时。"
+        )
+        form.addRow("AI timeout" if language == "en_US" else "AI 超时", self.timeout_spin)
 
         self.include_log_check = QCheckBox(
             
@@ -777,7 +791,7 @@ class AISettingsDialog(QDialog):
             model=self.model_edit.currentText().strip(),
             mode=str(self.mode_combo.currentData()),
             reasoning_effort=str(self.reasoning_combo.currentData()),
-            timeout_seconds=self.settings.timeout_seconds,
+            timeout_seconds=self.timeout_spin.value(),
             retry_count=int(self.retry_combo.currentData()),
             stream=self.stream_check.isChecked(),
             include_recent_log=self.include_log_check.isChecked(),
@@ -1729,6 +1743,8 @@ class AIAssistantDialog(QDialog):
             self.context_authorized = True
         language = self.language_getter()
         thread_id = self.current_thread_id
+        self.request_question = question
+        self.request_thread_id = thread_id
         image_png = self.pending_image_png
         image_label = self.pending_image_label if image_png is not None else ""
         shown_question = question + (f"\n📎 {image_label}" if image_label else "")
@@ -1738,9 +1754,20 @@ class AIAssistantDialog(QDialog):
         self.request_project = self.state_getter()
         queries = (ProjectQueries(self.request_project, self.stage_getter(), self.settings.mode)
                    if self.settings.provider == "harness_sdk" else None)
+        request_question = question
+        if queries is not None and image_label.startswith(("publication:", "interactive:")):
+            figure_name = image_label.partition(":")[2]
+            try:
+                figure_manifest = queries.figure_data(figure_name)["result"]
+                request_question += "\nAttached exported figure: " + figure_name
+                request_question += "\nFigure-data manifest: " + json.dumps(
+                    figure_manifest, ensure_ascii=False)[:10000]
+                request_question += "\nUse query_figure_data to read exact plotted array values when needed."
+            except (OSError, ValueError, KeyError):
+                request_question += "\nAttached exported figure: " + figure_name
         self.worker = AIWorker(
             self.settings,
-            question=question,
+            question=request_question,
             task=task,
             language=language,
             project_summary=self._summary(),
@@ -1928,6 +1955,19 @@ class AIAssistantDialog(QDialog):
         if self.request_project is not self.state_getter():
             return
         self._append_message("assistant", "请求未完成 / Request incomplete: " + details)
+        metadata = self._thread_metadata()
+        if self.request_thread_id:
+            record_in_thread(metadata, {
+                "question": self.request_question,
+                "answer": "Request incomplete: " + details,
+                "status": "failed",
+                "provider": self.settings.provider,
+                "model": self.settings.model,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }, self.request_thread_id)
+            self._persist_threads()
+            self._refresh_thread_list()
+            self.thread_changed.emit(self.request_thread_id)
         if self.state_getter() is not None and self.stage_getter() != self.current_stage:
             QTimer.singleShot(0, lambda: self.set_stage(self.stage_getter()))
         parent = self.parent()

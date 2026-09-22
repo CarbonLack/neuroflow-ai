@@ -154,6 +154,7 @@ from .product import (
     PRODUCT_VERSION,
     RELEASE_DOWNLOAD_URL,
 )
+from .publication_ui import PublicationGallery
 from .public_examples import (
     PUBLIC_EXAMPLES,
     download_public_example,
@@ -3908,7 +3909,6 @@ class NeuroFlowWindow(QMainWindow):
         self.view_menu = menu_bar.addMenu("视图")
         self.analysis_menu = menu_bar.addMenu("分析")
         self.help_menu = menu_bar.addMenu("帮助")
-        menu_bar.setCornerWidget(self._menu_left_controls, Qt.TopLeftCorner)
         menu_bar.setCornerWidget(self._menu_right_controls, Qt.TopRightCorner)
 
         def action(
@@ -3927,6 +3927,12 @@ class NeuroFlowWindow(QMainWindow):
             parent.addAction(item)
             return item
 
+        self.menu_home_action = action(
+            self.file_menu,
+            "返回首页",
+            lambda: self.pages.setCurrentWidget(self.home_page),
+        )
+        self.file_menu.addSeparator()
         self.menu_new_action = action(
             self.file_menu,
             "新建项目…",
@@ -3969,11 +3975,6 @@ class NeuroFlowWindow(QMainWindow):
             lambda: SorterManagerDialog(self.language, self).exec(),
         )
 
-        self.menu_home_action = action(
-            self.view_menu,
-            "返回首页",
-            lambda: self.pages.setCurrentWidget(self.home_page),
-        )
         self.menu_sidebar_action = action(
             self.view_menu,
             "缩略左侧流程",
@@ -4186,37 +4187,6 @@ class NeuroFlowWindow(QMainWindow):
         outer = QVBoxLayout(page)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
-        header = QWidget()
-        header.setObjectName("HomeHeader")
-        header.setFixedHeight(62)
-        row = QHBoxLayout(header)
-        row.setContentsMargins(24, 10, 24, 10)
-        brand = QLabel(PRODUCT_NAME)
-        brand.setObjectName("Brand")
-        row.addWidget(brand)
-        row.addStretch()
-        self.home_language_combo = QComboBox()
-        self.home_language_combo.setProperty("neuroflow_help_key", "global.language")
-        for key, label in LANGUAGES.items():
-            self.home_language_combo.addItem(label, key)
-        self.home_language_combo.currentIndexChanged.connect(
-            lambda: self._set_language(self.home_language_combo.currentData())
-        )
-        row.addWidget(self.home_language_combo)
-        self.home_ai_button = QPushButton("AI 助手")
-        self.home_ai_button.setProperty("neuroflow_help_key", "global.ai")
-        self.home_ai_button.clicked.connect(self._open_ai_assistant)
-        row.addWidget(self.home_ai_button)
-        self.home_tutorial_button = QPushButton("教程中心")
-        self.home_tutorial_button.setObjectName("Quiet")
-        self.home_tutorial_button.clicked.connect(
-            lambda: self._open_tutorial_center("import")
-        )
-        row.addWidget(self.home_tutorial_button)
-        self.home_ai_button.setVisible(False)
-        self.home_tutorial_button.setVisible(True)
-        outer.addWidget(header)
-
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
@@ -4469,35 +4439,9 @@ class NeuroFlowWindow(QMainWindow):
         return page
 
     def _header(self) -> QWidget:
-        header = QWidget()
+        header = QWidget(self)
         header.setObjectName("Header")
-        header.setFixedHeight(38)
-        layout = QHBoxLayout(header)
-        layout.setContentsMargins(4, 0, 4, 0)
-        layout.setSpacing(4)
-        self._menu_left_controls = header
-        self.home_button = QPushButton("首页")
-        self.home_button.clicked.connect(
-            lambda: self.pages.setCurrentWidget(self.home_page)
-        )
-        layout.addWidget(self.home_button)
-        self.workflow_toggle_button = QPushButton("缩略流程")
-        self.workflow_toggle_button.clicked.connect(
-            lambda: self._set_sidebar_collapsed(not self.sidebar_collapsed)
-        )
-        layout.addWidget(self.workflow_toggle_button)
-        title_box = QVBoxLayout()
-        title_box.setSpacing(0)
-        title_box.setContentsMargins(0, 0, 0, 0)
-        brand = QLabel(PRODUCT_NAME)
-        brand.setObjectName("Brand")
-        self.project_label = QLabel("尚未打开项目")
-        self.project_label.setObjectName("Muted")
-        self.project_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
-        self.project_label.setMinimumWidth(80)
-        title_box.addWidget(brand)
-        title_box.addWidget(self.project_label)
-        layout.addLayout(title_box)
+        header.hide()  # Only retained as owner of optional hidden controls.
         right_header = QWidget()
         right_layout = QHBoxLayout(right_header)
         right_layout.setContentsMargins(4, 0, 8, 0)
@@ -4515,6 +4459,12 @@ class NeuroFlowWindow(QMainWindow):
         self.workspace_language_combo.setToolTip("界面语言 / Interface language")
         self.workspace_language_combo.setMaximumWidth(120)
         right_layout.addWidget(self.workspace_language_combo)
+        self.home_tutorial_button = QPushButton("教程中心")
+        self.home_tutorial_button.setObjectName("Quiet")
+        self.home_tutorial_button.clicked.connect(
+            lambda: self._open_tutorial_center("import")
+        )
+        right_layout.addWidget(self.home_tutorial_button)
         self.sorter_manager_button = QPushButton("Sorter 管理")
         self.sorter_manager_button.clicked.connect(
             lambda: SorterManagerDialog(self.language, self).exec()
@@ -4716,7 +4666,7 @@ class NeuroFlowWindow(QMainWindow):
         self.publication_status = QLabel()
         self.publication_status.setWordWrap(True)
         publication_layout.addWidget(self.publication_status, 1)
-        self.publication_open_button = QPushButton("打开英文图文报告")
+        self.publication_open_button = QPushButton("在应用中查看图文")
         self.publication_open_button.clicked.connect(self._open_publication_report)
         publication_layout.addWidget(self.publication_open_button)
         self.publication_folder_button = QPushButton("打开完整导出文件夹")
@@ -4868,6 +4818,10 @@ class NeuroFlowWindow(QMainWindow):
         self.figure_layout.addWidget(self.canvas, 1)
         self.figure_host.setMinimumHeight(280)
         layout.addWidget(self.figure_host)
+        self.publication_gallery = PublicationGallery()
+        self.publication_gallery.setMinimumHeight(380)
+        self.publication_gallery.setVisible(False)
+        layout.addWidget(self.publication_gallery, 1)
         self.plot_info_label = QLabel()
         self.plot_info_label.setObjectName("Muted")
         self.plot_info_label.setMinimumHeight(22)
@@ -5120,8 +5074,6 @@ class NeuroFlowWindow(QMainWindow):
             ("public_button", "grid"),
             ("project_button", "folder"),
             ("demo_folder_button", "folder"),
-            ("home_button", "home"),
-            ("home_ai_button", "chat"),
             ("sorter_manager_button", "settings"),
             ("save_button", "save"),
             ("ai_button", "chat"),
@@ -5249,15 +5201,12 @@ class NeuroFlowWindow(QMainWindow):
         language = self.language
         self._update_window_title()
         self._update_menu_texts()
-        for combo in (self.home_language_combo, self.workspace_language_combo):
+        for combo in (self.workspace_language_combo,):
             combo.blockSignals(True)
             index = combo.findData(language)
             if index >= 0:
                 combo.setCurrentIndex(index)
             combo.blockSignals(False)
-        self.home_ai_button.setText(
-            "AI assistant" if language == "en_US" else "AI 助手"
-        )
         self.ai_button.setText(
             "AI assistant" if language == "en_US" else "AI 助手"
         )
@@ -5384,7 +5333,6 @@ class NeuroFlowWindow(QMainWindow):
             else "Data  →  Raw QC  →  Preprocessing  →  Spike sorting  →  Unit QC  →  "
             "Synchronization  →  Behavior  →  Raster/PSTH  →  Statistics  →  Decoding  →  Export"
         )
-        self.home_button.setText(tr("home", language))
         self.save_button.setText(tr("save", language))
         self.ai_button.setText(
             "AI assistant" if language == "en_US" else "AI 助手"
@@ -5398,11 +5346,6 @@ class NeuroFlowWindow(QMainWindow):
         self.sorter_manager_button.setText(tr("sorter_manager", language))
         self.run_button.setText(tr("run_all", language))
         self.workflow_label.setText(tr("workflow", language))
-        self.workflow_toggle_button.setText(
-            ("Expand workflow" if language == "en_US" else "展开流程")
-            if self.sidebar_collapsed
-            else ("Compact workflow" if language == "en_US" else "缩略流程")
-        )
         for step in STEPS:
             title, subtitle = step_text(step.key, language)
             if not self.sidebar_collapsed:
@@ -5487,7 +5430,7 @@ class NeuroFlowWindow(QMainWindow):
             "Settings" if language == "en_US" else "设置"
         )
         self.publication_open_button.setText(
-            "Open English figure report" if language == "en_US" else "打开英文图文报告"
+            "View figures in the app" if language == "en_US" else "在应用中查看图文"
         )
         self.publication_folder_button.setText(
             "Open complete export" if language == "en_US" else "打开完整导出文件夹"
@@ -5581,7 +5524,6 @@ class NeuroFlowWindow(QMainWindow):
         if self.ai_dialog is not None:
             self.ai_dialog.set_language(language)
         if not self.state:
-            self.project_label.setText(tr("no_project", language))
             self.status_label.setText(tr("open_project_first", language))
         else:
             configured = self.state.source_type not in {"unknown", "unconfigured"}
@@ -5992,9 +5934,8 @@ class NeuroFlowWindow(QMainWindow):
 
     def _open_publication_report(self) -> None:
         if self.state:
-            report = self.state.root / "exports" / "publication" / "index.html"
-            if report.is_file():
-                QDesktopServices.openUrl(QUrl.fromLocalFile(str(report)))
+            self._select_step("export")
+            self.publication_gallery.setFocus()
 
     def _open_publication_folder(self) -> None:
         if self.state:
@@ -6010,11 +5951,16 @@ class NeuroFlowWindow(QMainWindow):
         self.publication_open_button.setEnabled(available)
         self.publication_folder_button.setEnabled(available)
         self.publication_status.setText(
-            ((f"English main/supplementary report: {report}" if self.language == "en_US"
-              else f"英文主图／附图与图注：{report}") if available else
+            (("Full English figures are shown below. Select a panel to reorder it "
+              "or edit its caption; SVG/PDF/PNG and source data are in exports/publication."
+              if self.language == "en_US" else
+              "英文组合主图／附图见下方；选中面板可调整顺序、编辑图注。"
+              "SVG／PDF／PNG 与作图数据均保存在项目 exports 内。") if available else
              ("No publication bundle yet. Run this step after the analyses you need."
               if self.language == "en_US" else "尚未生成论文图文包。请先完成需要的分析，再运行本步骤。"))
         )
+        if getattr(self, "current_step", None) == "export":
+            self.publication_gallery.load(self.state.root / "exports" if self.state else None)
 
     def _update_project_data_panel(self) -> None:
         if not hasattr(self, "project_data_summary"):
@@ -6256,8 +6202,6 @@ class NeuroFlowWindow(QMainWindow):
         state.metadata["language"] = self.language
         self.preview = state.preprocessing or None
         self.matches = []
-        self.project_label.setText(state.name)
-        self.project_label.setToolTip(str(state.root))
         self.metric_source.value_label.setText(state.source_type.upper())
         self.metric_channels.value_label.setText(str(state.channel_count or "—"))
         self.metric_duration.value_label.setText(f"{state.duration_seconds:.1f}s")
@@ -6508,11 +6452,6 @@ class NeuroFlowWindow(QMainWindow):
                 self.step_buttons[step.key].setText(title)
                 self.step_buttons[step.key].setToolTip(subtitle)
             target = 270
-        self.workflow_toggle_button.setText(
-            ("Expand workflow" if self.language == "en_US" else "展开流程")
-            if self.sidebar_collapsed
-            else ("Compact workflow" if self.language == "en_US" else "缩略流程")
-        )
         if hasattr(self, "menu_sidebar_action"):
             self.menu_sidebar_action.blockSignals(True)
             self.menu_sidebar_action.setChecked(self.sidebar_collapsed)
@@ -6836,6 +6775,8 @@ class NeuroFlowWindow(QMainWindow):
         self.sorting_workbench.setVisible(key == "sorting")
         self.unit_curation_panel.setVisible(key == "unit_qc")
         self.publication_panel.setVisible(key == "export")
+        self.figure_host.setVisible(key != "export")
+        self.publication_gallery.setVisible(key == "export")
         self._refresh_publication_panel()
         self.sync_workbench.setVisible(key == "sync")
         self.project_data_panel.setVisible(key == "import")
@@ -8148,6 +8089,16 @@ class NeuroFlowWindow(QMainWindow):
 
     def _capture_current_figure_for_ai(self) -> tuple[bytes, str]:
         """Capture only the current plot, in memory, for explicit user review."""
+        if getattr(self, "current_step", None) == "export" and self.state:
+            gallery = self.publication_gallery
+            if not gallery.current_figure_name or gallery._pixmap.isNull():
+                raise ValueError("请先在左侧选择一张论文图。")
+            scaled = gallery._pixmap.scaled(1800, 1400, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            buffer = QBuffer()
+            buffer.open(QIODevice.WriteOnly)
+            if not scaled.save(buffer, "PNG") or len(buffer.data()) > 6_000_000:
+                raise ValueError("论文图超过 6 MB，无法附加。")
+            return bytes(buffer.data()), f"publication:{gallery.current_figure_name}"
         if self.state is None or not hasattr(self, "canvas"):
             raise ValueError("请先打开有图表的项目。" if self.language != "en_US" else "Open a project with a chart first.")
         figure = self.canvas.figure
@@ -8169,8 +8120,22 @@ class NeuroFlowWindow(QMainWindow):
             image_png = output.getvalue()
         if len(image_png) > 6_000_000:
             raise ValueError("当前图像超过 6 MB，请先简化图表。" if self.language != "en_US" else "Chart exceeds 6 MB; simplify it first.")
-        label = self.option_combo.currentText().strip() if self.option_combo.isVisible() else step_text(self.current_step, self.language)[0]
-        return image_png, label
+        import re
+        from .figure_data import save_figure_data
+        option = str(self.option_combo.currentData() or "overview") if self.option_combo.isVisible() else "overview"
+        name = "interactive_" + re.sub(r"[^a-zA-Z0-9_-]+", "_", f"{self.current_step}_{option}")[:65]
+        source_sections = {
+            "qc": ["qc"], "preprocess": ["preprocessing"], "sorting": ["sorting_results"],
+            "unit_qc": ["unit_metrics", "sorted_spikes"], "sync": ["events", "trials"],
+            "behavior": ["events", "trials"], "analysis": ["analysis", "sorted_spikes"],
+            "statistics": ["statistics"], "decoding": ["decoding", "regression"],
+        }.get(self.current_step, ["metadata"])
+        exports = self.state.root / "exports"
+        save_figure_data(figure, name, exports, self.state, source_sections)
+        figures = exports / "figures"
+        figures.mkdir(parents=True, exist_ok=True)
+        (figures / f"{name}.png").write_bytes(image_png)
+        return image_png, f"interactive:{name}"
 
     def _sidebar_ai_thread_changed(self) -> None:
         thread_id = str(self.sidebar_ai_thread_combo.currentData() or "")

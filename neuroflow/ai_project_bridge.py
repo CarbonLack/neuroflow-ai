@@ -57,7 +57,19 @@ class ProjectQueries:
         self.captured_at = datetime.now(timezone.utc).isoformat()
         self.mode = mode
         self.stage = stage
+        self._exports = state.root / "exports" if state is not None else None
         self.summary = build_project_summary(state, stage, include_recent_log=True)
+        if self._exports is not None and stage == "export":
+            storyboard = self._exports / "publication" / "storyboard.json"
+            if storyboard.is_file():
+                try:
+                    groups = json.loads(storyboard.read_text(encoding="utf-8")).get("figures", [])
+                    self.summary["publication_figures"] = [
+                        {"figure": item.get("figure"), "story_role": item.get("story_role"),
+                         "panel_count": len(item.get("panels", []))}
+                        for item in groups[:40]]
+                except (OSError, ValueError, TypeError):
+                    pass
         self.state = None
         self.sections: dict[str, Any] = {}
         if state is not None:
@@ -96,7 +108,71 @@ class ProjectQueries:
         return self._result("list_project_data", {}, {"sections": sections,
             "actions": actions, "raw_voltage": "Not exposed through this interface",
             "ground_truth": "Not included in ordinary analysis queries",
-            "app_guidance": "Use search_app_guidance for built-in operation steps and scientific checks"})
+            "app_guidance": "Use search_app_guidance for built-in operation steps and scientific checks",
+            "publication_figure_data": "Use query_figure_data for saved plotted arrays and provenance; export must be run first"})
+
+    def figure_data(self, name: str = "", array: str = "", offset: int = 0,
+                    limit: int = 100) -> dict:
+        """Read only the exported figure-data bundle, never arbitrary paths or raw voltage."""
+        if self._exports is None:
+            return self._result("query_figure_data", {"name": name}, {"available": False})
+        folder = self._exports / "figure_data"
+        if not name:
+            storyboard = self._exports / "publication" / "storyboard.json"
+            composite_names = []
+            if storyboard.is_file():
+                try:
+                    composite_names = [item.get("figure") for item in
+                        json.loads(storyboard.read_text(encoding="utf-8")).get("figures", [])]
+                except (OSError, ValueError, TypeError):
+                    pass
+            return self._result("query_figure_data", {}, {
+                "figures": sorted(path.stem for path in folder.glob("*.json"))[:100],
+                "composite_figures": composite_names[:40]})
+        if re.fullmatch(r"(?:Figure|Extended Data Figure) \d{1,3}", name):
+            if array:
+                raise ValueError("Choose one source chart name from the composite panel list before querying numeric arrays.")
+            storyboard = self._exports / "publication" / "storyboard.json"
+            if not storyboard.is_file():
+                raise ValueError("Publication figures have not been exported.")
+            groups = json.loads(storyboard.read_text(encoding="utf-8")).get("figures", [])
+            match = next((item for item in groups if item.get("figure") == name), None)
+            if match is None:
+                raise ValueError("Composite figure not found in this project.")
+            return self._result("query_figure_data", {"name": name}, {
+                "figure": name, "story_role": match.get("story_role"),
+                "panels": [{"panel": item.get("panel"),
+                            "source_chart": item.get("figure_name"),
+                            "source_axis": item.get("source_axis"),
+                            "array_axis_index": item.get("array_axis_index"),
+                            "title": item.get("title"),
+                            "caption_draft": item.get("caption_draft"),
+                            "plotted_data": item.get("plotted_data")}
+                           for item in match.get("panels", [])],
+                "note": "Call query_figure_data again with source_chart to inspect arrays and provenance."})
+        if not re.fullmatch(r"[a-zA-Z0-9_-]{1,80}", name):
+            raise ValueError("Invalid figure identifier.")
+        manifest_path = folder / f"{name}.json"
+        if not manifest_path.is_file():
+            raise ValueError("Figure data are not exported; run publication export first.")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest.pop("raw_recording", None)
+        if not array:
+            return self._result("query_figure_data", {"name": name}, manifest)
+        if not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", array):
+            raise ValueError("Invalid array identifier.")
+        if offset < 0 or not 1 <= limit <= 100:
+            raise ValueError("Use nonnegative offset and limit 1–100.")
+        with np.load(folder / f"{name}.npz", allow_pickle=False) as archive:
+            if array not in archive:
+                raise ValueError("Array not found in this figure.")
+            values = archive[array].reshape(-1)
+            page = values[offset:offset + limit]
+            result = {"figure": name, "array": array, "shape": list(archive[array].shape),
+                      "offset": offset, "total": len(values), "values": page.tolist(),
+                      "next_offset": offset + limit if offset + limit < len(values) else None}
+        return self._result("query_figure_data", {"name": name, "array": array,
+            "offset": offset, "limit": limit}, result)
 
     def guidance(self, query: str, language: str = "zh_CN", limit: int = 3) -> dict:
         """Search the versioned in-app tutorial; no network or project data read."""
@@ -236,6 +312,15 @@ class ProjectMCPBridge:
             Query deeper paths when arrays or objects are summarized. No file paths or raw voltage.
             """
             return queries.query(section, path, offset, limit, filters)
+
+        @mcp.tool()
+        def query_figure_data(name: str = "", array: str = "", offset: int = 0,
+                              limit: int = 100) -> dict:
+            """List exported figures, inspect exact plotted-array metadata, or read a bounded page.
+            Empty name lists figures; name returns array IDs and source sections; array reads values.
+            Raw recording paths and voltage files are never exposed.
+            """
+            return queries.figure_data(name, array, offset, limit)
 
         @mcp.tool()
         def search_project_conversation(query: str = "", limit: int = 10) -> dict:

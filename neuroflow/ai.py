@@ -868,10 +868,10 @@ def build_user_input(
     history: list[dict[str, str]] | None = None,
 ) -> str:
     safe_history = []
-    for item in (history or [])[-40:]:
+    for item in (history or [])[-20:]:
         role = "assistant" if item.get("role") == "assistant" else "user"
         safe_history.append(
-            {"role": role, "content": redact_sensitive_text(item.get("content", ""))}
+            {"role": role, "content": redact_sensitive_text(item.get("content", ""))[:1500]}
         )
     payload = {
         "question": redact_sensitive_text(question),
@@ -1441,6 +1441,7 @@ def request_ai_advice(
             "Tools read an immutable snapshot captured for this request; cite returned Q evidence IDs and snapshot time. "
             "For NeuroEphys AI operation instructions, search the versioned in-app tutorial with search_app_guidance before giving concrete steps. "
             "Use list_project_data to discover sections, nested paths and action schemas. Query pages rather than guessing. "
+            "For an exported chart, use query_figure_data to inspect its exact plotted arrays and source sections; match these with the attached PNG before interpreting. If the attachment is a publication composite such as Figure 1, first query that composite label to map panel letters to source charts, then query each relevant source chart for numeric arrays. Never claim that a rendered image alone provides exact values. "
             "Earlier conversation is searchable within this project. Distinguish historical answers from current results. "
             "Answer general research, app-operation and other questions as well; do not force unrelated questions into the project workflow. "
             "Distinguish general model knowledge from verified project evidence and do not fabricate citations or current facts. "

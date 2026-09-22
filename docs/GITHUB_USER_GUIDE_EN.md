@@ -81,7 +81,8 @@ Real recordings have no ground truth. Precision, recall, and F1 between two sort
 
 - Click a plotted element to inspect its value; double-click an axis or use **Edit panel** to open Figure Studio.
 - **Selected object** edits one element; **Shared style** applies consistent typography, axes, grid, and color rules across project figures.
-- **Publication and reproduction** creates English main/supplementary storyboards, panel letters, draft legends, Methods, file inventory, and checksums.
+- **Publication and reproduction** creates actual English multi-panel main and Extended Data figures (vector SVG/PDF plus PNG previews), panel letters, panel-specific draft legends, Methods, file inventory, and checksums. The in-App gallery shows each complete figure; expand a figure to select a panel, reorder it with the arrows, or edit its caption. Edits are retained in `exports/publication/author_edits.json` when the publication step is rerun.
+- For traceability, `exports/panels/` holds cropped source axes, `exports/figure_data/` holds plotted numeric arrays and source-section indexes, and `exports/provenance.json` records the recording origin and workflow. All exported chart types are assigned, including non-significant results.
 - Automated layout does not replace scientific, statistical, visual, or target-journal review.
 
 ## 9. Multi-session and multi-animal studies
