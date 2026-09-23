@@ -44,6 +44,15 @@ Status: local release validation passed. This file is updated only with complete
   no clipping, overflow, or cross-page layout defect. Slide timings total exactly
   8:00 and the document includes a fallback demo route and judge Q&A.
 
-## Pending online verification
+## Online release verification
 
-- Final GitHub release-asset verification.
+- 2026-09-23: GitHub Release `v1.4.0` was published from commit
+  `3496b3640dddd2490876bd434004fdfc746bfe8e` and independently read back through
+  the public API. It is neither a draft nor a prerelease.
+- All 13 expected online assets report the `uploaded` state, including the Full
+  selectable installer, Standard installer, Standard portable ZIP, Python package
+  artifacts, checksums, validation documents, reviewed PPT, and DOCX/Markdown
+  speaker scripts.
+- The local-only 3.13 GB Full portable ZIP remains checksum-verified in the
+  canonical release archive because GitHub's per-asset limit prevents uploading it.
+  The published Full selectable installer contains the equivalent Full runtime.
