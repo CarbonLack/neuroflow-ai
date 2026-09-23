@@ -39,3 +39,11 @@ tetrodes, and 32 independent brush/microwire contacts. Their detector outputs ar
 explicitly labeled synthetic and imperfect, with misses, false positives, jitter,
 and slight cross-Unit leakage. No published recording is downloaded or bundled.
 
+## Release delivery
+
+- GitHub provides the recommended Full selectable installer, Standard installer,
+  Standard portable ZIP, Python artifacts, checksums, the reviewed roadshow deck,
+  and synchronized DOCX/Markdown speaker scripts.
+- The 3.13 GB Full portable ZIP is retained in the canonical local release archive
+  because it exceeds GitHub's 2 GiB per-asset limit; it contains the same Full runtime
+  payload available through the selectable Full installer.

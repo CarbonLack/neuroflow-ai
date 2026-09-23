@@ -19,6 +19,10 @@ Spike sorting、人工 Unit 复核、事件同步、行为与神经活动、统�
 选标准安装版；不能安装软件选标准便携版；只有明确需要离线 GPU/Kilosort 时才下载
 Full 便携版。
 
+GitHub 单个 Release 附件有 2 GiB 上限：Full 便携 ZIP 约 3.13 GB，因此只保存在
+本地完整发布档案中。GitHub 上的 **Full 自选安装版** 包含同样的离线 GPU/CUDA/
+Kilosort 组件，是线上获取满血版的推荐方式。
+
 ## v1.4.0 重点
 
 - 人工 Unit 复核显示全部可读取 spike 波形和 PCA 点，可套索排除离群 spike、拆分新

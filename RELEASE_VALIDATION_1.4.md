@@ -39,7 +39,11 @@ Status: local release validation passed. This file is updated only with complete
 - 2026-09-23: the 11-slide roadshow deck completed five render-and-inspect review
   rounds, package/layout/font validation, and an eight-minute speaker-note timing
   audit.
+- 2026-09-23: the synchronized roadshow speaker script was generated in DOCX and
+  Markdown. The DOCX rendered to 16 pages; every page was visually inspected with
+  no clipping, overflow, or cross-page layout defect. Slide timings total exactly
+  8:00 and the document includes a fallback demo route and judge Q&A.
 
 ## Pending online verification
 
-- Final Git commit/push and GitHub release-asset verification.
+- Final GitHub release-asset verification.

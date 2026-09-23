@@ -20,6 +20,9 @@
 GPU、驱动和独立 GPU 组件。缺少某个 sorter 不影响导入、质控、已有 sorting 结果、
 统计、解码、出图和其他可用后端。
 
+路演资料位于 `docs/presentation/`：包含已完成五轮视觉审查的 11 页 PPT、
+逐页 8 分钟讲稿、现场演示备用路线和常见评委问答。讲稿同时提供 DOCX 与 Markdown。
+
 复制给另一台电脑时，请复制整个便携版文件夹或原始 ZIP，不要复制项目工作区中的私有
 数据、凭据或未脱敏日志。
 
@@ -76,3 +79,6 @@ units, statistical results, decoding results, and AI suggestions scientifically.
 The local full-analysis desktop bundle includes Kilosort4 and its matched
 PyTorch/CUDA runtime; a compatible NVIDIA GPU and driver are still required.
 The public GitHub Actions core build is explicitly marked as a Lite build.
+
+The reviewed 11-slide roadshow deck and its synchronized 8-minute DOCX/Markdown
+speaker script are available in `docs/presentation/`.
