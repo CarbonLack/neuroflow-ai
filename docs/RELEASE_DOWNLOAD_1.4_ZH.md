@@ -12,7 +12,7 @@ Spike sorting、人工 Unit 复核、事件同步、行为与神经活动、统�
 | Windows Full 自选安装版（推荐） | `NeuroEphysAI-Setup-1.4.1-Full.exe` | 同一个安装程序中可选择标准组件和 GPU/Kilosort 离线组件。适合比赛演示、实验室工作站和需要完整 sorting 能力的用户。 |
 | Windows 标准安装版 | `NeuroEphysAI-Setup-1.4.1.exe` | App、AI 接口、CPU sorter、统计、机器学习、多 Session 和论文图；体积更小，不携带完整 GPU 运行库。 |
 | Windows 标准便携版 | `NeuroEphysAI-1.4.1-Windows-x64-portable.zip` | 无安装权限时使用。必须完整解压整个目录，不能只复制其中的 EXE。 |
-| Windows Full 便携版 | `NeuroEphysAI-1.4.1-Windows-x64-Full-portable.zip` | 完整离线目录，体积最大，适合固定工作站或移动硬盘。 |
+| Windows Full 便携版（本地工作区） | `NeuroEphysAI-1.4.1-Windows-x64-Full-portable.zip` | 完整离线目录，适合固定工作站或移动硬盘；超过 GitHub 单文件限制，仅保存在项目总文件夹内。线上需要 Full 时下载 Full 安装版。 |
 | Python 包 | `neuroephys_ai-1.4.1-py3-none-any.whl` | Python 3.12 脚本、CLI 和批量可复现处理。 |
 
 不确定时优先下载 **Full 自选安装版**：安装时可取消不需要的 GPU 组件。普通办公电脑
