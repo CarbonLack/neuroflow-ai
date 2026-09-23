@@ -8345,12 +8345,10 @@ class NeuroFlowWindow(QMainWindow):
             self.ai_sidebar_question.clear()
 
     def _sidebar_ai_failed(self, details: str) -> None:
+        # The dialog records the failure in the active conversation before this
+        # signal reaches the sidebar. Refresh it once; avoid a duplicate raw
+        # gateway error that crowds out the useful explanation.
         self._refresh_ai_sidebar()
-        self.ai_sidebar_conversation.append_message(
-            "assistant", "NeuroEphys AI",
-            plain_html(("Request failed: " if self.language == "en_US" else "请求未完成：")
-                       + details[:500]),
-        )
 
     def _sidebar_ai_quick(self, task: str) -> None:
         dialog = self._ensure_ai_dialog()

@@ -1,6 +1,6 @@
-# NeuroEphys AI v1.4.0 — 下载、安装与版本选择
+# NeuroEphys AI v1.4.1 — 下载、安装与版本选择
 
-v1.4.0 是面向完整电生理证据链的正式版本：从原始记录、质量控制、预处理、
+v1.4.1 是面向完整电生理证据链的正式修正版：从原始记录、质量控制、预处理、
 Spike sorting、人工 Unit 复核、事件同步、行为与神经活动、统计/编解码，直到可追溯的
 英文论文组合图。项目文件保存参数、中间结果、作图数据、人工决定和来源索引；原始数据
 默认保持只读链接，不会因为保存项目而被静默改写。
@@ -9,11 +9,11 @@ Spike sorting、人工 Unit 复核、事件同步、行为与神经活动、统�
 
 | 版本 | 文件 | 适用场景 |
 |---|---|---|
-| Windows Full 自选安装版（推荐） | `NeuroEphysAI-Setup-1.4.0-Full.exe` | 同一个安装程序中可选择标准组件和 GPU/Kilosort 离线组件。适合比赛演示、实验室工作站和需要完整 sorting 能力的用户。 |
-| Windows 标准安装版 | `NeuroEphysAI-Setup-1.4.0.exe` | App、AI 接口、CPU sorter、统计、机器学习、多 Session 和论文图；体积更小，不携带完整 GPU 运行库。 |
-| Windows 标准便携版 | `NeuroEphysAI-1.4.0-Windows-x64-portable.zip` | 无安装权限时使用。必须完整解压整个目录，不能只复制其中的 EXE。 |
-| Windows Full 便携版 | `NeuroEphysAI-1.4.0-Windows-x64-Full-portable.zip` | 完整离线目录，体积最大，适合固定工作站或移动硬盘。 |
-| Python 包 | `neuroephys_ai-1.4.0-py3-none-any.whl` | Python 3.12 脚本、CLI 和批量可复现处理。 |
+| Windows Full 自选安装版（推荐） | `NeuroEphysAI-Setup-1.4.1-Full.exe` | 同一个安装程序中可选择标准组件和 GPU/Kilosort 离线组件。适合比赛演示、实验室工作站和需要完整 sorting 能力的用户。 |
+| Windows 标准安装版 | `NeuroEphysAI-Setup-1.4.1.exe` | App、AI 接口、CPU sorter、统计、机器学习、多 Session 和论文图；体积更小，不携带完整 GPU 运行库。 |
+| Windows 标准便携版 | `NeuroEphysAI-1.4.1-Windows-x64-portable.zip` | 无安装权限时使用。必须完整解压整个目录，不能只复制其中的 EXE。 |
+| Windows Full 便携版 | `NeuroEphysAI-1.4.1-Windows-x64-Full-portable.zip` | 完整离线目录，体积最大，适合固定工作站或移动硬盘。 |
+| Python 包 | `neuroephys_ai-1.4.1-py3-none-any.whl` | Python 3.12 脚本、CLI 和批量可复现处理。 |
 
 不确定时优先下载 **Full 自选安装版**：安装时可取消不需要的 GPU 组件。普通办公电脑
 选标准安装版；不能安装软件选标准便携版；只有明确需要离线 GPU/Kilosort 时才下载
@@ -23,7 +23,7 @@ GitHub 单个 Release 附件有 2 GiB 上限：Full 便携 ZIP 约 3.13 GB，因
 本地完整发布档案中。GitHub 上的 **Full 自选安装版** 包含同样的离线 GPU/CUDA/
 Kilosort 组件，是线上获取满血版的推荐方式。
 
-## v1.4.0 重点
+## v1.4.1 重点
 
 - 人工 Unit 复核显示全部可读取 spike 波形和 PCA 点，可套索排除离群 spike、拆分新
   Unit、撤销，并将已复核候选单神经元作为下游分析的真实筛选条件。

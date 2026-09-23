@@ -120,3 +120,24 @@ def test_chat_view_uses_real_two_sided_bubbles():
     assert "Question" in chat.toPlainText() and "Answer" in chat.toPlainText()
     chat.close()
     app.processEvents()
+
+
+def test_narrow_chat_uses_available_width_without_clipping_last_lines():
+    app = QApplication.instance() or QApplication([])
+    chat = BubbleChatView()
+    chat.resize(280, 500)
+    chat.show()
+    chat.append_message(
+        "assistant", "NeuroEphys AI",
+        "<div>当前完成了导入、质控和排序。</div><ul><li>MountainSort5 和 "
+        "Kilosort4 的候选单元数量不同，需要逐个复核。</li><li>请查看完整波形和不应期。</li></ul>",
+    )
+    app.processEvents()
+    _, _, bubble, body = chat._messages[0]
+    assert bubble.width() >= chat.viewport().width() - 20
+    assert body.height() >= body.document().size().height()
+    chat.resize(360, 500)
+    app.processEvents()
+    assert bubble.width() >= chat.viewport().width() - 20
+    assert body.height() >= body.document().size().height()
+    chat.close()

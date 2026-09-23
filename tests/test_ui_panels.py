@@ -105,6 +105,51 @@ def test_publication_gallery_is_continuous_vector_document(tmp_path: Path):
     gallery.close()
 
 
+def test_publication_gallery_remains_readable_in_dark_app_theme(tmp_path: Path):
+    from neuroflow.ui import APP_STYLE
+    from PySide6.QtWidgets import QLabel
+
+    app = QApplication.instance() or QApplication([])
+    old_style = app.styleSheet()
+    app.setStyleSheet(APP_STYLE)
+    try:
+        publication = tmp_path / "publication"
+        figures = publication / "figures"
+        figures.mkdir(parents=True)
+        (figures / "figure_01.svg").write_text(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='500' height='300' "
+            "viewBox='0 0 500 300'><rect width='500' height='300' fill='white'/></svg>",
+            encoding="utf-8",
+        )
+        (publication / "storyboard.json").write_text(json.dumps({"figures": [{
+            "figure": "Figure 1", "role": "main", "story_role": "QC evidence",
+            "composite_svg": "publication/figures/figure_01.svg",
+            "panels": [{"panel": "a", "title": "Quality control",
+                        "caption_draft": "Author-review caption.",
+                        "source_svg": "figures/source.svg", "source_axis": 1}],
+        }]}), encoding="utf-8")
+        gallery = PublicationGallery()
+        gallery.resize(900, 600)
+        gallery.show()
+        assert gallery.load(tmp_path)
+        app.processEvents()
+        assert gallery.scroll.horizontalScrollBar().maximum() == 0
+        assert gallery.gallery_content.width() <= gallery.scroll.viewport().width()
+        card = gallery._cards[0]
+        heading = card.findChildren(QLabel)[0]
+        # QLabel is transparent: sample the composited card, not the child
+        # grab's transparent pixel (which carries RGB 0 with alpha 0).
+        image = card.grab().toImage()
+        sample = image.pixelColor(
+            heading.x() + heading.width() - 3,
+            heading.y() + heading.height() - 3,
+        )
+        assert sample.red() > 235 and sample.green() > 235 and sample.blue() > 235
+        gallery.close()
+    finally:
+        app.setStyleSheet(old_style)
+
+
 def test_event_tuning_dialog_and_worker_use_selected_behavior(tmp_path: Path):
     app = QApplication.instance() or QApplication([])
     state = ProjectState(root=tmp_path / "event_project", duration_seconds=8.0)

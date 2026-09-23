@@ -1,4 +1,19 @@
-# NeuroEphys AI 1.4.0
+# NeuroEphys AI 1.4.1
+
+## 1.4.1 reliability and readability fixes
+
+- OpenAI-compatible Chat endpoints, including the institute DeepSeek V4.1
+  gateway, receive portable non-strict tool declarations. Strict calling
+  requires a backend-specific opt-in; proposed actions remain locally
+  schema-validated and require researcher confirmation.
+- HTTP 400 model errors now identify request-format incompatibility instead of
+  incorrectly suggesting that the project, key, or account quota failed.
+- AI conversation bubbles use the full available sidebar width and measure rich
+  text after layout, so long replies remain readable rather than clipped.
+- The in-app publication gallery keeps its figure and captions readable under
+  the dark application theme and avoids horizontal overflow at narrow widths.
+
+## 1.4.0 feature set
 
 ## Researcher-controlled Unit curation
 

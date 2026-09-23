@@ -46,6 +46,7 @@ from .ai import (
     build_project_summary,
     check_provider_health,
     redact_sensitive_text,
+    readable_ai_failure,
     request_ai_advice,
 )
 from .ai_credentials import get_api_key, store_api_key
@@ -1954,12 +1955,14 @@ class AIAssistantDialog(QDialog):
         self._set_running(False)
         if self.request_project is not self.state_getter():
             return
-        self._append_message("assistant", "请求未完成 / Request incomplete: " + details)
+        english = self.language_getter() == "en_US"
+        explanation = readable_ai_failure(details, self.language_getter())
+        self._append_message("assistant", "请求未完成 / Request incomplete: " + explanation)
         metadata = self._thread_metadata()
         if self.request_thread_id:
             record_in_thread(metadata, {
                 "question": self.request_question,
-                "answer": "Request incomplete: " + details,
+                "answer": "Request incomplete: " + explanation,
                 "status": "failed",
                 "provider": self.settings.provider,
                 "model": self.settings.model,
@@ -1972,23 +1975,29 @@ class AIAssistantDialog(QDialog):
             QTimer.singleShot(0, lambda: self.set_stage(self.stage_getter()))
         parent = self.parent()
         if parent is not None and hasattr(parent, "ai_sidebar_status"):
-            parent.ai_sidebar_status.setText(details)
-        english = self.language_getter() == "en_US"
+            parent.ai_sidebar_status.setText(explanation)
         if self.settings.provider == "harness_sdk":
-            QMessageBox.critical(self, "AI", details + (
+            QMessageBox.critical(self, "AI", explanation + (
                 "\n\nNo analysis was changed. Check the installed Harness login, selected model, network and account quota. Do not copy its key into this app."
                 if english else
                 "\n\n没有修改分析。请检查本机 Harness 登录、所选模型、网络和账户额度，无需把 Harness 密钥复制到 App。"))
+            return
+        if "http 400" in details.lower():
+            QMessageBox.critical(
+                self,
+                "AI request failed" if english else "AI 请求失败",
+                explanation,
+            )
             return
         QMessageBox.critical(
             self,
             "AI request failed" if english else "AI 请求失败",
             (
-                f"{details}\n\nThe project was not changed. Check the endpoint, model, "
+                f"{explanation}\n\nThe project was not changed. Check the endpoint, model, "
                 "API key, network, and account quota."
                 if english
                 else (
-                    f"{details}\n\n项目未被修改。请检查 API 地址、模型、密钥、"
+                    f"{explanation}\n\n项目未被修改。请检查 API 地址、模型、密钥、"
                     "网络和账户额度。"
                 )
             ),

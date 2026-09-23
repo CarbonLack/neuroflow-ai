@@ -19,6 +19,7 @@ from neuroflow.ai import (
     normalize_ai_response,
     redact_sensitive_text,
     request_ai_advice,
+    readable_ai_failure,
 )
 
 
@@ -199,6 +200,35 @@ def test_institute_harness_chat_carries_chart_pixels(monkeypatch):
     assert captured["messages"][1]["content"][1]["type"] == "image_url"
     assert "response_format" not in captured
     assert "Visible waveform" in response.answer
+
+
+def test_compatible_chat_collaboration_uses_portable_tool_schema(monkeypatch):
+    captured = {}
+
+    def fake_post(_url, payload, *_args, **_kwargs):
+        captured.update(payload)
+        return {"choices": [{"message": {"content": "Inspect Unit QC before decoding."}}]}
+
+    monkeypatch.setattr("neuroflow.ai._post_json", fake_post)
+    for provider in ("institute_harness", "deepseek", "openai_compatible"):
+        captured.clear()
+        settings = AISettings(
+            provider=provider, base_url="https://example.invalid/v1",
+            model="deepseek-v4.1-flash", api_key="test-key", stream=False,
+            mode=AIMode.COLLABORATIVE.value,
+        )
+        response = request_ai_advice(
+            settings, question="What should I do next?", task="ask", language="en_US",
+            project_summary={"project_open": False},
+        )
+        assert response.answer == "Inspect Unit QC before decoding."
+        assert captured["tool_choice"] == "auto"
+        assert captured["tools"]
+        assert all(tool["function"]["strict"] is False for tool in captured["tools"])
+    assert "strict tool schemas" in readable_ai_failure(
+        "AI service returned HTTP 400: DeepSeek V4.1 strict tool schemas require a grammar backend with spaced DSML param-schema support; set strict=false",
+        "en_US",
+    )
 
 
 def test_openai_responses_request_uses_schema_and_store_false():

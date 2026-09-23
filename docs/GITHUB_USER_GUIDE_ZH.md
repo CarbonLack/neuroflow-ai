@@ -8,10 +8,10 @@
 
 | 版本 | 适合谁 | 怎么用 | 注意 |
 |---|---|---|---|
-| **Full 离线安装版** `NeuroEphysAI-Setup-1.4.0-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 包含 v1.4.0 全部功能与完整离线 GPU/CUDA/Kilosort 组件 |
-| **标准安装版（推荐）** `NeuroEphysAI-Setup-1.4.0.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 包含最新 AI 对话与图像解读入口；后续可在 Sorter 管理器补齐组件 |
-| **标准便携版** `NeuroEphysAI-1.4.0-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
-| **Python 包** `neuroephys_ai-1.4.0-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
+| **Full 离线安装版** `NeuroEphysAI-Setup-1.4.1-Full.exe` | 比赛演示、科研工作站、需要 Kilosort/GPU 的用户 | 双击安装，按组件页选择 | 包含 v1.4.1 修复与完整离线 GPU/CUDA/Kilosort 组件 |
+| **标准安装版（推荐）** `NeuroEphysAI-Setup-1.4.1.exe` | 普通 Windows 用户、教学、CPU 分析 | 双击安装 | 包含最新 AI 对话与图像解读入口；后续可在 Sorter 管理器补齐组件 |
+| **标准便携版** `NeuroEphysAI-1.4.1-Windows-x64-portable.zip` | 无安装权限或移动硬盘用户 | 完整解压后运行 `NeuroEphysAI\NeuroEphysAI.exe` | 不能只复制单个 EXE |
+| **Python 包** `neuroephys_ai-1.4.1-py3-none-any.whl` | 需要脚本、批处理和 API 的用户 | `python -m pip install <wheel>` | 建议 Python 3.12 |
 
 完整 Full 便携 ZIP 大于 GitHub 2 GiB 单文件限制，因此 GitHub 主要提供 Full 安装包。本地构建可另行生成 Full 便携版。
 
@@ -118,7 +118,9 @@ AI 使用版本化的受控项目摘要，不依赖 Harness 网页。原始电�
 
 项目内对话可分成多个会话：点击“新对话”开始新主题，软件用第一个问题自动命名；在展开窗口可重命名、选择“项目分析／图表解读／方法问答／通用问题”等分类，并搜索分类、标题及对话正文。用当前图发起的新会话自动归入图表解读。旧版平铺历史保留在“早期对话”。这些分类只属于本 App，不会改变 Harness 网页自身的“未分组”。右侧侧栏可切换会话；回车发送、Shift+回车换行。即使没有打开项目也可以提问一般科研知识与其他问题；涉及本软件的具体操作时，AI 可查询内置教程，涉及当前项目时再查询实际结果。
 
-需要让模型看到图的像素时，点击“解读图”，检查 PNG 预览并确认。只有当前图通过 Harness SDK 图像消息发送，图像字节不存入对话档案；图中如含原始波形或标签，需在预览时自行判断是否发送。普通 API Provider 当前不支持图像入口，软件不会把只有图标题的上下文伪装成已看图。图像观察只用于解释可见现象，精确数字仍以项目结果为准。
+需要让模型看到图的像素时，点击“解读图”，检查 PNG 预览并确认。当前图可通过 Harness SDK、支持图像的兼容型 Chat 接口或 OpenAI Responses 发送；具体模型和服务必须具备图像能力。图像字节不存入对话档案；图中如含原始波形或标签，需在预览时自行判断是否发送。软件不会把只有图标题的上下文伪装成已看图。图像观察只用于解释可见现象，精确数字仍以项目结果为准。
+
+如机构 DeepSeek V4.1 兼容接口曾报 `strict tool schemas` / `spaced DSML` / HTTP 400，安装 v1.4.1 后重试：协作工具使用兼容的非严格请求格式，但 App 仍在本地严格核验候选操作，并要求人工确认。HTTP 400 是请求格式被服务拒绝，不等于项目损坏或密钥余额不足；若新版仍报错，请保留错误信息并核对当前连接方式及模型，勿反复更换项目数据。
 
 App 自动生成受控的结构化项目上下文：当前步骤、已有结果、导出件、约束和允许的工具。默认不发送原始电压、大数组、本地路径和身份信息。协作模式中的本地操作仍需要白名单检查和用户确认。
 
@@ -144,7 +146,7 @@ App 自动生成受控的结构化项目上下文：当前步骤、已有结果�
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install neuroephys_ai-1.4.0-py3-none-any.whl
+python -m pip install neuroephys_ai-1.4.1-py3-none-any.whl
 neuroephys info --json
 ```
 

@@ -188,6 +188,28 @@ class AIRequestError(RuntimeError):
     """Raised when a remote model request fails or returns unusable output."""
 
 
+def readable_ai_failure(details: str, language: str = "zh_CN") -> str:
+    """Explain known provider failures without dumping a raw gateway response."""
+    lowered = str(details).lower()
+    if "strict tool schemas" in lowered and "dsml" in lowered:
+        return (
+            "The model service rejected strict tool schemas (HTTP 400). "
+            "This version uses compatible tool declarations for the institute harness; "
+            "please retry. No analysis was changed."
+            if language == "en_US" else
+            "模型服务拒绝了严格工具参数格式（HTTP 400）。当前版本会对机构模型连接使用兼容的工具声明；请重试。分析项目未被修改。"
+        )
+    if "http 400" in lowered:
+        return (
+            "The model service rejected this request format (HTTP 400). "
+            "Check whether the selected model supports the requested image or tools. "
+            "No analysis was changed."
+            if language == "en_US" else
+            "模型服务拒绝了这次请求的格式（HTTP 400）。请检查所选模型是否支持本次使用的读图或工具调用。分析项目未被修改。"
+        )
+    return str(details)
+
+
 PROVIDER_PROFILES: dict[str, dict[str, Any]] = {
     "harness_sdk": {
         "label": "DeepSeek Harness · SDK + project tools",
@@ -1052,6 +1074,14 @@ def _post_chat_stream(
                     )
     except urllib.error.HTTPError as exc:
         details = exc.read().decode("utf-8", errors="replace")
+        try:
+            parsed = json.loads(details)
+            if isinstance(parsed, dict):
+                error = parsed.get("error", {})
+                if isinstance(error, dict):
+                    details = str(error.get("message") or details)
+        except json.JSONDecodeError:
+            pass
         raise AIRequestError(
             f"AI service returned HTTP {exc.code}: {details}"
         ) from exc
@@ -1547,7 +1577,12 @@ def request_ai_advice(
         elif settings.provider == "ollama":
             payload["reasoning_effort"] = settings.reasoning_effort
         if settings.ai_mode == AIMode.COLLABORATIVE:
-            payload["tools"] = provider_tools()
+            # Strict function calling is an opt-in backend feature, not a
+            # portable OpenAI-compatible Chat default. DeepSeek requires its
+            # beta grammar endpoint; the institute V4.1 backend rejects it.
+            # Every proposed call is still locally schema-validated before
+            # an action can be offered for researcher confirmation.
+            payload["tools"] = provider_tools(strict=False)
             payload["tool_choice"] = "auto"
         if settings.stream and on_stream_text is not None:
             payload["stream"] = True

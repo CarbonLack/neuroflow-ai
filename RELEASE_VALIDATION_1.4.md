@@ -1,8 +1,14 @@
-# NeuroEphys AI 1.4.0 validation record
+# NeuroEphys AI 1.4.1 validation record
 
 Status: local release validation passed. This file is updated only with completed checks.
 
 ## Completed checks
+
+- 2026-09-23: narrow chat, dark-theme publication gallery, and DeepSeek V4.1
+  tool-schema regression tests passed. An actual institute endpoint call was
+  unavailable from the current saved Harness SDK configuration; service-side
+  acceptance remains to be checked on the institute account.
+- 2026-09-23: the complete v1.4.1 source regression suite passed: 209 tests.
 
 - 2026-09-23: SpikeInterface 0.104.8 SortingAnalyzer smoke test completed all
   10 requested extensions on a local short recording; no extension failed.

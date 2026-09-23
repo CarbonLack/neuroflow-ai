@@ -27,8 +27,12 @@ class PublicationGallery(QWidget):
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
         self.tree.setMinimumWidth(205)
+        self.tree.setTextElideMode(Qt.ElideRight)
+        self.tree.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.tree.currentItemChanged.connect(self._display)
         sidebar = QWidget()
+        sidebar.setMinimumWidth(205)
+        sidebar.setMaximumWidth(300)
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.addWidget(self.tree, 1)
@@ -55,7 +59,7 @@ class PublicationGallery(QWidget):
         self.scroll.setWidgetResizable(True)
         self.scroll.viewport().installEventFilter(self)
         self.gallery_content = QWidget()
-        self.gallery_content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.gallery_content.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
         self.gallery_layout = QVBoxLayout(self.gallery_content)
         self.gallery_layout.setSizeConstraint(QLayout.SetMinimumSize)
         self.gallery_layout.setContentsMargins(18, 12, 18, 28)
@@ -74,6 +78,7 @@ class PublicationGallery(QWidget):
         self.gallery_layout.addStretch()
         self.scroll.setWidget(self.gallery_content)
         splitter.addWidget(self.scroll)
+        splitter.setSizes([250, 900])
         splitter.setStretchFactor(1, 5)
         layout.addWidget(splitter)
 
@@ -313,7 +318,7 @@ class PublicationGallery(QWidget):
         card.setObjectName("publicationFigureCard")
         card.setStyleSheet(
             "QFrame#publicationFigureCard{background:#ffffff;border:1px solid #cfd6dc;"
-            "border-radius:7px;} QLabel{color:#20272d;}"
+            "border-radius:7px;} QLabel{background:transparent;color:#20272d;}"
         )
         column = QVBoxLayout(card)
         column.setContentsMargins(20, 16, 20, 18)
@@ -343,7 +348,7 @@ class PublicationGallery(QWidget):
                 if pixmap.width() > 0:
                     aspect = pixmap.height() / pixmap.width()
             media = label
-        media.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        media.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         column.addWidget(media)
         details = []
         for panel in group.get("panels", []):
@@ -411,7 +416,7 @@ class PublicationGallery(QWidget):
         return super().eventFilter(watched, event)
 
     def _resize_media(self, media: QWidget, aspect: float) -> None:
-        width = max(320, self.scroll.viewport().width() - 95)
+        width = max(120, self.scroll.viewport().width() - 95)
         media.setFixedHeight(max(220, min(1350, int(width * aspect))))
         pixmap = getattr(media, "_source_pixmap", None)
         if pixmap is not None and not pixmap.isNull():

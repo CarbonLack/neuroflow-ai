@@ -26,13 +26,13 @@ class AIToolSpec:
     network_transfer: bool = False
     destructive: bool = False
 
-    def provider_schema(self) -> dict[str, Any]:
+    def provider_schema(self, *, strict: bool = True) -> dict[str, Any]:
         return {
             "type": "function",
             "function": {
                 "name": self.name,
                 "description": self.description,
-                "strict": True,
+                "strict": strict,
                 "parameters": self.input_schema,
             },
         }
@@ -337,8 +337,8 @@ class ToolValidation:
     spec: AIToolSpec | None = None
 
 
-def provider_tools() -> list[dict[str, Any]]:
-    return [spec.provider_schema() for spec in TOOL_REGISTRY.values()]
+def provider_tools(*, strict: bool = True) -> list[dict[str, Any]]:
+    return [spec.provider_schema(strict=strict) for spec in TOOL_REGISTRY.values()]
 
 
 def validate_tool_call(

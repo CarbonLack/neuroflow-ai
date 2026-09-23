@@ -68,28 +68,26 @@ class BubbleChatView(QScrollArea):
         body.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         body.setStyleSheet("background:transparent; color:#f5f1fa; border:none;")
         contents.addWidget(body)
-        if role == "user":
-            line.addStretch(1)
-            line.addWidget(bubble, 4)
-        else:
-            line.addWidget(bubble, 4)
-            line.addStretch(1)
+        # A 4:1 widget/stretch ratio silently restricted each bubble to 80%
+        # of an already narrow sidebar. Align a measured bubble instead.
+        line.addWidget(bubble, 0, Qt.AlignRight if role == "user" else Qt.AlignLeft)
         self._layout.insertWidget(self._layout.count() - 1, row)
         self._messages.append((role, label, bubble, body))
         self._resize_bodies()
+        # QTextBrowser completes rich-text layout after its parent is inserted.
+        # Measure once more then so the final lines cannot be cut off.
+        QTimer.singleShot(0, self._resize_bodies)
         QTimer.singleShot(0, self._scroll_to_bottom)
 
     def _resize_bodies(self) -> None:
-        available = max(160, self.viewport().width() - 20)
-        for _, _, bubble, body in self._messages:
-            # A newly added bubble may still report its tiny pre-layout width.
-            # Measuring against that value caused chat text to wrap at ~155 px
-            # even when the dialog had hundreds of pixels available.
-            bubble_width = max(150, int(available * 0.96))
-            bubble.setMaximumWidth(bubble_width)
-            width = max(125, bubble_width - 28)
+        margins = self._layout.contentsMargins()
+        available = max(120, self.viewport().width() - margins.left() - margins.right())
+        for role, _, bubble, body in self._messages:
+            bubble_width = max(120, int(available * (0.94 if role == "user" else 1.0)))
+            bubble.setFixedWidth(bubble_width)
+            width = max(90, bubble_width - 28)
             body.document().setTextWidth(width)
-            body.setFixedHeight(max(32, int(body.document().size().height()) + 12))
+            body.setFixedHeight(max(32, int(body.document().size().height()) + 16))
 
     def resizeEvent(self, event) -> None:  # noqa: N802 - Qt API
         super().resizeEvent(event)
