@@ -62,20 +62,20 @@ def _guide(
 TUTORIAL_CATALOG: list[dict[str, Any]] = [
     _guide(
         "examples", "先用示例熟悉操作", "Try an example", START, None,
-        "没有自己的数据也可以开始。建议先打开 8 通道微丝教学示例。",
-        "Start without your own recording. The 8-channel microwire teaching example is a good first run.",
-        "教学模拟在本机生成；已验证公开项目首次打开可能需要联网下载。",
-        "Teaching data are generated locally. A verified public project may need a download on first use.",
+        "没有自己的数据也可以开始。建议先打开 32 通道独立微丝教学示例。",
+        "Start without your own recording. The 32-channel independent-microwire example is a good first run.",
+        "教学模拟在本机生成，包含已知 ground truth，不需要联网下载。",
+        "Teaching data are generated locally with known ground truth and need no download.",
         [
             _step("打开示例库", "Open the example library", "选择“文件 → 示例项目…”，或点击首页“示例项目”。", "Choose File → Example projects… or Example projects on the home page."),
-            _step("选择一套数据", "Choose a dataset", "选择教学模拟行，点击“打开所选示例”。公开项目也在同一个列表里，可根据内容和可用状态选择。", "Select a teaching row and click Open selected example. Public projects are in the same list; check their contents and availability."),
+            _step("选择一套数据", "Choose a dataset", "选择一种探针场景并点击“打开所选示例”。", "Choose a probe scenario and click Open selected example."),
             _step("完成第一次分析", "Run your first analysis", "先查看“原始质控”，再到“Spike sorting”选择环境可用的 sorter，运行本步骤。每次完成后看图和结果再继续。", "Inspect Raw QC, then select an available sorter in Spike sorting and run that stage. Review each result before moving on."),
         ],
         "左侧流程可直接切换。“下一步”切换页面，“运行”才会计算。",
         "The left workflow provides direct navigation. Next changes the page; Run performs a calculation.",
         "示例会成为普通项目；从“文件 → 打开项目文件夹”查看保存位置。",
         "The example opens as an ordinary project. Use File → Open project folder to find its location.",
-        [_step("示例没有原始波形", "No raw traces in an example", "部分公开项目只有已排序 Units 和行为数据。可从 Unit 质控和下游分析开始。", "Some public projects contain sorted units and behavior only. Start at Unit QC or downstream analysis.")],
+        [_step("生成较慢", "Generation takes time", "首次生成会写入原始电压、行为、TTL 与 ground truth；完成后可直接复用项目。", "The first run writes raw voltage, behavior, TTL, and ground truth; later runs reuse the project.")],
     ),
     _guide(
         "import", "导入自己的原始记录", "Import a raw recording", START, "import",

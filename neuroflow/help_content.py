@@ -105,14 +105,13 @@ CONTROL_HELP = {
     "home.demo": {
         "zh_CN": (
             "示例项目",
-            "在同一个资料库中选择教学模拟或已验证公开项目。教学模拟在本机生成；"
-            "固定公开项目首次使用时会明确询问是否下载。",
+            "选择本机生成的教学模拟。每套模拟都包含已知 ground truth，可用于学习"
+            "完整流程和验证 sorter；示例库不再内置公开发表数据。",
         ),
         "en_US": (
             "Example projects",
-            "Choose a teaching simulation or verified public project from one library. "
-            "Simulations are generated locally; fixed public data asks before its "
-            "first download.",
+            "Choose a locally generated teaching simulation with known ground truth for "
+            "workflow learning and sorter validation. Published datasets are not bundled.",
         ),
     },
     "home.import": {
@@ -131,16 +130,14 @@ CONTROL_HELP = {
     },
     "home.public": {
         "zh_CN": (
-            "打开已验证公开项目",
-            "打开两套固定版本的公开验证项目：IBL Brain-Wide Map 的指定 eID/PID，"
-            "以及 Buzsáki/DANDI 000552 的指定 asset。双击一行即可打开；未下载时"
-            "软件会先显示来源、大小和下载确认，不会让用户自行猜测文件结构。",
+            "导入本地处理后数据",
+            "导入用户已有的 ALF、汇总 trial 或含 Units 的 NWB 文件，从 Unit 质控"
+            "和下游分析继续。软件不会自动下载或内置公开发表数据。",
         ),
         "en_US": (
-            "Open verified public project",
-            "Open one of two version-locked projects: the specified IBL Brain-Wide "
-            "Map eID/PID or the specified Buzsáki/DANDI 000552 asset. Double-click "
-            "a row to open it; NeuroEphys AI confirms any required download first.",
+            "Import local processed data",
+            "Import your own ALF, aggregate-trial, or NWB file containing Units and "
+            "continue at Unit QC and downstream analysis. No published data is bundled.",
         ),
     },
     "home.restore": {
@@ -511,6 +508,7 @@ PAGE_CONTROLS = {
         ("Unit 表", "每行是一个候选 unit；单击图中点或表格查看指标。"),
         ("ISI violation", "衡量短于不应期的间隔比例；阈值必须在项目中预先定义。"),
         ("SNR 与波形", "需要结合空间局限性、稳定性和原始波形，不能单独决定 good。"),
+        ("逐次波形与 PCA", "细线是单次 spike，均值是典型形态而非每次都相同；显示数/总数说明抽样。只比较同接点 cluster，PCA 分离不能证明单神经元。"),
     ],
     "sync": [
         ("事件数量", "确认行为、TTL 和神经数据中的事件能一一对应。"),
@@ -524,6 +522,8 @@ PAGE_CONTROLS = {
     ],
     "analysis": [
         ("Unit 选择", "选择一个 unit 后，Raster、PSTH 和摘要同步更新。"),
+        ("行为事件选择", "点击“选择行为事件 / Tuning”，从全部非同步行为中选择 1 个做事件前后 tuning，或选择 2 个比较 PSTH；这是重新计算，不是换图例。"),
+        ("人工 Unit 筛选集", "在 Unit 质控中应用筛选集后，下游只使用已复核候选单神经元。修改标签后必须重新应用并重跑。"),
         ("Raster", "每行一个 trial，每个短线一个 spike，保留试次差异。"),
         ("PSTH", "对 spike 分箱并跨 trial 平均；分箱宽度影响平滑程度。"),
         ("Spike train 统计", "CV2、Lv、Fano、CCH、STTC 和距离回答不同的变异性、相关性或相似性问题。"),
@@ -637,6 +637,10 @@ PAGE_CONTROLS_EN = {
         (
             "SNR and waveform",
             "Interpret together with spatial localization, stability, and raw traces; no single metric proves a good unit.",
+        ),
+        (
+            "Individual spikes and PCA",
+            "Thin lines are individual spikes; the mean is a summary, not an identical waveform for every spike. Check shown/total counts. Same-contact PCA separation does not prove a single neuron.",
         ),
     ],
     "sync": [

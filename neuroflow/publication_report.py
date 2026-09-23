@@ -17,7 +17,10 @@ CAPTIONS = {
     'raster_psth_population': ('Event-aligned neural activity', '(a) Raster for the displayed unit, one event per row. (b) Mean PSTH, shading: SEM across available events. (c) Baseline-normalized population activity. (d) Per-unit event-related rate changes. Zero denotes the selected event. Association does not establish causation.', 'a：点阵每行一个事件；b：PSTH显示事件附近的平均放电和标准误；c：热图显示相对基线的变化；d：各单元的放电变化。不能据此断言因果。'),
     'statistics': ('Effect sizes and statistical uncertainty', '(a) Per-unit baseline-to-response differences and bootstrap 95% intervals. (b) Raw permutation p values and BH-adjusted q values. Units and events from one session do not provide independent animal replication.', 'a：效应大小及置信区间；b：原始P值与多重比较校正。一个session的多个细胞不等于多只动物。'),
     'raw_qc': ('Signal quality', 'QC of the inspected raw-signal interval, not certification of the entire recording. Consult provenance for the actual scope.', '原始信号的噪声、饱和等诊断；局部抽检不代表整段记录均合格。'),
+    'preprocessing': ('Preprocessing evidence', 'Raw and processed voltage views under the recorded filter and reference settings. The source recording remains unchanged.', '处理前后电压及其滤波、参考设置；源记录保持不变。'),
+    'sorting_comparison': ('Spike-sorting evidence', 'Normalized sorter outputs, agreement or simulated-ground-truth performance where available. Agreement is not biological ground truth.', '统一后的分选结果、算法一致度或可用的模拟真值表现；一致不等于生物学真值。'),
     'unit_qc': ('Candidate-unit quality', 'Candidate-unit quality metrics and waveform diagnostics. Automated flags support, but do not replace, manual curation.', '候选unit的质量指标与波形；自动标记不能替代人工复核。'),
+    'synchronization': ('Behavior–electrophysiology synchronization', 'Clock mapping, residual error, missing pulses and event alignment diagnostics. Inspect residuals before event-locked inference.', '行为与电生理时钟映射、残差、漏脉冲和事件对齐诊断；事件分析前需检查残差。'),
     'spike_train_statistics': ('Spike-train statistics', 'Firing rates, interval variability and event-window count variability. Rate, regularity and event variability describe different properties.', '放电率、间隔规律性、事件间变异描述的是不同特征，不能混为单一质量分数。'),
     'spike_train_relationships': ('Spike-train relationships', 'Correlation and timing similarity describe statistical relationships, not anatomical connections. Distance calculations may use a bounded interval and subset of units; see provenance.', '相关和时序相似不等于解剖连接。部分距离计算只用限定时段和单元子集，范围见记录。'),
     'lfp_psd': ('Low-frequency power', 'Power spectral density of the selected low-frequency signal segment. Filtering and inspected channels constrain interpretation.', '选定低频片段的功率谱；受采集滤波、分析时段与通道选择限制。'),
@@ -33,9 +36,21 @@ PANEL_CAPTIONS = {
     'raw_qc': [
         'Per-channel RMS noise in the inspected raw interval; line and shading reflect the configured screen.',
         'Primary signal-quality indicators for the inspected interval. This does not certify the full recording.'],
+    'preprocessing': [
+        'Raw multichannel voltage in the configured preview window.',
+        'Processed preview under the stated filter and referencing choices; the source file is unchanged.'],
+    'sorting_comparison': [
+        'Sorter performance or normalized output size under the available validation design.',
+        'Pairwise agreement of matched candidate Units; agreement is not ground truth.',
+        'Candidate counts, unmatched results, or provenance summary for the compared outputs.'],
     'unit_qc': [
         'Candidate-unit firing rate versus signal-to-noise ratio; labels are automated screening flags.',
         'Refractory-period violation estimates for candidates. Human curation remains required.'],
+    'synchronization': [
+        'Behavior-device timestamps mapped to electrophysiology timestamps.',
+        'Clock-model residuals over the recording.',
+        'Event-pair interval or residual distribution used to diagnose mismatch.',
+        'Matched and missing synchronization-event summary.'],
     'raster_psth_population': [
         'Example-unit event-aligned raster; each row is an event, and time zero is event onset.',
         'Condition-averaged peristimulus firing rate; bands show available-event uncertainty.',

@@ -48,8 +48,8 @@ SUPPORTED_FORMATS = (
     ),
     ImportFormat(
         "ibl_alf",
-        "公开验证数据",
-        "IBL ALF/BWM 或带 Units 与行为事件的 Buzsáki/DANDI NWB",
+        "本地处理后数据",
+        "ALF、汇总 trial 或带 Units 与行为事件的 NWB",
         False,
         True,
     ),
@@ -1016,7 +1016,7 @@ def import_nwb_units(
         )
 
     project_root.mkdir(parents=True, exist_ok=True)
-    derived_dir = project_root / "derived" / "public_data"
+    derived_dir = project_root / "derived" / "processed_data"
     derived_dir.mkdir(parents=True, exist_ok=True)
     position_path: Path | None = None
     if position_payload:
@@ -1038,12 +1038,9 @@ def import_nwb_units(
         ),
         default=0.0,
     )
-    is_buzsaki = "buzsaki" in source.name.lower() or bool(
-        intervals.get("ripples") or selected_positions
-    )
     state = ProjectState(
         root=project_root,
-        name=f"{'Buzsáki' if is_buzsaki else 'NWB'} {session_id}",
+        name=f"NWB {session_id}",
         source_type="nwb_units",
         source_path=source,
         sampling_rate=30_000.0,
@@ -1062,8 +1059,8 @@ def import_nwb_units(
             "position_cache": str(position_path) if position_path else None,
             "intervals": intervals,
             "source_notice": (
-                "Processed public NWB data. Preserve the DANDI DOI, dataset "
-                "version, license, and article citation."
+                "Processed NWB data. Preserve the original source identifier, "
+                "version, license, and citation in the project provenance."
             ),
         },
     )

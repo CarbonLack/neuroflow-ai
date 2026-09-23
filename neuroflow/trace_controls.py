@@ -36,7 +36,7 @@ class TraceControls(QFrame):
         self.start.setSingleStep(0.1)
         self.start.setSuffix(" s")
         self.start.setProperty("neuroflow_help_key", "trace.start")
-        self.start.editingFinished.connect(self.changed.emit)
+        self.start.valueChanged.connect(lambda _value: self.changed.emit())
 
         self.window_label = QLabel()
         self.window = QSpinBox()
@@ -44,21 +44,21 @@ class TraceControls(QFrame):
         self.window.setValue(60)
         self.window.setSuffix(" ms")
         self.window.setProperty("neuroflow_help_key", "trace.window")
-        self.window.editingFinished.connect(self.changed.emit)
+        self.window.valueChanged.connect(lambda _value: self.changed.emit())
 
         self.first_label = QLabel()
         self.first_channel = QSpinBox()
         self.first_channel.setRange(0, 0)
         self.first_channel.setProperty("neuroflow_help_key", "trace.channels")
         self.first_channel.valueChanged.connect(self._constrain_count)
-        self.first_channel.editingFinished.connect(self.changed.emit)
+        self.first_channel.valueChanged.connect(lambda _value: self.changed.emit())
 
         self.count_label = QLabel()
         self.channel_count = QSpinBox()
         self.channel_count.setRange(1, 1)
         self.channel_count.setValue(1)
         self.channel_count.setProperty("neuroflow_help_key", "trace.channels")
-        self.channel_count.editingFinished.connect(self.changed.emit)
+        self.channel_count.valueChanged.connect(lambda _value: self.changed.emit())
 
         self.gain_label = QLabel()
         self.gain = QSlider(Qt.Horizontal)
@@ -67,7 +67,7 @@ class TraceControls(QFrame):
         self.gain.setFixedWidth(105)
         self.gain.setProperty("neuroflow_help_key", "trace.gain")
         self.gain.valueChanged.connect(self._update_gain_text)
-        self.gain.sliderReleased.connect(self.changed.emit)
+        self.gain.valueChanged.connect(lambda _value: self.changed.emit())
         self.gain_value = QLabel("1.0x")
         self.gain_value.setMinimumWidth(38)
 

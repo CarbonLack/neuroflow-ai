@@ -4,6 +4,7 @@ import json
 from copy import copy
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from collections.abc import Callable
 
 import numpy as np
 from scipy import signal, stats
@@ -11,6 +12,7 @@ from scipy import signal, stats
 from .models import ProjectState
 from .product import PRODUCT_NAME, PRODUCT_VERSION
 from .event_semantics import event_analysis_label, event_label_diagnostics
+from .unit_curation import analysis_spikes
 
 try:
     from numba import njit
@@ -397,13 +399,19 @@ def preprocessing_preview(
     }
 
 
-def compute_unit_metrics(state: ProjectState) -> list[dict]:
+def compute_unit_metrics(
+    state: ProjectState,
+    progress: Callable[[int, int, str], None] | None = None,
+) -> list[dict]:
     raw = load_recording(state) if state.ready else None
     metrics: list[dict] = []
     diagnostics: dict[int, dict] = {}
     max_waveform_spikes = 300
     max_isi_plot_values = 20_000
-    for unit_id, spikes in sorted(state.sorted_spikes.items()):
+    unit_rows = sorted(state.sorted_spikes.items())
+    for unit_index, (unit_id, spikes) in enumerate(unit_rows, 1):
+        if progress:
+            progress(unit_index - 1, max(len(unit_rows), 1), f"Unit {unit_id}")
         firing_rate = len(spikes) / max(state.duration_seconds, 1e-9)
         intervals = np.diff(spikes)
         isi_violations = float(np.mean(intervals < 0.0015)) if intervals.size else 0.0
@@ -541,6 +549,8 @@ def compute_unit_metrics(state: ProjectState) -> list[dict]:
                 "label": label,
             }
         )
+        if progress:
+            progress(unit_index, max(len(unit_rows), 1), f"Unit {unit_id}")
     duplicate_screen = _screen_cross_unit_timestamp_overlap(
         state.sorted_spikes,
         metrics,
@@ -779,7 +789,8 @@ def event_aligned_analysis(
     baseline_window: tuple[float, float] = (-0.5, 0.0),
     response_window: tuple[float, float] = (0.0, 0.5),
 ) -> dict:
-    if not state.sorted_spikes:
+    selected_spikes = analysis_spikes(state)
+    if not selected_spikes:
         raise RuntimeError("尚无sorting结果")
     if window[0] >= window[1]:
         raise ValueError("Event window start must be earlier than its end")
@@ -799,8 +810,12 @@ def event_aligned_analysis(
     requested_codes = (
         {int(value) for value in event_codes} if event_codes is not None else None
     )
+    requested_condition_list = (
+        list(dict.fromkeys(str(value) for value in conditions))
+        if conditions is not None else None
+    )
     requested_conditions = (
-        {str(value) for value in conditions} if conditions is not None else None
+        set(requested_condition_list) if requested_condition_list is not None else None
     )
     selected_events: list[dict] = []
     excluded = {
@@ -859,13 +874,18 @@ def event_aligned_analysis(
     condition_diagnostics["event_labels"] = event_label_diagnostics(selected_events)
     bins = np.arange(window[0], window[1] + bin_size, bin_size)
     centers = (bins[:-1] + bins[1:]) / 2
-    condition_labels = np.unique(analysis_conditions).tolist()
+    condition_labels = (
+        [label for label in requested_condition_list
+         if np.any(analysis_conditions == label)]
+        if requested_condition_list is not None
+        else np.unique(analysis_conditions).tolist()
+    )
     if len(condition_labels) < 2:
         condition_labels = [condition_labels[0] if condition_labels else "all", "other"]
 
     unit_results = {}
     response_matrix = []
-    for unit_id, spike_times in sorted(state.sorted_spikes.items()):
+    for unit_id, spike_times in sorted(selected_spikes.items()):
         aligned: list[np.ndarray] = []
         counts = np.zeros((len(events), len(bins) - 1), dtype=float)
         for trial_index, event_time in enumerate(events):
@@ -951,7 +971,7 @@ def event_aligned_analysis(
         "event_filter": {
             "requested_codes": sorted(requested_codes) if requested_codes else None,
             "requested_conditions": (
-                sorted(requested_conditions) if requested_conditions else None
+                requested_condition_list if requested_condition_list else None
             ),
             "include_synchronization": bool(include_synchronization),
             "excluded_counts": excluded,
@@ -959,6 +979,7 @@ def event_aligned_analysis(
         "units": unit_results,
         "population_z": np.asarray(response_matrix),
         "responsive_units": int(np.sum(adjusted < 0.05)),
+        "unit_selection": dict(state.metadata.get("curated_unit_selection", {})),
     }
     state.analysis = result
     state.log(
@@ -1292,17 +1313,32 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
         event_analysis_figure,
         neural_toolkit_figure,
         population_dynamics_figure,
+        preprocessing_figure,
         qc_figure,
         regression_figure,
+        sorting_comparison_figure,
         statistics_figure,
+        synchronization_figure,
         unit_metrics_figure,
     )
 
     figure_builders = []
     if state.qc:
         figure_builders.append(("raw_qc", lambda: qc_figure(state)))
+    if state.preprocessing:
+        figure_builders.append((
+            "preprocessing",
+            lambda: preprocessing_figure(state.preprocessing, "en_US"),
+        ))
+    if state.sorted_spikes:
+        figure_builders.append((
+            "sorting_comparison",
+            lambda: sorting_comparison_figure(state),
+        ))
     if state.unit_metrics:
         figure_builders.append(("unit_qc", lambda: unit_metrics_figure(state)))
+    if state.metadata.get("synchronization"):
+        figure_builders.append(("synchronization", lambda: synchronization_figure(state)))
     if state.events or state.trials:
         figure_builders.append(("behavior", lambda: behavior_figure(state)))
         if state.events:
@@ -1311,9 +1347,35 @@ def export_reproducible_bundle(state: ProjectState, output_dir: Path) -> Path:
                 ("behavior_spectrum_by_behavior", lambda: behavior_spectrum_figure(state, layout="behaviors")),
             ])
     if state.analysis:
+        unit_ids = sorted(int(value) for value in state.analysis.get("units", {}))
+        statistic_rows = {
+            int(row.get("unit_id", -1)): row
+            for row in state.statistics.get("rows", [])
+        }
+        representative_unit = min(
+            unit_ids,
+            key=lambda value: (
+                float(statistic_rows.get(value, {}).get("fdr_q", 1.0)),
+                -abs(float(statistic_rows.get(value, {}).get("effect_hz", 0.0))),
+                value,
+            ),
+        ) if unit_ids else None
         figure_builders.append(
-            ("raster_psth_population", lambda: event_analysis_figure(state))
+            (
+                "raster_psth_population",
+                lambda selected=representative_unit: event_analysis_figure(state, selected),
+            )
         )
+        # Preserve every Unit-level raster/PSTH as selectable evidence. The
+        # statistically strongest candidate is a default representative only;
+        # non-significant and alternative Units remain in Extended Data.
+        for candidate in unit_ids:
+            if candidate == representative_unit:
+                continue
+            figure_builders.append((
+                f"raster_psth_unit_{candidate:04d}",
+                lambda selected=candidate: event_analysis_figure(state, selected),
+            ))
     if state.spike_train_analysis.get("rows"):
         figure_builders.extend(
             [

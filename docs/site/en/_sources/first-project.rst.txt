@@ -22,8 +22,8 @@ Create the project
    duration, selected contacts, and event source.
 
 Use **Open / import project** for a previously saved
-``neuroflow_project.json``. **Example projects** combines teaching simulations
-and fixed verified public projects. The home screen no longer repeats the full
+``neuroflow_project.json``. **Example projects** contains only local teaching
+simulations with known ground truth. The home screen no longer repeats the full
 input-route table; detailed format choices appear only while creating a project.
 
 Layout and beginner guidance

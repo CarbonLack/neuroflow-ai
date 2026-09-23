@@ -23,7 +23,8 @@ from neuroflow.analysis import (
 from neuroflow.ephys_toolkit import run_neural_toolkit
 from neuroflow.decoding import run_decoding_suite
 from neuroflow.figure_studio import FigureStudioDialog
-from neuroflow.simulation import generate_demo_recording
+from neuroflow.project import load_project
+from neuroflow.simulation import generate_demo_recording, simulate_sorter_output
 from neuroflow.sorting_results import (
     activate_sorting_result,
     compare_sorting_results,
@@ -35,7 +36,6 @@ from neuroflow.ui import (
     DemoLibraryDialog,
     NeuroFlowWindow,
     NewProjectDialog,
-    PublicExampleDialog,
     TutorialDialog,
 )
 from neuroflow.unit_curation_ui import UnitCurationDialog
@@ -70,21 +70,6 @@ def main() -> int:
     new_project.show()
     _capture(new_project, output / "neuroflow-new-project.png")
     new_project.close()
-    documents = Path.home() / "Documents"
-    preferred_workspace = documents / "NeuroEphysAI"
-    legacy_workspace = documents / "NeuroFlow"
-    public_examples = PublicExampleDialog(
-        (
-            preferred_workspace
-            if preferred_workspace.exists() or not legacy_workspace.exists()
-            else legacy_workspace
-        ),
-        window,
-        "en_US",
-    )
-    public_examples.show()
-    _capture(public_examples, output / "neuroflow-public-projects.png")
-    public_examples.close()
     library = DemoLibraryDialog(window, "en_US")
     library.show()
     _capture(library, output / "neuroflow-demo-library.png")
@@ -96,35 +81,47 @@ def main() -> int:
         channel_count=32,
     )
     state.metadata["language"] = "en_US"
-    kilosort_result = {
-        100 + unit_id: spikes + 0.0001
-        for unit_id, spikes in state.ground_truth.items()
-    }
-    mountainsort_result = {
-        200 + unit_id: spikes + 0.0002
-        for unit_id, spikes in state.ground_truth.items()
-    }
+    synthetic_result_a = simulate_sorter_output(
+        state.ground_truth,
+        state.duration_seconds,
+        seed=2026092301,
+        native_id_offset=101,
+        recall_range=(0.83, 0.95),
+        false_positive_fraction=(0.025, 0.08),
+        jitter_seconds=0.00010,
+    )
+    synthetic_result_b = simulate_sorter_output(
+        state.ground_truth,
+        state.duration_seconds,
+        seed=2026092302,
+        native_id_offset=207,
+        recall_range=(0.76, 0.91),
+        false_positive_fraction=(0.05, 0.13),
+        jitter_seconds=0.00016,
+    )
     register_sorting_result(
         state,
-        "kilosort4",
-        kilosort_result,
+        "synthetic_detector_a",
+        synthetic_result_a,
         {
-            "sorter": "Kilosort4",
-            "version": "4.1.7",
-            "backend": "Native NeuroEphys AI adapter",
+            "sorter": "Synthetic imperfect benchmark A",
+            "version": "teaching-1",
+            "backend": "NeuroEphys AI teaching-data generator",
+            "warning": "Synthetic benchmark output; not a Kilosort execution.",
         },
     )
     register_sorting_result(
         state,
-        "mountainsort5",
-        mountainsort_result,
+        "synthetic_detector_b",
+        synthetic_result_b,
         {
-            "sorter": "MountainSort5",
-            "version": "0.5.9",
-            "backend": "SpikeInterface",
+            "sorter": "Synthetic imperfect benchmark B",
+            "version": "teaching-1",
+            "backend": "NeuroEphys AI teaching-data generator",
+            "warning": "Synthetic benchmark output; not a MountainSort execution.",
         },
     )
-    activate_sorting_result(state, "kilosort4")
+    activate_sorting_result(state, "synthetic_detector_a")
     compare_sorting_results(state)
     run_raw_qc(state)
     preview = preprocessing_preview(state)
@@ -139,9 +136,6 @@ def main() -> int:
     )
     synchronize_existing_events(state)
     window._load_state(state)
-    window.project_label.setText(
-        "NeuroEphys AI demonstration project  ·  local path hidden"
-    )
     window.preview = preview
     window.matches = match_ground_truth(state.ground_truth, state.sorted_spikes)
     window._select_step("sorting")
@@ -191,10 +185,12 @@ def main() -> int:
     window._open_ai_assistant()
     ai_dialog = window.ai_dialog
     if ai_dialog is not None:
-        ai_dialog.settings.api_key = "preview-credential-not-saved"
-        ai_dialog.settings.provider = "deepseek"
-        ai_dialog.settings.base_url = "https://api.deepseek.com"
-        ai_dialog.settings.model = "deepseek-v4-flash"
+        ai_dialog.settings.api_key = ""
+        ai_dialog.settings.provider = "harness_sdk"
+        ai_dialog.settings.base_url = "harness://local"
+        ai_dialog.settings.harness_provider = "deepseek"
+        ai_dialog.settings.managed_harness_name = "Institute DeepSeek Harness"
+        ai_dialog.settings.model = "deepseek-v4.1-flash"
         ai_dialog.settings.mode = AIMode.COLLABORATIVE.value
         mode_index = ai_dialog.mode_combo.findData(AIMode.COLLABORATIVE.value)
         ai_dialog.mode_combo.setCurrentIndex(mode_index)
@@ -261,7 +257,6 @@ def main() -> int:
     _capture(window, output / "neuroephys-event-analysis-detail-en.png")
     window.main_scroll.verticalScrollBar().setValue(0)
     window._set_language("zh_CN")
-    window.project_label.setText("NeuroEphys AI 教学演示项目 · 已隐藏本地路径")
     window._select_step("analysis")
     event_index = window.option_combo.findData(
         f"event:{sorted(state.sorted_spikes)[0]}"
@@ -276,9 +271,6 @@ def main() -> int:
     window.main_scroll.verticalScrollBar().setValue(0)
 
     window._set_language("en_US")
-    window.project_label.setText(
-        "NeuroEphys AI demonstration project  ·  local path hidden"
-    )
     window._select_step("decoding")
     decoding_index = window.option_combo.findData(
         "classification:Logistic regression"
@@ -292,7 +284,6 @@ def main() -> int:
     _capture(window, output / "neuroephys-decoding-detail-en.png")
     window.main_scroll.verticalScrollBar().setValue(0)
     window._set_language("zh_CN")
-    window.project_label.setText("NeuroEphys AI 教学演示项目 · 已隐藏本地路径")
     window._select_step("decoding")
     decoding_index = window.option_combo.findData(
         "classification:Logistic regression"
@@ -307,9 +298,6 @@ def main() -> int:
     window.main_scroll.verticalScrollBar().setValue(0)
 
     window._set_language("en_US")
-    window.project_label.setText(
-        "NeuroEphys AI demonstration project  ·  local path hidden"
-    )
     window.assistant_panel.setVisible(True)
     window._select_step("analysis")
     analysis_index = window.option_combo.findData("case:respiration")
@@ -325,6 +313,23 @@ def main() -> int:
     studio.mode_tabs.setCurrentIndex(1)
     _capture(studio, output / "neuroflow-figure-studio-axes.png")
     studio.close()
+
+    publication_project = (
+        repository.parents[1]
+        / "03_Example_Projects"
+        / "Current_Local_Teaching_Suite"
+        / "Neuropixels_Decision"
+    )
+    if (publication_project.exists()):
+        publication_state = load_project(publication_project)
+        publication_state.metadata["language"] = "en_US"
+        window._load_state(publication_state)
+        window._set_language("en_US")
+        window.assistant_panel.setVisible(False)
+        window._select_step("export")
+        window._refresh_publication_panel()
+        QApplication.processEvents()
+        _capture(window, output / "neuroflow-publication-gallery.png")
     # The application correctly prompts before closing a dirty project. This
     # automation has already persisted its screenshots and must not block on
     # an unattended confirmation dialog.

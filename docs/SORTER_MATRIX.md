@@ -2,26 +2,31 @@
 
 | Sorter | Execution | Typical use | Current Windows status |
 |---|---|---|---|
-| Kilosort4 | Native Python adapter | Neuropixels and dense silicon probes | Verified with CUDA |
-| SpyKING CIRCUS 2 | SpikeInterface internal | General multichannel recording | Verified |
-| Tridesclous2 | SpikeInterface internal | Low/medium channel counts | Verified |
-| Simple | SpikeInterface internal | Fast teaching and smoke tests | Verified |
-| Lupin | SpikeInterface internal | Native comparison workflow | Verified |
-| MountainSort5 | SpikeInterface external Python package | Tetrodes and CPU workflows | Verified in source and packaged Windows builds |
+| Kilosort4 | Native Python adapter | Neuropixels and dense silicon probes | Installed and GPU-verified |
+| MountainSort5 | SpikeInterface + Python package | Tetrodes and CPU workflows | Installed and verified |
+| SpyKING CIRCUS 2 | SpikeInterface internal | General multichannel recording | Installed and verified |
+| Tridesclous2 | SpikeInterface internal | Low/medium channel counts | Installed and verified |
+| Simple | SpikeInterface internal | Fast teaching and smoke tests | Installed and verified |
+| Lupin | SpikeInterface internal | Native comparison workflow | Installed and verified |
+| HerdingSpikes | SpikeInterface external | Dense MEA, localization-driven clustering | Integrated; optional backend not bundled |
+| MountainSort4 | SpikeInterface external | Legacy result reproduction | Integrated; optional backend not bundled |
+| WaveClus | SpikeInterface external | Independent microwires/brush or single-channel sorting | Integrated; requires MATLAB/compiled runtime |
+| IronClust | SpikeInterface external | Legacy dense-probe/drift-aware comparison | Integrated; requires MATLAB/runtime |
+| Kilosort 2.5 | SpikeInterface external | Reproducing old Neuropixels workflows | Integrated; requires GPU + MATLAB/runtime |
 
 ## Detection rule
 
 NeuroFlow never calls `spikeinterface.sorters.installed_sorters()` during startup.
 That function probes every registered external backend, including unrelated MATLAB
-and compiled tools. NeuroFlow probes only the six entries above and catches every
+and compiled tools. NeuroFlow probes only the eleven explicit entries above and catches every
 backend failure independently.
 
-These six entries are the deliberately supported NeuroEphys AI catalog, and the
-formal Windows analysis environment installs all six. SpikeInterface also wraps
-additional research sorters, but several require MATLAB, Docker/Singularity,
-platform-specific compiled binaries, or separate licenses. They are not labeled
-"installed" in NeuroEphys AI unless an explicit adapter, environment check,
-provenance contract, and real run test have been added.
+The first six are bundled runnable paths in the formal Windows analysis environment.
+The other five are intentionally visible integrations so a researcher can understand
+their purpose and enable them in a suitable licensed/runtime environment. A backend is
+never labeled runnable merely because SpikeInterface knows its name: the application
+requires an adapter, isolated environment check, provenance contract, and successful
+local availability probe.
 
 ## Reproducibility
 
@@ -31,7 +36,8 @@ NeuroFlow project.
 
 Every sorter is converted to the same `neuroflow.sorting.v1` contract:
 
-- integer Unit identifiers;
+- continuous one-based NeuroEphys AI Unit identifiers for clear downstream plots;
+- sorter-native cluster identifiers retained in `source_unit_id_map` for traceability;
 - monotonically increasing spike times in seconds;
 - acquisition sampling rate;
 - sorter name and version;
@@ -52,7 +58,7 @@ The example library includes distinct channel-location maps and behavior files:
 
 - a 32-channel Neuropixels-like staggered probe with a two-choice task;
 - four tetrodes (16 channels) with position, speed, and reward-zone events;
-- eight independent microwires with tone, lick, and outcome variables.
+- thirty-two independent microwire/brush contacts with tone, lick, and outcome variables.
 
 Every profile writes raw voltage, contact positions, behavior-clock events,
 ephys-clock TTL pulses, a unified event table, and ground-truth spikes. The same

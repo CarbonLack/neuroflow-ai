@@ -20,6 +20,7 @@ DEMO_PROFILES = {
         "behavior_paradigm_zh": "二选一决策任务",
         "conditions": ("left", "right"),
         "epoch_names": ("Quiet", "Movement", "Reward"),
+        "unit_count": 18,
         "recommended_sorters": ("Kilosort4", "SpyKING CIRCUS 2"),
         "scenario": (
             "High-density event responses, probe drift, a noisy channel, "
@@ -38,6 +39,7 @@ DEMO_PROFILES = {
         "behavior_paradigm_zh": "开放场奖励区导航",
         "conditions": ("reward_zone", "control_zone"),
         "epoch_names": ("Forage", "Approach", "Reward"),
+        "unit_count": 14,
         "recommended_sorters": ("MountainSort5", "Tridesclous2"),
         "scenario": (
             "Four spatially separated tetrodes with position, speed, reward-zone "
@@ -46,22 +48,23 @@ DEMO_PROFILES = {
         "scenario_zh": "四组空间分离 tetrode，包含位置、速度、奖励区事件、反应延迟、行为时钟漂移与 TTL 抖动。",
     },
     "microwire_stimulus": {
-        "name": "Independent microwires sensory task",
-        "name_zh": "单根/多根微丝电极 · 感觉刺激任务",
+        "name": "32-channel independent microwire/brush sensory task",
+        "name_zh": "32 通道独立微丝/brush 电极 · 感觉刺激任务",
         "folder": "Microwire_Stimulus",
         "electrode_family": "Independent microwire array",
-        "channel_count": 8,
+        "channel_count": 32,
         "sampling_rate": 25_000.0,
         "behavior_paradigm": "tone discrimination and licking",
         "behavior_paradigm_zh": "音调辨别与舔舐",
         "conditions": ("tone_low", "tone_high"),
         "epoch_names": ("Baseline", "Tone", "Consumption"),
-        "recommended_sorters": ("MountainSort5", "SpikeInterface Simple"),
+        "unit_count": 20,
+        "recommended_sorters": ("WaveClus", "MountainSort5", "SpikeInterface Simple"),
         "scenario": (
-            "Independent low-channel-count wires with tone identity, lick count, "
-            "hit/miss outcome, behavior-clock drift, and TTL jitter."
+            "Thirty-two spatially independent brush/microwire contacts with tone "
+            "identity, lick count, hit/miss outcome, behavior-clock drift, and TTL jitter."
         ),
-        "scenario_zh": "独立低通道微丝，包含音调、舔舐次数、正确/错误结果、行为时钟漂移与 TTL 抖动。",
+        "scenario_zh": "32 根空间关系未知的独立 brush/微丝，包含音调、舔舐次数、正确/错误结果、行为时钟漂移与 TTL 抖动。",
     },
 }
 
@@ -116,10 +119,60 @@ def _enforce_refractory(times: np.ndarray, refractory: float = 0.0012) -> np.nda
     return times[keep]
 
 
+def simulate_sorter_output(
+    ground_truth: dict[int, np.ndarray],
+    duration_seconds: float,
+    *,
+    seed: int,
+    native_id_offset: int = 100,
+    recall_range: tuple[float, float] = (0.78, 0.94),
+    false_positive_fraction: tuple[float, float] = (0.03, 0.11),
+    jitter_seconds: float = 0.00012,
+) -> dict[int, np.ndarray]:
+    """Create a realistic *imperfect* sorter result for teaching and demos.
+
+    This is deliberately not a disguised copy of ground truth.  Each Unit has
+    missed detections, timing jitter and false positives, and a small fraction
+    of detections leak between neighboring Units.  Native IDs contain gaps so
+    the application's continuous display-ID/provenance behavior is exercised.
+    """
+    rng = np.random.default_rng(seed)
+    source_units = sorted(int(unit_id) for unit_id in ground_truth)
+    results: dict[int, np.ndarray] = {}
+    for position, unit_id in enumerate(source_units):
+        truth = np.asarray(ground_truth[unit_id], dtype=np.float64)
+        recall = float(rng.uniform(*recall_range))
+        kept = truth[rng.random(truth.size) < recall]
+        detected = kept + rng.normal(0.0, jitter_seconds, kept.size)
+
+        false_fraction = float(rng.uniform(*false_positive_fraction))
+        false_count = max(1, int(round(max(1, truth.size) * false_fraction)))
+        false_spikes = rng.uniform(0.05, max(0.051, duration_seconds - 0.05), false_count)
+
+        # Occasional cross-unit leakage models unresolved overlaps without
+        # making every cluster equally poor.
+        if len(source_units) > 1 and position % 4 == 1:
+            neighbor = np.asarray(
+                ground_truth[source_units[position - 1]], dtype=np.float64
+            )
+            leak_count = min(len(neighbor), max(1, int(0.025 * max(1, truth.size))))
+            if leak_count:
+                leaked = rng.choice(neighbor, size=leak_count, replace=False)
+                detected = np.concatenate(
+                    [detected, leaked + rng.normal(0.0, jitter_seconds, leak_count)]
+                )
+
+        combined = np.concatenate([detected, false_spikes])
+        combined = combined[(combined > 0.0) & (combined < duration_seconds)]
+        native_id = native_id_offset + position * 3 + (position % 2)
+        results[native_id] = _enforce_refractory(combined, refractory=0.0007)
+    return results
+
+
 def generate_demo_recording(
     project_root: Path,
     seed: int = 20260724,
-    duration_seconds: float = 30.0,
+    duration_seconds: float = 60.0,
     channel_count: int | None = None,
     sampling_rate: float | None = None,
     profile_key: str = "neuropixels_decision",
@@ -178,7 +231,16 @@ def generate_demo_recording(
 
     events: list[dict[str, object]] = []
     event_margin = min(3.0, duration_seconds * 0.2)
-    event_times = np.linspace(event_margin, duration_seconds - event_margin, 20)
+    # Keep enough trials for cross-validation and a non-degenerate ROC while
+    # avoiding a dense, perfectly periodic synthetic design.
+    event_count = max(8, min(48, int(duration_seconds / 1.2)))
+    nominal_times = np.linspace(
+        event_margin, duration_seconds - event_margin, event_count
+    )
+    event_jitter = rng.normal(0.0, min(0.12, duration_seconds / 500.0), event_count)
+    event_times = np.sort(
+        np.clip(nominal_times + event_jitter, event_margin, duration_seconds - event_margin)
+    )
     behavior_clock_offset = 0.037
     behavior_clock_scale = 1.00018
     first_condition, second_condition = profile["conditions"]
@@ -218,28 +280,42 @@ def generate_demo_recording(
         )
 
     ground_truth: dict[int, np.ndarray] = {}
-    base_rates = [5.0, 7.0, 9.0, 6.0, 8.0, 11.0, 4.0, 6.5]
+    unit_count = int(profile.get("unit_count", 12))
+    base_rates = np.clip(
+        rng.lognormal(mean=np.log(10.0), sigma=0.38, size=unit_count),
+        4.0,
+        24.0,
+    ).tolist()
     for unit_id, base_rate in enumerate(base_rates):
         times = _poisson_spikes(rng, base_rate, duration_seconds)
         preferred = (
             first_condition
-            if unit_id < 3
+            if unit_id < max(3, unit_count // 3)
             else second_condition
-            if unit_id < 6
+            if unit_id < max(6, (2 * unit_count) // 3)
             else None
         )
-        if preferred is not None:
-            locked: list[np.ndarray] = []
-            for event in events:
-                if event["condition"] == preferred:
-                    count = int(rng.poisson(5))
-                    if count:
-                        locked.append(
-                            float(event["time_seconds"])
-                            + rng.normal(0.12, 0.035, size=count)
-                        )
-            if locked:
-                times = np.concatenate([times, *locked])
+        locked: list[np.ndarray] = []
+        for event in events:
+            # Preferred and non-preferred trials deliberately overlap. Trial-to-trial
+            # gain variation, omissions, and low-rate non-preferred responses prevent
+            # the unrealistically perfect triangular ROC seen in the old examples.
+            is_preferred = preferred is not None and event["condition"] == preferred
+            response_probability = 0.80 if is_preferred else 0.30
+            if rng.random() > response_probability:
+                continue
+            response_gain = float(rng.lognormal(0.0, 0.42))
+            mean_count = (2.10 if is_preferred else 0.50) * response_gain
+            if event["outcome"] == "error":
+                mean_count *= 0.72
+            count = int(rng.poisson(mean_count))
+            if count:
+                locked.append(
+                    float(event["time_seconds"])
+                    + rng.normal(0.14, 0.065, size=count)
+                )
+        if locked:
+            times = np.concatenate([times, *locked])
         if unit_id in {0, 1, 2}:
             phase_locked = []
             phase_fraction = {0: 0.12, 1: 0.42, 2: 0.72}[unit_id]
@@ -256,7 +332,7 @@ def generate_demo_recording(
             times[(times > 0.05) & (times < duration_seconds - 0.05)]
         )
 
-    raw = rng.normal(0.0, 16.0 / scale_uv_per_bit, size=(sample_count, channel_count))
+    raw = rng.normal(0.0, 21.0 / scale_uv_per_bit, size=(sample_count, channel_count))
     time_axis = np.arange(sample_count, dtype=np.float64) / sampling_rate
     respiration_raw = np.interp(
         time_axis, respiration_time, respiration_reference
@@ -289,10 +365,19 @@ def generate_demo_recording(
     waveform_samples = 61
     half = waveform_samples // 2
     x_ms = (np.arange(waveform_samples, dtype=np.float64) - half) / sampling_rate * 1000.0
-    unit_channels = np.linspace(
-        1, max(1, channel_count - 2), len(base_rates), dtype=int
+    if profile_key == "microwire_stimulus":
+        unit_channels = rng.choice(
+            np.arange(channel_count), size=len(base_rates), replace=False
+        ).astype(int).tolist()
+    else:
+        unit_channels = np.linspace(
+            1, max(1, channel_count - 2), len(base_rates), dtype=int
+        ).tolist()
+    unit_amplitudes = np.clip(
+        rng.lognormal(mean=np.log(145.0), sigma=0.28, size=len(base_rates)),
+        78.0,
+        235.0,
     ).tolist()
-    unit_amplitudes = [185, 225, 205, 245, 190, 230, 210, 200]
     templates = {}
     for unit_id, center_channel in enumerate(unit_channels):
         narrow = unit_id in {1, 4, 7}
@@ -307,9 +392,20 @@ def generate_demo_recording(
         slow_after = -rng.uniform(0.015, 0.045) * np.exp(-0.5 * ((x_ms - 1.05) / 0.40) ** 2)
         temporal = (negative + pre_positive + rebound + slow_after) * unit_amplitudes[unit_id] / scale_uv_per_bit
         template = np.zeros((waveform_samples, channel_count), dtype=np.float64)
-        spatial_irregularity = rng.lognormal(0.0, 0.16, channel_count)
+        spatial_irregularity = rng.lognormal(0.0, 0.18, channel_count)
         for channel in range(channel_count):
-            spatial = np.exp(-abs(channel - center_channel) / 1.6) * spatial_irregularity[channel]
+            if profile_key == "microwire_stimulus":
+                spatial = 1.0 if channel == center_channel else 0.0
+            elif profile_key == "tetrode_navigation":
+                same_tetrode = channel // 4 == center_channel // 4
+                spatial = (
+                    np.exp(-abs(channel - center_channel) / 1.15)
+                    * spatial_irregularity[channel]
+                    if same_tetrode
+                    else 0.0
+                )
+            else:
+                spatial = np.exp(-abs(channel - center_channel) / 1.6) * spatial_irregularity[channel]
             if channel == center_channel:
                 spatial = 1.0
             template[:, channel] = temporal * spatial
@@ -323,7 +419,10 @@ def generate_demo_recording(
             start = center - half
             stop = start + waveform_samples
             if start >= 0 and stop <= sample_count:
-                amplitude_scale = float(np.clip(rng.normal(1.0, 0.10), 0.70, 1.30))
+                slow_drift = 0.86 + 0.22 * (spike_time / max(duration_seconds, 1e-6))
+                amplitude_scale = float(
+                    np.clip(rng.normal(slow_drift, 0.17), 0.48, 1.48)
+                )
                 isi_seconds = (center - previous_sample) / sampling_rate
                 if isi_seconds < 0.015:
                     amplitude_scale *= 0.82 + 10.0 * isi_seconds
@@ -417,11 +516,29 @@ def generate_demo_recording(
         )
         writer.writeheader()
         writer.writerows(behavioral_state_epochs)
-    contact_positions = _contact_positions(profile_key, channel_count)
+    independent_contacts = profile_key == "microwire_stimulus"
+    contact_positions = (
+        None if independent_contacts else _contact_positions(profile_key, channel_count)
+    )
+    probe_metadata = {
+        "geometry_mode": (
+            "independent_contacts" if independent_contacts else "recorded_geometry"
+        ),
+        "contact_groups": (
+            [[channel] for channel in range(channel_count)]
+            if independent_contacts
+            else [
+                list(range(group, min(group + 4, channel_count)))
+                for group in range(0, channel_count, 4)
+            ]
+            if profile_key == "tetrode_navigation"
+            else []
+        ),
+    }
     metadata = {
         "dataset_name": profile["name"],
         "demo_profile": profile_key,
-        "demo_schema_version": 2,
+        "demo_schema_version": 3,
         "sampling_rate_hz": sampling_rate,
         "channel_count": channel_count,
         "duration_seconds": duration_seconds,
@@ -429,7 +546,10 @@ def generate_demo_recording(
         "scale_uv_per_bit": scale_uv_per_bit,
         "seed": seed,
         "electrode_family": profile["electrode_family"],
-        "contact_positions_um": contact_positions.tolist(),
+        "contact_positions_um": (
+            contact_positions.tolist() if contact_positions is not None else None
+        ),
+        "probe": probe_metadata,
         "behavior_paradigm": profile["behavior_paradigm"],
         "behavior_columns": list(events[0]),
         "recommended_sorters": list(profile["recommended_sorters"]),
@@ -469,7 +589,10 @@ def generate_demo_recording(
                 "scale_uv_per_bit": scale_uv_per_bit,
                 "demo_profile": profile_key,
                 "electrode_family": profile["electrode_family"],
-                "contact_positions_um": contact_positions.tolist(),
+                "contact_positions_um": (
+                    contact_positions.tolist() if contact_positions is not None else None
+                ),
+                "probe": probe_metadata,
                 "behavior_paradigm": profile["behavior_paradigm"],
                 "layout": "time-major interleaved channels (samples x channels)",
             },
@@ -566,7 +689,7 @@ def load_or_generate_demo(
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     if (
         metadata.get("demo_profile", "neuropixels_decision") != profile_key
-        or int(metadata.get("demo_schema_version", 0)) < 2
+        or int(metadata.get("demo_schema_version", 0)) < 3
     ):
         return generate_demo_recording(project_root, profile_key=profile_key)
     with events_path.open("r", newline="", encoding="utf-8") as handle:

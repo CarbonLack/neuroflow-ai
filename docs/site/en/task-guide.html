@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/en/task-guide.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4720776d"></script>
+      <script src="_static/documentation_options.js?v=9172181d"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -351,15 +351,15 @@
 </nav>
 <section id="try-an-example">
 <span id="task-examples"></span><h2><a class="toc-backref" href="#id1" role="doc-backlink">Try an example</a><a class="headerlink" href="#try-an-example" title="Link to this heading"></a></h2>
-<p>Start without your own recording. The 8-channel microwire teaching example is a good first run.</p>
+<p>Start without your own recording. The 32-channel independent-microwire example is a good first run.</p>
 <p><strong>Have ready</strong></p>
-<p>Teaching data are generated locally. A verified public project may need a download on first use.</p>
+<p>Teaching data are generated locally with known ground truth and need no download.</p>
 <ol class="arabic">
 <li><p><strong>Open the example library</strong></p>
 <p>Choose File → Example projects… or Example projects on the home page.</p>
 </li>
 <li><p><strong>Choose a dataset</strong></p>
-<p>Select a teaching row and click Open selected example. Public projects are in the same list; check their contents and availability.</p>
+<p>Choose a probe scenario and click Open selected example.</p>
 </li>
 <li><p><strong>Run your first analysis</strong></p>
 <p>Inspect Raw QC, then select an available sorter in Spike sorting and run that stage. Review each result before moving on.</p>
@@ -369,8 +369,8 @@
 <p>The left workflow provides direct navigation. Next changes the page; Run performs a calculation.</p>
 <p><strong>Saved output</strong></p>
 <p>The example opens as an ordinary project. Use File → Open project folder to find its location.</p>
-<p><strong>No raw traces in an example</strong></p>
-<p>Some public projects contain sorted units and behavior only. Start at Unit QC or downstream analysis.</p>
+<p><strong>Generation takes time</strong></p>
+<p>The first run writes raw voltage, behavior, TTL, and ground truth; later runs reuse the project.</p>
 </section>
 <section id="import-a-raw-recording">
 <span id="task-import"></span><h2><a class="toc-backref" href="#id2" role="doc-backlink">Import a raw recording</a><a class="headerlink" href="#import-a-raw-recording" title="Link to this heading"></a></h2>

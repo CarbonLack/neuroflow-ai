@@ -619,7 +619,10 @@ def run_connectivity_suite(
     state: ProjectState,
     **settings: Any,
 ) -> dict[str, Any]:
-    if not state.sorted_spikes:
+    from .unit_curation import analysis_spikes
+
+    selected_spikes = analysis_spikes(state)
+    if not selected_spikes:
         raise RuntimeError("Connectivity analysis requires sorted spike times")
     positions = _unit_positions(state)
     unit_regions = {
@@ -627,7 +630,7 @@ def run_connectivity_suite(
         for unit_id, region in state.metadata.get("unit_regions", {}).items()
     }
     result = analyze_spike_connectivity(
-        state.sorted_spikes,
+        selected_spikes,
         duration_seconds=state.duration_seconds,
         unit_positions_um=positions,
         unit_regions=unit_regions,

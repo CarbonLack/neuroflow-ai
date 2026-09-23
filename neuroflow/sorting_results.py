@@ -15,13 +15,23 @@ SORTING_SCHEMA = "neuroflow.sorting.v1"
 
 def _normalized_spikes(
     spikes: dict[int, np.ndarray],
-) -> dict[int, np.ndarray]:
+) -> tuple[dict[int, np.ndarray], dict[int, int]]:
+    """Return compact 1-based Unit IDs plus a display-to-source mapping.
+
+    Sorter-native cluster identifiers are labels, not an ordinal scale.  They
+    may contain gaps after template deletion or use large arbitrary values.
+    NeuroEphys AI therefore gives every saved result a stable, consecutive
+    display namespace while preserving the original identifier in provenance.
+    """
     normalized: dict[int, np.ndarray] = {}
-    for unit_id, values in spikes.items():
+    source_map: dict[int, int] = {}
+    for display_id, source_id in enumerate(sorted(int(value) for value in spikes), 1):
+        values = spikes[source_id]
         times = np.asarray(values, dtype=np.float64).reshape(-1)
         times = times[np.isfinite(times)]
-        normalized[int(unit_id)] = np.unique(np.sort(times))
-    return normalized
+        normalized[display_id] = np.unique(np.sort(times))
+        source_map[display_id] = source_id
+    return normalized, source_map
 
 
 def register_sorting_result(
@@ -33,7 +43,7 @@ def register_sorting_result(
     activate: bool = True,
 ) -> dict[int, np.ndarray]:
     """Store a sorter result behind the stable seconds-based internal interface."""
-    normalized = _normalized_spikes(spikes)
+    normalized, source_map = _normalized_spikes(spikes)
     replacing_existing = sorter_key in state.sorting_results
     replacing_active = replacing_existing and state.active_sorter_key == sorter_key
     if replacing_existing:
@@ -49,14 +59,33 @@ def register_sorting_result(
             state.statistics = {}
             state.decoding = {}
             state.regression = {}
+    provenance = dict(provenance)
+    source_metadata = provenance.get("unit_metadata", {})
+    if isinstance(source_metadata, dict) and source_metadata:
+        provenance["unit_metadata"] = {
+            str(display_id): (
+                dict(value) if isinstance(value := source_metadata.get(
+                    str(source_id), source_metadata.get(source_id, {})
+                ), dict) else {"source_value": value}
+            )
+            for display_id, source_id in source_map.items()
+        }
     details = {
+        **provenance,
         "schema": SORTING_SCHEMA,
         "time_unit": "seconds",
         "sampling_rate_hz": float(state.sampling_rate),
         "sorter_key": sorter_key,
+        "unit_id_policy": (
+            "Continuous 1-based NeuroEphys AI IDs; sorter-native IDs are retained "
+            "in source_unit_id_map."
+        ),
+        "source_unit_id_map": {
+            str(display_id): int(source_id)
+            for display_id, source_id in source_map.items()
+        },
         "unit_count": len(normalized),
         "spike_count": int(sum(len(values) for values in normalized.values())),
-        **provenance,
     }
     state.sorting_results[sorter_key] = normalized
     state.sorting_provenance[sorter_key] = details

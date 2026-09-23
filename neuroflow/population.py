@@ -541,22 +541,25 @@ def run_population_dynamics_suite(
     ordering_method: str = "peak_time",
     **alignment_settings: Any,
 ) -> dict[str, Any]:
-    if not state.sorted_spikes:
+    from .unit_curation import analysis_spikes
+
+    cohort_spikes = analysis_spikes(state)
+    if not cohort_spikes:
         raise RuntimeError("Population dynamics requires sorted spike times")
     if event_times_seconds is None:
         event_times_seconds = [float(row["time_seconds"]) for row in state.events]
         if event_labels is None:
             event_labels = [event_analysis_label(row)[0] for row in state.events]
-    selected_spikes = state.sorted_spikes
+    selected_spikes = cohort_spikes
     if unit_ids is not None:
         requested = [int(unit_id) for unit_id in unit_ids]
-        missing = sorted(set(requested) - set(state.sorted_spikes))
+        missing = sorted(set(requested) - set(cohort_spikes))
         if missing:
             raise ValueError(f"Unknown unit IDs: {missing}")
         if not requested:
             raise ValueError("unit_ids cannot be empty")
         selected_spikes = {
-            unit_id: state.sorted_spikes[unit_id] for unit_id in requested
+            unit_id: cohort_spikes[unit_id] for unit_id in requested
         }
     aligned = align_spike_population(
         selected_spikes,

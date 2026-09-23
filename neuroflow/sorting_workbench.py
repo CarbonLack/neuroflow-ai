@@ -29,6 +29,11 @@ SORTER_ZH = {
     "tridesclous2": ("CPU", "低至中等通道数记录"),
     "simple": ("CPU", "快速教学、预览和流程检查"),
     "lupin": ("CPU", "SpikeInterface 原生方法比较"),
+    "herdingspikes": ("CPU", "高密度 MEA，基于 spike 定位的聚类"),
+    "mountainsort4": ("CPU", "旧研究复现、低至中等通道数"),
+    "waveclus": ("CPU + MATLAB/runtime", "独立微丝、单通道 sorting"),
+    "ironclust": ("GPU/CPU + MATLAB/runtime", "高密度探针与漂移感知模板排序"),
+    "kilosort2_5": ("NVIDIA GPU + MATLAB/runtime", "复现旧 Neuropixels/Kilosort 2.5 流程"),
 }
 
 SORTER_CONTRACTS = {
@@ -101,6 +106,39 @@ SORTER_CONTRACTS = {
             "pipeline and supports comparison of alternative detection, clustering, "
             "and matching choices through the common result interface."
         ),
+    },
+    "herdingspikes": {
+        "zh": (
+            "原理：检测 spike 后估计空间位置并聚类。优点：CPU 可运行，"
+            "对高密度 MEA 的空间信息利用明确。限制：依赖可靠几何和定位，"
+            "不适合没有相邻关系的独立微丝。当前环境未安装时只显示适配状态，不伪装可运行。"
+        ),
+        "en": (
+            "Principle: localize detected spikes before clustering. Strength: explicit use "
+            "of dense-MEA spatial information on CPU. Limitation: requires meaningful probe "
+            "geometry and is not a default for independent microwires. Uninstalled backends "
+            "remain visible as integrations, never as runnable sorters."
+        ),
+    },
+    "mountainsort4": {
+        "zh": "用于复现旧 MountainSort4 结果；新项目优先 MS5。优点是历史可比性，限制是算法与依赖已较旧。",
+        "en": "For reproducing legacy MountainSort4 results; prefer MS5 for new projects. Its strength is historical comparability, while its algorithm and dependencies are older.",
+    },
+    "waveclus": {
+        "zh": (
+            "原理：单通道波形小波特征与超参数聚类。适合没有可推断相邻关系的"
+            "独立微丝/brush 电极。优点是不依赖虚构空间几何；限制是需 MATLAB 或编译 runtime，"
+            "且通道间同步信息利用有限。"
+        ),
+        "en": "Wavelet features plus superparamagnetic clustering per channel. Well suited to independent microwires without invented adjacency. Requires MATLAB or a compiled runtime and uses limited cross-channel information.",
+    },
+    "ironclust": {
+        "zh": "漂移感知的模板排序，适合高密度探针的历史比较；依赖 MATLAB/runtime，不用于独立微丝的默认方案。",
+        "en": "Drift-aware template sorting for dense probes and legacy comparison. Requires MATLAB/runtime and is not the default for independent microwires.",
+    },
+    "kilosort2_5": {
+        "zh": "仅在需要与旧 Kilosort 2.5/Neuropixels 研究复现时选择；新数据优先 Kilosort4。需 NVIDIA GPU 和对应 MATLAB/runtime。",
+        "en": "Choose only to reproduce legacy Kilosort 2.5/Neuropixels work; prefer Kilosort4 for new data. Requires an NVIDIA GPU and matching MATLAB/runtime.",
     },
 }
 

@@ -16,7 +16,7 @@
     <link rel="canonical" href="https://carbonlack.github.io/neuroflow-ai/zh/task-guide.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=1760f2d4"></script>
+      <script src="_static/documentation_options.js?v=2491dde2"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/translations.js?v=beaddf03"></script>
@@ -354,15 +354,15 @@
 </nav>
 <section id="task-examples">
 <span id="id3"></span><h2><a class="toc-backref" href="#id14" role="doc-backlink">先用示例熟悉操作</a><a class="headerlink" href="#task-examples" title="Link to this heading"></a></h2>
-<p>没有自己的数据也可以开始。建议先打开 8 通道微丝教学示例。</p>
+<p>没有自己的数据也可以开始。建议先打开 32 通道独立微丝教学示例。</p>
 <p><strong>先准备好</strong></p>
-<p>教学模拟在本机生成；已验证公开项目首次打开可能需要联网下载。</p>
+<p>教学模拟在本机生成，包含已知 ground truth，不需要联网下载。</p>
 <ol class="arabic">
 <li><p><strong>打开示例库</strong></p>
 <p>选择“文件 → 示例项目…”，或点击首页“示例项目”。</p>
 </li>
 <li><p><strong>选择一套数据</strong></p>
-<p>选择教学模拟行，点击“打开所选示例”。公开项目也在同一个列表里，可根据内容和可用状态选择。</p>
+<p>选择一种探针场景并点击“打开所选示例”。</p>
 </li>
 <li><p><strong>完成第一次分析</strong></p>
 <p>先查看“原始质控”，再到“Spike sorting”选择环境可用的 sorter，运行本步骤。每次完成后看图和结果再继续。</p>
@@ -372,8 +372,8 @@
 <p>左侧流程可直接切换。“下一步”切换页面，“运行”才会计算。</p>
 <p><strong>保存位置</strong></p>
 <p>示例会成为普通项目；从“文件 → 打开项目文件夹”查看保存位置。</p>
-<p><strong>示例没有原始波形</strong></p>
-<p>部分公开项目只有已排序 Units 和行为数据。可从 Unit 质控和下游分析开始。</p>
+<p><strong>生成较慢</strong></p>
+<p>首次生成会写入原始电压、行为、TTL 与 ground truth；完成后可直接复用项目。</p>
 </section>
 <section id="task-import">
 <span id="id4"></span><h2><a class="toc-backref" href="#id15" role="doc-backlink">导入自己的原始记录</a><a class="headerlink" href="#task-import" title="Link to this heading"></a></h2>

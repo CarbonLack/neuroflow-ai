@@ -65,6 +65,46 @@ SORTER_DEFINITIONS = (
         "backend": "SpikeInterface internal sorter",
         "package": "spikeinterface",
     },
+    {
+        "key": "herdingspikes",
+        "name": "HerdingSpikes",
+        "hardware": "CPU",
+        "best_for": "Dense MEA recordings; localization-driven clustering",
+        "backend": "SpikeInterface external sorter",
+        "package": "spikeinterface",
+    },
+    {
+        "key": "mountainsort4",
+        "name": "MountainSort4",
+        "hardware": "CPU",
+        "best_for": "Legacy reproducibility and low/medium channel counts",
+        "backend": "SpikeInterface external sorter",
+        "package": "spikeinterface",
+    },
+    {
+        "key": "waveclus",
+        "name": "WaveClus",
+        "hardware": "CPU + MATLAB/compiled runtime",
+        "best_for": "Independent microwires and single-channel sorting",
+        "backend": "SpikeInterface external sorter",
+        "package": "spikeinterface",
+    },
+    {
+        "key": "ironclust",
+        "name": "IronClust",
+        "hardware": "GPU/CPU + MATLAB runtime",
+        "best_for": "Dense probes and drift-aware template sorting",
+        "backend": "SpikeInterface external sorter",
+        "package": "spikeinterface",
+    },
+    {
+        "key": "kilosort2_5",
+        "name": "Kilosort 2.5",
+        "hardware": "NVIDIA GPU + MATLAB runtime",
+        "best_for": "Legacy Neuropixels result reproduction",
+        "backend": "SpikeInterface external sorter",
+        "package": "spikeinterface",
+    },
 )
 
 INSTALL_GUIDANCE = {

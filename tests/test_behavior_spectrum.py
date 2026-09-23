@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from neuroflow.figures import behavior_spectrum_figure
+from neuroflow.figures import behavior_spectrum_figure, categorical_colors
 from neuroflow.models import ProjectState
 
 
@@ -20,3 +20,11 @@ def test_behavior_spectrum_has_animal_and_behavior_rows_with_time_window(tmp_pat
     assert len(axis.collections) >= 2  # paired light span and instantaneous events
     behaviors = behavior_spectrum_figure(state, layout="behaviors", animal_id="101")
     assert [label.get_text() for label in behaviors.axes[0].get_yticklabels()] == ["light", "poke"]
+
+
+def test_large_behavior_palette_does_not_repeat_colors():
+    labels = [f"behavior_{index:02d}" for index in range(30)]
+    palette = categorical_colors(labels)
+    assert list(palette) == labels
+    assert len(set(palette.values())) == len(labels)
+    assert palette == categorical_colors(labels)

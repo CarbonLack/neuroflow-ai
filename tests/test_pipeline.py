@@ -24,14 +24,13 @@ from neuroflow.figures import behavior_figure, event_analysis_figure, unit_clust
 from neuroflow.ephys_toolkit import run_neural_toolkit
 from neuroflow.models import ProjectState
 from neuroflow.project import load_project, save_project
-from neuroflow.public_examples import (
-    IBL_EID,
-    open_or_create_public_example,
-    public_example_status,
-)
-from neuroflow.simulation import generate_demo_recording
+from neuroflow.simulation import generate_demo_recording, simulate_sorter_output
 from neuroflow.statistics import adjust_pvalues, run_statistical_suite
 from neuroflow.sorting import _attach_probe
+from neuroflow.unit_curation import (
+    analysis_spikes, apply_curated_single_units, curated_unit_entries,
+    save_spike_selection_edit, save_unit_curation, undo_spike_selection_edit,
+)
 
 
 def test_simulation_and_qc(tmp_path: Path):
@@ -55,6 +54,38 @@ def test_ground_truth_matching():
     match = match_ground_truth(truth, detected)[0]
     assert match["truth_unit"] == 0
     assert match["f1"] == 1.0
+
+
+def test_demo_sorter_output_is_realistic_imperfect_and_reproducible(tmp_path: Path):
+    state = generate_demo_recording(
+        tmp_path / "realistic_sorter_demo",
+        duration_seconds=8.0,
+        channel_count=16,
+        sampling_rate=10_000.0,
+    )
+    first = simulate_sorter_output(
+        state.ground_truth,
+        state.duration_seconds,
+        seed=42,
+        native_id_offset=101,
+    )
+    second = simulate_sorter_output(
+        state.ground_truth,
+        state.duration_seconds,
+        seed=42,
+        native_id_offset=101,
+    )
+    assert list(first) == list(second)
+    for unit_id in first:
+        np.testing.assert_array_equal(first[unit_id], second[unit_id])
+    assert list(first) != list(range(len(first)))
+    assert any(
+        len(detected) != len(state.ground_truth[source_id])
+        for detected, source_id in zip(first.values(), sorted(state.ground_truth))
+    )
+    matches = match_ground_truth(state.ground_truth, first)
+    mean_f1 = float(np.mean([row["f1"] for row in matches]))
+    assert 0.65 < mean_f1 < 0.98
 
 
 def test_positive_lag_acg_matches_pairwise_histogram():
@@ -192,8 +223,36 @@ def test_unit_qc_does_not_invent_neighboring_electrodes(tmp_path: Path):
     assert state.unit_diagnostics[1]["waveform_channel_selection"] == "recorded_contact_positions_within_50um"
     state.metadata["language"] = "en_US"
     figure = unit_cluster_figure(state, 1)
-    assert "PCA" in figure.axes[0].get_title(loc="left")
-    assert "not ground truth" in figure._suptitle.get_text()
+    assert len(figure.axes) == 4
+    assert "individual spikes" in figure.axes[0].get_title(loc="left")
+    assert "3/3 shown" in figure.axes[0].get_title(loc="left")
+    assert len(figure.axes[0].collections) == 1
+    assert len(figure.axes[0].collections[0].get_segments()) == 3
+    assert "PCA" in figure.axes[2].get_title(loc="left")
+    assert "not PCA-derived clusters" in figure._suptitle.get_text()
+    state.sorted_spikes[2] = np.array([0.25, 0.45, 0.65])
+    state.unit_metrics.append({"unit_id": 2, "peak_channel": peak})
+    comparison = unit_cluster_figure(state, 1)
+    legend = [item.get_text() for item in comparison.axes[2].get_legend().texts]
+    assert legend == ["Unit 1 (3/3)", "Unit 2 (3/3)"]
+    alternate = unit_cluster_figure(state, 1, pc_x=1, pc_y=3)
+    assert alternate.axes[2].get_xlabel() == "PC 1"
+    assert alternate.axes[2].get_ylabel() == "PC 3"
+    assert [collection._neuro_unit_id for collection in alternate.axes[2].collections] == [1, 2]
+    cache = {}
+    unit_cluster_figure(state, 1, feature_cache=cache)
+    assert len(cache) == 1
+    unit_cluster_figure(state, 2, feature_cache=cache)
+    assert len(cache) == 1  # Same contact reuses the raw snippets.
+    for candidate in range(3, 8):
+        state.sorted_spikes[candidate] = np.array([0.2 + candidate * 0.01])
+        state.unit_metrics.append({"unit_id": candidate, "peak_channel": peak})
+    all_candidates = unit_cluster_figure(state, 1)
+    assert len(all_candidates.axes[2].collections) == 7
+    state.sorted_spikes[1] = np.sort(np.tile(np.array([0.2, 0.4, 0.6]), 201))
+    sampled = unit_cluster_figure(state, 1)
+    assert "603/603 shown" in sampled.axes[0].get_title(loc="left")
+    assert len(sampled.axes[0].collections[0].get_segments()) == 603
 
 
 def test_linear_acg_matches_original_bin_definition():
@@ -265,6 +324,92 @@ def test_event_analysis_filters_sync_and_out_of_bounds_events(tmp_path: Path):
     assert result["selected_event_codes"] == [1, 3]
     assert result["event_filter"]["excluded_counts"]["synchronization"] == 1
     assert result["event_filter"]["excluded_counts"]["outside_recording"] == 1
+
+
+def test_curated_units_and_selected_behavior_events_drive_analysis(tmp_path: Path):
+    state = generate_demo_recording(
+        tmp_path / "curated_tuning", duration_seconds=8.0,
+        channel_count=8, sampling_rate=10_000.0,
+    )
+    state.sorted_spikes = {
+        1: np.array([0.8, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1]),
+        2: np.array([0.9, 1.2, 2.2, 3.2, 4.2, 5.2, 6.2]),
+    }
+    state.active_sorter_key = "test_sorter"
+    state.sorting_results = {"test_sorter": state.sorted_spikes.copy()}
+    state.events = [
+        {"time_seconds": time, "condition": condition, "analysis_role": "task_event"}
+        for time, condition in ((1, "groom"), (2, "walk"), (3, "rest"),
+                                (4, "groom"), (5, "walk"), (6, "rest"))
+    ]
+    for unit_id, label in ((1, "candidate_single_unit"), (2, "multi_unit_activity")):
+        save_unit_curation(
+            state, unit_id, label=label, confidence="high", checks={},
+            notes="test", sorter_key="test_sorter",
+        )
+    save_project(state)
+    cohort = apply_curated_single_units(state)
+    assert cohort["unit_ids"] == [1]
+    assert sorted(analysis_spikes(state)) == [1]
+    assert sorted(state.sorting_results["test_sorter"]) == [1, 2]
+    result = event_aligned_analysis(state, conditions=["groom", "walk"])
+    assert sorted(result["units"]) == [1]
+    assert result["selected_event_count"] == 4
+    assert result["event_filter"]["requested_conditions"] == ["groom", "walk"]
+    assert result["unit_selection"]["unit_ids"] == [1]
+    save_project(state)
+    restored = load_project(state.root)
+    assert sorted(analysis_spikes(restored)) == [1]
+    assert sorted(restored.sorting_results["test_sorter"]) == [1, 2]
+    save_unit_curation(
+        state, 2, label="candidate_single_unit", confidence="high",
+        checks={}, notes="revised", sorter_key="test_sorter",
+    )
+    assert state.metadata["curated_unit_selection"]["needs_reapply"] is True
+    import pytest
+    with pytest.raises(RuntimeError, match="Reapply"):
+        analysis_spikes(state)
+    assert apply_curated_single_units(state)["unit_ids"] == [1, 2]
+
+
+def test_spike_level_edits_are_non_destructive_and_undoable(tmp_path: Path):
+    state = ProjectState(root=tmp_path / "spike_edit")
+    original = np.arange(10, dtype=float) / 10
+    state.active_sorter_key = "test_sorter"
+    state.sorted_spikes = {4: original.copy(), 9: np.array([0.15, 0.55])}
+    state.sorting_results = {
+        "test_sorter": {4: original.copy(), 9: np.array([0.15, 0.55])}
+    }
+
+    save_spike_selection_edit(
+        state, source_unit=4, source_indices=[1, 8], action="exclude"
+    )
+    split = save_spike_selection_edit(
+        state, source_unit=4, source_indices=[2, 3], action="split",
+        current_unit=4,
+    )
+    child = int(split["result_unit"])
+    entries = curated_unit_entries(state)
+    assert entries[4]["source_indices"].tolist() == [0, 4, 5, 6, 7, 9]
+    assert entries[child]["source_indices"].tolist() == [2, 3]
+    assert state.sorting_results["test_sorter"][4].tolist() == original.tolist()
+
+    nested = save_spike_selection_edit(
+        state, source_unit=4, source_indices=[3], action="split",
+        current_unit=child,
+    )
+    nested_child = int(nested["result_unit"])
+    assert curated_unit_entries(state)[child]["source_indices"].tolist() == [2]
+    assert curated_unit_entries(state)[nested_child]["source_indices"].tolist() == [3]
+    undo_spike_selection_edit(state)
+    assert curated_unit_entries(state)[child]["source_indices"].tolist() == [2, 3]
+
+    # Downstream IDs are compact 1..N, with the source IDs retained in provenance.
+    compact = analysis_spikes(state)
+    assert sorted(compact) == list(range(1, len(compact) + 1))
+    assert set(state.metadata["analysis_unit_id_map"]["display_to_curated_unit"].values()) == {
+        4, 9, child,
+    }
 
 
 def test_event_analysis_flags_coincident_condition_timestamps(tmp_path: Path):
@@ -444,8 +589,12 @@ def test_kilosort_and_ibl_alf_imports(tmp_path: Path):
     np.save(ks / "spike_times.npy", np.array([10, 20, 30, 40]))
     np.save(ks / "spike_clusters.npy", np.array([0, 0, 1, 1]))
     state = import_kilosort_results(tmp_path / "ks_project", ks, 1000)
-    assert set(state.sorted_spikes) == {0, 1}
-    assert np.isclose(state.sorted_spikes[0][0], 0.01)
+    assert set(state.sorted_spikes) == {1, 2}
+    assert np.isclose(state.sorted_spikes[1][0], 0.01)
+    assert state.sorting_provenance["imported_kilosort"]["source_unit_id_map"] == {
+        "1": 0,
+        "2": 1,
+    }
 
     alf = tmp_path / "alf"
     probe = alf / "probe00" / "pykilosort"
@@ -586,8 +735,12 @@ def test_nwb_units_behavior_and_intervals_import(tmp_path: Path):
         ripples.create_dataset("start_time", data=np.array([0.4]))
         ripples.create_dataset("stop_time", data=np.array([0.5]))
     state = import_nwb_units(tmp_path / "project", source)
-    assert set(state.sorted_spikes) == {10, 20}
-    assert len(state.sorted_spikes[20]) == 3
+    assert set(state.sorted_spikes) == {1, 2}
+    assert len(state.sorted_spikes[2]) == 3
+    assert state.sorting_provenance["imported_nwb_units"]["source_unit_id_map"] == {
+        "1": 10,
+        "2": 20,
+    }
     assert {event["condition"] for event in state.events} == {
         "reward-0",
         "reward-1",
@@ -609,33 +762,3 @@ def test_statistics_marks_identical_condition_values(tmp_path: Path):
     assert result["rows"][0]["condition_test_status"] == (
         "not_testable_all_values_identical"
     )
-
-
-def test_fixed_ibl_public_example_opens_as_cached_project(tmp_path: Path):
-    alf = (
-        tmp_path
-        / "PublicValidation"
-        / "IBL"
-        / "lab"
-        / "Subjects"
-        / "mouse"
-        / "session"
-        / "alf"
-    )
-    probe = alf / "probe00"
-    probe.mkdir(parents=True)
-    np.save(probe / "spikes.times.npy", np.array([0.1, 0.2, 1.1, 1.2]))
-    np.save(probe / "spikes.clusters.npy", np.array([0, 1, 0, 1]))
-    np.save(alf / "_ibl_trials.stimOn_times.npy", np.array([0.5, 1.5]))
-    np.save(alf / "_ibl_trials.contrastLeft.npy", np.array([0.5, np.nan]))
-    np.save(alf / "_ibl_trials.contrastRight.npy", np.array([np.nan, 0.5]))
-    status = public_example_status(tmp_path, "ibl_bwm")
-    assert status["downloaded"] is True
-    assert status["project_ready"] is False
-    state = open_or_create_public_example(tmp_path, "ibl_bwm")
-    assert state.metadata["eid"] == IBL_EID
-    assert state.metadata["public_example_key"] == "ibl_bwm"
-    assert len(state.sorted_spikes) == 2
-    restored = open_or_create_public_example(tmp_path, "ibl_bwm")
-    assert restored.root == state.root
-    assert public_example_status(tmp_path, "ibl_bwm")["project_ready"] is True

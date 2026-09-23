@@ -54,9 +54,14 @@ def test_sorter_probe_is_allow_listed(monkeypatch):
     catalog = refresh_sorter_catalog()
     assert {item["key"] for item in catalog} == {
         "kilosort4",
+        "kilosort2_5",
         "mountainsort5",
+        "mountainsort4",
         "spykingcircus2",
         "tridesclous2",
+        "herdingspikes",
+        "waveclus",
+        "ironclust",
         "simple",
         "lupin",
     }
@@ -197,8 +202,13 @@ def test_demo_library_covers_probe_geometries_and_behavior(tmp_path: Path):
             duration_seconds=1.0,
             profile_key=item["key"],
         )
-        positions = np.asarray(state.metadata["contact_positions_um"])
-        assert positions.shape == (state.channel_count, 2)
+        if item["key"] == "microwire_stimulus":
+            assert state.channel_count == 32
+            assert state.metadata["contact_positions_um"] is None
+            assert state.metadata["probe"]["geometry_mode"] == "independent_contacts"
+        else:
+            positions = np.asarray(state.metadata["contact_positions_um"])
+            assert positions.shape == (state.channel_count, 2)
         assert state.metadata["behavior_paradigm"]
         assert state.metadata["recommended_sorters"]
         assert {"choice", "outcome", "reaction_time"} <= set(state.events[0])
@@ -214,7 +224,8 @@ def test_behavior_to_ephys_clock_alignment_is_auditable(tmp_path: Path):
         sampling_rate=10_000,
     )
     result = synchronize_existing_events(state)
-    assert result["matched_count"] == 20
+    assert result["matched_count"] == len(state.events)
+    assert result["matched_count"] >= 8
     assert abs(result["drift_ppm"]) > 10
     assert result["max_abs_residual_ms"] < 1.0
     assert state.trials
@@ -437,7 +448,12 @@ def test_normalized_multi_sorter_comparison_and_roundtrip(tmp_path: Path):
     assert (state.root / "results" / "sorting_comparison" / "pairwise_summary.csv").is_file()
     assert set(restored.sorting_results) == {"sorter_a", "sorter_b"}
     assert restored.active_sorter_key == "sorter_a"
-    assert set(restored.sorted_spikes) == {10, 11, 12}
+    assert set(restored.sorted_spikes) == {1, 2, 3}
+    assert restored.sorting_provenance["sorter_a"]["source_unit_id_map"] == {
+        "1": 10,
+        "2": 11,
+        "3": 12,
+    }
     assert set(restored.ground_truth) == {0, 1}
     assert restored.sorting_provenance["sorter_b"]["time_unit"] == "seconds"
 
@@ -468,7 +484,8 @@ def test_unit_qc_is_preserved_per_sorter_and_roundtrips(tmp_path: Path):
     assert set(state.unit_diagnostics) == {1}
     activate_sorting_result(state, "sorter_b")
     assert state.unit_metrics == metrics_b
-    assert set(state.unit_diagnostics) == {2}
+    assert set(state.unit_diagnostics) == {1}
+    assert state.sorting_provenance["sorter_b"]["source_unit_id_map"] == {"1": 2}
 
     restored = load_project(save_project(state))
     activate_sorting_result(restored, "sorter_a")
@@ -478,7 +495,7 @@ def test_unit_qc_is_preserved_per_sorter_and_roundtrips(tmp_path: Path):
     activate_sorting_result(restored, "sorter_b")
     assert restored.unit_metrics[0]["unit_id"] == metrics_b[0]["unit_id"]
     assert np.isnan(restored.unit_metrics[0]["snr"])
-    assert set(restored.unit_diagnostics) == {2}
+    assert set(restored.unit_diagnostics) == {1}
 
 
 def test_replacing_sorter_result_invalidates_stale_unit_qc(tmp_path: Path):
@@ -507,7 +524,11 @@ def test_replacing_sorter_result_invalidates_stale_unit_qc(tmp_path: Path):
         {"sorter": "Sorter A", "settings": {"threshold": 6}},
     )
 
-    assert set(state.sorted_spikes) == {10, 11}
+    assert set(state.sorted_spikes) == {1, 2}
+    assert state.sorting_provenance["sorter_a"]["source_unit_id_map"] == {
+        "1": 10,
+        "2": 11,
+    }
     assert "sorter_a" not in state.unit_metrics_by_sorter
     assert "sorter_a" not in state.unit_diagnostics_by_sorter
     assert state.unit_metrics == []

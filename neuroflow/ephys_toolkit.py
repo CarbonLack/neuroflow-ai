@@ -22,6 +22,7 @@ from elephant.statistics import cv, cv2, fanofactor, isi, lv, lvr, mean_firing_r
 from scipy import signal
 
 from .analysis import event_aligned_analysis, load_recording
+from .unit_curation import analysis_spikes
 from .connectivity import run_connectivity_suite
 from .models import ProjectState
 from .population import run_population_dynamics_suite
@@ -141,10 +142,11 @@ def provider_status() -> dict[str, str | bool]:
 
 
 def to_neo_spike_trains(state: ProjectState) -> tuple[list[int], list[neo.SpikeTrain]]:
-    unit_ids = sorted(state.sorted_spikes)
+    selected_spikes = analysis_spikes(state)
+    unit_ids = sorted(selected_spikes)
     trains = [
         neo.SpikeTrain(
-            np.asarray(state.sorted_spikes[unit_id], dtype=float) * pq.s,
+            np.asarray(selected_spikes[unit_id], dtype=float) * pq.s,
             t_start=0 * pq.s,
             t_stop=max(state.duration_seconds, 1e-6) * pq.s,
             name=f"Unit {unit_id}",
@@ -310,7 +312,8 @@ def run_spike_train_suite(
     bin_ms: float = 20.0,
     distance_window_seconds: float = 10.0,
 ) -> dict:
-    if not state.sorted_spikes:
+    selected_spikes = analysis_spikes(state)
+    if not selected_spikes:
         raise RuntimeError("Spike-train analysis requires sorting results")
     unit_ids, trains = to_neo_spike_trains(state)
     rows = []
@@ -341,7 +344,7 @@ def run_spike_train_suite(
                 else float("nan")
             ),
             "fano_trials": _trial_fano_factor(
-                np.asarray(state.sorted_spikes[unit_id], dtype=float),
+                np.asarray(selected_spikes[unit_id], dtype=float),
                 fano_events,
             ),
         }
@@ -354,7 +357,7 @@ def run_spike_train_suite(
     selected_indices = np.linspace(0, len(unit_ids) - 1,
                                    min(len(unit_ids), 24), dtype=int)
     pairwise_ids = [unit_ids[index] for index in selected_indices]
-    pairwise_arrays = [np.asarray(state.sorted_spikes[unit_id], dtype=float)
+    pairwise_arrays = [np.asarray(selected_spikes[unit_id], dtype=float)
                        for unit_id in pairwise_ids]
     pairwise_arrays = [spikes[spikes <= pairwise_duration]
                        for spikes in pairwise_arrays]
@@ -385,8 +388,8 @@ def run_spike_train_suite(
     subset_ids = pairwise_ids[: min(8, len(pairwise_ids))]
     subset = [
         neo.SpikeTrain(
-            np.asarray(state.sorted_spikes[unit_id], dtype=float)[
-                np.asarray(state.sorted_spikes[unit_id], dtype=float) <= distance_stop
+            np.asarray(selected_spikes[unit_id], dtype=float)[
+                np.asarray(selected_spikes[unit_id], dtype=float) <= distance_stop
             ]
             * pq.s,
             t_start=0 * pq.s,
@@ -595,7 +598,7 @@ def run_spike_field_suite(
     phase_band: tuple[float, float] = (1.0, 5.0),
     surrogate_count: int = 200,
 ) -> dict:
-    if not state.sorted_spikes:
+    if not analysis_spikes(state):
         raise RuntimeError("Spike-field analysis requires sorting results")
     analog, channels = to_neo_analog_signal(state)
     fs = float(analog.sampling_rate.rescale(pq.Hz).magnitude)

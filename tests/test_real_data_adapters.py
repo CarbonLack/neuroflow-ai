@@ -318,6 +318,17 @@ D:
     assert state.trials == []
 
 
+def test_medpc_rejects_concatenated_subject_records(tmp_path: Path):
+    path = tmp_path / "mixed_subjects.txt"
+    path.write_text(
+        "Subject: 108\nC:\n  0: 11\nD:\n  0: 1.0\n"
+        "Subject: 204\nC:\n  0: 11\nD:\n  0: 2.0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="multiple subject records.*108, 204"):
+        parse_medpc_file(path)
+
+
 def test_legacy_medpc_event_rows_are_not_restored_as_trials(tmp_path: Path):
     state = ProjectState(root=tmp_path / "legacy_medpc")
     state.metadata["behavior_format"] = "MED-PC"

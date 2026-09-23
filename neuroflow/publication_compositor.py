@@ -26,16 +26,18 @@ ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 _RENDER_APP = None
 
 THEMES = (
-    ("main", "Recording quality and behavioral context", (
-        "raw_qc", "unit_qc", "behavior")),
+    ("main", "Experimental workflow, signal quality and curated Units", (
+        "raw_qc", "preprocessing", "sorting_comparison", "unit_qc")),
+    ("main", "Behavior, event timing and synchronization", (
+        "behavior", "behavior_spectrum_animals", "synchronization")),
     ("main", "Event-aligned unit and population responses", (
-        "raster_psth_population", "population_ordered_heatmap")),
+        "raster_psth_population", "population_ordered_heatmap", "population_conditions")),
     ("main", "Population dynamics across trials and conditions", (
-        "population_single_trial", "population_conditions", "population_pca")),
+        "population_single_trial", "population_pca")),
     ("main", "Effect sizes, uncertainty and prediction", (
         "statistics", "decoding", "regression")),
     ("supplementary", "Complete behavioral repertoire", (
-        "behavior_spectrum_animals", "behavior_spectrum_by_behavior")),
+        "behavior_spectrum_by_behavior",)),
     ("supplementary", "Spike-train and timing diagnostics", (
         "spike_train_statistics", "spike_train_relationships")),
     ("supplementary", "Decoder model and feature diagnostics", (
@@ -87,9 +89,22 @@ def save_atomic_panels(figure, name: str, output: Path) -> list[dict]:
                     bounds = Bbox.union([bounds, colorbar_bounds])
         inches = bounds.transformed(figure.dpi_scale_trans.inverted())
         visible = {other: other.get_visible() for other in figure.axes}
+        figure_text_visible = {
+            artist: artist.get_visible() for artist in figure.texts
+        }
+        figure_legend_visible = {
+            artist: artist.get_visible() for artist in figure.legends
+        }
         try:
             for other in figure.axes:
                 other.set_visible(other is axis or other in owned_colorbars)
+            # Figure-level suptitles and global legends describe the original
+            # dashboard, not this atomic axis.  Keeping them in every crop made
+            # them escape their clip box and overlap neighboring journal panels.
+            for artist in figure_text_visible:
+                artist.set_visible(False)
+            for artist in figure_legend_visible:
+                artist.set_visible(False)
             stem = f"panel_{index:02d}"
             svg = folder / f"{stem}.svg"
             png = folder / f"{stem}.png"
@@ -103,6 +118,10 @@ def save_atomic_panels(figure, name: str, output: Path) -> list[dict]:
         finally:
             for other, was_visible in visible.items():
                 other.set_visible(was_visible)
+            for artist, was_visible in figure_text_visible.items():
+                artist.set_visible(was_visible)
+            for artist, was_visible in figure_legend_visible.items():
+                artist.set_visible(was_visible)
         root = ET.parse(svg).getroot()
         view_box = [float(value) for value in root.attrib["viewBox"].split()]
         rows.append({"source_figure": name, "source_axis": index,
@@ -142,7 +161,7 @@ def _pages_for_theme(panels: list[dict]) -> list[list[dict]]:
     while offset < len(panels):
         remaining = len(panels) - offset
         count = next((n for n in range(min(9, remaining), 0, -1)
-                      if _layout_height(panels[offset:offset + n]) <= 480), 1)
+                      if _layout_height(panels[offset:offset + n]) <= 650), 1)
         pages.append(panels[offset:offset + count])
         offset += count
     return pages
@@ -151,7 +170,7 @@ def _pages_for_theme(panels: list[dict]) -> list[list[dict]]:
 def _columns_for(panels: list[dict]) -> int:
     if len(panels) <= 2:
         return 2
-    if len(panels) == 4 and _height_for_columns(panels, 2) <= 480:
+    if len(panels) == 4 and _height_for_columns(panels, 2) <= 650:
         return 2
     return 3
 
@@ -173,7 +192,9 @@ def _layout_height(panels: list[dict]) -> float:
 
 def _compose_svg(panels: list[dict], exports: Path, destination: Path) -> dict:
     # 500 pt = 176.4 mm, a conservative double-column starting size. The
-    # height cap is 480 pt = 169.3 mm. Journal-specific final checks remain.
+    # 650 pt page cap keeps a balanced 2x2 scientific figure together while
+    # remaining below a typical full-page journal height. Journal-specific
+    # final checks remain mandatory.
     width = 500.0
     columns = _columns_for(panels)
     gutter = 18.0
@@ -216,14 +237,32 @@ def _compose_svg(panels: list[dict], exports: Path, destination: Path) -> dict:
             source = _safe_svg_tree(exports / panel["source_panel_svg"],
                                     f"p{index + column}")
             draw_width = slot - 10.0
-            scale = draw_width / float(panel["width_pt"])
+            cell_height = max(36.0, row_height - 2.0)
+            scale = min(
+                draw_width / max(float(panel["width_pt"]), 1.0),
+                cell_height / max(float(panel["height_pt"]), 1.0),
+            )
+            actual_width = float(panel["width_pt"]) * scale
+            actual_height = float(panel["height_pt"]) * scale
+            draw_x = x + 5.0 + (draw_width - actual_width) / 2.0
+            draw_y = y + 20.0 + (cell_height - actual_height) / 2.0
+            # A common cell gives every row a shared top/bottom alignment even
+            # when source panels have different aspect ratios. Artwork itself
+            # is never stretched, cropped, or rasterized.
+            ET.SubElement(root, f"{{{SVG}}}rect", {
+                "x": f"{x + 5.0:.4f}", "y": f"{y + 20.0:.4f}",
+                "width": f"{draw_width:.4f}", "height": f"{cell_height:.4f}",
+                "fill": "#ffffff",
+            })
             nested = ET.SubElement(root, f"{{{SVG}}}g", {
-                "transform": f"translate({x + 5:.4f} {y + 20:.4f}) scale({scale:.8f})"})
+                "transform": f"translate({draw_x:.4f} {draw_y:.4f}) scale({scale:.8f})"})
             for child in list(source):
                 nested.append(copy.deepcopy(child))
             positions.append({"panel": letter, "x_pt": x + 5, "y_pt": y + 20,
-                              "width_pt": draw_width,
-                              "height_pt": draw_width * panel["height_pt"] / panel["width_pt"]})
+                              "width_pt": draw_width, "height_pt": cell_height,
+                              "artwork_x_pt": draw_x, "artwork_y_pt": draw_y,
+                              "artwork_width_pt": actual_width,
+                              "artwork_height_pt": actual_height})
         y += 20 + row_height + 16
     destination.parent.mkdir(parents=True, exist_ok=True)
     ET.ElementTree(root).write(destination, encoding="utf-8", xml_declaration=True)
@@ -265,7 +304,17 @@ def compose_publication_figures(exports: Path, available: list[str]) -> list[dic
     ordered = list(dict.fromkeys(available))
     assigned = set()
     themes = list(THEMES)
+    event_unit_names = tuple(
+        name for name in ordered if name.startswith("raster_psth_unit_")
+    )
+    if event_unit_names:
+        themes.append((
+            "supplementary",
+            "Complete Unit-level event responses and representative alternatives",
+            event_unit_names,
+        ))
     unknown = tuple(name for name in ordered if not any(name in row[2] for row in THEMES))
+    unknown = tuple(name for name in unknown if name not in event_unit_names)
     if unknown:
         themes.append(("supplementary", "Other complete analysis evidence", unknown))
     result = []

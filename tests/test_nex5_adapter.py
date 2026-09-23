@@ -66,13 +66,13 @@ def test_nex5_result_import_preserves_units_and_waveforms(tmp_path: Path):
     )
 
     np.testing.assert_allclose(
-        state.sorting_results["offline_sorter_nex5"][0],
+        state.sorting_results["offline_sorter_nex5"][1],
         [0.1, 0.2, 0.3],
     )
     assert summary["unit_count"] == 1
     assert summary["files"][0]["units"][0]["channel_number"] == 12
     assert (
-        state.sorting_provenance["offline_sorter_nex5"]["unit_metadata"]["0"][
+        state.sorting_provenance["offline_sorter_nex5"]["unit_metadata"]["1"][
             "source_variable"
         ]
         == "CH12a"
@@ -80,9 +80,12 @@ def test_nex5_result_import_preserves_units_and_waveforms(tmp_path: Path):
     waveform_archive = Path(summary["waveform_summaries"])
     with np.load(waveform_archive) as archive:
         assert archive["unit_0_mean"].shape == (4,)
+    assert state.sorting_provenance["offline_sorter_nex5"][
+        "source_unit_id_map"
+    ] == {"1": 0}
     restored = load_project(state.root)
     np.testing.assert_allclose(
-        restored.sorting_results["offline_sorter_nex5"][0],
+        restored.sorting_results["offline_sorter_nex5"][1],
         [0.1, 0.2, 0.3],
     )
 

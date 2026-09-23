@@ -1,16 +1,16 @@
 First use: complete a small project
 ==================================================
 
-Use the bundled 8-channel microwire teaching example to obtain a raw-QC result,
+Use the bundled 32-channel independent microwire/brush teaching example to obtain a raw-QC result,
 save one figure, and reopen the project. You do not need experimental data, an AI
 provider, or a GPU for this exercise.
 
 1. Open a teaching example
 --------------------------------------------------
 
-On the home screen select **Example projects**, choose the **8-channel microwire**
+On the home screen select **Example projects**, choose the **32-channel independent microwire/brush**
 entry with type **Teaching**, then **Open selected example**. Teaching data are
-generated locally. Public examples are separate entries and may require a download.
+generated locally with known ground truth and do not require a download.
 
 In **01 Data and project**, check the name, project location, channel count, and
 duration. Raw traces should appear in the center. If they do not, inspect the status

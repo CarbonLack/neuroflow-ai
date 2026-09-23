@@ -184,6 +184,6 @@ The interface and documentation distinguish:
 * **validated with simulated data**;
 * **interface implemented, not yet validated**.
 
-Future public releases will add redistributable IBL and DANDI examples.
-Public-dataset outputs validate the import and analysis path; they are not
-presented as reproductions of the source paper.
+Published example datasets are not bundled with the product. Researchers may
+import legally obtained local ALF or NWB data while retaining source identifiers,
+versions, licences, and citations in project provenance.

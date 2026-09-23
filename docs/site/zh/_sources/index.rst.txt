@@ -11,7 +11,7 @@ NeuroEphys AI 操作手册
 .. raw:: html
 
    <nav class="task-links" aria-label="按当前任务开始">
-     <a class="task-link" href="quick-start.html"><strong>第一次使用</strong><span>打开 8 通道教学示例，运行质控，保存一张图，再重新打开项目。</span></a>
+     <a class="task-link" href="quick-start.html"><strong>第一次使用</strong><span>打开 32 通道独立微丝/brush 教学示例，运行质控，保存一张图，再重新打开项目。</span></a>
      <a class="task-link" href="first-project.html"><strong>分析自己的数据</strong><span>按原始记录、已有 sorting 或 NeuroEphys 项目选择入口。</span></a>
      <a class="task-link" href="workspace.html"><strong>找到按钮与调整窗口</strong><span>三栏布局、当前分析、AI 助手、教程、快捷键。</span></a>
      <a class="task-link" href="troubleshooting.html"><strong>遇到问题</strong><span>从无法运行、数据不对、图没更新和项目路径丢失开始排查。</span></a>

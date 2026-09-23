@@ -185,6 +185,13 @@ def parse_medpc_file(path: Path) -> MedPCRecord:
     """Parse one MED-PC text export while preserving unknown event codes."""
     path = Path(path)
     text = path.read_text(encoding="utf-8", errors="replace")
+    subjects = re.findall(r"^\s*Subject:\s*(.*?)\s*$", text, flags=re.MULTILINE)
+    if len(subjects) > 1:
+        raise ValueError(
+            "The MED-PC file contains multiple subject records "
+            f"({', '.join(subjects)}). Select a single-subject copy before "
+            "aligning behavior to electrophysiology."
+        )
     metadata: dict[str, str] = {}
     scalars: dict[str, float] = {}
     arrays: dict[str, list[float]] = {}

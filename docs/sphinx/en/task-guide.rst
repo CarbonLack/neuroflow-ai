@@ -14,11 +14,11 @@ These instructions also appear in the desktop Tutorial center.
 Try an example
 ----------------------------------------------------------------------------------------------------
 
-Start without your own recording. The 8-channel microwire teaching example is a good first run.
+Start without your own recording. The 32-channel independent-microwire example is a good first run.
 
 **Have ready**
 
-Teaching data are generated locally. A verified public project may need a download on first use.
+Teaching data are generated locally with known ground truth and need no download.
 
 1. **Open the example library**
 
@@ -26,7 +26,7 @@ Teaching data are generated locally. A verified public project may need a downlo
 
 2. **Choose a dataset**
 
-   Select a teaching row and click Open selected example. Public projects are in the same list; check their contents and availability.
+   Choose a probe scenario and click Open selected example.
 
 3. **Run your first analysis**
 
@@ -40,9 +40,9 @@ The left workflow provides direct navigation. Next changes the page; Run perform
 
 The example opens as an ordinary project. Use File → Open project folder to find its location.
 
-**No raw traces in an example**
+**Generation takes time**
 
-Some public projects contain sorted units and behavior only. Start at Unit QC or downstream analysis.
+The first run writes raw voltage, behavior, TTL, and ground truth; later runs reuse the project.
 
 .. _task-import:
 

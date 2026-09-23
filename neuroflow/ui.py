@@ -4,6 +4,7 @@ import json
 import io
 import re
 import sys
+import threading
 import traceback
 from datetime import datetime, timezone
 from html import escape
@@ -143,7 +144,6 @@ from .figures import (
 )
 from .help_content import REFERENCES, control_help, page_controls
 from .i18n import LANGUAGES, step_text, tr
-from .ibl import download_bwm_trials_aggregate
 from .models import ProjectState, WorkflowStep
 from .population import run_population_dynamics_suite
 from .medpc import import_medpc_behavior
@@ -154,14 +154,8 @@ from .product import (
     PRODUCT_VERSION,
     RELEASE_DOWNLOAD_URL,
 )
+from .event_tuning_ui import EventTuningDialog
 from .publication_ui import PublicationGallery
-from .public_examples import (
-    PUBLIC_EXAMPLES,
-    download_public_example,
-    open_or_create_public_example,
-    public_example_status,
-    public_validation_root,
-)
 from .simulation import (
     DEMO_PROFILES,
     demo_profile_catalog,
@@ -183,7 +177,7 @@ from .tutorial_details import TUTORIAL_DETAILS, localized, localized_rows
 from .tutorials import TUTORIALS, tutorial_value
 from .tutorial_center import HELP_DOCUMENT_STYLE, TutorialDialog, task_html
 from .tutorial_catalog import catalog_text, tutorial_for_id
-from .unit_curation import curation_summary
+from .unit_curation import analysis_spikes, curation_summary
 from .unit_curation_ui import UnitCurationDialog
 from .ui_components import FlowLayout, line_icon
 
@@ -227,8 +221,8 @@ FORMAT_TEXT_EN = {
         "Intan, Open Ephys, SpikeGLX, Blackrock, Plexon, TDT, NWB",
     ),
     "ibl_alf": (
-        "Public validation data",
-        "IBL ALF/BWM or Buzsáki/DANDI NWB with Units and behavior",
+        "Processed spike/event data",
+        "Local ALF, aggregate-trial, or NWB files with Units and behavior",
     ),
     "kilosort": (
         "Kilosort/Phy output",
@@ -267,12 +261,12 @@ ENTRY_ROUTE_TEXT = {
             "保留源文件只读，建立统一缓存后进入质控、预处理和 sorting。",
         ),
         "ibl_alf": (
-            "已验证公开项目（2 套）",
-            "直接打开 NeuroEphys AI 已实际跑通的固定公开会话",
-            "IBL BWM EID 4ecb… 与 Buzsáki DANDI 000552；双击查看下载状态并打开",
+            "本地处理后数据",
+            "手里已有 ALF、汇总 trial 或含 Units 的 NWB 文件",
+            "选择本地文件或文件夹；不会展示或自动下载内置公开发表数据",
             "Unit/行为检查",
             "通常不可以",
-            "锁定来源编号、固定版本和本地缓存；可运行 Unit QC、事件分析、统计与解码。",
+            "从 sorting 之后接入，可运行 Unit QC、事件分析、统计与解码。",
         ),
         "kilosort": (
             "已有 sorting 结果",
@@ -317,12 +311,12 @@ ENTRY_ROUTE_TEXT = {
             "Sources remain read-only and enter QC, preprocessing, and sorting through a normalized cache.",
         ),
         "ibl_alf": (
-            "Verified public projects (2)",
-            "Open fixed public sessions already exercised by NeuroEphys AI",
-            "IBL BWM EID 4ecb… and Buzsáki DANDI 000552; double-click to inspect and open",
+            "Local processed data",
+            "You already have ALF, aggregate-trial, or NWB files containing Units",
+            "Choose a local file or folder; no published dataset is bundled or auto-downloaded",
             "Unit/behavior checks",
             "Usually no",
-            "Locks identifiers, versions, and local cache; continue with QC, event analysis, statistics, and decoding.",
+            "Enter after sorting and continue with QC, event analysis, statistics, and decoding.",
         ),
         "kilosort": (
             "Existing sorting results",
@@ -1752,122 +1746,8 @@ class NewProjectDialog(QDialog):
         self.accept()
 
 
-class PublicExampleDialog(QDialog):
-    def __init__(
-        self,
-        workspace: Path,
-        parent: QWidget | None = None,
-        language: str = "zh_CN",
-    ):
-        super().__init__(parent)
-        self.workspace = workspace
-        self.language = language
-        self.example_key = PUBLIC_EXAMPLES[0].key
-        english = language == "en_US"
-        self.setWindowTitle(
-            "Verified public projects" if english else "已验证公开数据项目"
-        )
-        self.resize(1060, 500)
-        layout = QVBoxLayout(self)
-        title = QLabel(
-            "Two fixed, versioned validation projects"
-            if english
-            else "两套固定版本、已经过 NeuroEphys AI 验证的公开项目"
-        )
-        title.setStyleSheet("font-size: 21px; font-weight: 700;")
-        layout.addWidget(title)
-        summary = QLabel(
-            (
-                "These entries are not generic public-data importers. Each row locks "
-                "the dataset identifier, local cache path, and expected content. "
-                "Double-click a downloaded row to open it directly."
-            )
-            if english
-            else (
-                "这里不是泛泛的“公开数据”导入器。每一行都锁定数据编号、本地缓存路径"
-                "和预期内容；已下载的数据可双击直接建立或打开验证项目。"
-            )
-        )
-        summary.setWordWrap(True)
-        summary.setObjectName("Muted")
-        layout.addWidget(summary)
-        self.table = QTableWidget(len(PUBLIC_EXAMPLES), 6)
-        self.table.setHorizontalHeaderLabels(
-            ["Project", "Official source", "Fixed identifier", "Contents", "Downloaded", "Project cache"]
-            if english
-            else ["验证项目", "官方来源", "固定编号", "实际内容", "数据已下载", "项目缓存"]
-        )
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setSelectionMode(QTableWidget.SingleSelection)
-        self.table.verticalHeader().setVisible(False)
-        for row, example in enumerate(PUBLIC_EXAMPLES):
-            status = public_example_status(workspace, example.key)
-            values = [
-                example.name_en if english else example.name_zh,
-                example.source_en if english else example.source_zh,
-                example.identifier,
-                example.contents_en if english else example.contents_zh,
-                (
-                    "Yes"
-                    if status["downloaded"] and english
-                    else "是"
-                    if status["downloaded"]
-                    else "No"
-                    if english
-                    else "否"
-                ),
-                (
-                    "Ready"
-                    if status["project_ready"] and english
-                    else "已建立"
-                    if status["project_ready"]
-                    else "Create on first open"
-                    if english
-                    else "首次打开时建立"
-                ),
-            ]
-            for column, value in enumerate(values):
-                cell = QTableWidgetItem(str(value))
-                cell.setData(Qt.UserRole, example.key)
-                self.table.setItem(row, column, cell)
-        header = self.table.horizontalHeader()
-        for column in range(6):
-            header.setSectionResizeMode(
-                column,
-                QHeaderView.Stretch
-                if column in {0, 2, 3}
-                else QHeaderView.ResizeToContents,
-            )
-        self.table.selectRow(0)
-        self.table.cellDoubleClicked.connect(lambda _row, _column: self._accept())
-        layout.addWidget(self.table, 1)
-        local_path = QLabel(
-            f"Local library: {public_validation_root(workspace)}"
-            if english
-            else f"本地公开数据资料库：{public_validation_root(workspace)}"
-        )
-        local_path.setWordWrap(True)
-        local_path.setObjectName("InsetPanel")
-        local_path.setContentsMargins(12, 9, 12, 9)
-        layout.addWidget(local_path)
-        buttons = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
-        buttons.button(QDialogButtonBox.Ok).setText(
-            "Open selected project" if english else "打开所选验证项目"
-        )
-        buttons.accepted.connect(self._accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
-
-    def _accept(self) -> None:
-        row = self.table.currentRow()
-        if row >= 0:
-            self.example_key = str(self.table.item(row, 0).data(Qt.UserRole))
-        self.accept()
-
-
 class ExampleLibraryDialog(QDialog):
-    """One entry point for teaching simulations and verified public projects."""
+    """Local teaching simulations generated without downloading published data."""
 
     def __init__(
         self,
@@ -1886,23 +1766,22 @@ class ExampleLibraryDialog(QDialog):
         self.setMinimumSize(720, 480)
         layout = QVBoxLayout(self)
         title = QLabel(
-            "Learn the workflow or open a verified reference"
+            "Learn the workflow with a local simulation"
             if english
-            else "从教学数据学习流程，或打开已验证公开项目"
+            else "用本机教学模拟学习完整流程"
         )
         title.setStyleSheet("font-size: 22px; font-weight: 700;")
         layout.addWidget(title)
         intro = QLabel(
             (
-                "Teaching simulations are generated locally and are best for first-time "
-                "use. Verified public projects use fixed external datasets and may need "
-                "a one-time download. Both open as ordinary NeuroEphys AI projects."
+                "Teaching simulations are generated locally, contain known ground truth, "
+                "and open as ordinary NeuroEphys AI projects. No published dataset is "
+                "bundled or downloaded from this library."
             )
             if english
             else (
-                "教学模拟在本机生成，适合第一次熟悉完整流程；已验证公开项目使用固定的"
-                "外部数据，首次打开可能需要下载。两类内容都会作为普通 NeuroEphys AI "
-                "项目打开。"
+                "教学模拟在本机生成，包含已知 ground truth，适合熟悉完整流程，并会作为"
+                "普通 NeuroEphys AI 项目打开。本资料库不再内置或下载公开发表数据。"
             )
         )
         intro.setWordWrap(True)
@@ -1924,27 +1803,6 @@ class ExampleLibraryDialog(QDialog):
                     "Local generation" if english else "本机生成，无需下载",
                 )
             )
-        for example in PUBLIC_EXAMPLES:
-            status = public_example_status(workspace, example.key)
-            rows.append(
-                (
-                    f"public:{example.key}",
-                    "Verified public" if english else "已验证公开",
-                    example.name_en if english else example.name_zh,
-                    example.contents_en if english else example.contents_zh,
-                    example.identifier,
-                    (
-                        "Ready locally"
-                        if status["downloaded"] and english
-                        else "本机已就绪"
-                        if status["downloaded"]
-                        else "Download on first open"
-                        if english
-                        else "首次打开时下载"
-                    ),
-                )
-            )
-
         self.table = QTableWidget(len(rows), 5)
         self.table.setHorizontalHeaderLabels(
             ["Type", "Example", "Contents", "Method / identifier", "Availability"]
@@ -1976,9 +1834,9 @@ class ExampleLibraryDialog(QDialog):
         layout.addWidget(self.table, 1)
 
         note = QLabel(
-            "Tip: start with the 8-channel microwire example for the fastest tour."
+            "Tip: start with the 32-channel independent microwire/brush example."
             if english
-            else "建议第一次选择 8 通道微丝示例，最快完成整套操作体验。"
+            else "建议第一次选择 32 通道独立微丝/brush 示例。"
         )
         note.setObjectName("InsetPanel")
         note.setWordWrap(True)
@@ -2611,15 +2469,15 @@ class ImportDialog(QDialog):
             "ibl_alf",
         )
         self.public_kind.addItem(
-            "IBL BWM aggregate trials (behavior only)"
+            "Local aggregate trials (behavior only)"
             if english
-            else "IBL BWM 汇总 trials（仅行为）",
+            else "本地汇总 trials（仅行为）",
             "ibl_trials",
         )
         self.public_kind.addItem(
-            "DANDI / Buzsáki NWB (Units + behavior)"
+            "Processed NWB (Units + behavior)"
             if english
-            else "DANDI / Buzsáki NWB（Units + 行为）",
+            else "处理后 NWB（Units + 行为）",
             "nwb_units",
         )
         self.public_kind.currentIndexChanged.connect(self._public_kind_changed)
@@ -2641,18 +2499,14 @@ class ImportDialog(QDialog):
         row.addWidget(folder_button)
         row.addWidget(file_button)
         row.addWidget(nwb_button)
-        download_button = QPushButton(
-            "Download official example" if english else "下载官方示例"
-        )
-        download_button.clicked.connect(self._download_ibl_aggregate)
         self.ibl_eid = QLineEdit()
         self.ibl_eid.setPlaceholderText(
-            "Leave blank to select a BWM session automatically"
+            "Optional source session identifier"
             if english
-            else "留空时自动选择一个 BWM session"
+            else "可选的来源 session 标识"
         )
         form.addRow(
-            "Public-data structure" if english else "公开数据结构",
+            "Processed-data structure" if english else "处理后数据结构",
             self.public_kind,
         )
         form.addRow("Data path" if english else "数据路径", holder)
@@ -2662,22 +2516,22 @@ class ImportDialog(QDialog):
             else "Session eID（aggregate 可选）",
             self.ibl_eid,
         )
-        form.addRow(download_button)
         text = QLabel(
             (
                 "<b>IBL ALF</b> reads trials plus spikes.times/spikes.clusters. "
-                "<b>BWM aggregate</b> contains behavior only. "
-                "<b>DANDI/NWB</b> reads a Units table and available reward, position, "
+                "<b>Local aggregate trials</b> contain behavior only. "
+                "<b>Processed NWB</b> reads a Units table and available reward, position, "
                 "state, or ripple objects. These processed entries start after sorting; "
-                "use acquisition-system NWB when raw ElectricalSeries must be sorted."
+                "use acquisition-system NWB when raw ElectricalSeries must be sorted. "
+                "The application does not download published example recordings."
             )
             if english
             else (
                 "<b>IBL ALF</b> 读取 trials 与 spikes.times/spikes.clusters；"
-                "<b>BWM aggregate</b> 只有行为汇总；<b>DANDI/NWB</b> 读取 Units 表，"
+                "<b>本地汇总 trials</b> 只有行为；<b>处理后 NWB</b> 读取 Units 表，"
                 "并接入可用的奖励、位置、状态或 ripple 对象。它们是处理后入口，从 "
                 "sorting 之后继续；若 NWB 内含待排序的原始 ElectricalSeries，应从"
-                "“记录系统文件”入口导入。"
+                "“记录系统文件”入口导入。应用不下载公开发表的示例记录。"
             )
         )
         text.setWordWrap(True)
@@ -2691,9 +2545,9 @@ class ImportDialog(QDialog):
             "ibl_alf": "Select an IBL ALF session/probe folder"
             if self.language == "en_US"
             else "选择包含 trials 和 probe/spikes 的 IBL ALF 文件夹",
-            "ibl_trials": "Select aggregate_trials.pqt"
+            "ibl_trials": "Select a local aggregate_trials.pqt"
             if self.language == "en_US"
-            else "选择 IBL BWM aggregate_trials.pqt",
+            else "选择本地 aggregate_trials.pqt",
             "nwb_units": "Select a .nwb file containing a Units table"
             if self.language == "en_US"
             else "选择包含 Units 表的 .nwb 文件",
@@ -2723,22 +2577,6 @@ class ImportDialog(QDialog):
             )[0]
         if selected:
             self.alf_path.setText(selected)
-
-    def _download_ibl_aggregate(self) -> None:
-        try:
-            path = download_bwm_trials_aggregate(
-                self.workspace / "ibl_cache",
-                progress=lambda text: self.project_name.setText("正在下载 IBL 数据…"),
-            )
-            self.alf_path.setText(str(path))
-            self.project_name.setText("IBL Brain-Wide Map behavior")
-            QMessageBox.information(
-                self,
-                "IBL 数据已就绪",
-                f"已缓存官方 BWM trials aggregate：\n{path}",
-            )
-        except Exception as exc:  # noqa: BLE001 - network errors are user-facing
-            QMessageBox.warning(self, "IBL 下载失败", str(exc))
 
     def _device_page(self) -> QWidget:
         page = QWidget()
@@ -3003,7 +2841,7 @@ class ImportDialog(QDialog):
                     self.state = import_nwb_units(root, source)
                 else:
                     raise ValueError(
-                        "所选文件与公开数据结构不匹配：请按上方类型选择 "
+                        "所选文件与处理后数据结构不匹配：请按上方类型选择 "
                         "ALF 文件夹、aggregate .pqt 或含 Units 的 .nwb"
                     )
             elif key == "kilosort":
@@ -3347,10 +3185,16 @@ class BehaviorSyncDialog(QDialog):
             )
 
 
+class PipelineCancelled(RuntimeError):
+    pass
+
+
 class PipelineWorker(QThread):
     step_done = Signal(str, object)
     progress = Signal(str)
+    progress_value = Signal(int, int, str)
     failed = Signal(str, str)
+    cancelled = Signal(str)
     succeeded = Signal()
 
     def __init__(
@@ -3372,6 +3216,69 @@ class PipelineWorker(QThread):
         self.analysis_selection = analysis_selection
         self.tool_arguments = dict(tool_arguments or {})
         self.language = str(state.metadata.get("language", "zh_CN"))
+        self._pause_condition = threading.Condition()
+        self._paused = False
+        self._cancel_requested = False
+        self._stage_index = 0
+        self._stage_total = max(len(keys), 1)
+        self._stage_key = keys[0] if keys else "import"
+
+    def request_pause(self, paused: bool) -> None:
+        with self._pause_condition:
+            self._paused = bool(paused)
+            if not self._paused:
+                self._pause_condition.notify_all()
+
+    def request_cancel(self) -> None:
+        with self._pause_condition:
+            self._cancel_requested = True
+            self._paused = False
+            self._pause_condition.notify_all()
+        self.requestInterruption()
+
+    def _checkpoint(self) -> None:
+        with self._pause_condition:
+            while self._paused and not self._cancel_requested:
+                self._pause_condition.wait(timeout=0.2)
+            if self._cancel_requested or self.isInterruptionRequested():
+                raise PipelineCancelled("Cancelled by the user at a safe checkpoint")
+
+    def _backend_progress(self, message: str) -> None:
+        self._checkpoint()
+        self.progress.emit(message)
+        percent = re.search(r"(?<!\d)(100|\d{1,2})(?:\.\d+)?\s*%", str(message))
+        if percent:
+            self._stage_progress(float(percent.group(1)) / 100.0, str(message))
+
+    def _stage_progress(self, fraction: float, label: str = "") -> None:
+        """Emit truthful global progress from a measured stage fraction."""
+        fraction = min(max(float(fraction), 0.0), 1.0)
+        scale = 1_000
+        completed = self._stage_index * scale + round(fraction * scale)
+        self.progress_value.emit(
+            completed,
+            self._stage_total * scale,
+            self._stage_key,
+        )
+        if label:
+            self.progress.emit(label)
+
+    def _unit_metric_progress(self, completed: int, total: int, label: str) -> None:
+        self._checkpoint()
+        self._stage_progress(
+            0.45 * completed / max(total, 1),
+            self._message(
+                f"Unit 质控：{label}（{completed}/{total}）",
+                f"Unit QC: {label} ({completed}/{total})",
+            ),
+        )
+
+    def _analyzer_progress(self, completed: int, total: int, label: str) -> None:
+        self._checkpoint()
+        self._stage_progress(
+            0.45 + 0.55 * completed / max(total, 1),
+            f"SpikeInterface analyzer: {label} ({completed}/{total})",
+        )
 
     def _message(self, zh: str, en: str) -> str:
         return en if self.language == "en_US" else zh
@@ -3529,7 +3436,7 @@ class PipelineWorker(QThread):
                     self.state,
                     self.sorter_name,
                     self.state.root / "results" / self.sorter_name,
-                    self.progress.emit,
+                    self._backend_progress,
                     settings=self.sorter_settings,
                 )
                 self._emit(
@@ -3554,9 +3461,20 @@ class PipelineWorker(QThread):
                     )
                 )
         elif key == "unit_qc":
+            metrics = compute_unit_metrics(
+                self.state, progress=self._unit_metric_progress
+            )
+            analyzer_report = None
+            if self.state.ready and self.state.sorted_spikes:
+                from .spikeinterface_postprocessing import run_sorting_analyzer
+                analyzer_report = run_sorting_analyzer(
+                    self.state,
+                    progress=self._backend_progress,
+                    progress_value=self._analyzer_progress,
+                )
             self._emit(
                 key,
-                compute_unit_metrics(self.state),
+                {"metrics": metrics, "spikeinterface_analyzer": analyzer_report},
                 self._message("Unit 质控完成", "Unit QC completed"),
             )
         elif key == "sync":
@@ -3590,6 +3508,13 @@ class PipelineWorker(QThread):
                     figure.savefig(destination, dpi=240 if suffix == "png" else None,
                                    bbox_inches="tight")
                     exported.append(str(destination.relative_to(self.state.root)))
+                self._stage_progress(
+                    0.5 if view == "animals" else 1.0,
+                    self._message(
+                        f"行为谱已生成：{name}",
+                        f"Behavior spectrum generated: {name}",
+                    ),
+                )
             self.state.metadata["behavior_analysis"] = {
                 "status": "completed",
                 "event_count": len(self.state.events),
@@ -3637,7 +3562,7 @@ class PipelineWorker(QThread):
                     "complete_output"
                 ]
             elif selection.startswith("event:"):
-                if self.tool_arguments.get("event_codes"):
+                if self.tool_arguments.get("event_codes") or self.tool_arguments.get("conditions"):
                     value = {
                         "event_aligned": event_aligned_analysis(
                             self.state,
@@ -3661,7 +3586,9 @@ class PipelineWorker(QThread):
                             event_codes=[
                                 int(value)
                                 for value in self.tool_arguments["event_codes"]
-                            ],
+                            ] if self.tool_arguments.get("event_codes") else None,
+                            conditions=[str(value) for value in self.tool_arguments.get("conditions", [])]
+                            if self.tool_arguments.get("conditions") else None,
                             baseline_window=(
                                 float(
                                     self.tool_arguments.get(
@@ -3780,8 +3707,14 @@ class PipelineWorker(QThread):
     def run(self) -> None:
         key = self.keys[0] if self.keys else "import"
         try:
-            for key in self.keys:
+            total = max(len(self.keys), 1)
+            for stage_index, key in enumerate(self.keys):
+                self._checkpoint()
+                self._stage_index = stage_index
+                self._stage_total = total
+                self._stage_key = key
                 context = self._audit_context(key)
+                self._stage_progress(0.0)
                 self.progress.emit(
                     self._message(
                         f"正在运行 {key}｜工具：{context['tool']}｜"
@@ -3792,8 +3725,13 @@ class PipelineWorker(QThread):
                 )
                 with audited_stage(self.state, key, **context):
                     self._execute_stage(key)
+                self._checkpoint()
                 save_project(self.state)
+                self._stage_progress(1.0)
             self.succeeded.emit()
+        except PipelineCancelled as exc:
+            save_project(self.state)
+            self.cancelled.emit(str(exc))
         except Exception as exc:  # noqa: BLE001 - worker forwards full tool failure
             save_project(self.state)
             self.failed.emit(key, f"{exc}\n\n{traceback.format_exc()}")
@@ -3822,6 +3760,7 @@ class NeuroFlowWindow(QMainWindow):
         self.preview: dict | None = None
         self.matches: list[dict] = []
         self.worker: PipelineWorker | None = None
+        self._close_after_worker_cancel = False
         self.study_worker: QThread | None = None
         self.active_run_keys: list[str] = []
         self.active_run_started: datetime | None = None
@@ -4351,8 +4290,7 @@ class NeuroFlowWindow(QMainWindow):
         )
         cap_layout.addWidget(self.input_table)
         self.entry_hint = QLabel(
-            "操作：双击公开数据行会打开两套固定验证项目；双击模拟行会打开模拟资料库；"
-            "其他行进入对应的数据导入器。"
+            "操作：双击模拟行会打开本机教学模拟资料库；其他行进入对应的本地数据导入器。"
         )
         self.entry_hint.setWordWrap(True)
         self.entry_hint.setObjectName("Muted")
@@ -4460,7 +4398,6 @@ class NeuroFlowWindow(QMainWindow):
         self.workspace_language_combo.setMaximumWidth(120)
         right_layout.addWidget(self.workspace_language_combo)
         self.home_tutorial_button = QPushButton("教程中心")
-        self.home_tutorial_button.setObjectName("Quiet")
         self.home_tutorial_button.clicked.connect(
             lambda: self._open_tutorial_center("import")
         )
@@ -4485,7 +4422,7 @@ class NeuroFlowWindow(QMainWindow):
         self.docs_button.setParent(header)
         self.docs_button.setVisible(False)
         self.run_button = QPushButton("运行完整流程")
-        self.run_button.setObjectName("Quiet")
+        self.run_button.setObjectName("Primary")
         self.run_button.setProperty("neuroflow_help_key", "global.run_all")
         self.run_button.clicked.connect(self._run_full_pipeline)
         self.run_button.setEnabled(False)
@@ -4597,6 +4534,10 @@ class NeuroFlowWindow(QMainWindow):
         self.option_combo.setProperty("neuroflow_help_key", "page.option")
         self.option_combo.currentIndexChanged.connect(self._on_option_changed)
         title_row.addWidget(self.option_combo)
+        self.event_tuning_button = QPushButton("选择行为事件 / Tuning")
+        self.event_tuning_button.clicked.connect(self._select_event_tuning)
+        self.event_tuning_button.setVisible(False)
+        title_row.addWidget(self.event_tuning_button)
         layout.addLayout(title_row)
 
         self.project_data_panel = QFrame()
@@ -4863,6 +4804,15 @@ class NeuroFlowWindow(QMainWindow):
         self.run_step_button.clicked.connect(self._run_current_step)
         self.run_step_button.setEnabled(False)
         layout.addWidget(self.run_step_button)
+        self.pause_run_button = QPushButton("暂停")
+        self.pause_run_button.setCheckable(True)
+        self.pause_run_button.setVisible(False)
+        self.pause_run_button.clicked.connect(self._toggle_run_pause)
+        self.cancel_run_button = QPushButton("取消")
+        self.cancel_run_button.setVisible(False)
+        self.cancel_run_button.clicked.connect(self._cancel_active_run)
+        layout.addWidget(self.pause_run_button)
+        layout.addWidget(self.cancel_run_button)
         return footer
 
     def _assistant(self) -> QWidget:
@@ -5316,14 +5266,12 @@ class NeuroFlowWindow(QMainWindow):
         self._resize_input_route_table()
         self.entry_hint.setText(
             (
-                "操作：双击公开数据行会打开两套固定验证项目；双击模拟行会打开"
-                "模拟资料库；其他行进入对应的数据导入器。"
+                "操作：双击模拟行会打开本机教学模拟资料库；其他行进入对应的本地数据导入器。"
             )
             if language == "zh_CN"
             else (
-                "Double-click Public validation to open the two fixed verified projects; "
-                "double-click Simulation for the teaching library; other rows open "
-                "their matching data importer."
+                "Double-click Simulation for the local teaching library; other rows open "
+                "their matching local-data importer."
             )
         )
         self.flow_text.setText(
@@ -5794,13 +5742,11 @@ class NeuroFlowWindow(QMainWindow):
     def _activate_entry_route(self, source_key: str) -> None:
         if source_key == "simulated":
             self._open_sample()
-        elif source_key == "ibl_alf":
-            self._open_public_examples()
         else:
             self._show_import(
                 source_key,
                 own_data_only=source_key
-                in {"binary", "device", "kilosort", "nex5"},
+                in {"binary", "device", "ibl_alf", "kilosort", "nex5"},
             )
 
     def _create_blank_project(self) -> None:
@@ -5869,62 +5815,7 @@ class NeuroFlowWindow(QMainWindow):
                     str(exc),
                 )
             return
-        self._open_public_example_key(dialog.example_key)
-
-    def _open_public_example_key(self, key: str) -> None:
-        status = public_example_status(self.workspace, key)
-        if not status["downloaded"]:
-            answer = QMessageBox.question(
-                self,
-                "Download public example"
-                if self.language == "en_US"
-                else "下载公开验证数据",
-                (
-                    "The fixed source is not in the local NeuroEphys AI library. "
-                    "Download the official version now and open it after validation?"
-                    if self.language == "en_US"
-                    else (
-                        "本机 NeuroEphys AI 资料库中还没有这套固定数据。是否立即从官方"
-                        "来源下载，完成文件检查后打开？"
-                    )
-                ),
-            )
-            if answer != QMessageBox.Yes:
-                return
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-        try:
-            if not status["downloaded"]:
-                download_public_example(
-                    self.workspace,
-                    key,
-                    progress=lambda text: self.status_label.setText(text),
-                )
-            self.status_label.setText(
-                "Preparing verified project…"
-                if self.language == "en_US"
-                else "正在建立已验证公开项目…"
-            )
-            QApplication.processEvents()
-            state = open_or_create_public_example(self.workspace, key)
-            state.metadata["language"] = self.language
-            save_project(state)
-            self._load_state(state)
-        except Exception as exc:  # noqa: BLE001 - download/import errors are user-facing
-            QMessageBox.warning(
-                self,
-                "Public project unavailable"
-                if self.language == "en_US"
-                else "公开验证项目不可用",
-                str(exc),
-            )
-        finally:
-            QApplication.restoreOverrideCursor()
-
-    def _open_public_examples(self) -> None:
-        dialog = PublicExampleDialog(self.workspace, self, self.language)
-        if dialog.exec() != QDialog.Accepted:
-            return
-        self._open_public_example_key(dialog.example_key)
+        return
 
     def _open_current_project_folder(self) -> None:
         if not self.state:
@@ -5947,7 +5838,10 @@ class NeuroFlowWindow(QMainWindow):
         if not hasattr(self, "publication_status"):
             return
         report = (self.state.root / "exports" / "publication" / "index.html") if self.state else None
-        available = bool(report and report.is_file())
+        stale = bool(self.state and self.state.metadata.get(
+            "neural_activity_complete_package_stale", False
+        ))
+        available = bool(report and report.is_file() and not stale)
         self.publication_open_button.setEnabled(available)
         self.publication_folder_button.setEnabled(available)
         self.publication_status.setText(
@@ -5956,8 +5850,13 @@ class NeuroFlowWindow(QMainWindow):
               if self.language == "en_US" else
               "英文组合主图／附图见下方；选中面板可调整顺序、编辑图注。"
               "SVG／PDF／PNG 与作图数据均保存在项目 exports 内。") if available else
-             ("No publication bundle yet. Run this step after the analyses you need."
-              if self.language == "en_US" else "尚未生成论文图文包。请先完成需要的分析，再运行本步骤。"))
+             (("Existing publication output is outdated after the Unit cohort changed. "
+               "Rerun neural analyses and export."
+               if self.language == "en_US" else
+               "人工筛选集变化后，原论文图文包已过期。请重跑神经分析和导出。")
+              if stale else
+              ("No publication bundle yet. Run this step after the analyses you need."
+               if self.language == "en_US" else "尚未生成论文图文包。请先完成需要的分析，再运行本步骤。")))
         )
         if getattr(self, "current_step", None) == "export":
             self.publication_gallery.load(self.state.root / "exports" if self.state else None)
@@ -6325,18 +6224,20 @@ class NeuroFlowWindow(QMainWindow):
             event.ignore()
             return
         if self.worker and self.worker.isRunning():
-            QMessageBox.warning(
+            choice = QMessageBox.question(
                 self,
-                "Analysis is running"
-                if self.language == "en_US"
-                else "分析仍在运行",
+                "Analysis is running" if self.language == "en_US" else "分析仍在运行",
                 (
-                    "Wait for the current analysis to finish before closing NeuroEphys AI. "
-                    "Completed results will then be saved to the project."
+                    "Cancel at the next safe checkpoint, save completed stages, and close?"
                     if self.language == "en_US"
-                    else "请等待当前分析完成后再关闭 NeuroEphys AI；完成结果会自动保存到项目。"
+                    else "是否在下一个安全检查点取消，保存已完成节点后关闭？"
                 ),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
             )
+            if choice == QMessageBox.Yes:
+                self._close_after_worker_cancel = True
+                self.worker.request_cancel()
             event.ignore()
             return
         if self.study_worker and self.study_worker.isRunning():
@@ -6720,7 +6621,13 @@ class NeuroFlowWindow(QMainWindow):
                 ),
                 "complete",
             )
-            for unit_id in sorted(self.state.sorted_spikes):
+            try:
+                display_unit_ids = sorted(analysis_spikes(self.state))
+            except RuntimeError:
+                display_unit_ids = sorted(self.state.metadata.get(
+                    "curated_unit_selection", {}
+                ).get("unit_ids", []))
+            for unit_id in display_unit_ids:
                 self.option_combo.addItem(
                     (
                         f"事件 · Unit {unit_id}"
@@ -6812,6 +6719,7 @@ class NeuroFlowWindow(QMainWindow):
         self.behavior_animal.setVisible(show_animal)
         self.behavior_animal_label.setVisible(show_animal)
         self.option_combo.setVisible(key != "sorting" and self.option_combo.count() > 0)
+        self.event_tuning_button.setVisible(key == "analysis")
         self.run_step_button.setText(
             (
                 "Run selected analysis"
@@ -6875,7 +6783,17 @@ class NeuroFlowWindow(QMainWindow):
         self._refresh_table()
 
     def _unit_curation_saved(self) -> None:
-        self._mark_project_dirty()
+        if self.state:
+            selection = self.state.metadata.get("curated_unit_selection", {})
+            if selection.get("enabled"):
+                for key in ("analysis", "statistics", "decoding", "export"):
+                    self._set_step_status(key, "pending")
+                self.state.metadata["curation_downstream_stale"] = True
+            if self.state.sorting_results:
+                save_project(self.state)
+                self._set_project_clean()
+            else:
+                self._mark_project_dirty()
         self._refresh_unit_curation_summary()
         self._refresh_table()
 
@@ -6892,18 +6810,43 @@ class NeuroFlowWindow(QMainWindow):
             return
         self.unit_curation_button.setEnabled(bool(self.state.unit_metrics))
         summary = curation_summary(self.state)
+        selection = self.state.metadata.get("curated_unit_selection", {})
+        active_selection = (
+            selection.get("enabled")
+            and selection.get("sorter") == self.state.active_sorter_key
+        )
+        if active_selection:
+            count = len(selection.get("unit_ids", []))
+            note = (
+                f" Analysis cohort: {count} reviewed single units. "
+                "Rerun downstream results."
+                if self.language == "en_US" else
+                f" 下游分析集已纳入 {count} 个已复核候选单神经元；请重跑下游结果。"
+            )
+            if selection.get("needs_reapply"):
+                note += (
+                    " Labels changed: reapply cohort first."
+                    if self.language == "en_US" else " 标签已变化：请先重新应用筛选集。"
+                )
+        else:
+            note = (
+                " No curated cohort applied; downstream uses all sorter candidates."
+                if self.language == "en_US" else
+                " 尚未应用人工筛选集；下游仍使用全部 sorter 候选。"
+            )
         self.unit_curation_summary.setText(
             (
                 f"Manual review: {summary['reviewed_unit_count']} / "
                 f"{summary['candidate_unit_count']} candidate clusters. "
                 "Automatic metrics screen candidates; the final label requires "
                 "waveform, refractory-period, amplitude, stability and "
-                "channel/spatial review."
+                "channel/spatial review." + note
                 if self.language == "en_US"
                 else (
                     f"人工复核：{summary['reviewed_unit_count']} / "
                     f"{summary['candidate_unit_count']} 个候选 cluster。自动指标用于初筛；"
                     "最终标签需要结合波形、不应期、振幅、稳定性和通道/空间分布判断。"
+                    + note
                 )
             )
         )
@@ -7096,6 +7039,17 @@ class NeuroFlowWindow(QMainWindow):
         if not self.state:
             return
         key = self.current_step
+        selection = self.state.metadata.get("curated_unit_selection", {})
+        if key in {"analysis", "statistics", "decoding"} and selection.get("needs_reapply"):
+            self._replace_figure(pending_step_figure(
+                self.state,
+                "Curated Unit selection requires review",
+                "A manual Unit label changed after this cohort was applied. Reapply the "
+                "reviewed single-unit selection in Unit QC, then rerun downstream analyses.",
+                [f"Frozen selection: {selection.get('unit_ids', [])}"],
+                "Updated, cohort-tagged results",
+            ))
+            return
         trace_values = self.trace_controls.values()
         option = str(self.option_combo.currentData() or "")
         if key == "import":
@@ -7434,7 +7388,38 @@ class NeuroFlowWindow(QMainWindow):
     def _run_full_pipeline(self) -> None:
         self._start_worker([step.key for step in STEPS])
 
+    def _select_event_tuning(self) -> None:
+        if not self.state or not self.state.events or not self.state.sorted_spikes:
+            QMessageBox.information(
+                self,
+                "Missing data" if self.language == "en_US" else "缺少数据",
+                "Import events and sorting results first."
+                if self.language == "en_US" else "请先导入行为事件和 sorting 结果。",
+            )
+            return
+        try:
+            cohort = analysis_spikes(self.state)
+        except RuntimeError as exc:
+            QMessageBox.warning(self, "Unit selection", str(exc))
+            return
+        dialog = EventTuningDialog(self.state, self.language, self)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        current_option = str(self.option_combo.currentData() or "")
+        current_id = int(current_option.partition(":")[2]) if current_option.startswith("event:") else None
+        unit_id = current_id if current_id in cohort else sorted(cohort)[0]
+        option_index = self.option_combo.findData(f"event:{unit_id}")
+        if option_index >= 0:
+            self.option_combo.setCurrentIndex(option_index)
+        self._start_worker(
+            ["analysis"],
+            tool_arguments={"conditions": dialog.selected_conditions()},
+        )
+
     def _run_current_step(self) -> None:
+        if self.current_step == "analysis" and str(self.option_combo.currentData() or "").startswith("event:"):
+            self._select_event_tuning()
+            return
         tool_arguments = None
         if (
             self.state
@@ -7477,6 +7462,15 @@ class NeuroFlowWindow(QMainWindow):
         if not self.state:
             QMessageBox.information(self, "没有项目", "请先从首页导入或生成数据。")
             return
+        if any(key in {"analysis", "statistics", "decoding", "export"} for key in keys):
+            try:
+                analysis_spikes(self.state)
+            except RuntimeError as exc:
+                QMessageBox.warning(
+                    self, "Unit selection" if self.language == "en_US" else "Unit 筛选集",
+                    str(exc),
+                )
+                return
         if self.state.source_type in {"unknown", "unconfigured"}:
             QMessageBox.information(
                 self,
@@ -7571,11 +7565,17 @@ class NeuroFlowWindow(QMainWindow):
         if answer != QMessageBox.Yes:
             return
         self.active_run_keys = list(keys)
-        self.progress_bar.setRange(0, len(keys))
+        self.progress_bar.setRange(0, 1000)
         self.progress_bar.setValue(0)
         self.active_run_started = datetime.now(timezone.utc).astimezone()
         self.run_button.setEnabled(False)
         self.run_step_button.setEnabled(False)
+        self.pause_run_button.setChecked(False)
+        self.pause_run_button.setText(
+            "Pause" if self.language == "en_US" else "暂停"
+        )
+        self.pause_run_button.setVisible(True)
+        self.cancel_run_button.setVisible(True)
         self.progress_bar.setFormat(
             "Running… %v/%m" if self.language == "en_US" else "正在运行… %v/%m"
         )
@@ -7589,10 +7589,13 @@ class NeuroFlowWindow(QMainWindow):
             tool_arguments,
         )
         self.worker.progress.connect(self._on_progress)
+        self.worker.progress_value.connect(self._on_progress_value)
         self.worker.step_done.connect(self._on_step_done)
         self.worker.failed.connect(self._on_failed)
+        self.worker.cancelled.connect(self._on_cancelled)
         self.worker.succeeded.connect(self._on_succeeded)
         self.run_elapsed_timer.start()
+        self._set_run_interaction_locked(True)
         self.worker.start()
 
     def _update_run_elapsed(self) -> None:
@@ -7604,9 +7607,62 @@ class NeuroFlowWindow(QMainWindow):
             ).total_seconds()
         )
         self.progress_bar.setFormat(
-            f"Running {elapsed} s · %v/%m"
+            f"%p% · Running {elapsed} s"
             if self.language == "en_US"
-            else f"正在运行 {elapsed} 秒 · %v/%m"
+            else f"%p% · 已运行 {elapsed} 秒"
+        )
+
+    def _set_run_interaction_locked(self, locked: bool) -> None:
+        """Prevent expensive view changes while a worker mutates project state."""
+        for widget in (
+            self.workflow_sidebar,
+            self.option_combo,
+            self.trace_controls,
+            self.sorting_workbench,
+            self.unit_curation_panel,
+            self.publication_panel,
+        ):
+            widget.setEnabled(not locked)
+
+    def _on_progress_value(self, completed: int, total: int, key: str) -> None:
+        progress_maximum = max(self.progress_bar.maximum(), 1)
+        self.progress_bar.setValue(
+            round(progress_maximum * completed / max(total, 1))
+        )
+        self.run_context_label.setText(
+            (f"Current: {step_text(key, self.language)[0]}"
+             if self.language == "en_US"
+             else f"当前：{step_text(key, self.language)[0]}")
+        )
+
+    def _toggle_run_pause(self, paused: bool) -> None:
+        if not self.worker or not self.worker.isRunning():
+            return
+        self.worker.request_pause(paused)
+        self.pause_run_button.setText(
+            ("Resume" if self.language == "en_US" else "继续")
+            if paused else ("Pause" if self.language == "en_US" else "暂停")
+        )
+        self.status_label.setText(
+            (
+                "Pause requested; the worker will stop at the next safe checkpoint."
+                if self.language == "en_US"
+                else "已请求暂停；将在下一个安全检查点停下。"
+            ) if paused else (
+                "Analysis resumed" if self.language == "en_US" else "分析已继续"
+            )
+        )
+
+    def _cancel_active_run(self) -> None:
+        if not self.worker or not self.worker.isRunning():
+            return
+        self.worker.request_cancel()
+        self.cancel_run_button.setEnabled(False)
+        self.pause_run_button.setEnabled(False)
+        self.status_label.setText(
+            "Cancellation requested; preserving completed outputs…"
+            if self.language == "en_US"
+            else "已请求取消；正在保留已完成结果…"
         )
 
     def _on_progress(self, message: str) -> None:
@@ -7619,7 +7675,13 @@ class NeuroFlowWindow(QMainWindow):
         skipped = isinstance(value, dict) and value.get("skipped")
         self._set_step_status(key, "skipped" if skipped else "completed")
         if key in self.active_run_keys:
-            self.progress_bar.setValue(self.active_run_keys.index(key) + 1)
+            progress_maximum = max(self.progress_bar.maximum(), 1)
+            self.progress_bar.setValue(
+                round(
+                    progress_maximum * (self.active_run_keys.index(key) + 1)
+                    / max(len(self.active_run_keys), 1)
+                )
+            )
         if key == "preprocess" and not skipped:
             self.preview = value
         elif key == "sorting":
@@ -7636,17 +7698,32 @@ class NeuroFlowWindow(QMainWindow):
                     self.state.active_sorter_key,
                     self.state.sorting_comparison,
                 )
+        elif key == "analysis" and self.state and not skipped:
+            self.state.statistics = {}
+            self.state.decoding = {}
+            self.state.regression = {}
+            for downstream in ("statistics", "decoding", "export"):
+                self._set_step_status(downstream, "pending")
+            self.state.metadata["curation_downstream_stale"] = False
+        elif key == "export" and self.state and not skipped:
+            self.state.metadata["neural_activity_complete_package_stale"] = False
         if self.state:
             self.state.metadata["last_open_step"] = key
             save_project(self.state)
             self._set_project_clean()
-        self._select_step(key)
+        if len(self.active_run_keys) == 1 or key == self.active_run_keys[-1]:
+            self._select_step(key)
 
     def _on_failed(self, key: str, details: str) -> None:
         self.run_elapsed_timer.stop()
         self._set_step_status(key, "failed")
         self.run_button.setEnabled(True)
         self.run_step_button.setEnabled(True)
+        self.pause_run_button.setVisible(False)
+        self.pause_run_button.setEnabled(True)
+        self.cancel_run_button.setVisible(False)
+        self.cancel_run_button.setEnabled(True)
+        self._set_run_interaction_locked(False)
         self.progress_bar.setFormat(
             "Failed" if self.language == "en_US" else "运行失败"
         )
@@ -7709,10 +7786,42 @@ class NeuroFlowWindow(QMainWindow):
         self.active_run_keys = []
         self.active_run_started = None
 
+    def _on_cancelled(self, reason: str) -> None:
+        self.run_elapsed_timer.stop()
+        self.run_button.setEnabled(True)
+        self.run_step_button.setEnabled(True)
+        self.pause_run_button.setVisible(False)
+        self.pause_run_button.setEnabled(True)
+        self.cancel_run_button.setVisible(False)
+        self.cancel_run_button.setEnabled(True)
+        self._set_run_interaction_locked(False)
+        self.progress_bar.setFormat(
+            "Cancelled safely" if self.language == "en_US" else "已安全取消"
+        )
+        self.status_label.setText(
+            "Run cancelled; completed stages and the project state were saved"
+            if self.language == "en_US"
+            else "运行已取消；已完成节点和项目状态已保存"
+        )
+        if self.state:
+            self.state.log(f"Run cancelled safely: {reason}")
+            save_project(self.state)
+        self.active_run_keys = []
+        self.active_run_started = None
+        self._refresh_warnings()
+        if self._close_after_worker_cancel:
+            self._close_after_worker_cancel = False
+            QTimer.singleShot(0, self.close)
+
     def _on_succeeded(self) -> None:
         self.run_elapsed_timer.stop()
         self.run_button.setEnabled(True)
         self.run_step_button.setEnabled(True)
+        self.pause_run_button.setVisible(False)
+        self.pause_run_button.setEnabled(True)
+        self.cancel_run_button.setVisible(False)
+        self.cancel_run_button.setEnabled(True)
+        self._set_run_interaction_locked(False)
         self.progress_bar.setFormat(
             "Completed" if self.language == "en_US" else "运行完成"
         )
@@ -7969,18 +8078,31 @@ class NeuroFlowWindow(QMainWindow):
                 if hasattr(self, "sorting_workbench")
                 else None
             ),
+            "curated_unit_selection": dict(
+                self.state.metadata.get("curated_unit_selection", {})
+            ),
+            "event_filter": dict(self.state.analysis.get("event_filter", {})),
+            "event_condition_labels": list(
+                self.state.analysis.get("condition_labels", [])
+            ),
         }
+        cohort = self.state.metadata.get("curated_unit_selection", {})
+        displayed_units = (
+            len(cohort.get("unit_ids", []))
+            if cohort.get("enabled") and cohort.get("sorter") == self.state.active_sorter_key
+            else len(self.state.sorted_spikes)
+        )
         self.ai_context_label.setText(
             (
                 f"Context: {self.state.name}\n"
                 f"Stage: {step_text(self.current_step, self.language)[0]}\n"
-                f"Units: {len(self.state.sorted_spikes)} · "
+                f"Analysis Units: {displayed_units} · "
                 f"Events: {len(self.state.events)}"
                 if english
                 else (
                     f"上下文：{self.state.name}\n"
                     f"阶段：{step_text(self.current_step, self.language)[0]}\n"
-                    f"Unit：{len(self.state.sorted_spikes)} · "
+                    f"分析 Unit：{displayed_units} · "
                     f"事件：{len(self.state.events)}"
                 )
             )

@@ -7,9 +7,12 @@ import numpy as np
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
+from PySide6.QtTest import QSignalSpy
+from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
+    QDialog,
     QFileDialog,
     QMessageBox,
     QScrollArea,
@@ -27,6 +30,8 @@ from neuroflow.sorting_results import (
 )
 from neuroflow.sorting_workbench import SortingWorkbench
 from neuroflow.study_ui import MultiSessionStudyDialog
+from neuroflow.trace_controls import TraceControls
+from neuroflow.publication_ui import PublicationGallery
 from neuroflow.ui import (
     ConnectivitySettingsDialog,
     ImportDialog,
@@ -35,6 +40,96 @@ from neuroflow.ui import (
     PopulationSettingsDialog,
 )
 from neuroflow.unit_curation_ui import UnitCurationDialog
+from neuroflow.event_tuning_ui import EventTuningDialog
+
+
+def test_trace_controls_emit_for_every_user_adjustment():
+    app = QApplication.instance() or QApplication([])
+    controls = TraceControls("en_US")
+    controls.set_recording(20.0, 32)
+    spy = QSignalSpy(controls.changed)
+    controls.start.setValue(3.5)
+    controls.window.setValue(120)
+    controls.first_channel.setValue(4)
+    controls.channel_count.setValue(8)
+    controls.gain.setValue(17)
+    app.processEvents()
+    assert spy.count() >= 5
+    assert controls.values() == {
+        "start_seconds": 3.5,
+        "window_ms": 120,
+        "first_channel": 4,
+        "visible_channels": 8,
+        "gain": 1.7,
+    }
+
+
+def test_publication_gallery_is_continuous_vector_document(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    publication = tmp_path / "publication"
+    figures = publication / "figures"
+    figures.mkdir(parents=True)
+    for index in (1, 2):
+        (figures / f"figure_{index:02d}.svg").write_text(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='500pt' height='300pt' "
+            "viewBox='0 0 500 300'><rect width='500' height='300' fill='white'/>"
+            f"<circle cx='{120 * index}' cy='150' r='70' fill='#6a5a88'/></svg>",
+            encoding="utf-8",
+        )
+    groups = []
+    for index, role in ((1, "main"), (2, "supplementary")):
+        groups.append({
+            "figure": "Figure 1" if role == "main" else "Extended Data Figure 1",
+            "role": role,
+            "story_role": "Evidence sequence",
+            "composite_svg": f"publication/figures/figure_{index:02d}.svg",
+            "panels": [{
+                "panel": "a", "title": "Vector evidence",
+                "caption_draft": "Author-editable caption.",
+                "source_svg": "figures/source.svg", "source_axis": 1,
+                "source_panel_svg": "panels/source/panel_01.svg",
+                "plotted_data": "figure_data/source.json",
+            }],
+        })
+    (publication / "storyboard.json").write_text(
+        json.dumps({"figures": groups}), encoding="utf-8"
+    )
+    gallery = PublicationGallery()
+    gallery.resize(900, 500)
+    gallery.show()
+    assert gallery.load(tmp_path)
+    app.processEvents()
+    assert len(gallery._cards) == 2
+    assert len(gallery.findChildren(QSvgWidget)) == 2
+    assert gallery.scroll.verticalScrollBar().maximum() > 0
+    gallery.close()
+
+
+def test_event_tuning_dialog_and_worker_use_selected_behavior(tmp_path: Path):
+    app = QApplication.instance() or QApplication([])
+    state = ProjectState(root=tmp_path / "event_project", duration_seconds=8.0)
+    state.sorted_spikes = {1: np.array([1.1, 2.1, 3.1, 4.1])}
+    state.events = [
+        {"time_seconds": time, "condition": label, "analysis_role": "task_event"}
+        for time, label in ((1, "groom"), (2, "walk"), (3, "rest"), (4, "groom"))
+    ]
+    dialog = EventTuningDialog(state, "en_US")
+    labels = [dialog.event_list.item(index).data(Qt.UserRole)
+              for index in range(dialog.event_list.count())]
+    assert set(labels) == {"groom", "walk", "rest"}
+    dialog.event_list.item(labels.index("rest")).setSelected(True)
+    assert dialog.selected_conditions() == ["rest"]
+    dialog._accept_valid()
+    assert dialog.result() == QDialog.Accepted
+    worker = PipelineWorker(
+        state, ["analysis"], "test_sorter", {}, "Logistic regression",
+        "event:1", {"conditions": ["rest"]},
+    )
+    worker._execute_stage("analysis")
+    assert state.analysis["selected_event_count"] == 1
+    assert state.analysis["event_filter"]["requested_conditions"] == ["rest"]
+    dialog.close()
+    app.processEvents()
 
 
 def test_workspace_controls_share_menu_row_and_chat_prioritizes_messages(tmp_path: Path, monkeypatch):
@@ -762,6 +857,12 @@ def test_manual_unit_curation_dialog_saves_review_evidence(tmp_path: Path):
     }
 
     dialog = UnitCurationDialog(state, "en_US")
+    assert dialog.diagnostic_view.currentData() == "cluster"
+    assert "Individual spikes" in dialog.diagnostic_view.currentText()
+    assert dialog.contact_combo.currentData() == 1
+    assert dialog.pc_x_combo.currentData() == 1
+    dialog.pc_y_combo.setCurrentIndex(2)
+    assert dialog.pc_y_combo.currentData() == 3
     dialog.label_combo.setCurrentIndex(
         dialog.label_combo.findData("candidate_single_unit")
     )

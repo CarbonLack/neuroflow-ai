@@ -1,8 +1,8 @@
-# NeuroEphys AI v1.3.5
+# NeuroEphys AI v1.4.0
 
 AI 项目对话：本版可通过已配置的官方 DeepSeek Harness 查询当前数据、指定 Unit、事件、结果与项目历史对话；分析操作仍需确认。机构账号使用 Harness SDK，不复制其密钥到 App。Harness 须独立安装配置，详见 [AI 使用手册](AI_USER_GUIDE_ZH.md) 和 [实现及验收边界](docs/AI_HARNESS_IMPLEMENTATION_1.2.5_ZH.md)。
 
-v1.3.5 修正机构兼容接口图像上传许可、扩大聊天阅读区并将顶部工具收为单行；人工 Unit 复核仅在有经核实的几何时联显多接点，增加同接点波形特征图，明确 sorter 时间戳零点；第 11 步直接打开英文图文报告。真实 Subject 102 项目验证了完整导入、同步、排序、分析与导出，同时显式限定一键群体分析和连接性筛查的范围。真实 Harness 是否能读图仍取决于本机可信启动器和机构模型服务，协议测试不等于服务验收。
+v1.4.0 增加全 spike 波形/PCA 复核、套索排除与非破坏性拆分、连续且可追溯的 Unit 编号、三类更真实的本地教学数据、SpikeInterface analyzer 后处理，以及可在 App 内连续滚动、选择、重排并导出矢量主图／附图的论文工作区。运行任务支持测量进度、安全暂停／取消，并修复了通道、时间窗和增益控件未触发的问题。
 
 <p align="center">
   <img src="assets/brand/neuroephys-ai-mark.svg" width="112" alt="NeuroEphys AI icon">
@@ -42,7 +42,7 @@ NeuroEphys AI 是本地优先、模块化、可解释的在体细胞外多通道
 
 ## 开始使用
 
-v1.3.5 同时提供标准安装版、标准便携版和可选组件的 GPU/CUDA/Kilosort Full
+v1.4.0 同时提供标准安装版、标准便携版和可选组件的 GPU/CUDA/Kilosort Full
 离线安装版；科研复现与比赛演示推荐 Full，普通 CPU 工作站可选标准版。v1.2.1 增加按实际图名选择的子图格式编辑、
 分页并排参数、项目统一样式与期刊参考预设。
 字体、轴线、网格及配色的默认参数与依据见 [科研作图标准](docs/FIGURE_STYLE_STANDARD_ZH.md)。
@@ -137,18 +137,14 @@ NeuroEphys AI 不复制其他软件或文章的界面、文案、截图、图表
   通过 SpikeInterface extractor 只读链接；Open Ephys 同时含 AP/LFP 时会自动选择
   唯一 AP 流，只有 sorter 需要时才建立项目缓存；
 - IBL ALF 的 trials、spikes 和 clusters；
-- 具有 Units、行为事件、位置、睡眠状态或 ripple 区间的 NWB，例如
-  DANDI 上公开的 Buzsáki Lab 会话；
+- 具有 Units、行为事件、位置、睡眠状态或 ripple 区间的本地 NWB；
 - 已有 Kilosort/Phy sorting 结果。
 - NeuroExplorer/Offline Sorter `.nex5` 候选 Unit、spike 时间和波形摘要；可附加到
   含原始电压的项目，并与 Kilosort 等结果按统一秒时间接口比较。
 
-公开验证入口锁定两套实际跑通的数据，用户可以直接建立或打开项目缓存：
-
-- IBL Brain-Wide Map `EID 4ecb5d24-f5cc-402c-be28-9d0f7cb14b3a`；
-- Buzsáki Lab DANDI `000552/0.230630.2304` 的固定 NWB asset。
-
-数据已下载时，在首页“示例项目”中选择对应公开记录即可打开项目缓存。
+示例库只包含在本机生成、拥有已知 ground truth 的教学数据，
+不内置、不自动下载公开发表记录。研究者仍可导入自行依法获取的
+本地 ALF、NWB 或其他受支持格式，并在项目 provenance 中保留来源信息。
 
 原始文件保持只读。只有明确选择复制时才复制通用二进制；记录系统适配器仅在
 sorter 需要时生成项目级标准缓存。缺少原始电压时，原始质控与 sorting 会明确显示为跳过，不会伪造。
@@ -189,7 +185,7 @@ chance-corrected agreement 和受限 lag 描述两个输出的时间戳一致度
 
 ## 启动
 
-普通用户安装 ``NeuroEphysAI-Setup-1.3.5.exe`` 后，双击桌面上的 **NeuroEphys AI**
+普通用户安装 ``NeuroEphysAI-Setup-1.4.0.exe`` 后，双击桌面上的 **NeuroEphys AI**
 快捷方式即可启动。便携版需完整解压 ZIP，然后双击
 ``NeuroEphysAI\NeuroEphysAI.exe``；不要只复制单独的 EXE。两种版本都不要求用户安装
 Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
@@ -197,7 +193,7 @@ Python 或 Conda，项目与日志默认写入 ``Documents\NeuroEphysAI``。
 Python 用户可以安装构建出的 wheel：
 
 ```powershell
-python -m pip install neuroephys_ai-1.3.5-py3-none-any.whl
+python -m pip install neuroephys_ai-1.4.0-py3-none-any.whl
 neuroephys info
 ```
 
@@ -294,40 +290,16 @@ powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1
 
 首次使用和分发方式见 [README_FIRST.md](README_FIRST.md)。
 
-## 真实公开数据验证
+## 数据验证
 
-NeuroEphys AI 已用三条互补的真实公开数据入口完成集成验证：
+NeuroEphys AI 的发布验收使用三类已知 ground truth 模拟记录、授权的
+本地真实记录和自动化回归测试。公开发表的原始示例数据不再作为产品
+内置内容或下载入口。通用 ALF/NWB 读取器仍然保留，用于研究者自己的
+本地文件。
 
-- IBL Brain-Wide Map 的 ALF session：
-  `EID 4ecb5d24-f5cc-402c-be28-9d0f7cb14b3a`、`probe00`；
-- Buzsáki Lab / DANDI `000552` 的 NWB session：
-  `sub-e14-2m3_ses-e14-2m3-201121_behavior+ecephys.nwb`。
-- Trautmann et al. (2025) Fig. 7 所用的 LIP/SC 公开单 trial 数据：
-  Zenodo `7946011`；与作者 MATLAB 核的逐点一致性为 LIP `r=0.998685`、
-  SC `r=0.998148`。
-
-下载 IBL 处理后会话（不会下载巨大的原始 AP 文件）：
-
-```powershell
-python scripts\download_ibl_example.py --cache ibl_cache
-```
-
-下载固定的 Buzsáki/DANDI NWB 示例：
-
-```powershell
-python scripts\download_buzsaki_example.py
-```
-
-运行两套公开数据的可重复集成验证：
-
-```powershell
-python scripts\validate_public_datasets.py
-```
-
-完整数据 ID、实际导入数量、图、指标、运行限制和官方来源见
+完整的导入数量、图、指标、运行限制和方法边界见
 [`docs/site/zh/real-data-validation.html`](docs/site/zh/real-data-validation.html)。这些结果用于证明
-导入、统一数据结构、事件分析、统计和解码链路能够运行，不等于复现原论文结论，
-也不把 20 次置换的 smoke test 当作正式显著性证据。
+导入、统一数据结构、事件分析、统计和解码链路能够运行，不等于复现任何原论文结论。
 
 Trautmann 2025 的方法映射、公开数据溯源、定量一致性和不可访问数据边界见
 [`docs/TRAUTMANN2025_VALIDATION.md`](docs/TRAUTMANN2025_VALIDATION.md)。

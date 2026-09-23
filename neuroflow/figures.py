@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import re
+import colorsys
 from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
-from matplotlib import rcParams
+from matplotlib import colormaps, rcParams
 from matplotlib.figure import Figure
+from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from scipy import signal as scipy_signal
 
@@ -14,6 +16,7 @@ from .analysis import load_recording
 from .medpc import CONFIRMED_EVENT_DICTIONARY
 from .models import ProjectState
 from .publication_style import publication_figure
+from .unit_curation import curated_unit_entries
 
 INK = "#16242c"
 MUTED = "#657781"
@@ -23,6 +26,29 @@ GOLD = "#b47c25"
 BLUE = "#6a5a88"
 GRID = "#e1e8eb"
 PAPER = "#ffffff"
+
+_ACCESSIBLE_BASE = (
+    "#0072B2", "#D55E00", "#009E73", "#CC79A7",
+    "#E69F00", "#56B4E9", "#6A5A88", "#7A7A7A",
+)
+
+
+def categorical_colors(labels: list[str] | tuple[str, ...]) -> dict[str, str]:
+    """Stable, color-vision-aware palette that does not repeat after 8 labels."""
+    names = list(dict.fromkeys(str(label) for label in labels))
+    result: dict[str, str] = {}
+    for index, name in enumerate(names):
+        if index < len(_ACCESSIBLE_BASE):
+            result[name] = _ACCESSIBLE_BASE[index]
+            continue
+        # Golden-angle hues with alternating lightness avoid the hard palette
+        # restart that previously made behavior identities indistinguishable.
+        hue = ((index - len(_ACCESSIBLE_BASE)) * 0.61803398875 + 0.08) % 1.0
+        lightness = (0.43, 0.57, 0.36)[(index - len(_ACCESSIBLE_BASE)) % 3]
+        saturation = 0.58 if lightness > 0.4 else 0.66
+        red, green, blue = colorsys.hls_to_rgb(hue, lightness, saturation)
+        result[name] = f"#{round(red * 255):02x}{round(green * 255):02x}{round(blue * 255):02x}"
+    return result
 
 
 def _text(state: ProjectState, chinese: str, english: str) -> str:
@@ -651,9 +677,7 @@ def behavior_spectrum_figure(
     rows = animals if layout == "animals" else families
     fig, axes = _base_figure(1, 1, max(3.7, min(11.0, 2.6 + len(rows) * 0.44)))
     axis = axes[0, 0]
-    palette = ("#b8a0c6", "#a8d1b0", "#9abbd0", "#d6b48d", "#caa5a9",
-               "#b3a7d8", "#9ecbc7", "#d2c096")
-    colors = {name: palette[index % len(palette)] for index, name in enumerate(families)}
+    colors = categorical_colors(families)
     left = max(0.0, float(start_seconds))
     duration = max(float(state.duration_seconds or 0), max((row[0] for row in events), default=0))
     right = min(duration, left + float(window_seconds)) if window_seconds > 0 else duration
@@ -686,7 +710,8 @@ def behavior_spectrum_figure(
         if row not in row_index or end < left or start > right:
             continue
         axis.broken_barh([(max(start, left), min(end, right) - max(start, left))],
-                         (row_index[row] - 0.35, 0.7), facecolors=colors[family], edgecolors="none")
+                         (row_index[row] - 0.35, 0.7), facecolors=colors[family],
+                         edgecolors="white", linewidth=0.18)
     for (animal, family), times in ticks.items():
         row = animal if layout == "animals" else family
         if row not in row_index:
@@ -1187,44 +1212,67 @@ def sorting_comparison_figure(state: ProjectState) -> Figure:
         [display_labels[key] for key in keys], rotation=18, ha="right", fontsize=8
     )
 
-    agreement = np.eye(len(keys), dtype=float)
-    for row in comparison.get("pairwise", []):
-        i = keys.index(row["sorter_a"])
-        j = keys.index(row["sorter_b"])
-        agreement[i, j] = agreement[j, i] = row["mean_matched_agreement"]
-    axes[0, 1].imshow(
-        agreement,
-        cmap="viridis",
-        vmin=0,
-        vmax=1,
-        interpolation="nearest",
-    )
-    for i in range(len(keys)):
-        for j in range(len(keys)):
-            axes[0, 1].text(
-                j,
-                i,
-                f"{agreement[i, j]:.2f}",
-                ha="center",
-                va="center",
-                color="white" if agreement[i, j] < 0.65 else INK,
-                fontsize=8,
-            )
-    axes[0, 1].set_xticks(
-        np.arange(len(keys)),
-        [display_labels[key] for key in keys],
-        rotation=25,
-        ha="right",
-    )
-    axes[0, 1].set_yticks(
-        np.arange(len(keys)), [display_labels[key] for key in keys]
-    )
-    axes[0, 1].set_title(
-        _text(state, "匹配 Unit 的平均一致度", "Mean agreement of matched units"),
-        loc="left",
-        fontsize=10,
-        color=INK,
-    )
+    if len(keys) == 1 and ground_truth:
+        per_unit = ground_truth[keys[0]].get("metrics_by_truth_unit", [])
+        unit_ids = [int(row["truth_unit"]) + 1 for row in per_unit]
+        unit_f1 = [float(row["f1"]) for row in per_unit]
+        axes[0, 1].bar(unit_ids, unit_f1, color=GREEN, width=0.72)
+        axes[0, 1].axhline(
+            float(ground_truth[keys[0]].get("mean_f1", np.nan)),
+            color=CORAL,
+            linewidth=1.4,
+            linestyle="--",
+            label=_text(state, "平均值", "Mean"),
+        )
+        axes[0, 1].set_ylim(0, 1.05)
+        axes[0, 1].set_xlabel("Ground-truth Unit", color=MUTED)
+        axes[0, 1].set_ylabel("F1", color=MUTED)
+        axes[0, 1].set_title(
+            _text(state, "逐 Unit 检测表现", "Per-Unit detection performance"),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
+        axes[0, 1].legend(frameon=False, fontsize=7)
+    else:
+        agreement = np.eye(len(keys), dtype=float)
+        for row in comparison.get("pairwise", []):
+            i = keys.index(row["sorter_a"])
+            j = keys.index(row["sorter_b"])
+            agreement[i, j] = agreement[j, i] = row["mean_matched_agreement"]
+        axes[0, 1].imshow(
+            agreement,
+            cmap="viridis",
+            vmin=0,
+            vmax=1,
+            interpolation="nearest",
+        )
+        for i in range(len(keys)):
+            for j in range(len(keys)):
+                axes[0, 1].text(
+                    j,
+                    i,
+                    f"{agreement[i, j]:.2f}",
+                    ha="center",
+                    va="center",
+                    color="white" if agreement[i, j] < 0.65 else INK,
+                    fontsize=8,
+                )
+        axes[0, 1].set_xticks(
+            np.arange(len(keys)),
+            [display_labels[key] for key in keys],
+            rotation=25,
+            ha="right",
+        )
+        axes[0, 1].set_yticks(
+            np.arange(len(keys)), [display_labels[key] for key in keys]
+        )
+        axes[0, 1].set_title(
+            _text(state, "匹配 Unit 的平均一致度", "Mean agreement of matched units"),
+            loc="left",
+            fontsize=10,
+            color=INK,
+        )
 
     axes[0, 2].axis("off")
     consensus = comparison.get("consensus", {})
@@ -2103,14 +2151,18 @@ def unit_metrics_figure(state: ProjectState, view: str = "overview") -> Figure:
 
 
 @publication_figure
-def unit_cluster_figure(state: ProjectState, unit_id: int) -> Figure:
-    """On-demand waveform feature projection for manual cluster inspection.
-
-    Only clusters on the same measured contact are compared; numbered contact
-    neighbors are not treated as physical neighbors. This is diagnostic, not GT.
-    """
-    fig, axes = _base_figure(1, 2, 4.8)
-    diagnostic = state.unit_diagnostics.get(unit_id, {})
+def unit_cluster_figure(
+    state: ProjectState, unit_id: int, *, contact: int | None = None,
+    pc_x: int = 1, pc_y: int = 2, feature_cache: dict | None = None,
+) -> Figure:
+    """Show every spike and bind every PCA point to its source spike index."""
+    fig, axes = _base_figure(2, 2, 6.8)
+    curated_entries = curated_unit_entries(state)
+    selected_entry = curated_entries.get(unit_id, {})
+    selected_source = int(selected_entry.get("source_unit", unit_id))
+    diagnostic = state.unit_diagnostics.get(
+        unit_id, state.unit_diagnostics.get(selected_source, {})
+    )
     channels = diagnostic.get("waveform_channels", [])
     if not state.ready or not channels:
         for axis in axes.flat:
@@ -2118,67 +2170,224 @@ def unit_cluster_figure(state: ProjectState, unit_id: int) -> Figure:
                       ha="center", va="center", transform=axis.transAxes)
         return fig
     selected_metric = next((row for row in state.unit_metrics
-                            if int(row.get("unit_id", -1)) == unit_id), {})
-    contact = int(selected_metric.get("peak_channel", channels[0]))
+                            if int(row.get("unit_id", -1)) in {unit_id, selected_source}), {})
+    contact = int(contact if contact is not None else selected_metric.get("peak_channel", channels[0]))
     source_contacts = state.metadata.get("recording_adapter", {}).get("channel_ids", [])
     contact_description = (
         f"Contact {contact} / source CH{source_contacts[contact]}"
         if 0 <= contact < len(source_contacts)
         else f"Contact {contact}"
     )
-    candidates = [unit_id] + [
-        int(metric["unit_id"]) for metric in state.unit_metrics
-        if int(metric["unit_id"]) != unit_id and int(metric.get("peak_channel", -1)) == contact
-    ][:4]
-    raw = load_recording(state)
+    metric_contacts = {
+        int(metric["unit_id"]): int(metric.get("peak_channel", -1))
+        for metric in state.unit_metrics if metric.get("unit_id") is not None
+    }
+    candidates = sorted(
+        candidate for candidate, entry in curated_entries.items()
+        if metric_contacts.get(int(entry["source_unit"]), -1) == contact
+    )
+    cache_key = (
+        str(state.root), state.active_sorter_key, contact,
+        tuple((candidate, len(curated_entries[candidate]["times"])) for candidate in candidates),
+        int(state.metadata.get("spike_level_curation", {}).get(
+            state.active_sorter_key or "unassigned", {}).get("revision", 0)),
+    )
+    cached_rows = feature_cache.get(cache_key) if feature_cache is not None else None
+    if cached_rows is None:
+        raw = load_recording(state)
+        cached_rows = []
+        for candidate in candidates:
+            entry = curated_entries[candidate]
+            spikes = np.asarray(entry["times"], dtype=float)
+            source_indices = np.asarray(entry["source_indices"], dtype=np.int64)
+            positions = (spikes * state.sampling_rate).astype(np.int64)
+            valid = (positions >= 25) & (positions < raw.shape[0] - 25)
+            positions = positions[valid]
+            source_indices = source_indices[valid]
+            if not len(positions):
+                continue
+            total = len(positions)
+            # All valid spikes are retained. Chunked extraction prevents a large
+            # Python object list while preserving one-to-one spike identity.
+            rows = np.empty((total, 41), dtype=np.float32)
+            for start in range(0, total, 20_000):
+                stop = min(start + 20_000, total)
+                rows[start:stop] = np.stack([
+                    np.asarray(raw[index - 20:index + 21, contact], dtype=np.float32)
+                    for index in positions[start:stop]
+                ])
+            cached_rows.append((
+                candidate, total, positions, rows,
+                int(entry["source_unit"]), source_indices,
+            ))
+        if feature_cache is not None:
+            feature_cache.clear()  # Keep only the active contact; no unbounded raw-trace cache.
+            feature_cache[cache_key] = cached_rows
     feature_rows = []
     labels = []
     times = []
     amplitudes = []
-    for candidate in candidates:
-        spikes = np.asarray(state.sorted_spikes.get(candidate, []), dtype=float)
-        positions = (spikes * state.sampling_rate).astype(np.int64)
-        positions = positions[(positions >= 25) & (positions < raw.shape[0] - 25)]
-        if not len(positions):
-            continue
-        positions = positions[np.linspace(0, len(positions) - 1, min(150, len(positions)), dtype=int)]
-        rows = np.stack([np.asarray(raw[index - 20:index + 21, contact], dtype=np.float32)
-                         for index in positions])
+    source_units = []
+    source_indices_all = []
+    selected_rows = np.empty((0, 41), dtype=np.float32)
+    selected_total = 0
+    cluster_totals: dict[int, int] = {}
+    cluster_shown: dict[int, int] = {}
+    waveform_time = (np.arange(41) - 20) / state.sampling_rate * 1_000.0
+    scale = float(state.scale_uv_per_bit or 1.0)
+    for candidate, total, positions, rows, source_unit, source_indices in cached_rows:
+        cluster_totals[candidate] = total
+        if candidate == unit_id:
+            selected_total = total
+        cluster_shown[candidate] = len(positions)
+        if candidate == unit_id:
+            selected_rows = rows
         feature_rows.append(rows)
         labels.extend([candidate] * len(rows))
+        source_units.extend([source_unit] * len(rows))
+        source_indices_all.extend(source_indices.tolist())
         times.extend((positions / state.sampling_rate).tolist())
-        amplitudes.extend((-rows.min(axis=1)).tolist())
+        amplitudes.extend((-rows.min(axis=1) * scale).tolist())
     if not feature_rows:
         return fig
+    if len(selected_rows):
+        cloud = selected_rows * scale
+        segments = np.stack(
+            (
+                np.broadcast_to(waveform_time, cloud.shape),
+                cloud,
+            ),
+            axis=-1,
+        )
+        axes[0, 0].add_collection(
+            LineCollection(
+                segments, colors=GREEN, linewidths=0.32,
+                alpha=max(0.015, min(0.12, 25.0 / max(len(cloud), 1))),
+                rasterized=True,
+            )
+        )
+        axes[0, 0].autoscale_view()
+        if len(cloud) >= 30:
+            lower_view, upper_view = np.percentile(cloud, [0.5, 99.5])
+            padding = max((upper_view - lower_view) * 0.08, 1.0)
+            axes[0, 0].set_ylim(lower_view - padding, upper_view + padding)
+            clipped = int(np.sum(np.any(
+                (cloud < lower_view - padding) | (cloud > upper_view + padding),
+                axis=1,
+            )))
+            if clipped:
+                axes[0, 0].text(
+                    0.02, 0.02,
+                    _text(state, f"{clipped} 条极端波形超出纵轴；仍计入总数",
+                          f"{clipped} extreme traces clipped by axis; still counted"),
+                    transform=axes[0, 0].transAxes, fontsize=7, color=MUTED,
+                )
+        axes[0, 0].axvline(0, color=MUTED, linewidth=0.7, linestyle="--")
+        axes[0, 0].set_title(
+            _text(
+                state,
+                f"Unit {unit_id} 全部单次波形 · {len(cloud)}/{selected_total} 条全部显示",
+                f"Unit {unit_id} all individual spikes · {len(cloud)}/{selected_total} shown",
+            ),
+            loc="left", fontsize=10, color=INK,
+        )
+        axes[0, 0].set_xlabel(_text(state, "相对 sorter 时间戳 (ms)", "From sorter timestamp (ms)"))
+        axes[0, 0].set_ylabel("µV")
+
+        mean = cloud.mean(axis=0)
+        median = np.median(cloud, axis=0)
+        lower, upper = np.percentile(cloud, [10, 90], axis=0)
+        axes[0, 1].fill_between(waveform_time, lower, upper, color=GREEN, alpha=0.22,
+                                label=_text(state, "第 10–90 百分位", "10th–90th percentile"))
+        axes[0, 1].plot(waveform_time, mean, color=INK, linewidth=1.7,
+                        label=_text(state, "所示波形均值", "Mean of shown waveforms"))
+        axes[0, 1].plot(waveform_time, median, color=CORAL, linewidth=1.0,
+                        linestyle="--", label=_text(state, "中位数", "Median"))
+        axes[0, 1].axvline(0, color=MUTED, linewidth=0.7, linestyle="--")
+        axes[0, 1].set_title(
+            _text(state, "典型形态与波动范围", "Typical shape and variability"),
+            loc="left", fontsize=10, color=INK,
+        )
+        axes[0, 1].set_xlabel(_text(state, "相对 sorter 时间戳 (ms)", "From sorter timestamp (ms)"))
+        axes[0, 1].set_ylabel("µV")
+        axes[0, 1].legend(frameon=False, fontsize=7)
     features = np.vstack(feature_rows)
-    centered = features - features.mean(axis=0, keepdims=True)
-    if len(features) >= 3:
-        _, _, components = np.linalg.svd(centered, full_matrices=False)
-        projection = centered @ components[:2].T
+    baseline = np.median(features, axis=0)
+    distances = np.linalg.norm(features - baseline, axis=1)
+    fit_features = features[distances <= np.percentile(distances, 99.5)]
+    centered = features - fit_features.mean(axis=0, keepdims=True)
+    if len(fit_features) >= 3:
+        fit_centered = fit_features - fit_features.mean(axis=0, keepdims=True)
+        covariance = (fit_centered.T @ fit_centered) / max(len(fit_centered) - 1, 1)
+        eigenvalues, eigenvectors = np.linalg.eigh(covariance)
+        components = eigenvectors[:, np.argsort(eigenvalues)[::-1][:3]].T
+        projection = centered @ components.T
+        if projection.shape[1] < 3:
+            projection = np.pad(projection, ((0, 0), (0, 3 - projection.shape[1])))
     else:
-        projection = np.column_stack((centered[:, 20], centered[:, 21]))
+        projection = np.column_stack((centered[:, 20], centered[:, 21], np.zeros(len(centered))))
+    pc_x = max(1, min(int(pc_x), 3)) - 1
+    pc_y = max(1, min(int(pc_y), 3)) - 1
     labels = np.asarray(labels)
+    source_units = np.asarray(source_units, dtype=np.int64)
+    source_indices_all = np.asarray(source_indices_all, dtype=np.int64)
     times = np.asarray(times)
     amplitudes = np.asarray(amplitudes)
-    for candidate, color in zip(candidates, (GREEN, CORAL, BLUE, GOLD, MUTED)):
+    palette = colormaps["tab20"]
+    for index, candidate in enumerate(candidates):
+        color = palette(index % 20)
         mask = labels == candidate
         if not np.any(mask):
             continue
-        axes[0, 0].scatter(projection[mask, 0], projection[mask, 1], s=12,
-                           alpha=0.55, color=color, label=f"Unit {candidate}")
-        axes[0, 1].scatter(times[mask], amplitudes[mask], s=10,
-                           alpha=0.5, color=color, label=f"Unit {candidate}")
-    axes[0, 0].set_title(_text(state, "同一接点波形 PCA", "Same-contact waveform PCA"), loc="left")
-    axes[0, 0].set_xlabel("PC 1")
-    axes[0, 0].set_ylabel("PC 2")
-    axes[0, 1].set_title(_text(state, "振幅随时间变化", "Amplitude over time"), loc="left")
-    axes[0, 1].set_xlabel(_text(state, "记录时间 (s)", "Recording time (s)"))
-    axes[0, 1].set_ylabel("Peak amplitude (ADC)")
-    axes[0, 0].legend(frameon=False, fontsize=7)
+        artist = axes[1, 0].scatter(projection[mask, pc_x], projection[mask, pc_y], s=9,
+                           alpha=0.68 if candidate == unit_id else 0.36,
+                           color=color,
+                           label=f"Unit {candidate} ({cluster_shown[candidate]}/{cluster_totals[candidate]})",
+                           rasterized=True)
+        artist.set_picker(True)
+        artist._neuro_unit_id = candidate
+        artist._neuro_source_units = source_units[mask]
+        artist._neuro_source_indices = source_indices_all[mask]
+        artist._neuro_projection = projection[mask][:, [pc_x, pc_y]]
+        axes[1, 1].scatter(times[mask], amplitudes[mask], s=11,
+                           alpha=0.68 if candidate == unit_id else 0.36,
+                           color=color, label=f"Unit {candidate}")
+    axes[1, 0].set_title(_text(state, "同一接点波形 PCA", "Same-contact waveform PCA"), loc="left")
+    axes[1, 0].set_xlabel(f"PC {pc_x + 1}")
+    axes[1, 0].set_ylabel(f"PC {pc_y + 1}")
+    if len(projection) >= 30:
+        for dimension, setter in ((pc_x, axes[1, 0].set_xlim), (pc_y, axes[1, 0].set_ylim)):
+            low, high = np.percentile(projection[:, dimension], [1, 99])
+            padding = max((high - low) * 0.1, 1.0)
+            setter(low - padding, high + padding)
+        xlim, ylim = axes[1, 0].get_xlim(), axes[1, 0].get_ylim()
+        clipped = int(np.sum(
+            (projection[:, pc_x] < xlim[0]) | (projection[:, pc_x] > xlim[1])
+            | (projection[:, pc_y] < ylim[0]) | (projection[:, pc_y] > ylim[1])
+        ))
+        if clipped:
+            axes[1, 0].text(
+                0.02, 0.02,
+                _text(state, f"{clipped} 个极端点超出坐标范围", f"{clipped} extreme points outside view"),
+                transform=axes[1, 0].transAxes, fontsize=7, color=MUTED,
+            )
+    if len(candidates) == 1:
+        axes[1, 0].text(
+            0.02, 0.94,
+            _text(state, "此接点无其他候选：不能据此判断 cluster 间分离",
+                  "No other candidate on this contact: separation cannot be judged"),
+            transform=axes[1, 0].transAxes, va="top", fontsize=7, color=MUTED,
+        )
+    axes[1, 1].set_title(_text(state, "振幅随时间变化", "Amplitude over time"), loc="left")
+    axes[1, 1].set_xlabel(_text(state, "记录时间 (s)", "Recording time (s)"))
+    axes[1, 1].set_ylabel("Peak amplitude (µV)")
+    axes[1, 0].legend(frameon=False, fontsize=6, ncol=2 if len(candidates) > 8 else 1)
     fig.suptitle(_text(
         state,
-        f"{contact_description} · 仅比较同接点候选；分离外观不等于真实单细胞",
-        f"{contact_description} · same-contact candidates only; visual separation is not ground truth",
+        f"{contact_description} · {len(cluster_totals)} 个同接点候选 · "
+        "原始片段 PCA 复核视图；颜色是 sorter 分组，不是由 PCA 新分组",
+        f"{contact_description} · {len(cluster_totals)} same-contact candidates · "
+        "raw-snippet PCA for review; colors are sorter labels, not PCA-derived clusters",
     ), fontsize=9)
     return fig
 
@@ -2440,7 +2649,8 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     while len(raw_labels) < 2:
         raw_labels.append(f"condition_{len(raw_labels) + 1}")
     conditions = np.asarray(analysis.get("conditions", []), dtype=str)
-    condition_colors = (GREEN, CORAL)
+    color_map = categorical_colors(raw_labels)
+    condition_colors = tuple(color_map[label] for label in raw_labels)
 
     def display_label(raw_label: str) -> str:
         common_zh = {
@@ -2479,20 +2689,45 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
 
     raster = axes[0, 0]
     raster.grid(False)
-    for event_index, relative in enumerate(unit["aligned_spikes"]):
+    aligned = list(unit["aligned_spikes"])
+    ordered_event_indices = [
+        index for label in raw_labels
+        for index, condition in enumerate(conditions)
+        if condition == label
+    ]
+    ordered_event_indices.extend(
+        index for index in range(len(aligned)) if index not in set(ordered_event_indices)
+    )
+    row_conditions: list[str] = []
+    for display_row, event_index in enumerate(ordered_event_indices):
+        relative = aligned[event_index]
         color = INK
         if event_index < len(conditions):
             if conditions[event_index] == raw_labels[0]:
                 color = condition_colors[0]
             elif conditions[event_index] == raw_labels[1]:
                 color = condition_colors[1]
+            row_conditions.append(str(conditions[event_index]))
         raster.vlines(
             relative,
-            event_index + 0.6,
-            event_index + 1.4,
+            display_row + 0.58,
+            display_row + 1.42,
             color=color,
-            linewidth=0.72,
+            linewidth=0.78,
         )
+    cursor = 0
+    tick_positions = []
+    tick_labels = []
+    for raw_label, display, count in zip(
+        raw_labels, display_labels, condition_counts, strict=True
+    ):
+        if not count:
+            continue
+        tick_positions.append(cursor + count / 2.0 + 0.5)
+        tick_labels.append(f"{display}\n(n={count})")
+        cursor += count
+        if cursor < len(ordered_event_indices):
+            raster.axhline(cursor + 0.5, color="#d8e0e5", linewidth=0.8)
     raster.axvline(0, color=INK, linewidth=1.0, linestyle="--")
     raster.set_xlim(*analysis.get("window", (-0.5, 1.0)))
     raster.set_ylim(0.3, max(len(unit["aligned_spikes"]) + 0.7, 1.7))
@@ -2513,6 +2748,8 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
         _text(state, "事件序号（每行一个事件）", "Event index (one event per row)"),
         color=MUTED,
     )
+    if tick_positions:
+        raster.set_yticks(tick_positions, tick_labels)
     for display, count, color in zip(
         display_labels, condition_counts, condition_colors, strict=True
     ):
@@ -2668,6 +2905,22 @@ def event_analysis_figure(state: ProjectState, unit_id: int | None = None) -> Fi
     )
     summary.set_ylabel(
         _text(state, "放电率变化（Hz）", "Firing-rate change (Hz)"), color=MUTED
+    )
+    selected_text = " vs ".join(display_labels[: max(1, sum(count > 0 for count in condition_counts))])
+    cohort = analysis.get("unit_selection", {})
+    cohort_text = (
+        _text(
+            state,
+            f"人工筛选集 rev.{cohort.get('revision')} · {len(cohort.get('unit_ids', []))} Units",
+            f"Curated cohort rev.{cohort.get('revision')} · {len(cohort.get('unit_ids', []))} Units",
+        )
+        if cohort.get("enabled") else
+        _text(state, "全部 sorter 候选 Unit", "All sorter candidate Units")
+    )
+    fig.suptitle(
+        _text(state, f"行为事件 tuning：{selected_text} · {cohort_text}",
+              f"Behavior-event tuning: {selected_text} · {cohort_text}"),
+        fontsize=9.5,
     )
     return fig
 

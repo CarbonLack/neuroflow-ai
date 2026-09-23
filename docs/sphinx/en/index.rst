@@ -12,7 +12,7 @@ For a first visit, use a teaching example to run QC, save a figure, and reopen t
 .. raw:: html
 
    <nav class="task-links" aria-label="Start with your task">
-     <a class="task-link" href="quick-start.html"><strong>Try your first project</strong><span>Open the 8-channel example, run QC, save a figure, and reopen your work.</span></a>
+     <a class="task-link" href="quick-start.html"><strong>Try your first project</strong><span>Open the 32-channel independent microwire/brush example, run QC, save a figure, and reopen your work.</span></a>
      <a class="task-link" href="first-project.html"><strong>Use your own data</strong><span>Choose an entry for raw recordings, existing sorting, or a saved project.</span></a>
      <a class="task-link" href="workspace.html"><strong>Find a control</strong><span>Adjust three columns, select an analysis, use help, and find shortcuts.</span></a>
      <a class="task-link" href="troubleshooting.html"><strong>Resolve a problem</strong><span>Check unavailable analyses, incorrect inputs, missing plots, and moved files.</span></a>
