@@ -53,6 +53,22 @@ def main() -> None:
                 data=stream,
                 timeout=(30, 3600),
             )
+        if response.status_code == 422:
+            # Another uploader may have finished after our initial inventory.
+            refreshed = requests.get(
+                f"{API}/releases/{args.release_id}", headers=headers, timeout=30
+            )
+            refreshed.raise_for_status()
+            duplicate = next(
+                (item for item in refreshed.json().get("assets", [])
+                 if item.get("name") == path.name), None
+            )
+            if duplicate and int(duplicate["size"]) == size and (
+                not duplicate.get("digest")
+                or duplicate["digest"] == f"sha256:{digest}"
+            ):
+                print(f"Already verified after concurrent upload: {path.name}", flush=True)
+                continue
         response.raise_for_status()
         asset = response.json()
         if int(asset["size"]) != size or (
