@@ -29,13 +29,17 @@ $version = $match.Groups[1].Value
 $commit = (& git -C $repo rev-parse HEAD).Trim()
 $status = @(& git -C $repo status --short)
 $release = Join-Path $root "01_Application\Releases\v$version"
+$runnableRelative = "01_Application\Full_Portable_v$version\NeuroEphysAI.exe"
+if (-not (Test-Path -LiteralPath (Join-Path $root $runnableRelative) -PathType Leaf)) {
+    $runnableRelative = '01_Application\Full_Portable\NeuroEphysAI.exe'
+}
 $record = @(
     'PORTABLE WORKSPACE CURRENT STATE',
     "Updated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')",
     "Version: $version",
     "Git commit: $commit",
     "Working tree: $(if ($status.Count) { 'modified' } else { 'clean' })",
-    "Runnable App: 01_Application\Full_Portable\NeuroEphysAI.exe",
+    "Runnable App: $runnableRelative",
     "Release set: 01_Application\Releases\v$version",
     "Release set exists: $(Test-Path -LiteralPath $release)",
     'Source: 02_Source_Code\Repository',
